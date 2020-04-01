@@ -12,14 +12,21 @@ module.exports = {
   ],
   reportUnusedDisableDirectives: true,
   rules: {
+    '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-namespace': 'off',
-    '@typescript-eslint/no-unused-vars': 'off',
-    '@typescript-eslint/no-use-before-define': ['error', {
-      'functions': false
+    '@typescript-eslint/no-unused-vars': ['error', {
+      varsIgnorePattern: '^_$',
+      argsIgnorePattern: '^_$'
     }],
+    '@typescript-eslint/no-use-before-define': ['error', {
+      functions: false
+    }],
+    'arrow-body-style': ["error", "as-needed"],
     'no-console': 'off',
     'no-inner-declarations': 'off',
+    'no-redeclare': 'off',
+    'no-shadow': 'off',
     'no-undef': 'off',
     'prettier/prettier': 'off'
   }

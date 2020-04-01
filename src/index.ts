@@ -4,4 +4,4 @@ import { Config } from './models/Config'
 
 const config = Config.load()
 
-console.log('config =', config)
+console.log('config =', config())
