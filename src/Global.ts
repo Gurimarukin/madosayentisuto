@@ -1,5 +1,8 @@
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference, spaced-comment
-///<reference path="Global.d.ts" />
+export {}
+
+declare global {
+  function todo(...args: any[]): never
+}
 
 ;(global as any).todo = (..._: any): never => {
   throw Error('missing implementation')
