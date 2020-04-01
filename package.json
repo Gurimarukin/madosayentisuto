@@ -4,11 +4,10 @@
   "description": "Hey, mister... I am mad scientist! It's so cool! Sonuvabitch.",
   "main": "src/index.ts",
   "scripts": {
-    "compile": "tsc --noEmit && tslint -p tsconfig.json",
+    "compile": "tsc --noEmit && eslint --cache --max-warnings 0 --ext .ts src/",
     "~compile": "nodemon -e js,ts,json -x \"npm run --silent compile\"",
     "run": "npm run --silent compile && ts-node src/index.ts",
     "~run": "nodemon -e js,ts,json -x \"npm run --silent run\"",
-    "lint": "tslint -p tsconfig.json",
     "test": "jest",
     "~test": "jest --watchAll"
   },
@@ -23,9 +22,17 @@
   },
   "homepage": "https://github.com/Gurimarukin/madosayentisuto#readme",
   "dependencies": {
+    "@type-config/strict": "^1.0.2",
     "@types/jest": "^25.1.4",
     "@types/node": "^13.9.8",
+    "@typescript-eslint/eslint-plugin": "^2.26.0",
+    "@typescript-eslint/parser": "^2.26.0",
     "discord.js": "^12.1.1",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-config-prettier": "^6.10.1",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-prettier": "^3.1.2",
     "fp-ts": "^2.5.3",
     "fp-ts-contrib": "^0.1.14",
     "io-ts": "^2.1.2",
@@ -34,14 +41,10 @@
     "monocle-ts": "^2.1.0",
     "newtype-ts": "^0.3.4",
     "nodemon": "^2.0.2",
+    "prettier": "^2.0.2",
     "ts-jest": "^25.3.0",
     "ts-node": "^8.8.1",
     "tslib": "^1.11.1",
-    "tslint": "^6.1.0",
-    "tslint-config-prettier": "^1.18.0",
     "typescript": "^3.8.3"
-  },
-  "devDependencies": {
-    "@type-config/strict": "^1.0.2"
   }
 }
