@@ -1,0 +1,49 @@
+{
+    "extends": [
+        "tslint:recommended",
+        "tslint-config-prettier"
+    ],
+    "linterOptions": {
+        "exclude": ["node_modules/**/*"]
+    },
+    "rules": {
+        "array-type": [true, "array"],
+        "arrow-return-shorthand": [true, "multiline"],
+        "curly": [true, "ignore-same-line"],
+        "deprecation": true,
+        "interface-name": false,
+        "match-default-export-name": true,
+        "max-line-length": [
+            true,
+            {
+                "limit": 100,
+                "ignore-pattern": "^\\s*[\"'`]|^export |^import |^\\s*//|^\\s*console"
+            }
+        ],
+        "member-access": [true, "no-public"],
+        "member-ordering": false,
+        "no-console": false,
+        "no-empty": [true, "allow-empty-catch", "allow-empty-functions"],
+        "no-eval": false,
+        "no-shadowed-variable": false,
+        "no-switch-case-fall-through": true,
+        "no-tautology-expression": true,
+        "no-namespace": false,
+        "no-var-keyword": true,
+        "no-var-requires": true,
+        "object-literal-sort-keys": false,
+        "prefer-const": true,
+        "semicolon": [true, "never"],
+        "strict-boolean-expressions": true,
+        "strict-type-predicates": true,
+        "triple-equals": true,
+        "unnecessary-else": true,
+        "variable-name": [
+            true,
+            "ban-keywords",
+            "check-format",
+            "allow-leading-underscore",
+            "allow-pascal-case"
+        ]
+    }
+}
