@@ -4,8 +4,10 @@
   "description": "Hey, mister... I am mad scientist! It's so cool! Sonuvabitch.",
   "main": "src/index.ts",
   "scripts": {
-    "~compile": "tsc -w --pretty false",
-    "start": "nodemon --exec \"ts-node src/index.ts",
+    "compile": "tsc --noEmit && tslint -p tsconfig.json",
+    "~compile": "nodemon -e js,ts,json -x \"npm run --silent compile\"",
+    "run": "npm run --silent compile && ts-node src/index.ts",
+    "~run": "nodemon -e js,ts,json -x \"npm run --silent run\"",
     "lint": "tslint -p tsconfig.json",
     "test": "jest",
     "~test": "jest --watchAll"
@@ -22,6 +24,7 @@
   "homepage": "https://github.com/Gurimarukin/madosayentisuto#readme",
   "dependencies": {
     "@types/jest": "^25.1.4",
+    "@types/node": "^13.9.8",
     "discord.js": "^12.1.1",
     "fp-ts": "^2.5.3",
     "fp-ts-contrib": "^0.1.14",
