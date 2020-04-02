@@ -4,13 +4,14 @@
   "description": "Hey, mister... I am mad scientist! It's so cool! Sonuvabitch.",
   "main": "src/index.ts",
   "scripts": {
+    "build": "tsc",
     "compile": "tsc --noEmit",
     "~compile": "tsc --noEmit -w",
     "run": "ts-node src/index.ts",
     "~run": "nodemon -e js,ts,json -x \"npm run --silent run\"",
     "test": "jest",
     "~test": "jest --watchAll",
-    "lint": "eslint --cache --fix --max-warnings 0 --ext .ts src/"
+    "lint": "eslint --cache --fix --max-warnings 0 --ext .ts src/ test/"
   },
   "repository": {
     "type": "git",

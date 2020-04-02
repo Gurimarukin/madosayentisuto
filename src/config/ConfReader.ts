@@ -9,46 +9,50 @@ export type ValidatedNea<A> = Either<NonEmptyArray<string>, A>
 
 export type ConfReader = <A>(
   codec: t.Decoder<unknown, A>
-) => (path: string, ...paths: string[]) => Either<NonEmptyArray<string>, A>
+) => (path: string, ...paths: string[]) => ValidatedNea<A>
 
 export namespace ConfReader {
-  export function load(file: string, ...files: string[]): IO<ConfReader> {
+  export function fromFiles(path: string, ...paths: string[]): IO<ConfReader> {
     return pipe(
-      loadConfigFiles(file, ...files),
-      IO.map<NonEmptyArray<unknown>, ConfReader>(
-        jsons => <A>(codec: t.Decoder<unknown, A>) => (
-          path: string,
-          ...paths: string[]
-        ): ValidatedNea<A> => {
-          const allPaths: NonEmptyArray<string> = [path, ...paths]
-          return Nea.tail(jsons).reduce<ValidatedNea<A>>(
-            (acc, conf) =>
-              pipe(
-                acc,
-                Either.orElse(_ => readPath(codec, allPaths, conf))
-              ),
-            readPath(codec, allPaths, Nea.head(jsons))
-          )
-        }
+      parseJsonFiles(path, ...paths),
+      IO.map<NonEmptyArray<unknown>, ConfReader>(jsons =>
+        fromJsons(Nea.head(jsons), Nea.tail(jsons))
       )
     )
   }
+
+  export function fromJsons(json: unknown, ...jsons: unknown[]): ConfReader {
+    return <A>(codec: t.Decoder<unknown, A>) => (
+      path: string,
+      ...paths: string[]
+    ): ValidatedNea<A> => {
+      const allPaths: NonEmptyArray<string> = [path, ...paths]
+      return jsons.reduce<ValidatedNea<A>>(
+        (acc, conf) =>
+          pipe(
+            acc,
+            Either.orElse(_ => readPath(codec, allPaths, conf))
+          ),
+        readPath(codec, allPaths, json)
+      )
+    }
+  }
 }
 
-function loadConfigFiles(file: string, ...files: string[]): IO<NonEmptyArray<unknown>> {
-  return files.reduce(
-    (acc, file) =>
+function parseJsonFiles(path: string, ...paths: string[]): IO<NonEmptyArray<unknown>> {
+  return paths.reduce(
+    (acc, path) =>
       Do(IO.ioEither)
         .bindL('acc', () => acc)
-        .bindL('newConf', () => loadConfigFile(file))
+        .bindL('newConf', () => loadConfigFile(path))
         .return(({ acc, newConf }) => Nea.snoc(acc, newConf)),
-    pipe(loadConfigFile(file), IO.map(Nea.of))
+    pipe(loadConfigFile(path), IO.map(Nea.of))
   )
 }
 
-function loadConfigFile(file: string): IO<unknown> {
+function loadConfigFile(path: string): IO<unknown> {
   return pipe(
-    FileUtils.readFileSync(file),
+    FileUtils.readFileSync(path),
     IO.chain(_ => IO.fromEither(Either.parseJSON(_, unknownToError)))
   )
 }
