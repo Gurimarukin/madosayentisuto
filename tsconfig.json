@@ -1,0 +1,9 @@
+{
+  "extends": "@type-config/strict",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": "."
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "test/**/*.js"],
+  "exclude": ["node_modules", "dist"]
+}
