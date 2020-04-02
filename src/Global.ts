@@ -1,4 +1,5 @@
 import * as _Array from 'fp-ts/lib/Array'
+import * as _Record from 'fp-ts/lib/Record'
 import * as _Option from 'fp-ts/lib/Option'
 import * as _Either from 'fp-ts/lib/Either'
 import * as _Task from 'fp-ts/lib/TaskEither'
@@ -13,8 +14,10 @@ export {}
 declare global {
   function todo(...args: any[]): never
 
-  export type Seq<A> = Array<A>
-  export const Seq: typeof _Array
+  export const List: typeof _Array
+
+  export type Dict<A> = Record<string, A>
+  export const Dict: typeof _Record
 
   export type Maybe<A> = _Option.Option<A>
   export const Maybe: typeof _Option
@@ -22,10 +25,10 @@ declare global {
   export type Either<E, A> = _Either.Either<E, A>
   export const Either: typeof _Either
 
-  export type Future<A> = _Task.TaskEither<unknown, A>
+  export type Future<A> = _Task.TaskEither<Error, A>
   export const Future: typeof _Task
 
-  export type IO<A> = _IOEither.IOEither<unknown, A>
+  export type IO<A> = _IOEither.IOEither<Error, A>
   export const IO: typeof _IOEither
 
   export const identity: typeof _identity
@@ -38,7 +41,8 @@ declare global {
 ;(global as any).todo = (..._: any): never => {
   throw Error('missing implementation')
 }
-;(global as any).Seq = _Array
+;(global as any).List = _Array
+;(global as any).Dict = _Record
 ;(global as any).Maybe = _Option
 ;(global as any).Either = _Either
 ;(global as any).Future = _Task

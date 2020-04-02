@@ -1,6 +1,6 @@
 import './Global'
 
-import { Config } from './models/Config'
+import { Config } from './config/Config'
 
 const config = Config.load()
 
