@@ -16,18 +16,18 @@ export namespace ConfReader {
     return pipe(
       loadConfigFiles(file, ...files),
       IO.map<NonEmptyArray<unknown>, ConfReader>(
-        confs => <A>(codec: t.Decoder<unknown, A>) => (
+        jsons => <A>(codec: t.Decoder<unknown, A>) => (
           path: string,
           ...paths: string[]
         ): ValidatedNea<A> => {
           const allPaths: NonEmptyArray<string> = [path, ...paths]
-          return Nea.tail(confs).reduce<ValidatedNea<A>>(
+          return Nea.tail(jsons).reduce<ValidatedNea<A>>(
             (acc, conf) =>
               pipe(
                 acc,
                 Either.orElse(_ => readPath(codec, allPaths, conf))
               ),
-            readPath(codec, allPaths, Nea.head(confs))
+            readPath(codec, allPaths, Nea.head(jsons))
           )
         }
       )
@@ -56,13 +56,13 @@ function loadConfigFile(file: string): IO<unknown> {
 function readPath<A>(
   codec: t.Decoder<unknown, A>,
   paths: NonEmptyArray<string>,
-  u: unknown
+  json: unknown
 ): ValidatedNea<A> {
   return pipe(
-    readPathRec(paths, u),
-    Either.chain(u =>
+    readPathRec(paths, json),
+    Either.chain(val =>
       pipe(
-        codec.decode(u),
+        codec.decode(val),
         Either.mapLeft(
           errors =>
             errors.map(_ => `expected ${codec.name} got ${_.value}`) as NonEmptyArray<string>
@@ -73,15 +73,15 @@ function readPath<A>(
   )
 }
 
-function readPathRec(paths: string[], u: unknown): ValidatedNea<unknown> {
-  if (List.isEmpty(paths)) return Either.right(u)
+function readPathRec(paths: string[], val: unknown): ValidatedNea<unknown> {
+  if (List.isEmpty(paths)) return Either.right(val)
 
   const [head, ...tail] = paths
   return pipe(
     Either.tryCatch(
-      () => (u as any)[head],
+      () => (val as any)[head],
       _ => Nea.of('missing key')
     ),
-    Either.chain(newU => readPathRec(tail, newU))
+    Either.chain(newVal => readPathRec(tail, newVal))
   )
 }
