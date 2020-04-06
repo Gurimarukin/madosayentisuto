@@ -27,13 +27,33 @@ export namespace ConfReader {
       ...paths: string[]
     ): ValidatedNea<A> => {
       const allPaths: NonEmptyArray<string> = [path, ...paths]
-      return jsons.reduce<ValidatedNea<A>>(
-        (acc, conf) =>
+
+      const valueForPath = pipe(
+        jsons.reduce<Maybe<unknown>>(
+          (acc, json) =>
+            pipe(
+              acc,
+              Maybe.alt(() => readPath(allPaths, json))
+            ),
+          readPath(allPaths, json)
+        ),
+        Either.fromOption(() => Nea.of('missing key'))
+      )
+
+      return pipe(
+        valueForPath,
+        Either.chain(val =>
           pipe(
-            acc,
-            Either.orElse(_ => readPath(codec, allPaths, conf))
-          ),
-        readPath(codec, allPaths, json)
+            codec.decode(val),
+            Either.mapLeft(
+              errors =>
+                errors.map(
+                  _ => `expected ${codec.name} got ${JSON.stringify(_.value)}`
+                ) as NonEmptyArray<string>
+            )
+          )
+        ),
+        Either.mapLeft(Nea.map(_ => `key ${allPaths.join('.')}: ${_}`))
       )
     }
   }
@@ -57,35 +77,13 @@ function loadConfigFile(path: string): IO<unknown> {
   )
 }
 
-function readPath<A>(
-  codec: t.Decoder<unknown, A>,
-  paths: NonEmptyArray<string>,
-  json: unknown
-): ValidatedNea<A> {
-  return pipe(
-    readPathRec(paths, json),
-    Either.chain(val =>
-      pipe(
-        codec.decode(val),
-        Either.mapLeft(
-          errors =>
-            errors.map(_ => `expected ${codec.name} got ${_.value}`) as NonEmptyArray<string>
-        )
-      )
-    ),
-    Either.mapLeft(Nea.map(_ => `key ${paths.join('.')}: ${_}`))
-  )
-}
-
-function readPathRec(paths: string[], val: unknown): ValidatedNea<unknown> {
-  if (List.isEmpty(paths)) return Either.right(val)
+function readPath(paths: string[], val: unknown): Maybe<unknown> {
+  if (List.isEmpty(paths)) return Maybe.some(val)
 
   const [head, ...tail] = paths
   return pipe(
-    Either.tryCatch(
-      () => (val as any)[head],
-      _ => Nea.of('missing key')
-    ),
-    Either.chain(newVal => readPathRec(tail, newVal))
+    Maybe.tryCatch(() => (val as any)[head]),
+    Maybe.filter(_ => _ !== undefined),
+    Maybe.chain(newVal => readPath(tail, newVal))
   )
 }
