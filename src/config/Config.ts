@@ -1,17 +1,19 @@
-import { sequenceT } from 'fp-ts/lib/Apply'
 import * as Nea from 'fp-ts/lib/NonEmptyArray'
 import * as t from 'io-ts'
+import { sequenceT } from 'fp-ts/lib/Apply'
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
+import { nonEmptyArray } from 'io-ts-types/lib/nonEmptyArray'
 
 import { ConfReader, ValidatedNea } from './ConfReader'
+import { LogLevelOrOff } from '../models/LogLevel'
+import { TSnowflake } from '../models/TSnowflake'
 
 export interface Config {
-  name: string
-  discord: {
-    clientSecret: string
-  }
+  clientSecret: string
+  logger: LoggerConfig
 }
-export function Config(name: string, clientSecret: string): Config {
-  return { name, discord: { clientSecret } }
+export function Config(clientSecret: string, logger: LoggerConfig): Config {
+  return { clientSecret, logger }
 }
 
 export namespace Config {
@@ -20,7 +22,7 @@ export namespace Config {
       ConfReader.fromFiles('./conf/local.conf.json', './conf/application.conf.json'),
       IO.chain(reader =>
         pipe(
-          validateConfig(reader),
+          readConfig(reader),
           Either.mapLeft(errors => new Error(`Errors while reading config:\n${errors.join('\n')}`)),
           IO.fromEither
         )
@@ -29,12 +31,46 @@ export namespace Config {
   }
 }
 
-function validateConfig(reader: ConfReader): ValidatedNea<Config> {
+function readConfig(reader: ConfReader): ValidatedNea<Config> {
   return pipe(
     sequenceT(Either.getValidation(Nea.getSemigroup<string>()))(
-      reader(t.string)('name'),
-      reader(t.string)('discord', 'clientSecret')
+      reader(t.string)('clientSecret'),
+      readLoggerConfig(reader)
     ),
-    Either.map(([name, clientSecret]) => Config(name, clientSecret))
+    Either.map(([clientSecret, loggerConfig]) => Config(clientSecret, loggerConfig))
+  )
+}
+
+export interface LoggerConfig {
+  consoleLevel: LogLevelOrOff
+  discordDM: {
+    level: LogLevelOrOff
+    compact: boolean
+    users: NonEmptyArray<TSnowflake>
+  }
+}
+export function LoggerConfig(
+  consoleLevel: LogLevelOrOff,
+  discordDMlevel: LogLevelOrOff,
+  discordDMCompact: boolean,
+  discordDMUsers: NonEmptyArray<TSnowflake>
+): LoggerConfig {
+  return {
+    consoleLevel,
+    discordDM: { level: discordDMlevel, compact: discordDMCompact, users: discordDMUsers }
+  }
+}
+
+function readLoggerConfig(reader: ConfReader): ValidatedNea<LoggerConfig> {
+  return pipe(
+    sequenceT(Either.getValidation(Nea.getSemigroup<string>()))(
+      reader(LogLevelOrOff.codec)('logger', 'consoleLevel'),
+      reader(LogLevelOrOff.codec)('logger', 'discordDM', 'level'),
+      reader(t.boolean)('logger', 'discordDM', 'compact'),
+      reader(nonEmptyArray(TSnowflake.codec))('logger', 'discordDM', 'users')
+    ),
+    Either.map(([consoleLevel, discordDMlevel, discordDMCompact, discordDMUsers]) =>
+      LoggerConfig(consoleLevel, discordDMlevel, discordDMCompact, discordDMUsers)
+    )
   )
 }

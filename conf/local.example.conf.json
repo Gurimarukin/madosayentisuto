@@ -1,5 +1,11 @@
 {
-  "discord": {
-    "clientSecret": "my discord client secret"
+  "clientSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "logger": {
+    "consoleLevel": "info",
+    "discordDM": {
+      "level": "warn",
+      "compact": true,
+      "users": ["xxxxxxxxxxxxxxxxxx"]
+    }
   }
 }

@@ -1,6 +1,11 @@
 {
-  "name": "Madosayentisuto",
-  "discord": {
-    "clientSecret": ""
+  "clientSecret": "",
+  "logger": {
+    "consoleLevel": "info",
+    "discordDM": {
+      "level": "warn",
+      "compact": true,
+      "users": []
+    }
   }
 }
