@@ -11,6 +11,14 @@ module.exports = {
   ],
   reportUnusedDisableDirectives: true,
   rules: {
+    '@typescript-eslint/array-type': [
+      'error',
+      {
+        default: 'array',
+        readonly: 'array'
+      }
+    ],
+    '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
@@ -18,17 +26,12 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': [
       'error',
       {
-        varsIgnorePattern: '^_$',
-        argsIgnorePattern: '^_$'
+        varsIgnorePattern: '^_',
+        argsIgnorePattern: '^_'
       }
     ],
     '@typescript-eslint/no-var-requires': 'off',
-    '@typescript-eslint/no-use-before-define': [
-      'error',
-      {
-        functions: false
-      }
-    ],
+    '@typescript-eslint/no-use-before-define': 'off',
     'arrow-body-style': ['error', 'as-needed'],
     'array-callback-return': 'off',
     'comma-dangle': [

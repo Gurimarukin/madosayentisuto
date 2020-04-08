@@ -3,7 +3,7 @@ import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as t from 'io-ts'
 
 import { FileUtils } from '../utils/FileUtils'
-import { unknownToError } from '../utils/IOUtils'
+import { unknownToError } from '../utils/unknownToError'
 
 export type ValidatedNea<A> = Either<NonEmptyArray<string>, A>
 
@@ -16,7 +16,7 @@ export namespace ConfReader {
     return pipe(
       parseJsonFiles(path, ...paths),
       IO.map<NonEmptyArray<unknown>, ConfReader>(jsons =>
-        fromJsons(Nea.head(jsons), Nea.tail(jsons))
+        fromJsons(Nea.head(jsons), ...Nea.tail(jsons))
       )
     )
   }
