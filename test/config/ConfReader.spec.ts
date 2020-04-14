@@ -1,6 +1,7 @@
 import * as t from 'io-ts'
 
 import { ConfReader } from '../../src/config/ConfReader'
+import { Either } from '../../src/utils/fp'
 
 describe('ConfReader.fromJsons', () => {
   it('should fail for non object', () => {

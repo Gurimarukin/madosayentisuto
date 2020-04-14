@@ -6,6 +6,7 @@ import { PartialLogger } from './Logger'
 import { Pong } from './Pong'
 import { Config } from '../config/Config'
 import { ObservableE } from '../models/ObservableE'
+import { Do, IO, Try } from '../utils/fp'
 
 export const Application = (initConfig: Config, client: Client): IO<void> => {
   const Logger = PartialLogger(initConfig.logger, client.users)

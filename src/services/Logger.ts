@@ -5,6 +5,7 @@ import { UserManager, MessageEmbed, StringResolvable } from 'discord.js'
 import { LoggerConfig } from '../config/Config'
 import { TSnowflake } from '../models/TSnowflake'
 import { LogLevel, LogLevelOrOff } from '../models/LogLevel'
+import { Do, IO, Future, pipe } from '../utils/fp'
 
 export type Logger = Record<LogLevel, (arg: any, ...args: any[]) => IO<void>>
 

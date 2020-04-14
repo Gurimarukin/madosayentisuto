@@ -1,9 +1,8 @@
 import { Client } from 'discord.js'
 
-import './Global'
-
 import { Config } from './config/Config'
 import { Application } from './services/Application'
+import { Future, Do } from './utils/fp'
 
 function futureClient(config: Config): Future<Client> {
   return Future.apply(

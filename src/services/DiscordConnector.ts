@@ -9,7 +9,9 @@ import {
   ClientUser
 } from 'discord.js'
 import { fromEventPattern } from 'rxjs'
+
 import { ObservableE } from '../models/ObservableE'
+import { Maybe, pipe, Future } from '../utils/fp'
 
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
 

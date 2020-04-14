@@ -4,6 +4,7 @@ import * as Obs from 'fp-ts-rxjs/lib/ObservableEither'
 import { PartialLogger } from './Logger'
 import { DiscordConnector } from './DiscordConnector'
 import { ObservableE } from '../models/ObservableE'
+import { Maybe, pipe, Future } from '../utils/fp'
 
 export const Pong = (
   Logger: PartialLogger,
