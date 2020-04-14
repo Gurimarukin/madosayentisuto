@@ -2,7 +2,7 @@ const _Array = require('fp-ts/lib/Array')
 const _Record = require('fp-ts/lib/Record')
 const _Option = require('fp-ts/lib/Option')
 const _Either = require('fp-ts/lib/Either')
-const _Task = require('fp-ts/lib/TaskEither')
+const _TaskEither = require('fp-ts/lib/TaskEither')
 const _IOEither = require('fp-ts/lib/IOEither')
 const Eq = require('fp-ts/lib/Eq')
 const _identity = require('fp-ts/lib/function').identity
@@ -19,7 +19,16 @@ global.List.contains = a => l => List.elem(Eq.fromEquals((a, b) => isDeepStrictE
 global.Dict = _Record
 global.Maybe = _Option
 global.Either = _Either
-global.Future = _Task
+global.Try = {}
+global.Try.apply = a => Either.tryCatch(a, unknownToError)
+global.Try.get = t =>
+  pipe(
+    t,
+    Either.getOrElse(e => {
+      throw e
+    })
+  )
+global.Future = _TaskEither
 global.Future.apply = f => Future.tryCatch(f, unknownToError)
 global.Future.unit = Future.right(undefined)
 global.Future.parallel = futures => List.array.sequence(Future.taskEither)(futures)
@@ -43,13 +52,7 @@ global.IO.runFuture = f =>
   IO.apply(() => {
     Future.runUnsafe(f)
   })
-global.IO.runUnsafe = io =>
-  pipe(
-    io(),
-    Either.getOrElse(e => {
-      throw e
-    })
-  )
+global.IO.runUnsafe = io => Try.get(io())
 global.identity = _identity
 global.pipe = _pipe
 global.Do = _Do

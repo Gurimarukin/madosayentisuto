@@ -4,8 +4,9 @@ import * as _Array from 'fp-ts/lib/Array'
 import * as _Record from 'fp-ts/lib/Record'
 import * as _Option from 'fp-ts/lib/Option'
 import * as _Either from 'fp-ts/lib/Either'
-import * as Task from 'fp-ts/lib/Task'
-import * as _Task from 'fp-ts/lib/TaskEither'
+import * as _Task from 'fp-ts/lib/Task'
+import * as _TaskEither from 'fp-ts/lib/TaskEither'
+import * as _IO from 'fp-ts/lib/IO'
 import * as _IOEither from 'fp-ts/lib/IOEither'
 import * as Eq from 'fp-ts/lib/Eq'
 import { identity as _identity, Predicate, Lazy } from 'fp-ts/lib/function'
@@ -80,11 +81,38 @@ declare global {
 ;(global as any).Either = _Either
 
 /**
+ * Try
+ */
+declare global {
+  export type Try<A> = Either<Error, A>
+  export const Try: {
+    apply: TryApply
+    get: TryGet
+  }
+}
+
+type TryApply = <A>(a: Lazy<A>) => Try<A>
+type TryGet = <A>(t: Try<A>) => A
+
+const tryApply: TryApply = a => Either.tryCatch(a, unknownToError)
+const tryGet: TryGet = <A>(t: Try<A>) =>
+  pipe(
+    t,
+    Either.getOrElse<Error, A>(e => {
+      throw e
+    })
+  )
+
+;(global as any).Try = {}
+;(global as any).Try.apply = tryApply
+;(global as any).Try.get = tryGet
+
+/**
  * Future
  */
 declare global {
-  export type Future<A> = _Task.TaskEither<Error, A>
-  export const Future: typeof _Task & {
+  export type Future<A> = _Task.Task<Try<A>>
+  export const Future: typeof _TaskEither & {
     apply: FutureApply
     unit: Future<void>
     parallel: FutureParallel
@@ -102,19 +130,9 @@ const futureApply: FutureApply = f => Future.tryCatch(f, unknownToError)
 const futureParallel: FutureParallel = futures => List.array.sequence(Future.taskEither)(futures)
 const futureSequence: FutureSequence = futures => List.array.sequence(Future.taskEitherSeq)(futures)
 const futureRunUnsafe: FutureRunUnsafe = <A>(future: Future<A>) =>
-  pipe(
-    future,
-    Task.map(_ =>
-      pipe(
-        _,
-        Either.getOrElse<Error, A>(e => {
-          throw e
-        })
-      )
-    )
-  )()
+  pipe(future, _Task.map(Try.get))()
 
-;(global as any).Future = _Task
+;(global as any).Future = _TaskEither
 ;(global as any).Future.apply = futureApply
 ;(global as any).Future.unit = Future.right(undefined)
 ;(global as any).Future.parallel = futureParallel
@@ -125,7 +143,7 @@ const futureRunUnsafe: FutureRunUnsafe = <A>(future: Future<A>) =>
  * IO
  */
 declare global {
-  export type IO<A> = _IOEither.IOEither<Error, A>
+  export type IO<A> = _IO.IO<Try<A>>
   export const IO: typeof _IOEither & {
     apply: IOApply
     unit: IO<void>
@@ -139,22 +157,16 @@ type IORunFuture = <A>(f: Future<A>) => IO<void>
 type IORunUnsafe = <A>(io: IO<A>) => A
 
 const ioApply: IOApply = f => IO.tryCatch(f, unknownToError)
-const ioFromFuture: IORunFuture = f =>
+const ioRunFuture: IORunFuture = f =>
   IO.apply(() => {
     Future.runUnsafe(f)
   })
-const ioRunUnsafe: IORunUnsafe = <A>(io: IO<A>) =>
-  pipe(
-    io(),
-    Either.getOrElse<Error, A>(e => {
-      throw e
-    })
-  )
+const ioRunUnsafe: IORunUnsafe = <A>(io: IO<A>) => Try.get(io())
 
 ;(global as any).IO = _IOEither
 ;(global as any).IO.apply = ioApply
 ;(global as any).IO.unit = IO.right(undefined)
-;(global as any).IO.runFuture = ioFromFuture
+;(global as any).IO.runFuture = ioRunFuture
 ;(global as any).IO.runUnsafe = ioRunUnsafe
 
 /**
