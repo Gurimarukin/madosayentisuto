@@ -1,13 +1,24 @@
-import './Global'
+import { Client } from 'discord.js'
 
 import { Config } from './config/Config'
-import { Console } from './utils/Console'
+import { Application } from './services/Application'
+import { Future, Do } from './utils/fp'
 
-function main(): IO<void> {
-  return pipe(
-    Config.load(),
-    IO.chain(config => Console.log('config =', config))
+const main = (): Future<void> =>
+  Do(Future.taskEither)
+    .bind('config', Future.fromIOEither(Config.load()))
+    .bindL('client', ({ config }) => futureClient(config))
+    .bindL('_', ({ config, client }) => Future.fromIOEither(Application(config, client)))
+    .return(() => {})
+
+Future.runUnsafe(main())
+
+const futureClient = (config: Config): Future<Client> =>
+  Future.apply(
+    () =>
+      new Promise<Client>(resolve => {
+        const client = new Client()
+        client.on('ready', () => resolve(client))
+        client.login(config.clientSecret)
+      })
   )
-}
-
-pipe(main()(), Either.mapLeft(_ => { throw _ }))

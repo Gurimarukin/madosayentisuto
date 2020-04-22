@@ -1,3 +1,5 @@
+import { IO } from './fp'
+
 export namespace Console {
   export function log(...a: any[]): IO<void> {
     return IO.apply(() => console.log(...a))
