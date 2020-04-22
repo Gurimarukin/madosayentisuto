@@ -4,17 +4,6 @@ import { Config } from './config/Config'
 import { Application } from './services/Application'
 import { Future, Do } from './utils/fp'
 
-function futureClient(config: Config): Future<Client> {
-  return Future.apply(
-    () =>
-      new Promise<Client>(resolve => {
-        const client = new Client()
-        client.on('ready', () => resolve(client))
-        client.login(config.clientSecret)
-      })
-  )
-}
-
 const main = (): Future<void> =>
   Do(Future.taskEither)
     .bind('config', Future.fromIOEither(Config.load()))
@@ -23,3 +12,13 @@ const main = (): Future<void> =>
     .return(() => {})
 
 Future.runUnsafe(main())
+
+const futureClient = (config: Config): Future<Client> =>
+  Future.apply(
+    () =>
+      new Promise<Client>(resolve => {
+        const client = new Client()
+        client.on('ready', () => resolve(client))
+        client.login(config.clientSecret)
+      })
+  )
