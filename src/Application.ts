@@ -42,15 +42,7 @@ export const Application = (config: Config, client: Client): IO<void> => {
     .bind('_1', logger.info('application started'))
     .bind('_2', subscribe(messagesFlow))
     .return(() => {})
-
-  function subscribe<A>(obs: ObservableE<A>): IO<Subscription> {
-    return IO.apply(() =>
-      obs.subscribe(
-        Either.fold(
-          e => pipe(logger.error(e), IO.runUnsafe),
-          _ => {}
-        )
-      )
-    )
-  }
 }
+
+const subscribe = <A>(obs: ObservableE<A>): IO<Subscription> =>
+  IO.apply(() => obs.subscribe(Try.get))
