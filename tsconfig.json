@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": ".",
-    "noUnusedLocals": false
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   },
   "include": ["src/**/*.ts", "test/**/*.ts", "test/**/*.js"],
   "exclude": ["node_modules", "dist"]

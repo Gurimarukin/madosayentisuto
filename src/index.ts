@@ -1,7 +1,7 @@
 import { Client } from 'discord.js'
 
+import { Application } from './Application'
 import { Config } from './config/Config'
-import { Application } from './services/Application'
 import { Future, Do } from './utils/fp'
 
 const main = (): Future<void> =>

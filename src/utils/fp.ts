@@ -1,6 +1,5 @@
-import { isDeepStrictEqual } from 'util'
-
 import * as _Array from 'fp-ts/lib/Array'
+import * as _NonEmptyArray from 'fp-ts/lib/NonEmptyArray'
 import * as _Record from 'fp-ts/lib/Record'
 import * as _Option from 'fp-ts/lib/Option'
 import * as _Either from 'fp-ts/lib/Either'
@@ -8,13 +7,13 @@ import * as _Task from 'fp-ts/lib/Task'
 import * as _TaskEither from 'fp-ts/lib/TaskEither'
 import * as _IO from 'fp-ts/lib/IO'
 import * as _IOEither from 'fp-ts/lib/IOEither'
-import * as Eq from 'fp-ts/lib/Eq'
 import { identity as _identity, Predicate, Lazy } from 'fp-ts/lib/function'
 import { pipe as _pipe } from 'fp-ts/lib/pipeable'
 
 import { Do as _Do } from 'fp-ts-contrib/lib/Do'
 
-import { unknownToError } from './unknownToError'
+export const unknownToError = (e: unknown): Error =>
+  e instanceof Error ? e : new Error('unknown error')
 
 /**
  * ???
@@ -30,11 +29,14 @@ export const List = {
   ..._Array,
 
   exists: <A>(predicate: Predicate<A>) => (l: A[]): boolean =>
-    pipe(l, List.findIndex(predicate), Maybe.isSome),
-
-  contains: <A>(a: A) => (l: A[]): boolean =>
-    List.elem(Eq.fromEquals((a, b) => isDeepStrictEqual(a, b)))(a, l)
+    pipe(l, List.findIndex(predicate), Maybe.isSome)
 }
+
+/**
+ * NonEmptyArray
+ */
+export type NonEmptyArray<A> = _NonEmptyArray.NonEmptyArray<A>
+export const NonEmptyArray = _NonEmptyArray
 
 /**
  * Record
@@ -59,6 +61,8 @@ export const Either = _Either
  */
 export type Try<A> = Either<Error, A>
 export const Try = {
+  right: <A>(a: A): Try<A> => Either.right(a),
+
   apply: <A>(a: Lazy<A>): Try<A> => Either.tryCatch(a, unknownToError),
 
   get: <A>(t: Try<A>): A =>
@@ -69,6 +73,12 @@ export const Try = {
       })
     )
 }
+
+/**
+ * Task
+ */
+export type Task<A> = _Task.Task<A>
+export const Task = _Task
 
 /**
  * Future

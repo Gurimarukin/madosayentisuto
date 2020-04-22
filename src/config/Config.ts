@@ -12,9 +12,10 @@ import { IO, pipe, Either } from '../utils/fp'
 export interface Config {
   clientSecret: string
   logger: LoggerConfig
+  cmdPrefix: string
 }
-export function Config(clientSecret: string, logger: LoggerConfig): Config {
-  return { clientSecret, logger }
+export function Config(clientSecret: string, logger: LoggerConfig, cmdPrefix: string): Config {
+  return { clientSecret, logger, cmdPrefix }
 }
 
 export namespace Config {
@@ -36,9 +37,10 @@ function readConfig(reader: ConfReader): ValidatedNea<Config> {
   return pipe(
     sequenceT(Either.getValidation(Nea.getSemigroup<string>()))(
       reader(t.string)('clientSecret'),
-      readLoggerConfig(reader)
+      readLoggerConfig(reader),
+      reader(t.string)('cmdPrefix')
     ),
-    Either.map(([clientSecret, loggerConfig]) => Config(clientSecret, loggerConfig))
+    Either.map(_ => Config(..._))
   )
 }
 
@@ -70,8 +72,6 @@ function readLoggerConfig(reader: ConfReader): ValidatedNea<LoggerConfig> {
       reader(t.boolean)('logger', 'discordDM', 'compact'),
       reader(nonEmptyArray(TSnowflake.codec))('logger', 'discordDM', 'users')
     ),
-    Either.map(([consoleLevel, discordDMlevel, discordDMCompact, discordDMUsers]) =>
-      LoggerConfig(consoleLevel, discordDMlevel, discordDMCompact, discordDMUsers)
-    )
+    Either.map(_ => LoggerConfig(..._))
   )
 }
