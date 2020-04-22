@@ -1,46 +1,38 @@
-import * as Obs from 'fp-ts-rxjs/lib/ObservableEither'
 import { Message } from 'discord.js'
 
 import { DiscordConnector } from './DiscordConnector'
 import { PartialLogger } from './Logger'
 import { Config } from '../config/Config'
-import { ObservableE } from '../models/ObservableE'
 import { Maybe, pipe, Future, List, Do, todo } from '../utils/fp'
 import { MessageUtils } from '../utils/MessageUtils'
 
 export const CmdHandler = (Logger: PartialLogger, config: Config, discord: DiscordConnector) => (
-  messages: ObservableE<Message>
-): ObservableE<Maybe<Message>> => {
+  message: Message
+): Future<Maybe<Message>> => {
   const logger = Logger('CmdHandler')
 
   const regex = new RegExp(`^\\s*${config.cmdPrefix}\\s+(.*)$`, 'm')
 
   return pipe(
-    messages,
-    Obs.chain(msg =>
-      pipe(
-        Obs.fromIOEither(logger.debug('got msg:', msg.content)),
-        Obs.map(_ => msg)
+    logger.debug('got message:', message.content),
+    Future.fromIOEither,
+    // return none to prevent message from being passed to next message handler
+    Future.chain(_ => {
+      const isDm = MessageUtils.isDm(message)
+      return pipe(
+        isDm ? Maybe.some(message.content) : withoutPrefix(message.content),
+        Maybe.fold(
+          () => Future.right(Maybe.some(message)),
+          _ =>
+            pipe(
+              Command.parse(isDm, _),
+              handleOptCmd,
+              Future.map(_ => Maybe.none)
+            )
+        )
       )
-    ),
-    Obs.chain(_ => pipe(handleMessage(_), Obs.fromTaskEither))
+    })
   )
-
-  // return none to prevent message from being passed to next message handler
-  function handleMessage(message: Message): Future<Maybe<Message>> {
-    return pipe(
-      MessageUtils.isDm(message) ? Maybe.some(message.content) : withoutPrefix(message.content),
-      Maybe.chain(Command.parse),
-      Maybe.fold(
-        () =>
-          pipe(
-            discord.sendMessage(message.channel, 'TINTIN ?!'),
-            Future.map(_ => Maybe.some(message))
-          ),
-        handleCmd
-      )
-    )
-  }
 
   function withoutPrefix(msg: string): Maybe<string> {
     return pipe(
@@ -49,9 +41,18 @@ export const CmdHandler = (Logger: PartialLogger, config: Config, discord: Disco
     )
   }
 
-  function handleCmd(cmd: Command): Future<Maybe<Message>> {
-    console.log('cmd =', cmd)
+  function handleOptCmd(cmd: Maybe<Command>): Future<unknown> {
+    return pipe(
+      cmd,
+      Maybe.fold(() => discord.sendMessage(message.channel, 'TINTIN ?!'), handleCmd)
+    )
+  }
+
+  function handleCmd(cmd: Command): Future<unknown> {
     switch (cmd._tag) {
+      case 'Tintin':
+        return discord.sendMessage(message.channel, 'TINTIN.')
+
       case 'SpamUs':
         return Future.right(todo())
 
@@ -61,49 +62,62 @@ export const CmdHandler = (Logger: PartialLogger, config: Config, discord: Disco
   }
 }
 
-type Command = Command.SpamUs | Command.IgnoreCallsFrom
+type Command = Command.Tintin | Command.SpamUs | Command.IgnoreCallsFrom
 
 export namespace Command {
+  export interface Tintin {
+    _tag: 'Tintin'
+  }
+  export const Tintin: Command = { _tag: 'Tintin' }
+
   export interface SpamUs {
     _tag: 'SpamUs'
-    prefix: 'spamUs'
   }
-  export const SpamUs: Command = { _tag: 'SpamUs', prefix: 'spamUs' }
+  export const SpamUs: Command = { _tag: 'SpamUs' }
 
   export interface IgnoreCallsFrom {
     _tag: 'IgnoreCallsFrom'
-    prefix: 'ignoreCallsFrom'
     user: string
   }
-  const ignoreCallsFromPrefix: IgnoreCallsFrom['prefix'] = 'ignoreCallsFrom'
   export const IgnoreCallsFrom = (user: string): Command => ({
     _tag: 'IgnoreCallsFrom',
-    prefix: ignoreCallsFromPrefix,
     user
   })
 
-  export const parse = (cmd: string): Maybe<Command> =>
+  export const parse = (isDm: boolean, cmd: string): Maybe<Command> =>
     pipe(
       parseFirstWord(cmd),
       Maybe.chain(([first, remain]) =>
         pipe(
-          parseSpamUs(first, remain),
-          Maybe.alt(() => parseIgnoreCallsFrom(first, remain))
+          parseTintin(first, remain),
+          Maybe.alt(() => parseSpamUs(isDm, first, remain)),
+          Maybe.alt(() => parseIgnoreCallsFrom(isDm, first, remain))
         )
       )
     )
 
-  const parseSpamUs = (first: string, remain: Maybe<string>): Maybe<Command> =>
+  const parseTintin = (first: string, remain: Maybe<string>): Maybe<Command> =>
     pipe(
       first,
-      Maybe.fromPredicate(_ => _ === SpamUs.prefix && Maybe.isNone(remain)),
+      Maybe.fromPredicate(_ => _ === 'tintin' && Maybe.isNone(remain)),
+      Maybe.map(_ => Tintin)
+    )
+
+  const parseSpamUs = (isDm: boolean, first: string, remain: Maybe<string>): Maybe<Command> =>
+    pipe(
+      first,
+      Maybe.fromPredicate(_ => _ === 'spamUs' && Maybe.isNone(remain) && !isDm),
       Maybe.map(_ => SpamUs)
     )
 
-  const parseIgnoreCallsFrom = (first: string, remain: Maybe<string>): Maybe<Command> =>
+  const parseIgnoreCallsFrom = (
+    isDm: boolean,
+    first: string,
+    remain: Maybe<string>
+  ): Maybe<Command> =>
     pipe(
       first,
-      Maybe.fromPredicate(_ => _ === ignoreCallsFromPrefix),
+      Maybe.fromPredicate(_ => _ === 'ignoreCallsFrom' && !isDm),
       Maybe.chain(_ => remain),
       Maybe.chain(parseMention),
       Maybe.map(IgnoreCallsFrom)

@@ -1,3 +1,5 @@
+import * as io from 'fp-ts/lib/IO'
+
 import * as O from 'fp-ts-rxjs/lib/Observable'
 import * as Obs from 'fp-ts-rxjs/lib/ObservableEither'
 import { Client } from 'discord.js'
@@ -9,7 +11,7 @@ import { CmdHandler } from './services/CmdHandler'
 import { Pong } from './services/Pong'
 import { Config } from './config/Config'
 import { ObservableE } from './models/ObservableE'
-import { Do, IO, Try, pipe, Either, List, Maybe, todo } from './utils/fp'
+import { Do, IO, Try, pipe, Either, List, Maybe, todo, Future } from './utils/fp'
 
 export const Application = (config: Config, client: Client): IO<void> => {
   const Logger = PartialLogger(config.logger, client.users)
@@ -32,8 +34,14 @@ export const Application = (config: Config, client: Client): IO<void> => {
     messageHandlers,
     List.reduce(messagesFromOthers, (messages, f) =>
       pipe(
-        f(messages),
-        Obs.chain(_ => pipe(O.fromOption(_), O.map(Try.right)))
+        messages,
+        Obs.chain(_ =>
+          pipe(
+            Future.apply(() => Future.runUnsafe(f(_))),
+            Obs.fromTaskEither,
+            Obs.chain(_ => pipe(O.fromOption(_), O.map(Try.right)))
+          )
+        )
       )
     )
   )
@@ -42,7 +50,18 @@ export const Application = (config: Config, client: Client): IO<void> => {
     .bind('_1', logger.info('application started'))
     .bind('_2', subscribe(messagesFlow))
     .return(() => {})
-}
 
-const subscribe = <A>(obs: ObservableE<A>): IO<Subscription> =>
-  IO.apply(() => obs.subscribe(Try.get))
+  function subscribe<A>(obs: ObservableE<A>): IO<Subscription> {
+    return IO.apply(() =>
+      obs.subscribe(_ =>
+        pipe(
+          _,
+          Either.fold(
+            e => pipe(logger.error(e.stack), IO.runUnsafe),
+            _ => {}
+          )
+        )
+      )
+    )
+  }
+}
