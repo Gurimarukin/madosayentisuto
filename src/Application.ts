@@ -9,16 +9,19 @@ import { PartialLogger } from './services/Logger'
 import { MessagesHandler } from './services/MessagesHandler'
 import { VoiceStateUpdatesHandler } from './services/VoiceStateUpdatesHandler'
 import { Do, IO, pipe, Either, Future, Try } from './utils/fp'
+import { ReferentialService } from './services/ReferentialService'
 
 export const Application = (config: Config, client: Client): IO<void> => {
   const Logger = PartialLogger(config.logger, client.users)
 
   const logger = Logger('Application')
 
+  const referentialService = ReferentialService(Logger)
+
   const discord = DiscordConnector(client)
 
   const messagesHandler = MessagesHandler(Logger, config, discord)
-  const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger)
+  const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService)
 
   return Do(IO.ioEither)
     .bind('_1', logger.info('application started'))

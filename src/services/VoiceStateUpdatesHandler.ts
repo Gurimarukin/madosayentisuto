@@ -1,11 +1,13 @@
-import { GuildMember, VoiceChannel } from 'discord.js'
+import { GuildMember, VoiceChannel, Guild } from 'discord.js'
 
 import { PartialLogger } from './Logger'
+import { ReferentialService } from './ReferentialService'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
-import { Future, Maybe, pipe } from '../utils/fp'
+import { Future, Maybe, pipe, List } from '../utils/fp'
 
 export const VoiceStateUpdatesHandler = (
-  Logger: PartialLogger
+  Logger: PartialLogger,
+  _referentialService: ReferentialService
 ): ((voiceStateUpdate: VoiceStateUpdate) => Future<unknown>) => {
   const logger = Logger('VoiceStateUpdatesHandler')
 
@@ -32,7 +34,18 @@ export const VoiceStateUpdatesHandler = (
         `[${channel.guild.name}]`,
         `${user.displayName} joined the channel "${channel.name}"`
       ),
-      Future.fromIOEither
+      Future.fromIOEither,
+      Future.chain(_ =>
+        peopleInVocalChans(channel.guild) === 1
+          ? pipe(
+              logger.debug(
+                `[${channel.guild.name}]`,
+                `Call started by ${user.displayName} in "${channel.name}"`
+              ),
+              Future.fromIOEither
+            )
+          : Future.unit
+      )
     )
   }
 
@@ -56,7 +69,15 @@ export const VoiceStateUpdatesHandler = (
         `[${channel.guild.name}]`,
         `${user.displayName} left the channel "${channel.name}"`
       ),
-      Future.fromIOEither
+      Future.fromIOEither,
+      Future.chain(_ =>
+        peopleInVocalChans(channel.guild) === 0
+          ? pipe(
+              logger.debug(`[${channel.guild.name}]`, `Call ended in "${channel.name}"`),
+              Future.fromIOEither
+            )
+          : Future.unit
+      )
     )
   }
 }
@@ -71,4 +92,11 @@ const getUser = (voiceStateUpdate: VoiceStateUpdate): Maybe<GuildMember> =>
         Maybe.filter(_ => _.id === u.id)
       )
     )
+  )
+
+const peopleInVocalChans = (guild: Guild): number =>
+  pipe(
+    guild.channels.cache.array(),
+    List.filter(_ => _.type === 'voice'),
+    List.reduce(0, (acc, chan) => acc + chan.members.size)
   )
