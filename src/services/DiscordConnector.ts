@@ -10,6 +10,7 @@ import {
 import { fromEventPattern } from 'rxjs'
 
 import { ObservableE } from '../models/ObservableE'
+import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
 import { Maybe, pipe, Future } from '../utils/fp'
 
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
@@ -26,11 +27,20 @@ export const DiscordConnector = (client: Client) => {
     Obs.rightObservable
   )
 
+  const voiceStateUpdates: ObservableE<VoiceStateUpdate> = pipe(
+    fromEventPattern<VoiceStateUpdate>(handler =>
+      client.on('voiceStateUpdate', (oldState, newState) =>
+        handler(VoiceStateUpdate(oldState, newState))
+      )
+    ),
+    Obs.rightObservable
+  )
+
   const sendMessage = (
     channel: PartialTextBasedChannelFields,
     content: StringResolvable,
     options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
   ): Future<Message> => Future.apply(() => channel.send(content, options))
 
-  return { isFromSelf, messages, sendMessage }
+  return { isFromSelf, messages, voiceStateUpdates, sendMessage }
 }
