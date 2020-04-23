@@ -4,18 +4,18 @@ export type Command = Command.Tintin | Command.SpamUsHere | Command.IgnoreCallsF
 
 export namespace Command {
   export interface Tintin {
-    _tag: 'Tintin'
+    readonly _tag: 'Tintin'
   }
   export const Tintin: Command = { _tag: 'Tintin' }
 
   export interface SpamUsHere {
-    _tag: 'SpamUsHere'
+    readonly _tag: 'SpamUsHere'
   }
   export const SpamUsHere: Command = { _tag: 'SpamUsHere' }
 
   export interface IgnoreCallsFrom {
-    _tag: 'IgnoreCallsFrom'
-    user: string
+    readonly _tag: 'IgnoreCallsFrom'
+    readonly user: string
   }
   export const IgnoreCallsFrom = (user: string): Command => ({
     _tag: 'IgnoreCallsFrom',

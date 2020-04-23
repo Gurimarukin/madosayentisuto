@@ -10,9 +10,9 @@ import { TSnowflake } from '../models/TSnowflake'
 import { IO, pipe, Either } from '../utils/fp'
 
 export interface Config {
-  clientSecret: string
-  logger: LoggerConfig
-  cmdPrefix: string
+  readonly clientSecret: string
+  readonly logger: LoggerConfig
+  readonly cmdPrefix: string
 }
 export function Config(clientSecret: string, logger: LoggerConfig, cmdPrefix: string): Config {
   return { clientSecret, logger, cmdPrefix }
@@ -45,11 +45,11 @@ function readConfig(reader: ConfReader): ValidatedNea<Config> {
 }
 
 export interface LoggerConfig {
-  consoleLevel: LogLevelOrOff
-  discordDM: {
-    level: LogLevelOrOff
-    compact: boolean
-    users: NonEmptyArray<TSnowflake>
+  readonly consoleLevel: LogLevelOrOff
+  readonly discordDM: {
+    readonly level: LogLevelOrOff
+    readonly compact: boolean
+    readonly users: NonEmptyArray<TSnowflake>
   }
 }
 export function LoggerConfig(

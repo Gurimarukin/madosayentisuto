@@ -13,55 +13,51 @@ export type ConfReader = <A>(
 ) => (path: string, ...paths: string[]) => ValidatedNea<A>
 
 export namespace ConfReader {
-  export function fromFiles(path: string, ...paths: string[]): IO<ConfReader> {
-    return pipe(
+  export const fromFiles = (path: string, ...paths: string[]): IO<ConfReader> =>
+    pipe(
       parseJsonFiles(path, ...paths),
       IO.map<NonEmptyArray<unknown>, ConfReader>(jsons =>
         fromJsons(Nea.head(jsons), ...Nea.tail(jsons))
       )
     )
-  }
 
-  export function fromJsons(json: unknown, ...jsons: unknown[]): ConfReader {
-    return <A>(codec: t.Decoder<unknown, A>) => (
-      path: string,
-      ...paths: string[]
-    ): ValidatedNea<A> => {
-      const allPaths: NonEmptyArray<string> = [path, ...paths]
+  export const fromJsons = (json: unknown, ...jsons: unknown[]): ConfReader => <A>(
+    codec: t.Decoder<unknown, A>
+  ) => (path: string, ...paths: string[]): ValidatedNea<A> => {
+    const allPaths: NonEmptyArray<string> = [path, ...paths]
 
-      const valueForPath = pipe(
-        jsons.reduce<Maybe<unknown>>(
-          (acc, json) =>
-            pipe(
-              acc,
-              Maybe.alt(() => readPath(allPaths, json))
-            ),
-          readPath(allPaths, json)
-        ),
-        Either.fromOption(() => Nea.of('missing key'))
-      )
-
-      return pipe(
-        valueForPath,
-        Either.chain(val =>
+    const valueForPath = pipe(
+      jsons.reduce<Maybe<unknown>>(
+        (acc, json) =>
           pipe(
-            codec.decode(val),
-            Either.mapLeft(
-              errors =>
-                errors.map(
-                  _ => `expected ${codec.name} got ${JSON.stringify(_.value)}`
-                ) as NonEmptyArray<string>
-            )
+            acc,
+            Maybe.alt(() => readPath(allPaths, json))
+          ),
+        readPath(allPaths, json)
+      ),
+      Either.fromOption(() => Nea.of('missing key'))
+    )
+
+    return pipe(
+      valueForPath,
+      Either.chain(val =>
+        pipe(
+          codec.decode(val),
+          Either.mapLeft(
+            errors =>
+              errors.map(
+                _ => `expected ${codec.name} got ${JSON.stringify(_.value)}`
+              ) as NonEmptyArray<string>
           )
-        ),
-        Either.mapLeft(Nea.map(_ => `key ${allPaths.join('.')}: ${_}`))
-      )
-    }
+        )
+      ),
+      Either.mapLeft(Nea.map(_ => `key ${allPaths.join('.')}: ${_}`))
+    )
   }
 }
 
-function parseJsonFiles(path: string, ...paths: string[]): IO<NonEmptyArray<unknown>> {
-  return paths.reduce(
+const parseJsonFiles = (path: string, ...paths: string[]): IO<NonEmptyArray<unknown>> =>
+  paths.reduce(
     (acc, path) =>
       Do(IO.ioEither)
         .bindL('acc', () => acc)
@@ -69,16 +65,14 @@ function parseJsonFiles(path: string, ...paths: string[]): IO<NonEmptyArray<unkn
         .return(({ acc, newConf }) => Nea.snoc(acc, newConf)),
     pipe(loadConfigFile(path), IO.map(Nea.of))
   )
-}
 
-function loadConfigFile(path: string): IO<unknown> {
-  return pipe(
+const loadConfigFile = (path: string): IO<unknown> =>
+  pipe(
     FileUtils.readFileSync(path),
     IO.chain(_ => IO.fromEither(Either.parseJSON(_, unknownToError)))
   )
-}
 
-function readPath(paths: string[], val: unknown): Maybe<unknown> {
+const readPath = (paths: string[], val: unknown): Maybe<unknown> => {
   if (List.isEmpty(paths)) return Maybe.some(val)
 
   const [head, ...tail] = paths

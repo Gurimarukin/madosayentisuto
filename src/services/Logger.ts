@@ -60,11 +60,10 @@ export const PartialLogger = (
   return { debug, info, warn, error }
 }
 
-function shouldLog(setLevel: LogLevelOrOff, level: LogLevel): boolean {
-  return LogLevelOrOff.value[setLevel] >= LogLevelOrOff.value[level]
-}
+const shouldLog = (setLevel: LogLevelOrOff, level: LogLevel): boolean =>
+  LogLevelOrOff.value[setLevel] >= LogLevelOrOff.value[level]
 
-function formatConsole(name: string, level: LogLevel, msg: string): string {
+const formatConsole = (name: string, level: LogLevel, msg: string): string => {
   const withName = `${name} - ${msg}`
   const withTimestamp = `${color(fmt('yyyy/mm/dd HH:MM:ss'), '30;1')} ${withName}`
   const c = LogLevel.shellColor[level]
@@ -73,17 +72,14 @@ function formatConsole(name: string, level: LogLevel, msg: string): string {
     : `[${color(level.toUpperCase(), c)}] ${withTimestamp}`
 }
 
-function formatDMCompact(name: string, level: LogLevel, msg: string): string {
+const formatDMCompact = (name: string, level: LogLevel, msg: string): string => {
   const withName = `${name} - ${msg}`
   return level === 'info' || level === 'warn'
     ? `\`[${level.toUpperCase()}]  ${withName}\``
     : `\`[${level.toUpperCase()}] ${withName}\``
 }
 
-function formatDMEmbed(name: string, level: LogLevel, msg: string): MessageEmbed {
-  return new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`)
-}
+const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageEmbed =>
+  new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`)
 
-function color(s: string, c: string): string {
-  return process.stdout.isTTY ? `\x1B[${c}m${s}\x1B[0m` : s
-}
+const color = (s: string, c: string): string => (process.stdout.isTTY ? `\x1B[${c}m${s}\x1B[0m` : s)
