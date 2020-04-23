@@ -89,7 +89,7 @@ export const Future = {
 
   apply: <A>(f: Lazy<Promise<A>>): Future<A> => Future.tryCatch(f, unknownToError),
 
-  unit: _TaskEither.right(undefined),
+  unit: _TaskEither.right<Error, void>(undefined),
 
   parallel: <A>(futures: Future<A>[]): Future<A[]> =>
     List.array.sequence(Future.taskEither)(futures),
