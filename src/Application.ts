@@ -21,7 +21,7 @@ export const Application = (config: Config, client: Client): IO<void> => {
   const discord = DiscordConnector(client)
 
   const messagesHandler = MessagesHandler(Logger, config, discord)
-  const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService)
+  const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService, discord)
 
   return Do(IO.ioEither)
     .bind('_1', logger.info('application started'))

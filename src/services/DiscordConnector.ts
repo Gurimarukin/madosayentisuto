@@ -5,13 +5,15 @@ import {
   PartialTextBasedChannelFields,
   StringResolvable,
   MessageOptions,
-  MessageAdditions
+  MessageAdditions,
+  Channel
 } from 'discord.js'
 import { fromEventPattern } from 'rxjs'
 
 import { ObservableE } from '../models/ObservableE'
+import { TSnowflake } from '../models/TSnowflake'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
-import { Maybe, pipe, Future } from '../utils/fp'
+import { Maybe, pipe, Future, Task, Either } from '../utils/fp'
 
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
 
@@ -42,5 +44,11 @@ export const DiscordConnector = (client: Client) => {
     options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
   ): Future<Message> => Future.apply(() => channel.send(content, options))
 
-  return { isFromSelf, messages, voiceStateUpdates, sendMessage }
+  const fetchChannel = (channel: TSnowflake): Future<Maybe<Channel>> =>
+    pipe(
+      Future.apply(() => client.channels.fetch(TSnowflake.unwrap(channel))),
+      Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
+    )
+
+  return { isFromSelf, messages, voiceStateUpdates, sendMessage, fetchChannel }
 }

@@ -1,13 +1,16 @@
 import { GuildMember, VoiceChannel, Guild } from 'discord.js'
 
+import { DiscordConnector } from './DiscordConnector'
 import { PartialLogger } from './Logger'
 import { ReferentialService } from './ReferentialService'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
+import { ChannelUtils, SendableChannel } from '../utils/ChannelUtils'
 import { Future, Maybe, pipe, List } from '../utils/fp'
 
 export const VoiceStateUpdatesHandler = (
   Logger: PartialLogger,
-  _referentialService: ReferentialService
+  referentialService: ReferentialService,
+  discord: DiscordConnector
 ): ((voiceStateUpdate: VoiceStateUpdate) => Future<unknown>) => {
   const logger = Logger('VoiceStateUpdatesHandler')
 
@@ -28,6 +31,9 @@ export const VoiceStateUpdatesHandler = (
       Maybe.getOrElse<Future<unknown>>(() => Future.unit)
     )
 
+  /**
+   * Event handlers
+   */
   function onJoinedChannel(user: GuildMember, channel: VoiceChannel): Future<unknown> {
     return pipe(
       logger.debug(
@@ -36,15 +42,7 @@ export const VoiceStateUpdatesHandler = (
       ),
       Future.fromIOEither,
       Future.chain(_ =>
-        peopleInVocalChans(channel.guild) === 1
-          ? pipe(
-              logger.debug(
-                `[${channel.guild.name}]`,
-                `Call started by ${user.displayName} in "${channel.name}"`
-              ),
-              Future.fromIOEither
-            )
-          : Future.unit
+        peopleInVocalChans(channel.guild) === 1 ? notifyCallStarted(user, channel) : Future.unit
       )
     )
   }
@@ -77,6 +75,47 @@ export const VoiceStateUpdatesHandler = (
               Future.fromIOEither
             )
           : Future.unit
+      )
+    )
+  }
+
+  /**
+   * Helpers
+   */
+  function notifyCallStarted(user: GuildMember, channel: VoiceChannel): Future<unknown> {
+    return pipe(
+      logger.debug(
+        `[${channel.guild.name}]`,
+        `Call started by ${user.displayName} in "${channel.name}"`
+      ),
+      Future.fromIOEither,
+      Future.chain(_ =>
+        Future.parallel(
+          pipe(
+            referentialService.channelsToSpamOnCall(channel.guild, user),
+            List.map(id =>
+              pipe(
+                discord.fetchChannel(id),
+                Future.chain(_ =>
+                  pipe(
+                    _,
+                    Maybe.filter(ChannelUtils.isSendable),
+                    Maybe.fold<SendableChannel, Future<unknown>>(
+                      () =>
+                        pipe(
+                          logger.warn(
+                            `Couldn't notify channel with id "${id}" of a call in server "${channel.guild}"`
+                          ),
+                          Future.fromIOEither
+                        ),
+                      _ => discord.sendMessage(_, 'Gibier de potence, un appel a commencé...')
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
       )
     )
   }
