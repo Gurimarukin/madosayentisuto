@@ -57,7 +57,7 @@ const parseRec = <A>(cmd: Command<A>, args: string[], context: Command<A>[]): Ei
                 List.head(tail),
                 Maybe.fold(
                   () => Either.right(_),
-                  _ => Either.left('To many arguments')
+                  _ => Either.left(Command.help(newContext, 'To many arguments'))
                 )
               ),
             onSubcommand: _ => parseRec(_, tail, newContext),

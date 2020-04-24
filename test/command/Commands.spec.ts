@@ -17,6 +17,21 @@ describe('Cli.adminTextChannel', () => {
     expect(result).toEqual(Either.right(Commands.CallsUnsubscribe))
   })
 
+  it('should parse "okb calls unsubscribe unused"', () => {
+    const args = ['okb', 'calls', 'unsubscribe', 'unused']
+    const result = pipe(Cli.adminTextChannel, Command.parse(args))
+    expect(result).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `To many arguments
+          |Usage:
+          |    okb calls subscribe
+          |    okb calls unsubscribe`
+        )
+      )
+    )
+  })
+
   it('should return help for ""', () => {
     const result = pipe(Cli.adminTextChannel, Command.parse([]))
     expect(result).toEqual(
