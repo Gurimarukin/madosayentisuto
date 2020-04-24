@@ -73,6 +73,20 @@ describe('Cli.adminTextChannel', () => {
     )
   })
 
+  it('should return help for "okb baka"', () => {
+    const args = ['okb', 'baka']
+    const result = pipe(Cli.adminTextChannel, Command.parse(args))
+    expect(result).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Unexpected argument: baka
+          |Usage:
+          |    okb calls`
+        )
+      )
+    )
+  })
+
   it('should return help for "okb calls"', () => {
     const args = ['okb', 'calls']
     const result = pipe(Cli.adminTextChannel, Command.parse(args))
