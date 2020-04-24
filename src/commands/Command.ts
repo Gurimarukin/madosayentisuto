@@ -13,109 +13,89 @@ export function Command(name: string): <A>(opts: Opts<A>) => Command<A> {
 
 export namespace Command {
   export const parse = (args: string[]) => <A>(cmd: Command<A>): Either<string, A> =>
-    parseRec(args, cmd, Maybe.none, [])
+    parseRec(cmd, args, [])
 
-  export const help = <A>(
-    cmd: Command<A>,
-    parent: Maybe<Opts<A>>,
-    acc: string[],
-    message: string
-  ) => {
+  export const help = <A>(context: NonEmptyArray<Command<A>>, message: string) => {
+    const init = NonEmptyArray.init(context)
     const usages = pipe(
-      parent,
-      Maybe.chain(subcommands),
-      Maybe.fold(
-        () => `    ${[...acc, cmd.name].join(' ')}`,
-        _ => _.map(_ => `    ${[...acc, _.command.name].join(' ')}`).join('\n')
-      )
+      siblingsOfLast(context),
+      NonEmptyArray.map(cmd => {
+        const res = List.snoc(init, cmd)
+          .map(_ => _.name)
+          .join(' ')
+        return `    ${res}`
+      })
     )
     return StringUtils.stripMargins(
       `${message}
       |Usage:
-      |${usages}`
+      |${usages.join('\n')}`
     )
   }
 }
 
-const parseRec = <A>(
-  args: string[],
-  cmd: Command<A>,
-  parent: Maybe<Opts<A>>,
-  acc: string[]
-): Either<string, A> => {
+const parseRec = <A>(cmd: Command<A>, args: string[], context: Command<A>[]): Either<string, A> => {
   const head = List.head(args)
-
+  const newContext = List.snoc(context, cmd)
   return pipe(
     head,
-    Either.fromOption(() => Command.help(cmd, parent, acc, missingCommand(cmd, parent))),
+    Either.fromOption(() => Command.help(newContext, missingCommand(newContext))),
     Either.filterOrElse(
       _ => _ === cmd.name,
-      _ => Command.help(cmd, parent, acc, `Unknown command ${_}`)
+      _ => Command.help(newContext, `Unknown command ${_}`)
     ),
     Either.chain(_ => {
       const [, ...tail] = args
-      return parseOpts(tail, cmd.opts, cmd, parent, List.snoc(acc, cmd.name))
+      return parseOpts(cmd.opts)
+
+      function parseOpts(opts: Opts<A>): Either<string, A> {
+        return pipe(
+          opts,
+          Opts.fold({
+            onPure: _ =>
+              pipe(
+                List.head(tail),
+                Maybe.fold(
+                  () => Either.right(_),
+                  _ => Either.left('To many arguments')
+                )
+              ),
+            onSubcommand: _ => parseRec(_, tail, newContext),
+            onOrElse: (a, b) =>
+              pipe(
+                parseOpts(a),
+                Either.orElse(_ => parseOpts(b()))
+              )
+          })
+        )
+      }
     })
   )
 }
 
-const missingCommand = <A>(cmd: Command<A>, parent: Maybe<Opts<A>>): string => {
-  const names = pipe(
-    parent,
-    Maybe.filter(Opts.isOrElse),
+const missingCommand = <A>(context: NonEmptyArray<Command<A>>): string =>
+  `Missing expected command (${siblingsOfLast(context)
+    .map(_ => _.name)
+    .join(' or ')})`
+
+const siblingsOfLast = <A>(context: NonEmptyArray<Command<A>>): NonEmptyArray<Command<A>> =>
+  pipe(
+    context,
+    NonEmptyArray.init,
+    List.last,
     Maybe.fold(
-      () => [cmd.name],
-      _ => {
-        const subs = subcommands(_)
-        return pipe(
-          subs,
-          Maybe.fold(
-            () => [cmd.name],
-            _ => _.map(_ => _.command.name)
-          )
+      () => pipe(context, NonEmptyArray.last, NonEmptyArray.of),
+      parentOfLast =>
+        pipe(
+          Opts.flatten(parentOfLast.opts),
+          NonEmptyArray.chain(opt => {
+            switch (opt._tag) {
+              case 'Pure':
+                return pipe(context, NonEmptyArray.last, NonEmptyArray.of)
+              case 'Subcommand':
+                return NonEmptyArray.of(opt.command)
+            }
+          })
         )
-      }
     )
   )
-  return `Missing expected command (${names.join(' or ')})`
-}
-
-const parseOpts = <A>(
-  args: string[],
-  opts: Opts<A>,
-  cmd: Command<A>,
-  parent: Maybe<Opts<A>>,
-  acc: string[]
-): Either<string, A> => {
-  switch (opts._tag) {
-    case 'Pure':
-      const head = List.head(args)
-      return Maybe.isNone(head)
-        ? Either.right(opts.a)
-        : Either.left(Command.help(cmd, parent, acc, `To many arguments`))
-
-    case 'Subcommand':
-      return parseRec(args, opts.command, parent, acc)
-
-    case 'OrElse':
-      return pipe(
-        parseOpts(args, opts.a, cmd, Maybe.some(opts), acc),
-        Either.orElse(_ => parseOpts(args, opts.b(), cmd, Maybe.some(opts), acc))
-      )
-  }
-}
-
-const subcommands = <A>(opts: Opts<A>): Maybe<NonEmptyArray<Opts.Subcommand<A>>> =>
-  Opts.isSubcommand(opts)
-    ? Maybe.some(NonEmptyArray.of(opts))
-    : Opts.isOrElse(opts)
-    ? subcommandsFromOrElse(opts)
-    : Maybe.none
-
-const subcommandsFromOrElse = <A>(
-  opts: Opts.OrElse<A>
-): Maybe<NonEmptyArray<Opts.Subcommand<A>>> => {
-  const a = Maybe.getOrElse<Opts.Subcommand<A>[]>(() => [])(subcommands(opts.a))
-  const b = Maybe.getOrElse<Opts.Subcommand<A>[]>(() => [])(subcommands(opts.b()))
-  return NonEmptyArray.fromArray([...a, ...b])
-}
