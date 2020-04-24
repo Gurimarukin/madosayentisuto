@@ -61,7 +61,18 @@ export const Dict = {
  * Option
  */
 export type Maybe<A> = _Option.Option<A>
-export const Maybe = _Option
+export const Maybe = {
+  ..._Option,
+
+  toArray: <A>(opt: _Option.Option<A>): A[] =>
+    pipe(
+      opt,
+      _Option.fold(
+        () => [],
+        _ => [_]
+      )
+    )
+}
 
 /**
  * Either
