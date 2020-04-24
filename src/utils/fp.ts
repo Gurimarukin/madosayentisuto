@@ -42,7 +42,20 @@ export const NonEmptyArray = _NonEmptyArray
  * Record
  */
 export type Dict<A> = Record<string, A>
-export const Dict = _Record
+export const Dict = {
+  ..._Record,
+
+  insertOrUpdateAt: <K extends string, A>(k: K, a: A, update: (a: A) => A) => (
+    record: Record<K, A>
+  ): Record<K, A> =>
+    pipe(
+      _Record.lookup(k, record),
+      _Option.fold(
+        () => pipe(record, _Record.insertAt(k, a)),
+        _ => pipe(record, _Record.insertAt(k, update(_)))
+      )
+    )
+}
 
 /**
  * Option
