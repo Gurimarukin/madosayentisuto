@@ -42,7 +42,7 @@ const parseRec = <A>(cmd: Command<A>, args: string[], context: Command<A>[]): Ei
     Either.fromOption(() => Command.help(newContext, missingCommand(newContext))),
     Either.filterOrElse(
       _ => _ === cmd.name,
-      _ => Command.help(newContext, `Unknown command ${_}`)
+      _ => Command.help(newContext, `Unexpected argument: ${_}`)
     ),
     Either.chain(_ => {
       const [, ...tail] = args
