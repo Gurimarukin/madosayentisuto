@@ -17,7 +17,13 @@ describe('Cli.adminTextChannel', () => {
     expect(result).toEqual(Either.right(Commands.CallsUnsubscribe))
   })
 
-  it('should parse "okb calls unsubscribe unused"', () => {
+  it('should parse "calls ignore toto"', () => {
+    const args = ['calls', 'ignore', 'toto']
+    const result = pipe(Cli.adminTextChannel, Command.parse(args))
+    expect(result).toEqual(Either.right(Commands.CallsIgnore('toto')))
+  })
+
+  it('should parse "calls unsubscribe unused"', () => {
     const args = ['calls', 'unsubscribe', 'unused']
     const result = pipe(Cli.adminTextChannel, Command.parse(args))
     expect(result).toEqual(
@@ -26,7 +32,8 @@ describe('Cli.adminTextChannel', () => {
           `To many arguments
           |Usage:
           |    calls subscribe
-          |    calls unsubscribe`
+          |    calls unsubscribe
+          |    calls ignore <user>`
         )
       )
     )
@@ -68,7 +75,8 @@ describe('Cli.adminTextChannel', () => {
           `Unexpected argument: baka
           |Usage:
           |    calls subscribe
-          |    calls unsubscribe`
+          |    calls unsubscribe
+          |    calls ignore <user>`
         )
       )
     )

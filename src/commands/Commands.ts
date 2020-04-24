@@ -6,4 +6,9 @@ export namespace Commands {
 
   export type CallsUnsubscribe = 'CallsUnsubscribe'
   export const CallsUnsubscribe: CallsUnsubscribe = 'CallsUnsubscribe'
+
+  export interface CallsIgnore {
+    user: string
+  }
+  export const CallsIgnore = (user: string): CallsIgnore => ({ user })
 }
