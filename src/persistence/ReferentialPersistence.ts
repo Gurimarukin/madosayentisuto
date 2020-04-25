@@ -19,16 +19,21 @@ export const ReferentialPersistence = (
 
   const set = (referential: Referential): Future<boolean> =>
     pipe(
-      collection.count({}),
-      Future.chain(n =>
-        n > 1
-          ? pipe(
-              collection.drop(),
-              Future.chain(_ => collection.insertOne(referential))
+      collection.findOne({}),
+      Future.chain(
+        Maybe.fold(
+          () =>
+            pipe(
+              collection.insertOne(referential),
+              Future.map(_ => _.insertedCount === 1)
+            ),
+          _ =>
+            pipe(
+              collection.replaceOne({}, referential, { upsert: true }),
+              Future.map(_ => _.upsertedCount === 1)
             )
-          : collection.insertOne(referential)
-      ),
-      Future.map(_ => _.insertedCount === 1)
+        )
+      )
     )
 
   return { get, set }
