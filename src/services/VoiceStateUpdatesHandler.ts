@@ -108,7 +108,11 @@ export const VoiceStateUpdatesHandler = (
                           ),
                           Future.fromIOEither
                         ),
-                      _ => discord.sendMessage(_, 'Gibier de potence, un appel a commencé...')
+                      _ =>
+                        discord.sendMessage(
+                          _,
+                          'Haha, un appel a commencé... @everyone doit payer !'
+                        )
                     )
                   )
                 )

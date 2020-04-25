@@ -17,7 +17,7 @@ export const MessagesHandler = (
   config: Config,
   discord: DiscordConnector
 ): ((message: Message) => Future<unknown>) => {
-  const logger = Logger('CmdHandler')
+  const logger = Logger('MessagesHandler')
 
   const regex = new RegExp(`^\\s*${config.cmdPrefix}(.*)$`, 'm')
 
@@ -25,7 +25,20 @@ export const MessagesHandler = (
     discord.isFromSelf(message)
       ? Future.unit
       : pipe(
-          logger.debug('got message:', message.content),
+          logger.debug(
+            [
+              ...pipe(
+                Maybe.fromNullable(message.guild),
+                Maybe.fold(
+                  () => [],
+                  _ => [`[${_.name}]`]
+                )
+              ),
+              message.author.username,
+              'wrote:',
+              message.content
+            ].join(' ')
+          ),
           Future.fromIOEither,
           Future.chain(_ => handleMessage(message))
         )
@@ -71,8 +84,14 @@ export const MessagesHandler = (
               ? Future.unit
               : Future.fromIOEither(
                   logger.info(
-                    'Not enough permissions to delete message in server:',
-                    message.guild?.name
+                    `[${pipe(
+                      Maybe.fromNullable(message.guild),
+                      Maybe.fold(
+                        () => message.author.username,
+                        _ => _.name
+                      )
+                    )}]`,
+                    'Not enough permissions to delete message '
                   )
                 )
           ),
