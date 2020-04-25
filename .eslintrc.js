@@ -17,12 +17,14 @@ module.exports = {
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-namespace': 'off',
+    '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'warn',
     '@typescript-eslint/no-unused-vars': [
       'warn',
       { varsIgnorePattern: '^_', argsIgnorePattern: '^_' }
     ],
     '@typescript-eslint/no-var-requires': 'off',
     '@typescript-eslint/no-use-before-define': 'off',
+    '@typescript-eslint/strict-boolean-expressions': 'warn',
     'arrow-body-style': ['warn', 'as-needed'],
     'array-callback-return': 'off',
     'comma-dangle': [
@@ -35,7 +37,10 @@ module.exports = {
         functions: 'never'
       }
     ],
-    'max-len': ['warn', { code: 100, tabWidth: 2, ignoreStrings: true }],
+    'max-len': [
+      'warn',
+      { code: 100, tabWidth: 2, ignoreStrings: true, ignoreTemplateLiterals: true }
+    ],
     'no-console': 'off',
     'no-empty-function': 'off',
     'no-inner-declarations': 'off',

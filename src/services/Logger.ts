@@ -1,40 +1,43 @@
 import util from 'util'
 import fmt from 'dateformat'
-import { UserManager, MessageEmbed, StringResolvable } from 'discord.js'
+import { MessageEmbed, StringResolvable } from 'discord.js'
 
-import { LoggerConfig } from '../config/Config'
-import { TSnowflake } from '../models/TSnowflake'
+import { DiscordConnector } from './DiscordConnector'
+import { Config } from '../config/Config'
 import { LogLevel, LogLevelOrOff } from '../models/LogLevel'
-import { Do, IO, Future, pipe } from '../utils/fp'
+import { Do, IO, Future, pipe, Maybe } from '../utils/fp'
 
 export type Logger = Record<LogLevel, (arg: any, ...args: any[]) => IO<void>>
 
 export type PartialLogger = (name: string) => Logger
 
-export const PartialLogger = (
-  config: LoggerConfig,
-  userManager: UserManager
-): PartialLogger => name => {
+export const PartialLogger = (config: Config, discord: DiscordConnector): PartialLogger => name => {
   const consoleLog = (level: LogLevel, msg: string): IO<void> =>
-    shouldLog(config.consoleLevel, level)
+    shouldLog(config.logger.consoleLevel, level)
       ? IO.apply(() => console.log(formatConsole(name, level, msg)))
       : IO.right(undefined)
 
   const discordDMLog = (level: LogLevel, rawMsg: string): Future<void> => {
-    if (shouldLog(config.discordDM.level, level)) {
-      const msg: StringResolvable = config.discordDM.compact
+    if (shouldLog(config.logger.discordDM.level, level)) {
+      const msg: StringResolvable = config.logger.discordDM.compact
         ? formatDMCompact(name, level, rawMsg)
         : formatDMEmbed(name, level, rawMsg)
 
-      const futures = config.discordDM.users.map(userId =>
-        Do(Future.taskEither)
-          .bind(
-            'user',
-            Future.apply(() => userManager.fetch(TSnowflake.unwrap(userId)))
+      const futures = config.admins.map(userId =>
+        pipe(
+          discord.fetchUser(userId),
+          Future.chain(
+            Maybe.fold(
+              () => Future.unit,
+              user =>
+                pipe(
+                  Future.apply(() => user.createDM()),
+                  Future.chain(_ => Future.apply(() => _.send(msg))),
+                  Future.map(_ => {})
+                )
+            )
           )
-          .bindL('channel', ({ user }) => Future.apply(() => user.createDM()))
-          .bindL('_', ({ channel }) => Future.apply(() => channel.send(msg)))
-          .return(() => {})
+        )
       )
 
       return pipe(
@@ -60,11 +63,10 @@ export const PartialLogger = (
   return { debug, info, warn, error }
 }
 
-function shouldLog(setLevel: LogLevelOrOff, level: LogLevel): boolean {
-  return LogLevelOrOff.value[setLevel] >= LogLevelOrOff.value[level]
-}
+const shouldLog = (setLevel: LogLevelOrOff, level: LogLevel): boolean =>
+  LogLevelOrOff.value[setLevel] >= LogLevelOrOff.value[level]
 
-function formatConsole(name: string, level: LogLevel, msg: string): string {
+const formatConsole = (name: string, level: LogLevel, msg: string): string => {
   const withName = `${name} - ${msg}`
   const withTimestamp = `${color(fmt('yyyy/mm/dd HH:MM:ss'), '30;1')} ${withName}`
   const c = LogLevel.shellColor[level]
@@ -73,17 +75,14 @@ function formatConsole(name: string, level: LogLevel, msg: string): string {
     : `[${color(level.toUpperCase(), c)}] ${withTimestamp}`
 }
 
-function formatDMCompact(name: string, level: LogLevel, msg: string): string {
+const formatDMCompact = (name: string, level: LogLevel, msg: string): string => {
   const withName = `${name} - ${msg}`
   return level === 'info' || level === 'warn'
     ? `\`[${level.toUpperCase()}]  ${withName}\``
     : `\`[${level.toUpperCase()}] ${withName}\``
 }
 
-function formatDMEmbed(name: string, level: LogLevel, msg: string): MessageEmbed {
-  return new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`)
-}
+const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageEmbed =>
+  new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`)
 
-function color(s: string, c: string): string {
-  return process.stdout.isTTY ? `\x1B[${c}m${s}\x1B[0m` : s
-}
+const color = (s: string, c: string): string => (process.stdout.isTTY ? `\x1B[${c}m${s}\x1B[0m` : s)

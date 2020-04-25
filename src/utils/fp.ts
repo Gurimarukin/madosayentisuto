@@ -1,6 +1,5 @@
-import { isDeepStrictEqual } from 'util'
-
 import * as _Array from 'fp-ts/lib/Array'
+import * as _NonEmptyArray from 'fp-ts/lib/NonEmptyArray'
 import * as _Record from 'fp-ts/lib/Record'
 import * as _Option from 'fp-ts/lib/Option'
 import * as _Either from 'fp-ts/lib/Either'
@@ -8,13 +7,18 @@ import * as _Task from 'fp-ts/lib/Task'
 import * as _TaskEither from 'fp-ts/lib/TaskEither'
 import * as _IO from 'fp-ts/lib/IO'
 import * as _IOEither from 'fp-ts/lib/IOEither'
-import * as Eq from 'fp-ts/lib/Eq'
 import { identity as _identity, Predicate, Lazy } from 'fp-ts/lib/function'
 import { pipe as _pipe } from 'fp-ts/lib/pipeable'
 
 import { Do as _Do } from 'fp-ts-contrib/lib/Do'
 
-import { unknownToError } from './unknownToError'
+export const unknownToError = (e: unknown): Error =>
+  e instanceof Error ? e : new Error('unknown error')
+
+export const inspect = (...label: any[]) => <A>(a: A): A => {
+  console.log(...label, a)
+  return a
+}
 
 /**
  * ???
@@ -30,23 +34,50 @@ export const List = {
   ..._Array,
 
   exists: <A>(predicate: Predicate<A>) => (l: A[]): boolean =>
-    pipe(l, List.findIndex(predicate), Maybe.isSome),
-
-  contains: <A>(a: A) => (l: A[]): boolean =>
-    List.elem(Eq.fromEquals((a, b) => isDeepStrictEqual(a, b)))(a, l)
+    pipe(l, List.findIndex(predicate), Maybe.isSome)
 }
+
+/**
+ * NonEmptyArray
+ */
+export type NonEmptyArray<A> = _NonEmptyArray.NonEmptyArray<A>
+export const NonEmptyArray = _NonEmptyArray
 
 /**
  * Record
  */
 export type Dict<A> = Record<string, A>
-export const Dict = _Record
+export const Dict = {
+  ..._Record,
+
+  insertOrUpdateAt: <K extends string, A>(k: K, a: A, update: (a: A) => A) => (
+    record: Record<K, A>
+  ): Record<K, A> =>
+    pipe(
+      _Record.lookup(k, record),
+      _Option.fold(
+        () => pipe(record, _Record.insertAt(k, a)),
+        _ => pipe(record, _Record.insertAt(k, update(_)))
+      )
+    )
+}
 
 /**
  * Option
  */
 export type Maybe<A> = _Option.Option<A>
-export const Maybe = _Option
+export const Maybe = {
+  ..._Option,
+
+  toArray: <A>(opt: _Option.Option<A>): A[] =>
+    pipe(
+      opt,
+      _Option.fold(
+        () => [],
+        _ => [_]
+      )
+    )
+}
 
 /**
  * Either
@@ -59,6 +90,8 @@ export const Either = _Either
  */
 export type Try<A> = Either<Error, A>
 export const Try = {
+  right: <A>(a: A): Try<A> => Either.right(a),
+
   apply: <A>(a: Lazy<A>): Try<A> => Either.tryCatch(a, unknownToError),
 
   get: <A>(t: Try<A>): A =>
@@ -71,6 +104,12 @@ export const Try = {
 }
 
 /**
+ * Task
+ */
+export type Task<A> = _Task.Task<A>
+export const Task = _Task
+
+/**
  * Future
  */
 export type Future<A> = _Task.Task<Try<A>>
@@ -79,7 +118,7 @@ export const Future = {
 
   apply: <A>(f: Lazy<Promise<A>>): Future<A> => Future.tryCatch(f, unknownToError),
 
-  unit: _TaskEither.right(undefined),
+  unit: _TaskEither.right<Error, void>(undefined),
 
   parallel: <A>(futures: Future<A>[]): Future<A[]> =>
     List.array.sequence(Future.taskEither)(futures),

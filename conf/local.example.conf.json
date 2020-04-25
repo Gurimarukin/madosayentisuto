@@ -1,11 +1,17 @@
 {
   "clientSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "admins": ["xxxxxxxxxxxxxxxxxx"],
   "logger": {
     "consoleLevel": "info",
     "discordDM": {
       "level": "warn",
-      "compact": true,
-      "users": ["xxxxxxxxxxxxxxxxxx"]
+      "compact": true
     }
+  },
+  "db": {
+    "host": "localhost:27017",
+    "dbName": "madosayentisuto",
+    "user": "user",
+    "password": "password"
   }
 }

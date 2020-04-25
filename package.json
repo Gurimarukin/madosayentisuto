@@ -4,6 +4,9 @@
   "description": "Hey, mister... I am mad scientist! It's so cool! Sonuvabitch.",
   "main": "src/index.ts",
   "scripts": {
+    "preinstall": "node -e \"!process.env.npm_config_user_agent.startsWith('pnpm/') && !console.log('Use \\`npx pnpm install\\` to install dependencies in this repository\\n') && process.exit(1)\"",
+    "clean": "rm -fr dist/*",
+    "prebuild": "npm run clean",
     "build": "tsc",
     "compile": "tsc --noEmit",
     "~compile": "tsc --noEmit -w",
@@ -23,10 +26,12 @@
     "url": "https://github.com/Gurimarukin/madosayentisuto/issues"
   },
   "homepage": "https://github.com/Gurimarukin/madosayentisuto#readme",
-  "dependencies": {
+  "devDependencies": {
+    "@discordjs/collection": "^0.1.5",
     "@type-config/strict": "^1.0.2",
     "@types/dateformat": "^3.0.1",
     "@types/jest": "^25.1.4",
+    "@types/mongodb": "^3.5.11",
     "@types/node": "^13.9.8",
     "@types/ws": "^7.2.3",
     "@typescript-eslint/eslint-plugin": "^2.26.0",
@@ -42,10 +47,12 @@
     "io-ts": "^2.1.2",
     "io-ts-types": "^0.5.6",
     "jest": "^25.2.4",
+    "mongodb": "^3.5.6",
     "monocle-ts": "^2.1.0",
     "newtype-ts": "^0.3.4",
     "nodemon": "^2.0.2",
     "prettier": "^2.0.2",
+    "redux": "^4.0.5",
     "rxjs": "^6.5.5",
     "ts-jest": "^25.3.0",
     "ts-node": "^8.8.1",
