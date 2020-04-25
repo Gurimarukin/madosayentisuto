@@ -102,7 +102,7 @@ export const VoiceStateUpdatesHandler = (
       Future.fromIOEither,
       Future.chain(_ =>
         notify(
-          channel,
+          channel.guild,
           `Haha, <@${user.id}> appelle **#${channel.name}**... @everyone doit payer !`
         )
       )
@@ -121,17 +121,17 @@ export const VoiceStateUpdatesHandler = (
       Future.fromIOEither,
       Future.chain(_ =>
         notify(
-          channel,
+          channel.guild,
           `Haha, <@${user.id}> appelle #${channel.name}... Mais tout le monde s'en fout !`
         )
       )
     )
   }
 
-  function notify(channel: VoiceChannel, message: string): Future<unknown> {
+  function notify(guild: Guild, message: string): Future<unknown> {
     return Future.parallel(
       pipe(
-        referentialService.subscribedChannels(channel.guild),
+        referentialService.subscribedChannels(guild),
         List.map(id =>
           pipe(
             discord.fetchChannel(id),
@@ -142,10 +142,7 @@ export const VoiceStateUpdatesHandler = (
                 Maybe.fold<SendableChannel, Future<unknown>>(
                   () =>
                     pipe(
-                      logger.warn(
-                        `[${channel.guild.name}]`,
-                        `Couldn't notify channel with id "${id}"`
-                      ),
+                      logger.warn(`[${guild.name}]`, `Couldn't notify channel with id "${id}"`),
                       Future.fromIOEither
                     ),
                   _ => discord.sendMessage(_, message)
