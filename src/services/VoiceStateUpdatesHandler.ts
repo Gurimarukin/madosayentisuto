@@ -3,6 +3,7 @@ import { GuildMember, VoiceChannel, Guild } from 'discord.js'
 import { DiscordConnector } from './DiscordConnector'
 import { PartialLogger } from './Logger'
 import { ReferentialService } from './ReferentialService'
+import { TSnowflake } from '../models/TSnowflake'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
 import { ChannelUtils, SendableChannel } from '../utils/ChannelUtils'
 import { Future, Maybe, pipe, List } from '../utils/fp'
@@ -35,6 +36,7 @@ export const VoiceStateUpdatesHandler = (
    * Event handlers
    */
   function onJoinedChannel(user: GuildMember, channel: VoiceChannel): Future<unknown> {
+    const toIgnore = referentialService.ignoredUsers(channel.guild)
     return pipe(
       logger.debug(
         `[${channel.guild.name}]`,
@@ -42,7 +44,9 @@ export const VoiceStateUpdatesHandler = (
       ),
       Future.fromIOEither,
       Future.chain(_ =>
-        peopleInVocalChans(channel.guild) === 1 ? notifyCallStarted(user, channel) : Future.unit
+        peopleInVocalChans(channel.guild, toIgnore) === 1
+          ? notifyCallStarted(user, channel)
+          : Future.unit
       )
     )
   }
@@ -62,6 +66,7 @@ export const VoiceStateUpdatesHandler = (
   }
 
   function onLeftChannel(user: GuildMember, channel: VoiceChannel): Future<unknown> {
+    const toIgnore = referentialService.ignoredUsers(channel.guild)
     return pipe(
       logger.debug(
         `[${channel.guild.name}]`,
@@ -69,7 +74,7 @@ export const VoiceStateUpdatesHandler = (
       ),
       Future.fromIOEither,
       Future.chain(_ =>
-        peopleInVocalChans(channel.guild) === 0
+        peopleInVocalChans(channel.guild, toIgnore) === 0
           ? pipe(
               logger.debug(`[${channel.guild.name}]`, `Call ended in "${channel.name}"`),
               Future.fromIOEither
@@ -92,7 +97,7 @@ export const VoiceStateUpdatesHandler = (
       Future.chain(_ =>
         Future.parallel(
           pipe(
-            referentialService.channelsToSpamOnCall(channel.guild, user),
+            referentialService.subscribedChannels(channel.guild),
             List.map(id =>
               pipe(
                 discord.fetchChannel(id),
@@ -111,7 +116,7 @@ export const VoiceStateUpdatesHandler = (
                       _ =>
                         discord.sendMessage(
                           _,
-                          'Haha, un appel a commencé... @everyone doit payer !'
+                          'Haha, un appel a commencé... `@everyone` doit payer !'
                         )
                     )
                   )
@@ -137,9 +142,20 @@ const getUser = (voiceStateUpdate: VoiceStateUpdate): Maybe<GuildMember> =>
     )
   )
 
-const peopleInVocalChans = (guild: Guild): number =>
+const peopleInVocalChans = (guild: Guild, toIgnore: TSnowflake[]): number =>
   pipe(
     guild.channels.cache.array(),
     List.filter(_ => _.type === 'voice'),
-    List.reduce(0, (acc, chan) => acc + chan.members.size)
+    List.reduce(
+      0,
+      (acc, chan) =>
+        acc +
+        chan.members.filter(user => {
+          const ignoreUser = pipe(
+            toIgnore,
+            List.exists(_ => _ === TSnowflake.wrap(user.id))
+          )
+          return !ignoreUser
+        }).size
+    )
   )

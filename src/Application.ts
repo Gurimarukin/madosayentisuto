@@ -19,7 +19,7 @@ export const Application = (config: Config, client: Client): IO<void> => {
 
   const referentialService = ReferentialService(Logger)
 
-  const messagesHandler = MessagesHandler(Logger, config, discord)
+  const messagesHandler = MessagesHandler(Logger, config, discord, referentialService)
   const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService, discord)
 
   return Do(IO.ioEither)

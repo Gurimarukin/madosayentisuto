@@ -8,14 +8,14 @@ import { TSnowflake } from '../../models/TSnowflake'
 import { pipe, Dict, List } from '../../utils/fp'
 
 const initReferential: Referential = {
-  spamSubscriptions: {}
+  callsSubscription: {}
 }
 
 export const ReferentialReducer: Reducer<Referential, ReferentialAction> = (
   state = initReferential,
   action
 ) => {
-  if (action.type === 'SubscribeToSpam') {
+  if (action.type === 'CallsSubscribe') {
     return spamSubscriptionsLens.modify(
       Dict.insertOrUpdateAt(
         TSnowflake.unwrap(action.guild),
@@ -34,4 +34,4 @@ export const ReferentialReducer: Reducer<Referential, ReferentialAction> = (
   return state
 }
 
-const spamSubscriptionsLens = Lens.fromPath<Referential>()(['spamSubscriptions'])
+const spamSubscriptionsLens = Lens.fromPath<Referential>()(['callsSubscription'])

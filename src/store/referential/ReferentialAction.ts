@@ -1,15 +1,15 @@
 import { TSnowflake } from '../../models/TSnowflake'
 
-export type ReferentialAction = ReferentialAction.SubscribeToSpam
+export type ReferentialAction = ReferentialAction.CallsSubscribe
 
 export namespace ReferentialAction {
-  export interface SubscribeToSpam {
-    readonly type: 'SubscribeToSpam'
+  export interface CallsSubscribe {
+    readonly type: 'CallsSubscribe'
     readonly guild: TSnowflake
     readonly channel: TSnowflake
   }
-  export const SubscribeToSpam = (guild: TSnowflake, channel: TSnowflake): ReferentialAction => ({
-    type: 'SubscribeToSpam',
+  export const CallsSubscribe = (guild: TSnowflake, channel: TSnowflake): ReferentialAction => ({
+    type: 'CallsSubscribe',
     guild,
     channel
   })

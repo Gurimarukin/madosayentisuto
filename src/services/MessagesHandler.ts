@@ -1,21 +1,23 @@
-import { Message } from 'discord.js'
+import { Message, Guild } from 'discord.js'
 
 import { DiscordConnector } from './DiscordConnector'
 import { PartialLogger } from './Logger'
+import { ReferentialService } from './ReferentialService'
 import { Cli } from '../commands/Cli'
 import { Command } from '../commands/Command'
 import { Commands } from '../commands/Commands'
 import { CommandWithPrefix } from '../commands/CommandWithPrefix'
 import { Config } from '../config/Config'
 import { TSnowflake } from '../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either } from '../utils/fp'
+import { Maybe, pipe, Future, List, Either, todo } from '../utils/fp'
 import { MessageUtils } from '../utils/MessageUtils'
 import { StringUtils } from '../utils/StringUtils'
 
 export const MessagesHandler = (
   Logger: PartialLogger,
   config: Config,
-  discord: DiscordConnector
+  discord: DiscordConnector,
+  referentialService: ReferentialService
 ): ((message: Message) => Future<unknown>) => {
   const logger = Logger('MessagesHandler')
 
@@ -120,13 +122,37 @@ export const MessagesHandler = (
               |\`\`\``
             )
           ),
-        runCommand
+        runCommand(message)
       )
     )
   }
 
-  function runCommand(cmd: Commands): Future<unknown> {
-    return Future.fromIOEither(logger.debug('cmd =', cmd))
+  function runCommand(message: Message): (cmd: Commands) => Future<unknown> {
+    return cmd => {
+      switch (cmd._tag) {
+        case 'CallsSubscribe':
+          return pipe(
+            Maybe.fromNullable(message.guild),
+            Maybe.fold<Guild, Future<unknown>>(
+              () =>
+                Future.fromIOEither(
+                  logger.warn('Received "calls subscribe" command from non-guild channel')
+                ),
+              guild =>
+                pipe(
+                  Future.right(referentialService.subscribe(guild, message.channel)),
+                  Future.chain(_ => discord.sendMessage(message.channel, 'Salon ajouté !'))
+                )
+            )
+          )
+
+        case 'CallsUnsubscribe':
+          return todo()
+
+        case 'CallsIgnore':
+          return todo()
+      }
+    }
   }
 
   function withoutPrefix(msg: string): Maybe<string> {
