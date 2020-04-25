@@ -87,7 +87,10 @@ const parseOpts = <A>(
             _ =>
               pipe(
                 d(_),
-                Either.mapLeft<string, [number, string]>(_ => [getDepth(context), _]),
+                Either.mapLeft<string, [number, string]>(_ => [
+                  getDepth(context),
+                  help(context, _)
+                ]),
                 Either.filterOrElse<[number, string], A>(
                   _ => args.length === 1,
                   _ => [getDepth(context), help(context, 'To many arguments')]

@@ -1,3 +1,5 @@
+import { TSnowflake } from '../models/TSnowflake'
+
 export type Commands = Commands.CallsSubscribe | Commands.CallsUnsubscribe
 
 export namespace Commands {
@@ -8,7 +10,7 @@ export namespace Commands {
   export const CallsUnsubscribe: CallsUnsubscribe = 'CallsUnsubscribe'
 
   export interface CallsIgnore {
-    user: string
+    user: TSnowflake
   }
-  export const CallsIgnore = (user: string): CallsIgnore => ({ user })
+  export const CallsIgnore = (user: TSnowflake): CallsIgnore => ({ user })
 }
