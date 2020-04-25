@@ -19,133 +19,176 @@ export namespace Command {
 
   export const parse = (args: string[]) => <A>(cmd: Command<A>): Either<string, A> =>
     pipe(
-      parseRec(cmd, args, []),
+      parseRec(cmd, args, Either.left(cmd)),
       Either.mapLeft(([, _]) => _)
     )
-
-  export const help = <A>(context: NonEmptyArray<Command<A>>, message: string) => {
-    const init = NonEmptyArray.init(context)
-    const usages = pipe(
-      siblingsOfLast(context),
-      NonEmptyArray.map(cmd => {
-        const res = List.snoc(init, cmd)
-          .map(_ => _.name)
-          .join(' ')
-        return pipe(
-          cmd.opts,
-          Opts.fold({
-            onPure: () => res,
-            onOrElse: (_1, _2) => res,
-            onArgument: (m, _) => `${res} <${m}>`,
-            onSubcommand: _ => res
-          })
-        )
-      })
-    )
-    return StringUtils.stripMargins(
-      `${message}
-      |Usage:
-      |${usages.map(_ => `    ${_}`).join('\n')}`
-    )
-  }
 }
+
+type Context<A> = Either<Command<A>, NonEmptyArray<Opts<A>>>
 
 const parseRec = <A>(
   cmd: Command<A>,
   args: string[],
-  context: Command<A>[]
+  context: Context<A>
 ): Either<[number, string], A> => {
   const head = List.head(args)
-  const newContext = List.snoc(context, cmd)
   return pipe(
     head,
     Either.fromOption<[number, string]>(() => [
-      context.length,
-      Command.help(newContext, missingCommand(newContext))
+      getDepth(context),
+      help(context, missingCommand(context))
     ]),
     Either.filterOrElse<[number, string], string>(
       _ => _ === cmd.name,
-      _ => [context.length, Command.help(newContext, `Unexpected argument: ${_}`)]
+      _ => [getDepth(context), help(context, `Unexpected argument: ${_}`)]
     ),
     Either.chain(_ => {
       const [, ...tail] = args
-      return parseOpts(cmd.opts)
-
-      function parseOpts(opts: Opts<A>): Either<[number, string], A> {
-        return pipe(
-          opts,
-          Opts.fold({
-            onPure: _ =>
-              pipe(
-                List.head(tail),
-                Maybe.fold(
-                  () => Either.right(_),
-                  _ =>
-                    Either.left([newContext.length, Command.help(newContext, 'To many arguments')])
-                )
-              ),
-            onOrElse: (a, b) =>
-              pipe(
-                parseOpts(a),
-                Either.orElse(ea =>
-                  pipe(
-                    parseOpts(b()),
-                    Either.mapLeft(eb => (ea[0] >= eb[0] ? ea : eb))
-                  )
-                )
-              ),
-            onArgument: (m, d) =>
-              pipe(
-                List.head(tail),
-                Maybe.fold(
-                  () =>
-                    Either.left([
-                      newContext.length,
-                      Command.help(newContext, `Missing expected argument: ${m}`)
-                    ]),
-                  _ =>
-                    pipe(
-                      d(_),
-                      Either.mapLeft(_ => [newContext.length, _])
-                    )
-                )
-              ),
-            onSubcommand: _ => parseRec(_, tail, newContext)
-          })
-        )
-      }
+      return parseOpts(cmd.opts, tail, pipe(context, addToContext(Opts.subcommand(cmd))))
     })
   )
 }
 
-const missingCommand = <A>(context: NonEmptyArray<Command<A>>): string =>
-  `Missing expected command (${siblingsOfLast(context)
-    .map(_ => _.name)
-    .join(' or ')})`
+const parseOpts = <A>(
+  opt: Opts<A>,
+  args: string[],
+  context: Context<A>
+): Either<[number, string], A> =>
+  pipe(
+    opt,
+    Opts.fold({
+      onPure: _ =>
+        pipe(
+          List.head(args),
+          Maybe.fold(
+            () => Either.right(_),
+            _ => {
+              const newContext = pipe(context, addToContext(opt))
+              return Either.left([getDepth(newContext), help(newContext, 'To many arguments')])
+            }
+          )
+        ),
+      onOrElse: (a, b) =>
+        pipe(
+          parseOpts(a, args, context),
+          Either.orElse(ea =>
+            pipe(
+              parseOpts(b(), args, context),
+              Either.mapLeft(eb => (ea[0] >= eb[0] ? ea : eb))
+            )
+          )
+        ),
+      onArgument: (m, d) =>
+        pipe(
+          List.head(args),
+          Maybe.fold<string, Either<[number, string], A>>(
+            () =>
+              Either.left([getDepth(context), help(context, `Missing expected argument: <${m}>`)]),
+            _ =>
+              pipe(
+                d(_),
+                Either.mapLeft<string, [number, string]>(_ => [getDepth(context), _]),
+                Either.filterOrElse<[number, string], A>(
+                  _ => args.length === 1,
+                  _ => [getDepth(context), help(context, 'To many arguments')]
+                )
+              )
+          )
+        ),
+      onSubcommand: _ => parseRec(_, args, context)
+    })
+  )
 
-const siblingsOfLast = <A>(context: NonEmptyArray<Command<A>>): NonEmptyArray<Command<A>> => {
-  return pipe(
+const getDepth = <A>(context: Context<A>): number =>
+  pipe(
     context,
-    NonEmptyArray.init,
-    List.last,
-    Maybe.fold(last, parentOfLast =>
-      pipe(
-        Opts.flatten(parentOfLast.opts),
-        NonEmptyArray.chain(opt => {
-          switch (opt._tag) {
-            case 'Pure':
-              return last()
-            case 'Argument':
-              return last()
-            case 'Subcommand':
-              return NonEmptyArray.of(opt.command)
-          }
-        })
-      )
+    Either.fold(
+      _ => 0,
+      _ => _.length
     )
   )
 
-  function last(): NonEmptyArray<Command<A>> {
-    return pipe(context, NonEmptyArray.last, NonEmptyArray.of)
-  }
+const addToContext = <A>(cmd: Opts<A>) => (context: Context<A>): Context<A> =>
+  pipe(
+    context,
+    Either.fold(
+      _ => Either.right(NonEmptyArray.of(cmd)),
+      _ => Either.right(List.snoc(_, cmd))
+    )
+  )
+
+const missingCommand = <A>(context: Context<A>): string => {
+  const res = pipe(
+    childrenOfLast(context),
+    Maybe.chain(_ => pipe(_, List.filter(Opts.isSubcommand), NonEmptyArray.fromArray)),
+    Maybe.fold(
+      () => '',
+      _ => ` (${_.map(_ => _.command.name).join(' or ')})`
+    )
+  )
+  return `Missing expected command${res}`
 }
+
+const help = <A>(context: Context<A>, message: string): string =>
+  StringUtils.stripMargins(
+    `${message}
+    |Usage:
+    |${getUsages(context)
+      .map(_ => `    ${_}`)
+      .join('\n')}`
+  )
+
+const getUsages = <A>(context: Context<A>): NonEmptyArray<string> =>
+  pipe(
+    context,
+    Either.fold(
+      cmd => NonEmptyArray.of(cmd.name),
+      opts => {
+        const res = pipe(opts, List.filterMap(Opts.toString), _ => _.join(' '), NonEmptyArray.of)
+        return pipe(
+          childrenOfLast(context),
+          Maybe.fold(
+            () => res,
+            opts =>
+              pipe(
+                opts,
+                NonEmptyArray.map(opt => {
+                  const optStr =
+                    Opts.isSubcommand(opt) && Opts.isArgument(opt.command.opts)
+                      ? pipe(
+                          [opt, opt.command.opts],
+                          List.filterMap(Opts.toString),
+                          NonEmptyArray.fromArray,
+                          Maybe.map(_ => _.join(' '))
+                        )
+                      : Opts.toString(opt)
+
+                  return [res, Maybe.toArray(optStr)].join(' ')
+                })
+              )
+          )
+        )
+      }
+    )
+  )
+
+const childrenOfLast = <A>(context: Context<A>): Maybe<NonEmptyArray<Opts<A>>> =>
+  pipe(
+    context,
+    Either.fold(
+      cmd => Maybe.some(NonEmptyArray.of(Opts.subcommand(cmd))),
+      opts =>
+        pipe(
+          opts,
+          NonEmptyArray.last,
+          Maybe.some,
+          Maybe.chain(opt =>
+            Opts.isSubcommand(opt)
+              ? Maybe.some(Opts.flatten(opt.command.opts))
+              : Opts.isArgument(opt)
+              ? Maybe.some(NonEmptyArray.of(opt))
+              : Maybe.none
+          )
+        )
+    )
+  )

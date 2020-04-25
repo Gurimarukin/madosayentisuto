@@ -2,7 +2,7 @@ import { Lazy } from 'fp-ts/lib/function'
 
 import { Command } from './Command'
 import { Diff } from '../models/Diff'
-import { NonEmptyArray, Either, pipe } from '../utils/fp'
+import { NonEmptyArray, Either, pipe, Maybe } from '../utils/fp'
 
 export type Opts<A> = Opts.Pure<A> | Opts.OrElse<A> | Opts.Argument<A> | Opts.Subcommand<A>
 
@@ -42,6 +42,8 @@ export namespace Opts {
     readonly decode: (raw: string) => Either<string, A>
   }
 
+  export const isArgument = <A>(opts: Opts<A>): opts is Argument<A> => opts._tag === 'Argument'
+
   /**
    * Subcommand
    */
@@ -80,6 +82,18 @@ export namespace Opts {
     isOrElse(opts)
       ? NonEmptyArray.concat(flatten(opts.a), flatten(opts.b()))
       : NonEmptyArray.of(opts)
+
+  export const toString = <A>(opts: Opts<A>): Maybe<string> =>
+    pipe(
+      opts,
+      fold({
+        onPure: _ => Maybe.none,
+        onOrElse: (_1, _2) => Maybe.none,
+        onArgument: (m, _) => Maybe.some(`<${m}>`),
+        onSubcommand: c => Maybe.some(c.name)
+      })
+    )
+
   export const fold = <A, B>({ onPure, onOrElse, onArgument, onSubcommand }: FoldArgs<A, B>) => (
     opts: Opts<A>
   ): B => {

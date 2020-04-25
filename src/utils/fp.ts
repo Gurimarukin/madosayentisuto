@@ -15,8 +15,8 @@ import { Do as _Do } from 'fp-ts-contrib/lib/Do'
 export const unknownToError = (e: unknown): Error =>
   e instanceof Error ? e : new Error('unknown error')
 
-export const inspect = (label?: string) => <A>(a: A): A => {
-  label === undefined ? console.log(a) : console.log(label, a)
+export const inspect = (...label: any[]) => <A>(a: A): A => {
+  console.log(...label, a)
   return a
 }
 
