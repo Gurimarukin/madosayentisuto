@@ -45,11 +45,13 @@ export const VoiceStateUpdatesHandler = (
       Future.fromIOEither,
       Future.chain(_ => {
         const { ignored, others } = peopleInVocalChans(channel.guild, toIgnore)
-        return others.length === 1
-          ? notifyCallStarted(user, channel)
-          : ignored.length + others.length === 1
-          ? notifyIgnoredTriedToStartCall(user, channel)
-          : Future.unit
+        if (isIgnored(toIgnore)(user)) {
+          return ignored.length + others.length === 1
+            ? notifyIgnoredTriedToStartCall(user, channel)
+            : Future.unit
+        } else {
+          return others.length === 1 ? notifyCallStarted(user, channel) : Future.unit
+        }
       })
     )
   }
@@ -176,17 +178,17 @@ const peopleInVocalChans = (guild: Guild, toIgnore: TSnowflake[]): IgnoredAndOth
     List.reduce(IgnoredAndOther([], []), (acc, chan) =>
       pipe(
         chan.members.array(),
-        List.partition(user => {
-          const ignoreUser = pipe(
-            toIgnore,
-            List.exists(_ => _ === TSnowflake.wrap(user.id))
-          )
-          return ignoreUser
-        }),
+        List.partition(isIgnored(toIgnore)),
         ({ left: others, right: ignored }) =>
           IgnoredAndOther([...acc.ignored, ...ignored], [...acc.others, ...others])
       )
     )
+  )
+
+const isIgnored = (toIgnore: TSnowflake[]) => (user: GuildMember): boolean =>
+  pipe(
+    toIgnore,
+    List.exists(_ => TSnowflake.unwrap(_) === user.id)
   )
 
 interface IgnoredAndOther {
