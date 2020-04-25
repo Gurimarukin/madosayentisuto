@@ -3,6 +3,7 @@ import { failure } from 'io-ts/lib/PathReporter'
 
 import { Command } from './Command'
 import { Commands } from './Commands'
+import { CommandWithPrefix } from './CommandWithPrefix'
 import { Opts } from './Opts'
 import { TSnowflake } from '../models/TSnowflake'
 import { pipe, Either } from '../utils/fp'
@@ -10,15 +11,14 @@ import { pipe, Either } from '../utils/fp'
 type AdminTextChannel = Commands.CallsSubscribe | Commands.CallsUnsubscribe | Commands.CallsIgnore
 
 export namespace Cli {
-  export const adminTextChannel = (prefix: string): Command<AdminTextChannel> =>
-    Command(prefix)(
-      Opts.subcommand(
-        Command('calls')(
-          pipe(
-            Opts.subcommand<AdminTextChannel>(callsSubscribe),
-            Opts.orElse(() => Opts.subcommand<AdminTextChannel>(callsUnsubscribe)),
-            Opts.orElse(() => Opts.subcommand<AdminTextChannel>(callsIgnore))
-          )
+  export const adminTextChannel = (prefix: string): CommandWithPrefix<AdminTextChannel> =>
+    CommandWithPrefix(
+      prefix,
+      Command('calls')(
+        pipe(
+          Opts.subcommand<AdminTextChannel>(callsSubscribe),
+          Opts.orElse(() => Opts.subcommand<AdminTextChannel>(callsUnsubscribe)),
+          Opts.orElse(() => Opts.subcommand<AdminTextChannel>(callsIgnore))
         )
       )
     )

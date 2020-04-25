@@ -11,11 +11,17 @@ import { IO, pipe, Either } from '../utils/fp'
 
 export interface Config {
   readonly clientSecret: string
+  readonly admins: NonEmptyArray<TSnowflake>
   readonly logger: LoggerConfig
   readonly cmdPrefix: string
 }
-export function Config(clientSecret: string, logger: LoggerConfig, cmdPrefix: string): Config {
-  return { clientSecret, logger, cmdPrefix }
+export function Config(
+  clientSecret: string,
+  admins: NonEmptyArray<TSnowflake>,
+  logger: LoggerConfig,
+  cmdPrefix: string
+): Config {
+  return { clientSecret, admins, logger, cmdPrefix }
 }
 
 export namespace Config {
@@ -37,6 +43,7 @@ function readConfig(reader: ConfReader): ValidatedNea<Config> {
   return pipe(
     sequenceT(Either.getValidation(Nea.getSemigroup<string>()))(
       reader(t.string)('clientSecret'),
+      reader(nonEmptyArray(TSnowflake.codec))('admins'),
       readLoggerConfig(reader),
       reader(t.string)('cmdPrefix')
     ),
@@ -49,18 +56,16 @@ export interface LoggerConfig {
   readonly discordDM: {
     readonly level: LogLevelOrOff
     readonly compact: boolean
-    readonly users: NonEmptyArray<TSnowflake>
   }
 }
 export function LoggerConfig(
   consoleLevel: LogLevelOrOff,
   discordDMlevel: LogLevelOrOff,
-  discordDMCompact: boolean,
-  discordDMUsers: NonEmptyArray<TSnowflake>
+  discordDMCompact: boolean
 ): LoggerConfig {
   return {
     consoleLevel,
-    discordDM: { level: discordDMlevel, compact: discordDMCompact, users: discordDMUsers }
+    discordDM: { level: discordDMlevel, compact: discordDMCompact }
   }
 }
 
@@ -69,8 +74,7 @@ function readLoggerConfig(reader: ConfReader): ValidatedNea<LoggerConfig> {
     sequenceT(Either.getValidation(Nea.getSemigroup<string>()))(
       reader(LogLevelOrOff.codec)('logger', 'consoleLevel'),
       reader(LogLevelOrOff.codec)('logger', 'discordDM', 'level'),
-      reader(t.boolean)('logger', 'discordDM', 'compact'),
-      reader(nonEmptyArray(TSnowflake.codec))('logger', 'discordDM', 'users')
+      reader(t.boolean)('logger', 'discordDM', 'compact')
     ),
     Either.map(_ => LoggerConfig(..._))
   )

@@ -1,11 +1,11 @@
 {
   "clientSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "admins": ["xxxxxxxxxxxxxxxxxx"],
   "logger": {
     "consoleLevel": "info",
     "discordDM": {
       "level": "warn",
-      "compact": true,
-      "users": ["xxxxxxxxxxxxxxxxxx"]
+      "compact": true
     }
   }
 }

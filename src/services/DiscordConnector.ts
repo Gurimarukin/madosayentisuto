@@ -6,7 +6,9 @@ import {
   StringResolvable,
   MessageOptions,
   MessageAdditions,
-  Channel
+  Channel,
+  User,
+  DiscordAPIError
 } from 'discord.js'
 import { fromEventPattern } from 'rxjs'
 
@@ -50,5 +52,33 @@ export const DiscordConnector = (client: Client) => {
       Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
     )
 
-  return { isFromSelf, messages, voiceStateUpdates, sendMessage, fetchChannel }
+  const fetchUser = (user: TSnowflake): Future<Maybe<User>> =>
+    pipe(
+      Future.apply(() => client.users.fetch(TSnowflake.unwrap(user))),
+      Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
+    )
+
+  const deleteMessage = (message: Message): Future<boolean> =>
+    pipe(
+      Future.apply(() => message.delete()),
+      Task.map(
+        Either.fold(
+          e =>
+            e instanceof DiscordAPIError && e.message === 'Missing Permissions'
+              ? Either.right(false)
+              : Either.left(e),
+          _ => Either.right(true)
+        )
+      )
+    )
+
+  return {
+    isFromSelf,
+    messages,
+    voiceStateUpdates,
+    sendMessage,
+    fetchChannel,
+    fetchUser,
+    deleteMessage
+  }
 }

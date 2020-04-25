@@ -2,10 +2,15 @@ import { Message } from 'discord.js'
 
 import { DiscordConnector } from './DiscordConnector'
 import { PartialLogger } from './Logger'
+import { Cli } from '../commands/Cli'
+import { Command } from '../commands/Command'
+import { Commands } from '../commands/Commands'
+import { CommandWithPrefix } from '../commands/CommandWithPrefix'
 import { Config } from '../config/Config'
-import { Command } from '../models/Command'
-import { Maybe, pipe, Future, List, todo } from '../utils/fp'
+import { TSnowflake } from '../models/TSnowflake'
+import { Maybe, pipe, Future, List, Either } from '../utils/fp'
 import { MessageUtils } from '../utils/MessageUtils'
+import { StringUtils } from '../utils/StringUtils'
 
 export const MessagesHandler = (
   Logger: PartialLogger,
@@ -14,7 +19,7 @@ export const MessagesHandler = (
 ): ((message: Message) => Future<unknown>) => {
   const logger = Logger('CmdHandler')
 
-  const regex = new RegExp(`^\\s*${config.cmdPrefix}\\s+(.*)$`, 'm')
+  const regex = new RegExp(`^\\s*${config.cmdPrefix}(.*)$`, 'm')
 
   return message =>
     discord.isFromSelf(message)
@@ -28,7 +33,7 @@ export const MessagesHandler = (
   function handleMessage(message: Message): Future<unknown> {
     return pipe(
       pong(message),
-      Maybe.alt(() => handleCommand(message)),
+      Maybe.alt(() => command(message)),
       Maybe.getOrElse<Future<unknown>>(() => Future.unit)
     )
   }
@@ -39,12 +44,70 @@ export const MessagesHandler = (
       : Maybe.none
   }
 
-  function handleCommand(message: Message): Maybe<Future<unknown>> {
-    const isDm = MessageUtils.isDm(message.channel)
+  function command(message: Message): Maybe<Future<unknown>> {
+    return pipe(withoutPrefix(message.content), Maybe.chain(handleCommandWithRights(message)))
+  }
+
+  function handleCommandWithRights(message: Message): (rawCmd: string) => Maybe<Future<unknown>> {
+    return rawCmd => {
+      const isDm = MessageUtils.isDm(message.channel)
+      if (isDm) return Maybe.none
+
+      const args = StringUtils.splitWords(rawCmd)
+      const isAdmin = pipe(
+        config.admins,
+        List.exists(_ => _ === TSnowflake.wrap(message.author.id))
+      )
+
+      const res: Future<unknown> = isAdmin
+        ? parseCommand(message, args, Cli.adminTextChannel)
+        : discord.sendMessage(message.author, 'Gibier de potence, tu ne peux pas faire ça !')
+
+      return Maybe.some(
+        pipe(
+          discord.deleteMessage(message),
+          Future.chain(deleted =>
+            deleted
+              ? Future.unit
+              : Future.fromIOEither(
+                  logger.info(
+                    'Not enough permissions to delete message in server:',
+                    message.guild?.name
+                  )
+                )
+          ),
+          Future.chain(_ => res)
+        )
+      )
+    }
+  }
+
+  function parseCommand(
+    message: Message,
+    args: string[],
+    cmd: (prefix: string) => CommandWithPrefix<Commands>
+  ): Future<unknown> {
     return pipe(
-      isDm ? Maybe.some(message.content) : withoutPrefix(message.content),
-      Maybe.map(_ => pipe(_, Command.parse, handleOptCmd(message)))
+      cmd(config.cmdPrefix),
+      Command.parse(args),
+      Either.fold(
+        e =>
+          discord.sendMessage(
+            message.author,
+            StringUtils.stripMargins(
+              `Wrong command: \`${message.content}\`
+              |\`\`\`
+              |${e}
+              |\`\`\``
+            )
+          ),
+        runCommand
+      )
     )
+  }
+
+  function runCommand(cmd: Commands): Future<unknown> {
+    return Future.fromIOEither(logger.debug('cmd =', cmd))
   }
 
   function withoutPrefix(msg: string): Maybe<string> {
@@ -52,24 +115,5 @@ export const MessagesHandler = (
       Maybe.fromNullable(msg.match(regex)),
       Maybe.chain(_ => List.lookup(1, _))
     )
-  }
-
-  function handleOptCmd(message: Message): (cmd: Maybe<Command>) => Future<unknown> {
-    return Maybe.fold(() => discord.sendMessage(message.channel, 'TINTIN ?!'), handleCmd(message))
-  }
-
-  function handleCmd(message: Message): (cmd: Command) => Future<unknown> {
-    return cmd => {
-      switch (cmd._tag) {
-        case 'Tintin':
-          return discord.sendMessage(message.channel, 'TINTIN.')
-
-        case 'SpamUsHere':
-          return Future.right(todo(message.channel))
-
-        case 'IgnoreCallsFrom':
-          return Future.right(todo(cmd.user))
-      }
-    }
   }
 }

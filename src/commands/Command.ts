@@ -1,3 +1,6 @@
+import { Lazy } from 'fp-ts/lib/function'
+
+import { CommandWithPrefix } from './CommandWithPrefix'
 import { Opts } from './Opts'
 import { Either, List, pipe, Maybe, NonEmptyArray } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
@@ -17,9 +20,9 @@ export namespace Command {
     opts: pipe(cmd.opts, Opts.map(f))
   })
 
-  export const parse = (args: string[]) => <A>(cmd: Command<A>): Either<string, A> =>
+  export const parse = (args: string[]) => <A>(cmd: CommandWithPrefix<A>): Either<string, A> =>
     pipe(
-      parseRec(cmd, args, Either.left(cmd)),
+      parseRec(cmd.prefix, cmd.command, args, Either.left(cmd.command)),
       Either.mapLeft(([, _]) => _)
     )
 }
@@ -27,6 +30,7 @@ export namespace Command {
 type Context<A> = Either<Command<A>, NonEmptyArray<Opts<A>>>
 
 const parseRec = <A>(
+  prefix: string,
   cmd: Command<A>,
   args: string[],
   context: Context<A>
@@ -36,71 +40,80 @@ const parseRec = <A>(
     head,
     Either.fromOption<[number, string]>(() => [
       getDepth(context),
-      help(context, missingCommand(context))
+      help(prefix, context, missingCommand(context))
     ]),
     Either.filterOrElse<[number, string], string>(
       _ => _ === cmd.name,
-      _ => [getDepth(context), help(context, `Unexpected argument: ${_}`)]
+      _ => [getDepth(context), help(prefix, context, `Unexpected argument: ${_}`)]
     ),
     Either.chain(_ => {
       const [, ...tail] = args
-      return parseOpts(cmd.opts, tail, pipe(context, addToContext(Opts.subcommand(cmd))))
+      return parseOpts(prefix, cmd.opts, tail, pipe(context, addToContext(Opts.subcommand(cmd))))
     })
   )
 }
 
 const parseOpts = <A>(
+  prefix: string,
   opt: Opts<A>,
   args: string[],
   context: Context<A>
-): Either<[number, string], A> =>
-  pipe(
-    opt,
-    Opts.fold({
-      onPure: _ =>
+): Either<[number, string], A> => {
+  const onPure = (a: A): Either<[number, string], A> =>
+    pipe(
+      List.head(args),
+      Maybe.fold(
+        () => Either.right(a),
+        _ => {
+          const newContext = pipe(context, addToContext(opt))
+          return Either.left([getDepth(newContext), help(prefix, newContext, 'To many arguments')])
+        }
+      )
+    )
+
+  const onOrElse = (a: Opts<A>, b: Lazy<Opts<A>>): Either<[number, string], A> =>
+    pipe(
+      parseOpts(prefix, a, args, context),
+      Either.orElse(ea =>
         pipe(
-          List.head(args),
-          Maybe.fold(
-            () => Either.right(_),
-            _ => {
-              const newContext = pipe(context, addToContext(opt))
-              return Either.left([getDepth(newContext), help(newContext, 'To many arguments')])
-            }
-          )
-        ),
-      onOrElse: (a, b) =>
-        pipe(
-          parseOpts(a, args, context),
-          Either.orElse(ea =>
-            pipe(
-              parseOpts(b(), args, context),
-              Either.mapLeft(eb => (ea[0] >= eb[0] ? ea : eb))
+          parseOpts(prefix, b(), args, context),
+          Either.mapLeft(eb => (ea[0] >= eb[0] ? ea : eb))
+        )
+      )
+    )
+
+  const onArgument = (
+    metavar: string,
+    decode: (raw: string) => Either<string, A>
+  ): Either<[number, string], A> =>
+    pipe(
+      List.head(args),
+      Maybe.fold<string, Either<[number, string], A>>(
+        () =>
+          Either.left([
+            getDepth(context),
+            help(prefix, context, `Missing expected argument: <${metavar}>`)
+          ]),
+        _ =>
+          pipe(
+            decode(_),
+            Either.mapLeft<string, [number, string]>(_ => [
+              getDepth(context),
+              help(prefix, context, _)
+            ]),
+            Either.filterOrElse<[number, string], A>(
+              _ => args.length === 1,
+              _ => [getDepth(context), help(prefix, context, 'To many arguments')]
             )
           )
-        ),
-      onArgument: (m, d) =>
-        pipe(
-          List.head(args),
-          Maybe.fold<string, Either<[number, string], A>>(
-            () =>
-              Either.left([getDepth(context), help(context, `Missing expected argument: <${m}>`)]),
-            _ =>
-              pipe(
-                d(_),
-                Either.mapLeft<string, [number, string]>(_ => [
-                  getDepth(context),
-                  help(context, _)
-                ]),
-                Either.filterOrElse<[number, string], A>(
-                  _ => args.length === 1,
-                  _ => [getDepth(context), help(context, 'To many arguments')]
-                )
-              )
-          )
-        ),
-      onSubcommand: _ => parseRec(_, args, context)
-    })
-  )
+      )
+    )
+
+  const onSubcommand = (cmd: Command<A>): Either<[number, string], A> =>
+    parseRec(prefix, cmd, args, context)
+
+  return pipe(opt, Opts.fold({ onPure, onOrElse, onArgument, onSubcommand }))
+}
 
 const getDepth = <A>(context: Context<A>): number =>
   pipe(
@@ -132,12 +145,12 @@ const missingCommand = <A>(context: Context<A>): string => {
   return `Missing expected command${res}`
 }
 
-const help = <A>(context: Context<A>, message: string): string =>
+const help = <A>(prefix: string, context: Context<A>, message: string): string =>
   StringUtils.stripMargins(
     `${message}
     |Usage:
     |${getUsages(context)
-      .map(_ => `    ${_}`)
+      .map(_ => `    ${prefix} ${_}`)
       .join('\n')}`
   )
 

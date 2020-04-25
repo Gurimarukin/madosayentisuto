@@ -12,13 +12,12 @@ import { Do, IO, pipe, Either, Future, Try } from './utils/fp'
 import { ReferentialService } from './services/ReferentialService'
 
 export const Application = (config: Config, client: Client): IO<void> => {
-  const Logger = PartialLogger(config.logger, client.users)
+  const discord = DiscordConnector(client)
 
+  const Logger = PartialLogger(config, discord)
   const logger = Logger('Application')
 
   const referentialService = ReferentialService(Logger)
-
-  const discord = DiscordConnector(client)
 
   const messagesHandler = MessagesHandler(Logger, config, discord)
   const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService, discord)

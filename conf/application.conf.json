@@ -1,12 +1,12 @@
 {
   "clientSecret": "",
+  "admins": [],
   "cmdPrefix": "okb",
   "logger": {
     "consoleLevel": "info",
     "discordDM": {
       "level": "warn",
-      "compact": true,
-      "users": []
+      "compact": true
     }
   }
 }

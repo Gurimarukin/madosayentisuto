@@ -1,6 +1,6 @@
 import { TSnowflake } from '../models/TSnowflake'
 
-export type Commands = Commands.CallsSubscribe | Commands.CallsUnsubscribe
+export type Commands = Commands.CallsSubscribe | Commands.CallsUnsubscribe | Commands.CallsIgnore
 
 export namespace Commands {
   export type CallsSubscribe = 'CallsSubscribe'
