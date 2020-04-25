@@ -43,11 +43,14 @@ export const VoiceStateUpdatesHandler = (
         `${user.displayName} joined the channel "${channel.name}"`
       ),
       Future.fromIOEither,
-      Future.chain(_ =>
-        peopleInVocalChans(channel.guild, toIgnore) === 1
+      Future.chain(_ => {
+        const { ignored, others } = peopleInVocalChans(channel.guild, toIgnore)
+        return others.length === 1
           ? notifyCallStarted(user, channel)
+          : ignored.length + others.length === 1
+          ? notifyIgnoredTriedToStartCall(user, channel)
           : Future.unit
-      )
+      })
     )
   }
 
@@ -73,14 +76,15 @@ export const VoiceStateUpdatesHandler = (
         `${user.displayName} left the channel "${channel.name}"`
       ),
       Future.fromIOEither,
-      Future.chain(_ =>
-        peopleInVocalChans(channel.guild, toIgnore) === 0
+      Future.chain(_ => {
+        const { ignored, others } = peopleInVocalChans(channel.guild, toIgnore)
+        return ignored.length + others.length === 0
           ? pipe(
               logger.debug(`[${channel.guild.name}]`, `Call ended in "${channel.name}"`),
               Future.fromIOEither
             )
           : Future.unit
-      )
+      })
     )
   }
 
@@ -95,31 +99,54 @@ export const VoiceStateUpdatesHandler = (
       ),
       Future.fromIOEither,
       Future.chain(_ =>
-        Future.parallel(
+        notify(
+          channel,
+          `Haha, <@${user.id}> appelle **#${channel.name}**... @everyone doit payer !`
+        )
+      )
+    )
+  }
+
+  function notifyIgnoredTriedToStartCall(
+    user: GuildMember,
+    channel: VoiceChannel
+  ): Future<unknown> {
+    return pipe(
+      logger.debug(
+        `[${channel.guild.name}]`,
+        `${user.displayName} started a call in "${channel.name}" (but he's ignored)`
+      ),
+      Future.fromIOEither,
+      Future.chain(_ =>
+        notify(
+          channel,
+          `Haha, <@${user.id}> appelle #${channel.name}... Mais tout le monde s'en fout !`
+        )
+      )
+    )
+  }
+
+  function notify(channel: VoiceChannel, message: string): Future<unknown> {
+    return Future.parallel(
+      pipe(
+        referentialService.subscribedChannels(channel.guild),
+        List.map(id =>
           pipe(
-            referentialService.subscribedChannels(channel.guild),
-            List.map(id =>
+            discord.fetchChannel(id),
+            Future.chain(_ =>
               pipe(
-                discord.fetchChannel(id),
-                Future.chain(_ =>
-                  pipe(
-                    _,
-                    Maybe.filter(ChannelUtils.isSendable),
-                    Maybe.fold<SendableChannel, Future<unknown>>(
-                      () =>
-                        pipe(
-                          logger.warn(
-                            `Couldn't notify channel with id "${id}" of a call in server "${channel.guild}"`
-                          ),
-                          Future.fromIOEither
-                        ),
-                      _ =>
-                        discord.sendMessage(
-                          _,
-                          'Haha, un appel a commencé... `@everyone` doit payer !'
-                        )
-                    )
-                  )
+                _,
+                Maybe.filter(ChannelUtils.isSendable),
+                Maybe.fold<SendableChannel, Future<unknown>>(
+                  () =>
+                    pipe(
+                      logger.warn(
+                        `[${channel.guild.name}]`,
+                        `Couldn't notify channel with id "${id}"`
+                      ),
+                      Future.fromIOEither
+                    ),
+                  _ => discord.sendMessage(_, message)
                 )
               )
             )
@@ -142,20 +169,31 @@ const getUser = (voiceStateUpdate: VoiceStateUpdate): Maybe<GuildMember> =>
     )
   )
 
-const peopleInVocalChans = (guild: Guild, toIgnore: TSnowflake[]): number =>
+const peopleInVocalChans = (guild: Guild, toIgnore: TSnowflake[]): IgnoredAndOther =>
   pipe(
     guild.channels.cache.array(),
     List.filter(_ => _.type === 'voice'),
-    List.reduce(
-      0,
-      (acc, chan) =>
-        acc +
-        chan.members.filter(user => {
+    List.reduce(IgnoredAndOther([], []), (acc, chan) =>
+      pipe(
+        chan.members.array(),
+        List.partition(user => {
           const ignoreUser = pipe(
             toIgnore,
             List.exists(_ => _ === TSnowflake.wrap(user.id))
           )
-          return !ignoreUser
-        }).size
+          return ignoreUser
+        }),
+        ({ left: others, right: ignored }) =>
+          IgnoredAndOther([...acc.ignored, ...ignored], [...acc.others, ...others])
+      )
     )
   )
+
+interface IgnoredAndOther {
+  readonly ignored: GuildMember[]
+  readonly others: GuildMember[]
+}
+const IgnoredAndOther = (ignored: GuildMember[], others: GuildMember[]): IgnoredAndOther => ({
+  ignored,
+  others
+})

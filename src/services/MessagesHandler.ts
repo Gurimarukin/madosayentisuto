@@ -33,11 +33,17 @@ export const MessagesHandler = (
                 Maybe.fromNullable(message.guild),
                 Maybe.fold(
                   () => [],
-                  _ => [`[${_.name}]`]
+                  _ =>
+                    pipe(
+                      List.cons(
+                        _.name,
+                        message.channel.type === 'text' ? [message.channel.name] : []
+                      ),
+                      _ => [`[${_.join(' #')}]`]
+                    )
                 )
               ),
-              message.author.username,
-              'wrote:',
+              `${message.author.username}:`,
               message.content
             ].join(' ')
           ),
@@ -128,31 +134,43 @@ export const MessagesHandler = (
   }
 
   function runCommand(message: Message): (cmd: Commands) => Future<unknown> {
-    return cmd => {
-      switch (cmd._tag) {
-        case 'CallsSubscribe':
-          return pipe(
-            Maybe.fromNullable(message.guild),
-            Maybe.fold<Guild, Future<unknown>>(
-              () =>
-                Future.fromIOEither(
-                  logger.warn('Received "calls subscribe" command from non-guild channel')
-                ),
-              guild =>
-                pipe(
-                  Future.right(referentialService.subscribe(guild, message.channel)),
+    return cmd =>
+      pipe(
+        Maybe.fromNullable(message.guild),
+        Maybe.fold<Guild, Future<unknown>>(
+          () => Future.fromIOEither(logger.warn('Received "calls" command from non-guild channel')),
+          guild => {
+            switch (cmd._tag) {
+              case 'CallsSubscribe':
+                return pipe(
+                  Future.right(referentialService.subscribeCalls(guild, message.channel)),
                   Future.chain(_ => discord.sendMessage(message.channel, 'Salon ajouté !'))
                 )
-            )
-          )
 
-        case 'CallsUnsubscribe':
-          return todo()
+              case 'CallsUnsubscribe':
+                return todo()
 
-        case 'CallsIgnore':
-          return todo()
-      }
-    }
+              case 'CallsIgnore':
+                return pipe(
+                  Future.right(referentialService.ignoreCallsFrom(guild, cmd.user)),
+                  Future.chain(_ => discord.fetchUser(cmd.user)),
+                  Future.chain(_ =>
+                    discord.sendMessage(
+                      message.channel,
+                      pipe(
+                        _,
+                        Maybe.fold(
+                          () => "Gibier de potence ! Les appels de l'utilisateur seront ignorés.",
+                          _ => `Gibier de potence ! Les appels de <@${_.id}> seront ignorés.`
+                        )
+                      )
+                    )
+                  )
+                )
+            }
+          }
+        )
+      )
   }
 
   function withoutPrefix(msg: string): Maybe<string> {

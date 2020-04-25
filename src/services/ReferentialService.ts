@@ -42,11 +42,15 @@ export const ReferentialService = (Logger: PartialLogger) => {
       )
     )
 
-  const subscribe = (guild: Guild, channel: Channel): void => {
+  const subscribeCalls = (guild: Guild, channel: Channel): void => {
     store.dispatch(
       ReferentialAction.CallsSubscribe(TSnowflake.wrap(guild.id), TSnowflake.wrap(channel.id))
     )
   }
 
-  return { subscribedChannels, ignoredUsers, subscribe }
+  const ignoreCallsFrom = (guild: Guild, user: TSnowflake): void => {
+    store.dispatch(ReferentialAction.CallsIgnore(TSnowflake.wrap(guild.id), user))
+  }
+
+  return { subscribedChannels, ignoredUsers, subscribeCalls, ignoreCallsFrom }
 }
