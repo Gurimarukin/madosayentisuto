@@ -1,5 +1,6 @@
+import { MongoClient, Collection } from 'mongodb'
+
 import * as Obs from 'fp-ts-rxjs/lib/ObservableEither'
-import { Client } from 'discord.js'
 import { Subscription } from 'rxjs'
 
 import { Config } from './config/Config'
@@ -8,25 +9,40 @@ import { DiscordConnector } from './services/DiscordConnector'
 import { PartialLogger } from './services/Logger'
 import { MessagesHandler } from './services/MessagesHandler'
 import { VoiceStateUpdatesHandler } from './services/VoiceStateUpdatesHandler'
-import { Do, IO, pipe, Either, Future, Try } from './utils/fp'
+import { IO, pipe, Either, Future, Try } from './utils/fp'
 import { ReferentialService } from './services/ReferentialService'
+import { ReferentialPersistence } from './persistence/ReferentialPersistence'
 
-export const Application = (config: Config, client: Client): IO<void> => {
-  const discord = DiscordConnector(client)
-
+export const Application = (config: Config, discord: DiscordConnector): Future<void> => {
   const Logger = PartialLogger(config, discord)
   const logger = Logger('Application')
 
-  const referentialService = ReferentialService(Logger)
+  const url = `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`
+  const mongoCollection = (coll: string): Future<Collection> =>
+    pipe(
+      Future.apply(() => new MongoClient(url, { useUnifiedTopology: true }).connect()),
+      Future.map(_ => _.db(config.db.dbName).collection(coll))
+    )
 
-  const messagesHandler = MessagesHandler(Logger, config, discord, referentialService)
-  const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService, discord)
+  const referentialPersistence = ReferentialPersistence(Logger, mongoCollection)
 
-  return Do(IO.ioEither)
-    .bind('_1', logger.info('application started'))
-    .bind('_2', subscribe(messagesHandler, discord.messages))
-    .bind('_3', subscribe(voiceStateUpdatesHandler, discord.voiceStateUpdates))
-    .return(() => {})
+  return pipe(
+    ReferentialService(Logger, referentialPersistence),
+    Future.chain(referentialService => {
+      const Logger = PartialLogger(config, discord)
+      const logger = Logger('Application')
+
+      const messagesHandler = MessagesHandler(Logger, config, discord, referentialService)
+      const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService, discord)
+
+      return pipe(
+        subscribe(messagesHandler, discord.messages),
+        IO.chain(_ => subscribe(voiceStateUpdatesHandler, discord.voiceStateUpdates)),
+        IO.chain(_ => logger.info('application started')),
+        Future.fromIOEither
+      )
+    })
+  )
 
   function subscribe<A>(f: (a: A) => Future<unknown>, a: ObservableE<A>): IO<Subscription> {
     const obs = pipe(

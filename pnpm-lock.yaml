@@ -3,6 +3,7 @@ devDependencies:
   '@type-config/strict': 1.0.2
   '@types/dateformat': 3.0.1
   '@types/jest': 25.2.1
+  '@types/mongodb': 3.5.11
   '@types/node': 13.13.2
   '@types/ws': 7.2.4
   '@typescript-eslint/eslint-plugin': 2.29.0_68aa0cf1893d5414e11aa7fe89753d25
@@ -18,6 +19,7 @@ devDependencies:
   io-ts: 2.2.1_fp-ts@2.5.3
   io-ts-types: 0.5.6_bac4ef486b0d0b8fee5ff3e7581c8b4d
   jest: 25.4.0
+  mongodb: 3.5.6
   monocle-ts: 2.1.0_fp-ts@2.5.3
   newtype-ts: 0.3.4_fp-ts@2.5.3+monocle-ts@2.1.0
   nodemon: 2.0.3
@@ -550,6 +552,12 @@ packages:
     dev: true
     resolution:
       integrity: sha512-74fNdUGrWsgIB/V9kTO5FGHPWYY6Eqn+3Z7L6Hc4e/BxjYV7puvBqp5HwsVYYfLm6iURYBNCx4Ut37OF9yitCw==
+  /@types/bson/4.0.2:
+    dependencies:
+      '@types/node': 13.13.2
+    dev: true
+    resolution:
+      integrity: sha512-+uWmsejEHfmSjyyM/LkrP0orfE2m5Mx9Xel4tXNeqi1ldK5XMQcDsFkBmLDtuyKUbxj2jGDo0H240fbCRJZo7Q==
   /@types/color-name/1.1.1:
     dev: true
     resolution:
@@ -590,6 +598,13 @@ packages:
     dev: true
     resolution:
       integrity: sha512-8+KAKzEvSUdeo+kmqnKrqgeE+LcA0tjYWFY7RPProVYwnqDjukzO+3b6dLD56rYX5TdWejnEOLJYOIeh4CXKuA==
+  /@types/mongodb/3.5.11:
+    dependencies:
+      '@types/bson': 4.0.2
+      '@types/node': 13.13.2
+    dev: true
+    resolution:
+      integrity: sha512-6bivRWckqvxybjhTljWEhSp/b2Z96Mx/zsjy27roD5K1ydRcC7uzNOhedTwhgTwgdp3xtc1y8hY8x0syPMgRjw==
   /@types/node/13.13.2:
     dev: true
     resolution:
@@ -994,6 +1009,13 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-Phlt0plgpIIBOGTT/ehfFnbNlfsDEiqmzE2KRXoX1bLIlir4X/MR+zSyBEkL05ffWgnRSf/DXv+WrUAVr93/ow==
+  /bl/2.2.0:
+    dependencies:
+      readable-stream: 2.3.7
+      safe-buffer: 5.2.0
+    dev: true
+    resolution:
+      integrity: sha512-wbgvOpqopSr7uq6fJrLH8EsvYMJf9gzfo2jCsL2eTy75qXPukA4pCgHamOQkZtY5vmfVtjB+P3LNlMHW5CEZXA==
   /boxen/4.2.0:
     dependencies:
       ansi-align: 3.0.0
@@ -1065,6 +1087,12 @@ packages:
     dev: true
     resolution:
       integrity: sha512-gQxTNE/GAfIIrmHLUE3oJyp5FO6HRBfhjnw4/wMmA63ZGDJnWBmgY/lyQBpnDUkGmAhbSe39tx2d/iTOAfglwQ==
+  /bson/1.1.4:
+    dev: true
+    engines:
+      node: '>=0.6.19'
+    resolution:
+      integrity: sha512-S/yKGU1syOMzO86+dGpg2qGoDL0zvzcb262G+gqEy6TgP6rt6z6qxSFX/8X6vLC91P7G7C3nLs0+bvDzmvBA3Q==
   /buffer-from/1.1.1:
     dev: true
     resolution:
@@ -1449,6 +1477,12 @@ packages:
       node: '>=0.4.0'
     resolution:
       integrity: sha1-3zrhmayt+31ECqrgsp4icrJOxhk=
+  /denque/1.4.1:
+    dev: true
+    engines:
+      node: '>=0.10'
+    resolution:
+      integrity: sha512-OfzPuSZKGcgr96rf1oODnfjqBFmr1DVoc/TrItj3Ohe0Ah1C5WX5Baquw/9U9KovnQ88EqmJbD66rKYUQYN1tQ==
   /detect-newline/3.1.0:
     dev: true
     engines:
@@ -3258,6 +3292,11 @@ packages:
       node: '>=0.10.0'
     resolution:
       integrity: sha1-7Nyo8TFE5mDxtb1B8S80edmN+48=
+  /memory-pager/1.5.0:
+    dev: true
+    optional: true
+    resolution:
+      integrity: sha512-ZS4Bp4r/Zoeq6+NLJpP+0Zzm0pR8whtGPf1XExKLJBAczGMnSi3It14OiNCStjQjM6NU1okjQGSxgEZN8eBYKg==
   /merge-stream/2.0.0:
     dev: true
     resolution:
@@ -3350,6 +3389,20 @@ packages:
     hasBin: true
     resolution:
       integrity: sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
+  /mongodb/3.5.6:
+    dependencies:
+      bl: 2.2.0
+      bson: 1.1.4
+      denque: 1.4.1
+      require_optional: 1.0.1
+      safe-buffer: 5.2.0
+    dev: true
+    engines:
+      node: '>=4'
+    optionalDependencies:
+      saslprep: 1.0.3
+    resolution:
+      integrity: sha512-sh3q3GLDLT4QmoDLamxtAECwC3RGjq+oNuK1ENV8+tnipIavss6sMYt77hpygqlMOCt0Sla5cl7H4SKCVBCGEg==
   /monocle-ts/2.1.0_fp-ts@2.5.3:
     dependencies:
       fp-ts: 2.5.3
@@ -3777,6 +3830,10 @@ packages:
         optional: true
     resolution:
       integrity: sha512-R3EbKwJiYlTvGwcG1DpUt+06DsxOGS5W4AMEHT7oVOjG93MjpdhGX1whHyjnqknylLMupKAsKMEXcTNRbPe6Vw==
+  /process-nextick-args/2.0.1:
+    dev: true
+    resolution:
+      integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==
   /progress/2.0.3:
     dev: true
     engines:
@@ -3862,6 +3919,18 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-Ug69mNOpfvKDAc2Q8DRpMjjzdtrnv9HcSMX+4VsZxD1aZ6ZzrIE7rlzXBtWTyhULSMKg076AW6WR5iZpD0JiOg==
+  /readable-stream/2.3.7:
+    dependencies:
+      core-util-is: 1.0.2
+      inherits: 2.0.4
+      isarray: 1.0.0
+      process-nextick-args: 2.0.1
+      safe-buffer: 5.1.2
+      string_decoder: 1.1.1
+      util-deprecate: 1.0.2
+    dev: true
+    resolution:
+      integrity: sha512-Ebho8K4jIbHAxnuxi7o42OrZgF/ZTNcsZj6nRKyUmkhLFq8CHItp/fy6hQZuZmP/n3yZ9VBUbp4zz/mX8hmYPw==
   /readdirp/3.3.0:
     dependencies:
       picomatch: 2.2.2
@@ -3998,6 +4067,13 @@ packages:
     dev: true
     resolution:
       integrity: sha512-NKN5kMDylKuldxYLSUfrbo5Tuzh4hd+2E8NPPX02mZtn1VuREQToYe/ZdlJy+J3uCpfaiGF05e7B8W0iXbQHmg==
+  /require_optional/1.0.1:
+    dependencies:
+      resolve-from: 2.0.0
+      semver: 5.7.1
+    dev: true
+    resolution:
+      integrity: sha512-qhM/y57enGWHAe3v/NcwML6a3/vfESLe/sGM2dII+gEO0BpKRUkWZow/tyloNqJyN6kXSl3RyyM8Ll5D/sJP8g==
   /resolve-cwd/3.0.0:
     dependencies:
       resolve-from: 5.0.0
@@ -4006,6 +4082,12 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-OrZaX2Mb+rJCpH/6CpSqt9xFVpN++x01XnN2ie9g6P5/3xelLAkXWVADpdz1IHD/KFfEXyE6V0U01OQ3UO2rEg==
+  /resolve-from/2.0.0:
+    dev: true
+    engines:
+      node: '>=0.10.0'
+    resolution:
+      integrity: sha1-lICrIOlP+h2egKgEx+oUdhGWa1c=
   /resolve-from/4.0.0:
     dev: true
     engines:
@@ -4125,6 +4207,15 @@ packages:
     hasBin: true
     resolution:
       integrity: sha512-hhbzAgTIX8O7SHfp2c8/kREfEn4qO/9q8C9beyY6+tvZ87EpoZ3i1RIEvp27YBswnNbY9mWd6paKVmKbAgLfZA==
+  /saslprep/1.0.3:
+    dependencies:
+      sparse-bitfield: 3.0.3
+    dev: true
+    engines:
+      node: '>=6'
+    optional: true
+    resolution:
+      integrity: sha512-/MY/PEMbk2SuY5sScONwhUDsV2p77Znkb/q3nSVstq/yQzYJOH/Azh29p9oJLsl3LnQwSvZDKagDGBsBwSooag==
   /saxes/3.1.11:
     dependencies:
       xmlchars: 2.2.0
@@ -4299,6 +4390,13 @@ packages:
       node: '>= 8'
     resolution:
       integrity: sha512-CkCj6giN3S+n9qrYiBTX5gystlENnRW5jZeNLHpe6aue+SrHcG5VYwujhW9s4dY31mEGsxBDrHR6oI69fTXsaQ==
+  /sparse-bitfield/3.0.3:
+    dependencies:
+      memory-pager: 1.5.0
+    dev: true
+    optional: true
+    resolution:
+      integrity: sha1-/0rm5oZWBWuks+eSqzM004JzyhE=
   /spdx-correct/3.1.0:
     dependencies:
       spdx-expression-parse: 3.0.0
@@ -4400,6 +4498,12 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-zUz5JD+tgqtuDjMhwIg5uFVV3dtqZ9yQJlZVfq4I01/K5Paj5UHj7VyrQOJvzawSVlKpObApbfD0Ed6yJc+1eg==
+  /string_decoder/1.1.1:
+    dependencies:
+      safe-buffer: 5.1.2
+    dev: true
+    resolution:
+      integrity: sha512-n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg==
   /strip-ansi/5.2.0:
     dependencies:
       ansi-regex: 4.1.0
@@ -4814,6 +4918,10 @@ packages:
       node: '>=0.10.0'
     resolution:
       integrity: sha512-cwESVXlO3url9YWlFW/TA9cshCEhtu7IKJ/p5soJ/gGpj7vbvFrAY/eIioQ6Dw23KjZhYgiIo8HOs1nQ2vr/oQ==
+  /util-deprecate/1.0.2:
+    dev: true
+    resolution:
+      integrity: sha1-RQ1Nyfpw3nMnYvvS1KKJgUGaDM8=
   /uuid/3.4.0:
     dev: true
     hasBin: true
@@ -5027,6 +5135,7 @@ specifiers:
   '@type-config/strict': ^1.0.2
   '@types/dateformat': ^3.0.1
   '@types/jest': ^25.1.4
+  '@types/mongodb': ^3.5.11
   '@types/node': ^13.9.8
   '@types/ws': ^7.2.3
   '@typescript-eslint/eslint-plugin': ^2.26.0
@@ -5042,6 +5151,7 @@ specifiers:
   io-ts: ^2.1.2
   io-ts-types: ^0.5.6
   jest: ^25.2.4
+  mongodb: ^3.5.6
   monocle-ts: ^2.1.0
   newtype-ts: ^0.3.4
   nodemon: ^2.0.2

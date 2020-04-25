@@ -8,4 +8,8 @@ export namespace Referential {
   export const codec = t.strict({
     callsSubscription: t.record(t.string, CallsSubscription.codec)
   })
+
+  export const empty: Referential = {
+    callsSubscription: {}
+  }
 }

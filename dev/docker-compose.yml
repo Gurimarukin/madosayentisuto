@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+
+  mongo:
+    image:
+      mongo:4.2
+    container_name:
+      madosayentisuto-mongo
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_INITDB_ROOT_USERNAME=user
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - .docker-data/mongo:/data/db
+    ports:
+      - "27017:27017"
+    command:
+      mongod

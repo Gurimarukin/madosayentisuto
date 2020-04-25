@@ -8,12 +8,8 @@ import { Referential } from '../../models/referential/Referential'
 import { TSnowflake } from '../../models/TSnowflake'
 import { pipe, Dict, List } from '../../utils/fp'
 
-const initReferential: Referential = {
-  callsSubscription: {}
-}
-
-export const ReferentialReducer: Reducer<Referential, ReferentialAction> = (
-  state = initReferential,
+export const ReferentialReducer = (init: Referential): Reducer<Referential, ReferentialAction> => (
+  state = init,
   action
 ) => {
   if (action.type === 'CallsSubscribe') {
