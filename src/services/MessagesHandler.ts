@@ -161,7 +161,7 @@ export const MessagesHandler = (
                         _,
                         Maybe.fold(
                           () => "Gibier de potence ! Les appels de l'utilisateur seront ignorés.",
-                          _ => `Gibier de potence ! Les appels de <@${_.id}> seront ignorés.`
+                          _ => `Gibier de potence ! Les appels de ${_} seront ignorés.`
                         )
                       )
                     )
