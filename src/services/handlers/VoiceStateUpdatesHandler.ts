@@ -1,12 +1,12 @@
 import { GuildMember, VoiceChannel, Guild } from 'discord.js'
 
-import { DiscordConnector } from './DiscordConnector'
-import { PartialLogger } from './Logger'
-import { ReferentialService } from './ReferentialService'
-import { TSnowflake } from '../models/TSnowflake'
-import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
-import { ChannelUtils, SendableChannel } from '../utils/ChannelUtils'
-import { Future, Maybe, pipe, List } from '../utils/fp'
+import { DiscordConnector } from '../DiscordConnector'
+import { PartialLogger } from '../Logger'
+import { ReferentialService } from '../ReferentialService'
+import { TSnowflake } from '../../models/TSnowflake'
+import { VoiceStateUpdate } from '../../models/VoiceStateUpdate'
+import { ChannelUtils, SendableChannel } from '../../utils/ChannelUtils'
+import { Future, Maybe, pipe, List } from '../../utils/fp'
 
 export const VoiceStateUpdatesHandler = (
   Logger: PartialLogger,
