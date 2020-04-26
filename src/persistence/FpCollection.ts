@@ -5,7 +5,6 @@ import {
   FilterQuery,
   InsertOneWriteOpResult,
   FindOneOptions,
-  ObjectId,
   ReplaceOneOptions,
   UpdateOneOptions,
   UpdateQuery,
@@ -17,16 +16,16 @@ import { Logger } from '../services/Logger'
 import { Future, pipe, Maybe, Either } from '../utils/fp'
 
 export type FpCollection = ReturnType<typeof FpCollection>
-export const FpCollection = <A, O extends {}>(
+export const FpCollection = <A, O>(
   logger: Logger,
   collection: () => Future<Collection<O>>,
   codec: t.Type<A, OptionalId<O>>
 ) => {
   const insertOne = (
-    doc: A & { _id?: ObjectId },
+    doc: A,
     options?: CollectionInsertOneOptions
   ): Future<InsertOneWriteOpResult<WithId<O>>> => {
-    const encoded = { _id: doc._id, ...codec.encode(doc as A) }
+    const encoded = codec.encode(doc)
     return pipe(
       collection(),
       Future.chain(_ => Future.apply(() => _.insertOne(encoded, options))),
@@ -55,12 +54,8 @@ export const FpCollection = <A, O extends {}>(
       )
     )
 
-  const replaceOne = (
-    filter: FilterQuery<O>,
-    doc: A & { _id?: ObjectId },
-    options?: ReplaceOneOptions
-  ) => {
-    const encoded = codec.encode(doc as A)
+  const replaceOne = (filter: FilterQuery<O>, doc: A, options?: ReplaceOneOptions) => {
+    const encoded = codec.encode(doc)
     return pipe(
       collection(),
       Future.chain(_ => Future.apply(() => _.replaceOne(filter, encoded as O, options))),
@@ -79,10 +74,7 @@ export const FpCollection = <A, O extends {}>(
       Future.chain(_ => Future.apply(() => _.countDocuments(filter)))
     )
 
-  const findOne = (
-    filter: FilterQuery<O>,
-    options?: FindOneOptions
-  ): Future<Maybe<A & { _id: ObjectId }>> =>
+  const findOne = (filter: FilterQuery<O>, options?: FindOneOptions): Future<Maybe<A>> =>
     pipe(
       collection(),
       Future.chain(_ => Future.apply(() => _.findOne(filter, options))),
@@ -90,21 +82,12 @@ export const FpCollection = <A, O extends {}>(
       Future.chain(
         Maybe.fold(
           () => Future.right(Maybe.none),
-          raw =>
+          _ =>
             pipe(
-              codec.decode(raw),
-              Either.bimap(
-                _ => Error("Couldn't decode value"),
-                _ => Maybe.some({ ..._, _id: (raw as any)._id })
-              ),
+              codec.decode(_),
+              Either.bimap(_ => Error("Couldn't decode value"), Maybe.some),
               Future.fromEither
             )
-        )
-      ),
-      Future.chain(res =>
-        pipe(
-          Future.fromIOEither(logger.debug('found', res)),
-          Future.map(_ => res)
         )
       )
     )
