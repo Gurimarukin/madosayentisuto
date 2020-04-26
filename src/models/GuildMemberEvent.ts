@@ -14,4 +14,18 @@ export namespace GuildMemberEvent {
     member: GuildMember
   }
   export const Remove = (member: GuildMember): GuildMemberEvent => ({ _tag: 'Remove', member })
+
+  export const fold = <A>({ onAdd, onRemove }: FoldArgs<A>) => (event: GuildMemberEvent): A => {
+    switch (event._tag) {
+      case 'Add':
+        return onAdd(event.member)
+      case 'Remove':
+        return onRemove(event.member)
+    }
+  }
+}
+
+interface FoldArgs<A> {
+  onAdd: (member: GuildMember) => A
+  onRemove: (member: GuildMember) => A
 }

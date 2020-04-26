@@ -10,7 +10,7 @@ import { CommandWithPrefix } from '../../commands/CommandWithPrefix'
 import { Config } from '../../config/Config'
 import { TSnowflake } from '../../models/TSnowflake'
 import { Maybe, pipe, Future, List, Either, todo } from '../../utils/fp'
-import { MessageUtils } from '../../utils/MessageUtils'
+import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 
 export const MessagesHandler = (
@@ -71,8 +71,7 @@ export const MessagesHandler = (
 
   function handleCommandWithRights(message: Message): (rawCmd: string) => Maybe<Future<unknown>> {
     return rawCmd => {
-      const isDm = MessageUtils.isDm(message.channel)
-      if (isDm) return Maybe.none
+      if (ChannelUtils.isDm(message.channel)) return Maybe.none
 
       const args = StringUtils.splitWords(rawCmd)
       const isAdmin = pipe(
