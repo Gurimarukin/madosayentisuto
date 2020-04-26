@@ -30,9 +30,6 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
     discord.setActivity(config.playingActivity),
     Future.chain(_ => ReferentialService(Logger, referentialPersistence)),
     Future.chain(referentialService => {
-      const Logger = PartialLogger(config, discord)
-      const logger = Logger('Application')
-
       const messagesHandler = MessagesHandler(Logger, config, discord, referentialService)
       const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService, discord)
 
