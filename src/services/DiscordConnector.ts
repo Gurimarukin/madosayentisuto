@@ -47,6 +47,9 @@ export const DiscordConnector = (client: Client) => ({
       Obs.rightObservable
     ),
 
+  /**
+   * Read
+   */
   fetchChannel: (channel: TSnowflake): Future<Maybe<Channel>> =>
     pipe(
       Future.apply(() => client.channels.fetch(TSnowflake.unwrap(channel))),
@@ -59,6 +62,9 @@ export const DiscordConnector = (client: Client) => ({
       Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
     ),
 
+  /**
+   * Write
+   */
   setActivity: (name: string, options?: ActivityOptions): Future<Maybe<Presence>> =>
     pipe(
       Maybe.fromNullable(client.user),
