@@ -8,7 +8,9 @@ import {
   MessageAdditions,
   Channel,
   User,
-  DiscordAPIError
+  DiscordAPIError,
+  Presence,
+  ActivityOptions
 } from 'discord.js'
 import { fromEventPattern } from 'rxjs'
 
@@ -19,46 +21,64 @@ import { Maybe, pipe, Future, Task, Either } from '../utils/fp'
 
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
 
-export const DiscordConnector = (client: Client) => {
-  const isFromSelf = (message: Message): boolean =>
+export const DiscordConnector = (client: Client) => ({
+  isFromSelf: (message: Message): boolean =>
     pipe(
       Maybe.fromNullable(client.user),
       Maybe.exists(_ => _.id === message.author.id)
-    )
-
-  const messages: ObservableE<Message> = pipe(
-    fromEventPattern<Message>(handler => client.on('message', handler)),
-    Obs.rightObservable
-  )
-
-  const voiceStateUpdates: ObservableE<VoiceStateUpdate> = pipe(
-    fromEventPattern<VoiceStateUpdate>(handler =>
-      client.on('voiceStateUpdate', (oldState, newState) =>
-        handler(VoiceStateUpdate(oldState, newState))
-      )
     ),
-    Obs.rightObservable
-  )
 
-  const sendMessage = (
-    channel: PartialTextBasedChannelFields,
-    content: StringResolvable,
-    options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
-  ): Future<Message> => Future.apply(() => channel.send(content, options))
+  /**
+   * Observables
+   */
+  messages: (): ObservableE<Message> =>
+    pipe(
+      fromEventPattern<Message>(handler => client.on('message', handler)),
+      Obs.rightObservable
+    ),
 
-  const fetchChannel = (channel: TSnowflake): Future<Maybe<Channel>> =>
+  voiceStateUpdates: (): ObservableE<VoiceStateUpdate> =>
+    pipe(
+      fromEventPattern<VoiceStateUpdate>(handler =>
+        client.on('voiceStateUpdate', (oldState, newState) =>
+          handler(VoiceStateUpdate(oldState, newState))
+        )
+      ),
+      Obs.rightObservable
+    ),
+
+  fetchChannel: (channel: TSnowflake): Future<Maybe<Channel>> =>
     pipe(
       Future.apply(() => client.channels.fetch(TSnowflake.unwrap(channel))),
       Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
-    )
+    ),
 
-  const fetchUser = (user: TSnowflake): Future<Maybe<User>> =>
+  fetchUser: (user: TSnowflake): Future<Maybe<User>> =>
     pipe(
       Future.apply(() => client.users.fetch(TSnowflake.unwrap(user))),
       Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
-    )
+    ),
 
-  const deleteMessage = (message: Message): Future<boolean> =>
+  setActivity: (name: string, options?: ActivityOptions): Future<Maybe<Presence>> =>
+    pipe(
+      Maybe.fromNullable(client.user),
+      Maybe.fold(
+        () => Future.right(Maybe.none),
+        _ =>
+          pipe(
+            Future.apply(() => _.setActivity(name, options)),
+            Future.map(Maybe.fromNullable)
+          )
+      )
+    ),
+
+  sendMessage: (
+    channel: PartialTextBasedChannelFields,
+    content: StringResolvable,
+    options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
+  ): Future<Message> => Future.apply(() => channel.send(content, options)),
+
+  deleteMessage: (message: Message): Future<boolean> =>
     pipe(
       Future.apply(() => message.delete()),
       Task.map(
@@ -71,14 +91,4 @@ export const DiscordConnector = (client: Client) => {
         )
       )
     )
-
-  return {
-    isFromSelf,
-    messages,
-    voiceStateUpdates,
-    sendMessage,
-    fetchChannel,
-    fetchUser,
-    deleteMessage
-  }
-}
+})

@@ -27,7 +27,8 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
   const referentialPersistence = ReferentialPersistence(Logger, mongoCollection)
 
   return pipe(
-    ReferentialService(Logger, referentialPersistence),
+    discord.setActivity(config.playingActivity),
+    Future.chain(_ => ReferentialService(Logger, referentialPersistence)),
     Future.chain(referentialService => {
       const Logger = PartialLogger(config, discord)
       const logger = Logger('Application')
@@ -36,8 +37,8 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
       const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService, discord)
 
       return pipe(
-        subscribe(messagesHandler, discord.messages),
-        IO.chain(_ => subscribe(voiceStateUpdatesHandler, discord.voiceStateUpdates)),
+        subscribe(messagesHandler, discord.messages()),
+        IO.chain(_ => subscribe(voiceStateUpdatesHandler, discord.voiceStateUpdates())),
         IO.chain(_ => logger.info('application started')),
         Future.fromIOEither
       )

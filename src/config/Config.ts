@@ -11,6 +11,7 @@ export interface Config {
   readonly clientSecret: string
   readonly admins: NonEmptyArray<TSnowflake>
   readonly cmdPrefix: string
+  readonly playingActivity: string
   readonly logger: LoggerConfig
   readonly db: DbConfig
 }
@@ -18,10 +19,11 @@ export function Config(
   clientSecret: string,
   admins: NonEmptyArray<TSnowflake>,
   cmdPrefix: string,
+  playingActivity: string,
   logger: LoggerConfig,
   db: DbConfig
 ): Config {
-  return { clientSecret, admins, cmdPrefix, logger, db }
+  return { clientSecret, admins, cmdPrefix, playingActivity, logger, db }
 }
 
 export namespace Config {
@@ -45,6 +47,7 @@ function readConfig(reader: ConfReader): ValidatedNea<Config> {
       reader(t.string)('clientSecret'),
       reader(nonEmptyArray(TSnowflake.codec))('admins'),
       reader(t.string)('cmdPrefix'),
+      reader(t.string)('playingActivity'),
       readLoggerConfig(reader),
       readDbConfig(reader)
     ),
