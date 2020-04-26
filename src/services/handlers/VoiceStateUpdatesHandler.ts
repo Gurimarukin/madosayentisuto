@@ -1,4 +1,4 @@
-import { GuildMember, VoiceChannel, Guild } from 'discord.js'
+import { GuildMember, VoiceChannel, Guild, GuildChannel } from 'discord.js'
 
 import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
@@ -7,6 +7,7 @@ import { TSnowflake } from '../../models/TSnowflake'
 import { VoiceStateUpdate } from '../../models/VoiceStateUpdate'
 import { ChannelUtils, SendableChannel } from '../../utils/ChannelUtils'
 import { Future, Maybe, pipe, List } from '../../utils/fp'
+import { StringUtils } from '../../utils/StringUtils'
 
 export const VoiceStateUpdatesHandler = (
   Logger: PartialLogger,
@@ -73,10 +74,10 @@ export const VoiceStateUpdatesHandler = (
   ): Future<unknown> {
     const { others } = peopleInPublicVocalChans(channel.guild, toIgnore)
     const isFirstNonIgnored = others.length === 1
-    return isFirstNonIgnored ? onCallStarted(user, channel) : Future.unit
+    return isFirstNonIgnored ? onPublicCallStarted(user, channel) : Future.unit
   }
 
-  function onCallStarted(user: GuildMember, channel: VoiceChannel): Future<unknown> {
+  function onPublicCallStarted(user: GuildMember, channel: VoiceChannel): Future<unknown> {
     return pipe(
       logger.debug(
         `[${channel.guild.name}]`,
@@ -88,7 +89,14 @@ export const VoiceStateUpdatesHandler = (
           channel.guild,
           `Haha, ${user} appelle **#${channel.name}**... @everyone doit payer !`
         )
-      )
+      ),
+      Future.chain(_ => {
+        const users = pipe(
+          channel.guild.members.cache.array(),
+          List.filter(_ => !discord.isSelf(_.user) && _.id !== user.id)
+        )
+        return notifyDmCallStarted(user, channel, users)
+      })
     )
   }
 
@@ -153,27 +161,51 @@ export const VoiceStateUpdatesHandler = (
    * Helpers
    */
   function notifySubscribedChannels(guild: Guild, message: string): Future<unknown> {
-    return Future.parallel(
-      pipe(
-        referentialService.subscribedChannels(guild),
-        List.map(id =>
-          pipe(
-            discord.fetchChannel(id),
-            Future.chain(_ =>
-              pipe(
-                _,
-                Maybe.filter(ChannelUtils.isSendable),
-                Maybe.fold<SendableChannel, Future<unknown>>(
-                  () =>
-                    pipe(
-                      logger.warn(`[${guild.name}]`, `Couldn't notify channel with id "${id}"`),
-                      Future.fromIOEither
-                    ),
-                  _ => discord.sendMessage(_, message)
-                )
+    return pipe(
+      referentialService.subscribedChannels(guild),
+      List.map(id =>
+        pipe(
+          discord.fetchChannel(id),
+          Future.chain(_ =>
+            pipe(
+              _,
+              Maybe.filter(ChannelUtils.isSendable),
+              Maybe.fold<SendableChannel, Future<unknown>>(
+                () =>
+                  pipe(
+                    logger.warn(`[${guild.name}]`, `Couldn't notify channel with id "${id}"`),
+                    Future.fromIOEither
+                  ),
+                _ => discord.sendMessage(_, message)
               )
             )
           )
+        )
+      ),
+      Future.parallel
+    )
+  }
+
+  function notifyDmCallStarted(
+    calledBy: GuildMember,
+    channel: GuildChannel,
+    users: GuildMember[]
+  ): Future<unknown> {
+    return pipe(
+      discord.createInvite(channel),
+      Future.chain(invite =>
+        pipe(
+          users,
+          List.map(user =>
+            discord.sendMessage(
+              user,
+              StringUtils.stripMargins(
+                `Haha, ${calledBy} appelle **${channel.name}**. Tout le monde doit payer !
+                |${invite.url}`
+              )
+            )
+          ),
+          Future.parallel
         )
       )
     )

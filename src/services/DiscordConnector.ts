@@ -12,7 +12,10 @@ import {
   Presence,
   ActivityOptions,
   PartialGuildMember,
-  GuildMember
+  GuildMember,
+  GuildChannel,
+  InviteOptions,
+  Invite
 } from 'discord.js'
 import { fromEventPattern } from 'rxjs'
 
@@ -108,6 +111,9 @@ export const DiscordConnector = (client: Client) => {
       content: StringResolvable,
       options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
     ): Future<Message> => Future.apply(() => channel.send(content, options)),
+
+    createInvite: (channel: GuildChannel, options?: InviteOptions): Future<Invite> =>
+      Future.apply(() => channel.createInvite(options)),
 
     deleteMessage: (message: Message): Future<boolean> =>
       pipe(
