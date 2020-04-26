@@ -21,6 +21,7 @@ export const VoiceStateUpdatesHandler = (
       Maybe.map(user => {
         const oldChan = Maybe.fromNullable(voiceStateUpdate.oldState.channel)
         const newChan = Maybe.fromNullable(voiceStateUpdate.newState.channel)
+
         return Maybe.isNone(oldChan) && Maybe.isSome(newChan)
           ? onJoinedChannel(user, newChan.value)
           : Maybe.isSome(oldChan) && Maybe.isSome(newChan) && oldChan.value.id !== newChan.value.id
@@ -36,7 +37,6 @@ export const VoiceStateUpdatesHandler = (
    * Event handlers
    */
   function onJoinedChannel(user: GuildMember, channel: VoiceChannel): Future<unknown> {
-    const toIgnore = referentialService.ignoredUsers(channel.guild)
     return pipe(
       logger.debug(
         `[${channel.guild.name}]`,
@@ -44,13 +44,14 @@ export const VoiceStateUpdatesHandler = (
       ),
       Future.fromIOEither,
       Future.chain(_ => {
+        const toIgnore = referentialService.ignoredUsers(channel.guild)
         const { ignored, others } = peopleInVocalChans(channel.guild, toIgnore)
         if (isIgnored(toIgnore)(user)) {
           return ignored.length + others.length === 1
-            ? notifyIgnoredTriedToStartCall(user, channel)
+            ? onIgnoredUserStartedCall(user, channel)
             : Future.unit
         } else {
-          return others.length === 1 ? notifyCallStarted(user, channel) : Future.unit
+          return others.length === 1 ? onCallStarted(user, channel) : Future.unit
         }
       })
     )
@@ -71,7 +72,6 @@ export const VoiceStateUpdatesHandler = (
   }
 
   function onLeftChannel(user: GuildMember, channel: VoiceChannel): Future<unknown> {
-    const toIgnore = referentialService.ignoredUsers(channel.guild)
     return pipe(
       logger.debug(
         `[${channel.guild.name}]`,
@@ -79,21 +79,14 @@ export const VoiceStateUpdatesHandler = (
       ),
       Future.fromIOEither,
       Future.chain(_ => {
+        const toIgnore = referentialService.ignoredUsers(channel.guild)
         const { ignored, others } = peopleInVocalChans(channel.guild, toIgnore)
-        return ignored.length + others.length === 0
-          ? pipe(
-              logger.debug(`[${channel.guild.name}]`, `Call ended in "${channel.name}"`),
-              Future.fromIOEither
-            )
-          : Future.unit
+        return ignored.length + others.length === 0 ? onCallEnded(channel) : Future.unit
       })
     )
   }
 
-  /**
-   * Helpers
-   */
-  function notifyCallStarted(user: GuildMember, channel: VoiceChannel): Future<unknown> {
+  function onCallStarted(user: GuildMember, channel: VoiceChannel): Future<unknown> {
     return pipe(
       logger.debug(
         `[${channel.guild.name}]`,
@@ -109,10 +102,7 @@ export const VoiceStateUpdatesHandler = (
     )
   }
 
-  function notifyIgnoredTriedToStartCall(
-    user: GuildMember,
-    channel: VoiceChannel
-  ): Future<unknown> {
+  function onIgnoredUserStartedCall(user: GuildMember, channel: VoiceChannel): Future<unknown> {
     return pipe(
       logger.debug(
         `[${channel.guild.name}]`,
@@ -127,6 +117,17 @@ export const VoiceStateUpdatesHandler = (
       )
     )
   }
+
+  function onCallEnded(channel: VoiceChannel): Future<unknown> {
+    return pipe(
+      logger.debug(`[${channel.guild.name}]`, `Call ended in "${channel.name}"`),
+      Future.fromIOEither
+    )
+  }
+
+  /**
+   * Helpers
+   */
 
   function notify(guild: Guild, message: string): Future<unknown> {
     return Future.parallel(
