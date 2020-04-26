@@ -43,17 +43,68 @@ export const VoiceStateUpdatesHandler = (
         `${user.displayName} joined the channel "${channel.name}"`
       ),
       Future.fromIOEither,
-      Future.chain(_ => {
-        const toIgnore = referentialService.ignoredUsers(channel.guild)
-        const { ignored, others } = peopleInVocalChans(channel.guild, toIgnore)
-        if (isIgnored(toIgnore)(user)) {
-          return ignored.length + others.length === 1
-            ? onIgnoredUserStartedCall(user, channel)
-            : Future.unit
-        } else {
-          return others.length === 1 ? onCallStarted(user, channel) : Future.unit
-        }
-      })
+      Future.chain(_ =>
+        ChannelUtils.isPublic(channel) ? onJoinedPublicChannel(user, channel) : Future.unit
+      )
+    )
+  }
+
+  function onJoinedPublicChannel(user: GuildMember, channel: VoiceChannel): Future<unknown> {
+    const toIgnore = referentialService.ignoredUsers(channel.guild)
+    return isIgnored(toIgnore)(user)
+      ? onIgnoredUserJoinedPublicChannel(user, channel, toIgnore)
+      : onOtherUserJoinedPublicChannel(user, channel, toIgnore)
+  }
+
+  function onIgnoredUserJoinedPublicChannel(
+    user: GuildMember,
+    channel: VoiceChannel,
+    toIgnore: TSnowflake[]
+  ): Future<unknown> {
+    const { ignored, others } = peopleInPublicVocalChans(channel.guild, toIgnore)
+    const isFirst = ignored.length + others.length === 1
+    return isFirst ? onIgnoredUserStartedCall(user, channel) : Future.unit
+  }
+
+  function onOtherUserJoinedPublicChannel(
+    user: GuildMember,
+    channel: VoiceChannel,
+    toIgnore: TSnowflake[]
+  ): Future<unknown> {
+    const { others } = peopleInPublicVocalChans(channel.guild, toIgnore)
+    const isFirstNonIgnored = others.length === 1
+    return isFirstNonIgnored ? onCallStarted(user, channel) : Future.unit
+  }
+
+  function onCallStarted(user: GuildMember, channel: VoiceChannel): Future<unknown> {
+    return pipe(
+      logger.debug(
+        `[${channel.guild.name}]`,
+        `Call started by ${user.displayName} in "${channel.name}"`
+      ),
+      Future.fromIOEither,
+      Future.chain(_ =>
+        notifySubscribedChannels(
+          channel.guild,
+          `Haha, ${user} appelle **#${channel.name}**... @everyone doit payer !`
+        )
+      )
+    )
+  }
+
+  function onIgnoredUserStartedCall(user: GuildMember, channel: VoiceChannel): Future<unknown> {
+    return pipe(
+      logger.debug(
+        `[${channel.guild.name}]`,
+        `${user.displayName} started a call in "${channel.name}" (but he's ignored)`
+      ),
+      Future.fromIOEither,
+      Future.chain(_ =>
+        notifySubscribedChannels(
+          channel.guild,
+          `Haha, ${user} appelle **#${channel.name}**... Mais tout le monde s'en fout !`
+        )
+      )
     )
   }
 
@@ -78,58 +129,30 @@ export const VoiceStateUpdatesHandler = (
         `${user.displayName} left the channel "${channel.name}"`
       ),
       Future.fromIOEither,
-      Future.chain(_ => {
-        const toIgnore = referentialService.ignoredUsers(channel.guild)
-        const { ignored, others } = peopleInVocalChans(channel.guild, toIgnore)
-        return ignored.length + others.length === 0 ? onCallEnded(channel) : Future.unit
-      })
-    )
-  }
-
-  function onCallStarted(user: GuildMember, channel: VoiceChannel): Future<unknown> {
-    return pipe(
-      logger.debug(
-        `[${channel.guild.name}]`,
-        `Call started by ${user.displayName} in "${channel.name}"`
-      ),
-      Future.fromIOEither,
       Future.chain(_ =>
-        notify(
-          channel.guild,
-          `Haha, ${user} appelle **#${channel.name}**... @everyone doit payer !`
-        )
+        ChannelUtils.isPublic(channel) ? onLeftPublicChannel(channel) : Future.unit
       )
     )
   }
 
-  function onIgnoredUserStartedCall(user: GuildMember, channel: VoiceChannel): Future<unknown> {
-    return pipe(
-      logger.debug(
-        `[${channel.guild.name}]`,
-        `${user.displayName} started a call in "${channel.name}" (but he's ignored)`
-      ),
-      Future.fromIOEither,
-      Future.chain(_ =>
-        notify(
-          channel.guild,
-          `Haha, ${user} appelle **#${channel.name}**... Mais tout le monde s'en fout !`
-        )
-      )
-    )
+  function onLeftPublicChannel(channel: VoiceChannel): Future<unknown> {
+    const toIgnore = referentialService.ignoredUsers(channel.guild)
+    const { ignored, others } = peopleInPublicVocalChans(channel.guild, toIgnore)
+    return ignored.length + others.length === 0 ? onCallEnded(channel) : Future.unit
   }
 
   function onCallEnded(channel: VoiceChannel): Future<unknown> {
     return pipe(
       logger.debug(`[${channel.guild.name}]`, `Call ended in "${channel.name}"`),
-      Future.fromIOEither
+      Future.fromIOEither,
+      Future.chain(_ => notifySubscribedChannels(channel.guild, `Un appel s'est terminé.`))
     )
   }
 
   /**
    * Helpers
    */
-
-  function notify(guild: Guild, message: string): Future<unknown> {
+  function notifySubscribedChannels(guild: Guild, message: string): Future<unknown> {
     return Future.parallel(
       pipe(
         referentialService.subscribedChannels(guild),
@@ -169,10 +192,10 @@ const getUser = (voiceStateUpdate: VoiceStateUpdate): Maybe<GuildMember> =>
     )
   )
 
-const peopleInVocalChans = (guild: Guild, toIgnore: TSnowflake[]): IgnoredAndOther =>
+const peopleInPublicVocalChans = (guild: Guild, toIgnore: TSnowflake[]): IgnoredAndOther =>
   pipe(
     guild.channels.cache.array(),
-    List.filter(_ => _.type === 'voice'),
+    List.filter(_ => ChannelUtils.isPublic(_) && _.type === 'voice'),
     List.reduce(IgnoredAndOther([], []), (acc, chan) =>
       pipe(
         chan.members.array(),
