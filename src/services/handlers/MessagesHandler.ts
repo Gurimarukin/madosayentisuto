@@ -1,17 +1,17 @@
 import { Message, Guild } from 'discord.js'
 
-import { DiscordConnector } from './DiscordConnector'
-import { PartialLogger } from './Logger'
-import { ReferentialService } from './ReferentialService'
-import { Cli } from '../commands/Cli'
-import { Command } from '../commands/Command'
-import { Commands } from '../commands/Commands'
-import { CommandWithPrefix } from '../commands/CommandWithPrefix'
-import { Config } from '../config/Config'
-import { TSnowflake } from '../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either, todo } from '../utils/fp'
-import { MessageUtils } from '../utils/MessageUtils'
-import { StringUtils } from '../utils/StringUtils'
+import { DiscordConnector } from '../DiscordConnector'
+import { PartialLogger } from '../Logger'
+import { ReferentialService } from '../ReferentialService'
+import { Cli } from '../../commands/Cli'
+import { Command } from '../../commands/Command'
+import { Commands } from '../../commands/Commands'
+import { CommandWithPrefix } from '../../commands/CommandWithPrefix'
+import { Config } from '../../config/Config'
+import { TSnowflake } from '../../models/TSnowflake'
+import { Maybe, pipe, Future, List, Either, todo } from '../../utils/fp'
+import { ChannelUtils } from '../../utils/ChannelUtils'
+import { StringUtils } from '../../utils/StringUtils'
 
 export const MessagesHandler = (
   Logger: PartialLogger,
@@ -71,8 +71,7 @@ export const MessagesHandler = (
 
   function handleCommandWithRights(message: Message): (rawCmd: string) => Maybe<Future<unknown>> {
     return rawCmd => {
-      const isDm = MessageUtils.isDm(message.channel)
-      if (isDm) return Maybe.none
+      if (ChannelUtils.isDm(message.channel)) return Maybe.none
 
       const args = StringUtils.splitWords(rawCmd)
       const isAdmin = pipe(
@@ -161,7 +160,7 @@ export const MessagesHandler = (
                         _,
                         Maybe.fold(
                           () => "Gibier de potence ! Les appels de l'utilisateur seront ignorés.",
-                          _ => `Gibier de potence ! Les appels de <@${_.id}> seront ignorés.`
+                          _ => `Gibier de potence ! Les appels de ${_} seront ignorés.`
                         )
                       )
                     )

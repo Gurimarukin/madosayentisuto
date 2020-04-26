@@ -1,12 +1,12 @@
 import { GuildMember, VoiceChannel, Guild } from 'discord.js'
 
-import { DiscordConnector } from './DiscordConnector'
-import { PartialLogger } from './Logger'
-import { ReferentialService } from './ReferentialService'
-import { TSnowflake } from '../models/TSnowflake'
-import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
-import { ChannelUtils, SendableChannel } from '../utils/ChannelUtils'
-import { Future, Maybe, pipe, List } from '../utils/fp'
+import { DiscordConnector } from '../DiscordConnector'
+import { PartialLogger } from '../Logger'
+import { ReferentialService } from '../ReferentialService'
+import { TSnowflake } from '../../models/TSnowflake'
+import { VoiceStateUpdate } from '../../models/VoiceStateUpdate'
+import { ChannelUtils, SendableChannel } from '../../utils/ChannelUtils'
+import { Future, Maybe, pipe, List } from '../../utils/fp'
 
 export const VoiceStateUpdatesHandler = (
   Logger: PartialLogger,
@@ -103,7 +103,7 @@ export const VoiceStateUpdatesHandler = (
       Future.chain(_ =>
         notify(
           channel.guild,
-          `Haha, <@${user.id}> appelle **#${channel.name}**... @everyone doit payer !`
+          `Haha, ${user} appelle **#${channel.name}**... @everyone doit payer !`
         )
       )
     )
@@ -122,7 +122,7 @@ export const VoiceStateUpdatesHandler = (
       Future.chain(_ =>
         notify(
           channel.guild,
-          `Haha, <@${user.id}> appelle #${channel.name}... Mais tout le monde s'en fout !`
+          `Haha, ${user} appelle **#${channel.name}**... Mais tout le monde s'en fout !`
         )
       )
     )

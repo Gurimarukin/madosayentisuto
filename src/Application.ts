@@ -7,8 +7,9 @@ import { Config } from './config/Config'
 import { ObservableE } from './models/ObservableE'
 import { DiscordConnector } from './services/DiscordConnector'
 import { PartialLogger } from './services/Logger'
-import { MessagesHandler } from './services/MessagesHandler'
-import { VoiceStateUpdatesHandler } from './services/VoiceStateUpdatesHandler'
+import { GuildMemberEventsHandler } from './services/handlers/GuildMemberEventsHandler'
+import { MessagesHandler } from './services/handlers/MessagesHandler'
+import { VoiceStateUpdatesHandler } from './services/handlers/VoiceStateUpdatesHandler'
 import { IO, pipe, Either, Future, Try } from './utils/fp'
 import { ReferentialService } from './services/ReferentialService'
 import { ReferentialPersistence } from './persistence/ReferentialPersistence'
@@ -27,17 +28,17 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
   const referentialPersistence = ReferentialPersistence(Logger, mongoCollection)
 
   return pipe(
-    ReferentialService(Logger, referentialPersistence),
+    discord.setActivity(config.playingActivity),
+    Future.chain(_ => ReferentialService(Logger, referentialPersistence)),
     Future.chain(referentialService => {
-      const Logger = PartialLogger(config, discord)
-      const logger = Logger('Application')
-
       const messagesHandler = MessagesHandler(Logger, config, discord, referentialService)
       const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService, discord)
+      const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, discord)
 
       return pipe(
-        subscribe(messagesHandler, discord.messages),
-        IO.chain(_ => subscribe(voiceStateUpdatesHandler, discord.voiceStateUpdates)),
+        subscribe(messagesHandler, discord.messages()),
+        IO.chain(_ => subscribe(voiceStateUpdatesHandler, discord.voiceStateUpdates())),
+        IO.chain(_ => subscribe(guildMemberEventsHandler, discord.guildMemberEvents())),
         IO.chain(_ => logger.info('application started')),
         Future.fromIOEither
       )
