@@ -24,7 +24,7 @@ export const MessagesHandler = (
   const regex = new RegExp(`^\\s*${config.cmdPrefix}(.*)$`, 'm')
 
   return message =>
-    discord.isFromSelf(message)
+    discord.isSelf(message.author)
       ? Future.unit
       : pipe(
           logger.debug(
