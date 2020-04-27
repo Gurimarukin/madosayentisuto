@@ -196,11 +196,19 @@ export const VoiceStateUpdatesHandler = (
   //       pipe(
   //         users,
   //         List.map(user =>
-  //           discord.sendMessage(
-  //             user,
-  //             StringUtils.stripMargins(
-  //               `Haha, ${calledBy} appelle **${channel.name}**. Tout le monde doit payer !
+  //           pipe(
+  //             discord.sendMessage(
+  //               user,
+  //               StringUtils.stripMargins(
+  //                 `Haha, ${calledBy} appelle **${channel.name}**. Tout le monde doit payer !
   //               |${invite.url}`
+  //               )
+  //             ),
+  //             Future.chain(
+  //               Maybe.fold(
+  //                 () => Future.fromIOEither(logger.warn(`Couldn't DM notify: ${user.user.tag}`)),
+  //                 _ => Future.unit
+  //               )
   //             )
   //           )
   //         ),
