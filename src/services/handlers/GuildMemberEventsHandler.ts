@@ -61,10 +61,10 @@ const randomLeaveMessage = (member: GuildMember): IO<string> =>
   pipe(
     randomInt(0, leaveMessages.length - 1),
     IO.rightIO,
-    IO.map(_ => leaveMessages[_](member))
+    IO.map(_ => leaveMessages[_](`**${member.user.tag}**`))
   )
 
-const leaveMessages: ((member: GuildMember) => string)[] = [
+const leaveMessages: ((member: string) => string)[] = [
   _ => `${_} est parti parce qu'il en avait marre de vous.`,
   _ => `Gibier de potence, ${_} quitte le navire...`,
   _ => `La trahison de ${_} est comme le sel sur une plaie.`,
