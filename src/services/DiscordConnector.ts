@@ -110,7 +110,15 @@ export const DiscordConnector = (client: Client) => {
       channel: PartialTextBasedChannelFields,
       content: StringResolvable,
       options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
-    ): Future<Message> => Future.apply(() => channel.send(content, options)),
+    ): Future<Maybe<Message>> =>
+      pipe(
+        Future.apply(() => channel.send(content, options)),
+        Future.map(Maybe.some),
+        Future.recover<Maybe<Message>>([
+          e => e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user',
+          Maybe.none
+        ])
+      ),
 
     createInvite: (channel: GuildChannel, options?: InviteOptions): Future<Invite> =>
       Future.apply(() => channel.createInvite(options)),
