@@ -118,15 +118,11 @@ export const DiscordConnector = (client: Client) => {
     deleteMessage: (message: Message): Future<boolean> =>
       pipe(
         Future.apply(() => message.delete()),
-        Task.map(
-          Either.fold(
-            e =>
-              e instanceof DiscordAPIError && e.message === 'Missing Permissions'
-                ? Either.right(false)
-                : Either.left(e),
-            _ => Either.right(true)
-          )
-        )
+        Future.map(_ => true),
+        Future.recover<boolean>([
+          e => e instanceof DiscordAPIError && e.message === 'Missing Permissions',
+          false
+        ])
       )
   }
 
