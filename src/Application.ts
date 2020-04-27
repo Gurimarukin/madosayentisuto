@@ -32,7 +32,7 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
     Future.chain(_ => ReferentialService(Logger, referentialPersistence)),
     Future.chain(referentialService => {
       const messagesHandler = MessagesHandler(Logger, config, discord, referentialService)
-      const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService, discord)
+      const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService)
       const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, discord)
 
       return pipe(
