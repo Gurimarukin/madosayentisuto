@@ -86,7 +86,7 @@ export const VoiceStateUpdatesHandler = (
       // Future.chain(_ =>
       //   notifySubscribedChannels(
       //     channel.guild,
-      //     `Haha, ${user} appelle **#${channel.name}**... @everyone doit payer !`
+      //     `Haha, ${user} appelle **${channel.name}**... @everyone doit payer !`
       //   )
       // ),
       // Future.chain(_ => {
@@ -109,7 +109,7 @@ export const VoiceStateUpdatesHandler = (
       // Future.chain(_ =>
       //   notifySubscribedChannels(
       //     channel.guild,
-      //     `Haha, ${user} appelle **#${channel.name}**... Mais tout le monde s'en fout !`
+      //     `Haha, ${user} appelle **${channel.name}**... Mais tout le monde s'en fout !`
       //   )
       // )
     )
@@ -196,11 +196,19 @@ export const VoiceStateUpdatesHandler = (
   //       pipe(
   //         users,
   //         List.map(user =>
-  //           discord.sendMessage(
-  //             user,
-  //             StringUtils.stripMargins(
-  //               `Haha, ${calledBy} appelle **${channel.name}**. Tout le monde doit payer !
+  //           pipe(
+  //             discord.sendMessage(
+  //               user,
+  //               StringUtils.stripMargins(
+  //                 `Haha, ${calledBy} appelle **${channel.name}**. Tout le monde doit payer !
   //               |${invite.url}`
+  //               )
+  //             ),
+  //             Future.chain(
+  //               Maybe.fold(
+  //                 () => Future.fromIOEither(logger.warn(`Couldn't DM notify: ${user.user.tag}`)),
+  //                 _ => Future.unit
+  //               )
   //             )
   //           )
   //         ),

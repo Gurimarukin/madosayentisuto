@@ -1,6 +1,9 @@
 import { TSnowflake } from '../../models/TSnowflake'
 
-export type ReferentialAction = ReferentialAction.CallsSubscribe | ReferentialAction.CallsIgnore
+export type ReferentialAction =
+  | ReferentialAction.CallsSubscribe
+  | ReferentialAction.CallsUnsubscribe
+  | ReferentialAction.CallsIgnore
 
 export namespace ReferentialAction {
   export interface CallsSubscribe {
@@ -10,6 +13,17 @@ export namespace ReferentialAction {
   }
   export const CallsSubscribe = (guild: TSnowflake, channel: TSnowflake): ReferentialAction => ({
     type: 'CallsSubscribe',
+    guild,
+    channel
+  })
+
+  export interface CallsUnsubscribe {
+    readonly type: 'CallsUnsubscribe'
+    readonly guild: TSnowflake
+    readonly channel: TSnowflake
+  }
+  export const CallsUnsubscribe = (guild: TSnowflake, channel: TSnowflake): ReferentialAction => ({
+    type: 'CallsUnsubscribe',
     guild,
     channel
   })

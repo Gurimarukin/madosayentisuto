@@ -8,6 +8,7 @@
     "clean": "rm -fr dist/*",
     "prebuild": "npm run clean",
     "build": "tsc",
+    "checkConfig": "ts-node src/checkConfig.ts",
     "compile": "tsc --noEmit",
     "~compile": "tsc --noEmit -w",
     "run": "ts-node src/index.ts",

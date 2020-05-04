@@ -126,6 +126,19 @@ export const Future = {
   sequence: <A>(futures: Future<A>[]): Future<A[]> =>
     List.array.sequence(Future.taskEitherSeq)(futures),
 
+  recover: <A>(...matchers: [(e: Error) => boolean, A][]): ((future: Future<A>) => Future<A>) =>
+    Task.map(res =>
+      pipe(
+        matchers,
+        _Array.reduce(res, (acc, [cond, a]) =>
+          pipe(
+            acc,
+            _Either.orElse(e => (cond(e) ? _Either.right(a) : _Either.left(e)))
+          )
+        )
+      )
+    ),
+
   runUnsafe: <A>(future: Future<A>): Promise<A> => pipe(future, _Task.map(Try.get))()
 }
 

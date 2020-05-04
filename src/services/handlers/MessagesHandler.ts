@@ -9,7 +9,7 @@ import { Commands } from '../../commands/Commands'
 import { CommandWithPrefix } from '../../commands/CommandWithPrefix'
 import { Config } from '../../config/Config'
 import { TSnowflake } from '../../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either, todo } from '../../utils/fp'
+import { Maybe, pipe, Future, List, Either } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 
@@ -143,11 +143,18 @@ export const MessagesHandler = (
               case 'CallsSubscribe':
                 return pipe(
                   Future.right(referentialService.subscribeCalls(guild, message.channel)),
-                  Future.chain(_ => discord.sendMessage(message.channel, 'Salon ajouté !'))
+                  Future.chain(_ =>
+                    discord.sendMessage(message.channel, 'Salon abonné aux appels.')
+                  )
                 )
 
               case 'CallsUnsubscribe':
-                return todo()
+                return pipe(
+                  Future.right(referentialService.unsubscribeCalls(guild, message.channel)),
+                  Future.chain(_ =>
+                    discord.sendMessage(message.channel, 'Salon désabonné aux appels.')
+                  )
+                )
 
               case 'CallsIgnore':
                 return pipe(

@@ -1,5 +1,4 @@
 import { Guild, Channel } from 'discord.js'
-import { createStore } from 'redux'
 
 import { PartialLogger } from './Logger'
 import { TSnowflake } from '../models/TSnowflake'
@@ -13,6 +12,7 @@ export interface ReferentialService {
   subscribedChannels: (guild: Guild) => TSnowflake[]
   ignoredUsers: (guild: Guild) => TSnowflake[]
   subscribeCalls: (guild: Guild, channel: Channel) => void
+  unsubscribeCalls: (guild: Guild, channel: Channel) => void
   ignoreCallsFrom: (guild: Guild, user: TSnowflake) => void
 }
 
@@ -25,12 +25,10 @@ export const ReferentialService = (
     Future.chain(initState => {
       const logger = Logger('ReferentialService')
 
-      const store = createStore(
-        ReferentialReducer(
-          pipe(
-            initState,
-            Maybe.getOrElse(() => Referential.empty)
-          )
+      const store = ReferentialReducer.createStore(
+        pipe(
+          initState,
+          Maybe.getOrElse(() => Referential.empty)
         )
       )
 
@@ -60,6 +58,12 @@ export const ReferentialService = (
         )
       }
 
+      const unsubscribeCalls = (guild: Guild, channel: Channel): void => {
+        store.dispatch(
+          ReferentialAction.CallsUnsubscribe(TSnowflake.wrap(guild.id), TSnowflake.wrap(channel.id))
+        )
+      }
+
       const ignoreCallsFrom = (guild: Guild, user: TSnowflake): void => {
         store.dispatch(ReferentialAction.CallsIgnore(TSnowflake.wrap(guild.id), user))
       }
@@ -83,7 +87,13 @@ export const ReferentialService = (
             )
           })
         ),
-        IO.map(() => ({ subscribedChannels, ignoredUsers, subscribeCalls, ignoreCallsFrom })),
+        IO.map(() => ({
+          subscribedChannels,
+          ignoredUsers,
+          subscribeCalls,
+          unsubscribeCalls,
+          ignoreCallsFrom
+        })),
         Future.fromIOEither
       )
     })
