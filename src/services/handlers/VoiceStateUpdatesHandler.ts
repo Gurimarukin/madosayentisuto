@@ -86,7 +86,7 @@ export const VoiceStateUpdatesHandler = (
       // Future.chain(_ =>
       //   notifySubscribedChannels(
       //     channel.guild,
-      //     `Haha, ${user} appelle **#${channel.name}**... @everyone doit payer !`
+      //     `Haha, ${user} appelle **${channel.name}**... @everyone doit payer !`
       //   )
       // ),
       // Future.chain(_ => {
@@ -109,7 +109,7 @@ export const VoiceStateUpdatesHandler = (
       // Future.chain(_ =>
       //   notifySubscribedChannels(
       //     channel.guild,
-      //     `Haha, ${user} appelle **#${channel.name}**... Mais tout le monde s'en fout !`
+      //     `Haha, ${user} appelle **${channel.name}**... Mais tout le monde s'en fout !`
       //   )
       // )
     )
