@@ -1,6 +1,6 @@
 import * as t from 'io-ts'
 
-import { Colors } from '../utils/colors'
+import { Colors } from '../utils/Colors'
 
 export type LogLevel = t.TypeOf<typeof LogLevel.codec>
 

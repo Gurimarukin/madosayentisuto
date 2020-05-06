@@ -27,7 +27,7 @@ import { TSnowflake } from '../models/TSnowflake'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
 import { Maybe, pipe, Future, Task, Either } from '../utils/fp'
 import { GuildMemberEvent } from '../models/GuildMemberEvent'
-import { Colors } from '../utils/colors'
+import { Colors } from '../utils/Colors'
 
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
 
