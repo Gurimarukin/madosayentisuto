@@ -1,5 +1,5 @@
 import * as Ord from 'fp-ts/lib/Ord'
-import { GuildMember, TextChannel, MessageAttachment, Guild, MessageEmbed } from 'discord.js'
+import { GuildMember, TextChannel, Guild, MessageEmbed } from 'discord.js'
 import { randomInt } from 'fp-ts/lib/Random'
 
 import { DiscordConnector } from '../DiscordConnector'
