@@ -2,7 +2,10 @@
 
 Create `conf/local.conf.json` file using content of `conf/local.example.conf.json` (change needed values).
 
+
 ## Bot commands
+
+    okb defaultRole set <role>
 
 
 ## Deploy
