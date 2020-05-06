@@ -11,6 +11,7 @@ import {
   InviteOptions,
   Message,
   MessageAdditions,
+  MessageEmbed,
   MessageOptions,
   PartialGuildMember,
   PartialTextBasedChannelFields,
@@ -26,6 +27,7 @@ import { TSnowflake } from '../models/TSnowflake'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
 import { Maybe, pipe, Future, Task, Either } from '../utils/fp'
 import { GuildMemberEvent } from '../models/GuildMemberEvent'
+import { Colors } from '../utils/colors'
 
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
 
@@ -114,18 +116,17 @@ export const DiscordConnector = (client: Client) => {
         )
       ),
 
-    sendMessage: (
+    sendMessage,
+
+    sendPrettyMessage: (
       channel: PartialTextBasedChannelFields,
-      content: StringResolvable,
+      content: string,
       options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
     ): Future<Maybe<Message>> =>
-      pipe(
-        Future.apply(() => channel.send(content, options)),
-        Future.map(Maybe.some),
-        Future.recover<Maybe<Message>>([
-          e => e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user',
-          Maybe.none
-        ])
+      sendMessage(
+        channel,
+        new MessageEmbed().setColor(Colors.darkred).setDescription(content),
+        options
       ),
 
     createInvite: (channel: GuildChannel, options?: InviteOptions): Future<Invite> =>
@@ -140,6 +141,21 @@ export const DiscordConnector = (client: Client) => {
           false
         ])
       )
+  }
+
+  function sendMessage(
+    channel: PartialTextBasedChannelFields,
+    content: StringResolvable,
+    options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
+  ): Future<Maybe<Message>> {
+    return pipe(
+      Future.apply(() => channel.send(content, options)),
+      Future.map(Maybe.some),
+      Future.recover<Maybe<Message>>([
+        e => e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user',
+        Maybe.none
+      ])
+    )
   }
 
   function fullMember(member: GuildMember | PartialGuildMember): Future<GuildMember> {

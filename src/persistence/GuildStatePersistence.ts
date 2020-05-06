@@ -30,7 +30,7 @@ export const GuildStatePersistence = (
 
     upsert: (id: GuildId, state: GuildState): Future<boolean> =>
       pipe(
-        collection.updateOne({ id }, { $set: state }, { upsert: true }),
+        collection.updateOne({ id }, state, { upsert: true }),
         Future.map(_ => _.modifiedCount + _.upsertedCount === 1)
       )
   }

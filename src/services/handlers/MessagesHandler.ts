@@ -93,7 +93,10 @@ export const MessagesHandler = (
           : pipe(
               deleteMessage(message),
               Future.chain(_ =>
-                discord.sendMessage(message.author, 'Gibier de potence, tu ne peux pas faire ça !')
+                discord.sendPrettyMessage(
+                  message.author,
+                  'Gibier de potence, tu ne peux pas faire ça !'
+                )
               )
             )
       )
@@ -135,10 +138,10 @@ export const MessagesHandler = (
           pipe(
             deleteMessage(message),
             Future.chain(_ =>
-              discord.sendMessage(
+              discord.sendPrettyMessage(
                 message.author,
                 StringUtils.stripMargins(
-                  `Wrong command: \`${message.content}\`
+                  `Command invalide: \`${message.content}\`
                   |\`\`\`
                   |${e}
                   |\`\`\``
@@ -166,7 +169,7 @@ export const MessagesHandler = (
                   Future.chain(
                     Maybe.fold(
                       () =>
-                        discord.sendMessage(
+                        discord.sendPrettyMessage(
                           message.author,
                           `**${cmd.role}** n'est pas un rôle valide.`
                         ),
@@ -175,11 +178,11 @@ export const MessagesHandler = (
                           guildStateService.setDefaultRole(guild, role),
                           Future.chain(success =>
                             success
-                              ? discord.sendMessage(
+                              ? discord.sendPrettyMessage(
                                   message.channel,
                                   `**@${role.name}** est maintenant le rôle par défaut.`
                                 )
-                              : discord.sendMessage(
+                              : discord.sendPrettyMessage(
                                   message.author,
                                   "Erreur lors de l'exécution de la commande"
                                 )

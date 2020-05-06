@@ -1,4 +1,5 @@
 import * as t from 'io-ts'
+import util from 'util'
 import {
   ClientSession,
   Collection,
@@ -10,7 +11,6 @@ import {
   ReplaceOneOptions,
   ReplaceWriteOpResult,
   UpdateOneOptions,
-  UpdateQuery,
   UpdateWriteOpResult
 } from 'mongodb'
 
@@ -53,19 +53,21 @@ export const FpCollection = <A, O>(
 
   updateOne: (
     filter: FilterQuery<O>,
-    update: UpdateQuery<O> | Partial<O>,
+    doc: A,
     options?: UpdateOneOptions
-  ): Future<UpdateWriteOpResult> =>
-    pipe(
+  ): Future<UpdateWriteOpResult> => {
+    const encoded = codec.encode(doc)
+    return pipe(
       collection(),
-      Future.chain(_ => Future.apply(() => _.updateOne(filter, update, options))),
+      Future.chain(_ => Future.apply(() => _.updateOne(filter, { $set: encoded }, options))),
       Future.chain(res =>
         pipe(
-          Future.fromIOEither(logger.debug('updated', update)),
+          Future.fromIOEither(logger.debug('updated', encoded)),
           Future.map(_ => res)
         )
       )
-    ),
+    )
+  },
 
   replaceOne: (
     filter: FilterQuery<O>,
@@ -102,7 +104,7 @@ export const FpCollection = <A, O>(
           u =>
             pipe(
               codec.decode(u),
-              Either.bimap(_ => Error(`Couldn't decode value as ${codec.name}:\n${u}`), Maybe.some),
+              Either.bimap(_ => decodeError(codec, u), Maybe.some),
               Future.fromEither
             )
         )
@@ -116,7 +118,7 @@ export const FpCollection = <A, O>(
         _.find(query, options).map(u =>
           pipe(
             codec.decode(u),
-            Either.mapLeft(_ => Error(`Couldn't decode value as ${codec.name}:\n${u}`))
+            Either.mapLeft(_ => decodeError(codec, u))
           )
         )
       )
@@ -134,3 +136,6 @@ export const FpCollection = <A, O>(
       )
     )
 })
+
+const decodeError = <A, B>(codec: t.Type<A, B>, u: unknown): Error =>
+  Error(`Couldn't decode value as ${codec.name}:\n${util.format(u)}`)
