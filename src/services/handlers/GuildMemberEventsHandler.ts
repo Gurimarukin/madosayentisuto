@@ -5,6 +5,7 @@ import { randomInt } from 'fp-ts/lib/Random'
 import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
 import { GuildMemberEvent } from '../../models/GuildMemberEvent'
+import { Colors } from '../../utils/Colors'
 import { Future, pipe, IO, Maybe, List } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
@@ -28,10 +29,10 @@ export const GuildMemberEventsHandler = (
             `Ha ha !
             |Tu as rejoint le serveur **${member.guild.name}**, quelle erreur !
             |En guise de cadeau de bienvenue, découvre immédiatement l'histoire du véritable capitaine en cliquant sur ce lien plein de malice !
-            |(C'est comme OSS117 mais en moins bien.)`
+            |(C'est comme OSS 117 mais en moins bien.)`
           ),
           new MessageEmbed()
-            .setColor('#8b0000')
+            .setColor(Colors.darkred)
             .setTitle('Jean Plank')
             .setURL('https://jeanplank.blbl.ch')
             .setThumbnail(
@@ -56,7 +57,7 @@ export const GuildMemberEventsHandler = (
           goodbyeChannel(member.guild),
           Maybe.fold<TextChannel, Future<unknown>>(
             () => Future.unit,
-            chan => discord.sendMessage(chan, msg)
+            chan => discord.sendPrettyMessage(chan, msg)
           )
         )
       )

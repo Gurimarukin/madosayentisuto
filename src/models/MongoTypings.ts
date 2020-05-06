@@ -1,4 +1,10 @@
-import { ObjectId } from 'mongodb'
+import { IndexSpecification as MongoIndexSpec, ObjectId } from 'mongodb'
+
+export interface IndexSpecification<A> extends MongoIndexSpec {
+  key: {
+    [B in keyof A]?: 1 | -1
+  }
+}
 
 /**
  * copy-pasta from @types/mongodb

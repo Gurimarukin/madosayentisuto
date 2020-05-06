@@ -2,14 +2,14 @@ import { Message, Guild } from 'discord.js'
 
 import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
-import { ReferentialService } from '../ReferentialService'
+import { GuildStateService } from '../GuildStateService'
 import { Cli } from '../../commands/Cli'
 import { Command } from '../../commands/Command'
 import { Commands } from '../../commands/Commands'
 import { CommandWithPrefix } from '../../commands/CommandWithPrefix'
 import { Config } from '../../config/Config'
 import { TSnowflake } from '../../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either } from '../../utils/fp'
+import { IO, Maybe, pipe, Future, List, Either } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 
@@ -17,7 +17,7 @@ export const MessagesHandler = (
   Logger: PartialLogger,
   config: Config,
   discord: DiscordConnector,
-  referentialService: ReferentialService
+  guildStateService: GuildStateService
 ): ((message: Message) => Future<unknown>) => {
   const logger = Logger('MessagesHandler')
 
@@ -27,29 +27,30 @@ export const MessagesHandler = (
     discord.isSelf(message.author)
       ? Future.unit
       : pipe(
-          logger.debug(
-            [
-              ...pipe(
-                Maybe.fromNullable(message.guild),
-                Maybe.fold(
-                  () => [],
-                  _ =>
-                    pipe(
-                      List.cons(
-                        _.name,
-                        message.channel.type === 'text' ? [message.channel.name] : []
-                      ),
-                      _ => [`[${_.join(' #')}]`]
-                    )
-                )
-              ),
-              `${message.author.username}:`,
-              message.content
-            ].join(' ')
-          ),
+          logMessage(message),
           Future.fromIOEither,
           Future.chain(_ => handleMessage(message))
         )
+
+  function logMessage(message: Message): IO<void> {
+    return logger.debug(
+      [
+        ...pipe(
+          Maybe.fromNullable(message.guild),
+          Maybe.fold(
+            () => [],
+            _ =>
+              pipe(
+                List.cons(_.name, message.channel.type === 'text' ? [message.channel.name] : []),
+                _ => [`[${_.join(' #')}]`]
+              )
+          )
+        ),
+        `${message.author.username}:`,
+        message.content
+      ].join(' ')
+    )
+  }
 
   function handleMessage(message: Message): Future<unknown> {
     return pipe(
@@ -69,43 +70,59 @@ export const MessagesHandler = (
     return pipe(withoutPrefix(message.content), Maybe.chain(handleCommandWithRights(message)))
   }
 
+  function withoutPrefix(msg: string): Maybe<string> {
+    return pipe(
+      Maybe.fromNullable(msg.match(regex)),
+      Maybe.chain(_ => List.lookup(1, _))
+    )
+  }
+
   function handleCommandWithRights(message: Message): (rawCmd: string) => Maybe<Future<unknown>> {
     return rawCmd => {
       if (ChannelUtils.isDm(message.channel)) return Maybe.none
 
-      const args = StringUtils.splitWords(rawCmd)
+      const authorId = TSnowflake.wrap(message.author.id)
       const isAdmin = pipe(
         config.admins,
-        List.exists(_ => _ === TSnowflake.wrap(message.author.id))
+        List.exists(_ => _ === authorId)
       )
-
-      const res: Future<unknown> = isAdmin
-        ? parseCommand(message, args, Cli.adminTextChannel)
-        : discord.sendMessage(message.author, 'Gibier de potence, tu ne peux pas faire ça !')
 
       return Maybe.some(
-        pipe(
-          discord.deleteMessage(message),
-          Future.chain(deleted =>
-            deleted
-              ? Future.unit
-              : Future.fromIOEither(
-                  logger.info(
-                    `[${pipe(
-                      Maybe.fromNullable(message.guild),
-                      Maybe.fold(
-                        () => message.author.username,
-                        _ => _.name
-                      )
-                    )}]`,
-                    'Not enough permissions to delete message '
-                  )
+        isAdmin
+          ? parseCommand(message, StringUtils.splitWords(rawCmd), Cli.adminTextChannel)
+          : pipe(
+              deleteMessage(message),
+              Future.chain(_ =>
+                discord.sendPrettyMessage(
+                  message.author,
+                  'Gibier de potence, tu ne peux pas faire ça !'
                 )
-          ),
-          Future.chain(_ => res)
-        )
+              )
+            )
       )
     }
+  }
+
+  function deleteMessage(message: Message): Future<void> {
+    return pipe(
+      discord.deleteMessage(message),
+      Future.chain(deleted =>
+        deleted
+          ? Future.unit
+          : Future.fromIOEither(
+              logger.info(
+                `[${pipe(
+                  Maybe.fromNullable(message.guild),
+                  Maybe.fold(
+                    () => message.author.username,
+                    _ => _.name
+                  )
+                )}]`,
+                'Not enough permissions to delete message '
+              )
+            )
+      )
+    )
   }
 
   function parseCommand(
@@ -118,13 +135,18 @@ export const MessagesHandler = (
       Command.parse(args),
       Either.fold(
         e =>
-          discord.sendMessage(
-            message.author,
-            StringUtils.stripMargins(
-              `Wrong command: \`${message.content}\`
-              |\`\`\`
-              |${e}
-              |\`\`\``
+          pipe(
+            deleteMessage(message),
+            Future.chain(_ =>
+              discord.sendPrettyMessage(
+                message.author,
+                StringUtils.stripMargins(
+                  `Command invalide: \`${message.content}\`
+                  |\`\`\`
+                  |${e}
+                  |\`\`\``
+                )
+              )
             )
           ),
         runCommand(message)
@@ -137,39 +159,35 @@ export const MessagesHandler = (
       pipe(
         Maybe.fromNullable(message.guild),
         Maybe.fold<Guild, Future<unknown>>(
-          () => Future.fromIOEither(logger.warn('Received "calls" command from non-guild channel')),
+          () => Future.unit,
           guild => {
             switch (cmd._tag) {
-              case 'CallsSubscribe':
+              case 'DefaultRoleSet':
                 return pipe(
-                  Future.right(referentialService.subscribeCalls(guild, message.channel)),
-                  Future.chain(_ =>
-                    discord.sendMessage(message.channel, 'Salon abonné aux appels.')
-                  )
-                )
-
-              case 'CallsUnsubscribe':
-                return pipe(
-                  Future.right(referentialService.unsubscribeCalls(guild, message.channel)),
-                  Future.chain(_ =>
-                    discord.sendMessage(message.channel, 'Salon désabonné aux appels.')
-                  )
-                )
-
-              case 'CallsIgnore':
-                return pipe(
-                  Future.right(referentialService.ignoreCallsFrom(guild, cmd.user)),
-                  Future.chain(_ => discord.fetchUser(cmd.user)),
-                  Future.chain(_ =>
-                    discord.sendMessage(
-                      message.channel,
-                      pipe(
-                        _,
-                        Maybe.fold(
-                          () => "Gibier de potence ! Les appels de l'utilisateur seront ignorés.",
-                          _ => `Gibier de potence ! Les appels de ${_} seront ignorés.`
+                  deleteMessage(message),
+                  Future.chain(_ => discord.fetchRole(guild, cmd.role)),
+                  Future.chain(
+                    Maybe.fold(
+                      () =>
+                        discord.sendPrettyMessage(
+                          message.author,
+                          `**${cmd.role}** n'est pas un rôle valide.`
+                        ),
+                      role =>
+                        pipe(
+                          guildStateService.setDefaultRole(guild, role),
+                          Future.chain(success =>
+                            success
+                              ? discord.sendPrettyMessage(
+                                  message.channel,
+                                  `**@${role.name}** est maintenant le rôle par défaut.`
+                                )
+                              : discord.sendPrettyMessage(
+                                  message.author,
+                                  "Erreur lors de l'exécution de la commande"
+                                )
+                          )
                         )
-                      )
                     )
                   )
                 )
@@ -177,12 +195,5 @@ export const MessagesHandler = (
           }
         )
       )
-  }
-
-  function withoutPrefix(msg: string): Maybe<string> {
-    return pipe(
-      Maybe.fromNullable(msg.match(regex)),
-      Maybe.chain(_ => List.lookup(1, _))
-    )
   }
 }

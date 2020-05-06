@@ -1,5 +1,7 @@
 import * as t from 'io-ts'
 
+import { Colors } from '../utils/Colors'
+
 export type LogLevel = t.TypeOf<typeof LogLevel.codec>
 
 export namespace LogLevel {
@@ -18,10 +20,10 @@ export namespace LogLevel {
   }
 
   export const hexColor: Record<LogLevel, string> = {
-    debug: '686a66',
-    info: '00a4a8',
-    warn: 'c8a800',
-    error: 'f54234'
+    debug: Colors.dimgray,
+    info: Colors.lightseagreen,
+    warn: Colors.goldenrod,
+    error: Colors.tomato
   }
 }
 

@@ -1,21 +1,24 @@
 import * as Obs from 'fp-ts-rxjs/lib/ObservableEither'
 import {
-  Client,
-  Message,
-  PartialTextBasedChannelFields,
-  StringResolvable,
-  MessageOptions,
-  MessageAdditions,
-  Channel,
-  User,
-  DiscordAPIError,
-  Presence,
   ActivityOptions,
-  PartialGuildMember,
-  GuildMember,
+  Channel,
+  Client,
+  DiscordAPIError,
+  Guild,
   GuildChannel,
+  GuildMember,
+  Invite,
   InviteOptions,
-  Invite
+  Message,
+  MessageAdditions,
+  MessageEmbed,
+  MessageOptions,
+  PartialGuildMember,
+  PartialTextBasedChannelFields,
+  Presence,
+  Role,
+  StringResolvable,
+  User
 } from 'discord.js'
 import { fromEventPattern } from 'rxjs'
 
@@ -24,6 +27,7 @@ import { TSnowflake } from '../models/TSnowflake'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
 import { Maybe, pipe, Future, Task, Either } from '../utils/fp'
 import { GuildMemberEvent } from '../models/GuildMemberEvent'
+import { Colors } from '../utils/Colors'
 
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
 
@@ -90,6 +94,12 @@ export const DiscordConnector = (client: Client) => {
         Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
       ),
 
+    fetchRole: (guild: Guild, role: TSnowflake): Future<Maybe<Role>> =>
+      pipe(
+        Future.apply(() => guild.roles.fetch(TSnowflake.unwrap(role))),
+        Future.map(Maybe.fromNullable)
+      ),
+
     /**
      * Write
      */
@@ -106,18 +116,17 @@ export const DiscordConnector = (client: Client) => {
         )
       ),
 
-    sendMessage: (
+    sendMessage,
+
+    sendPrettyMessage: (
       channel: PartialTextBasedChannelFields,
-      content: StringResolvable,
+      content: string,
       options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
     ): Future<Maybe<Message>> =>
-      pipe(
-        Future.apply(() => channel.send(content, options)),
-        Future.map(Maybe.some),
-        Future.recover<Maybe<Message>>([
-          e => e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user',
-          Maybe.none
-        ])
+      sendMessage(
+        channel,
+        new MessageEmbed().setColor(Colors.darkred).setDescription(content),
+        options
       ),
 
     createInvite: (channel: GuildChannel, options?: InviteOptions): Future<Invite> =>
@@ -132,6 +141,21 @@ export const DiscordConnector = (client: Client) => {
           false
         ])
       )
+  }
+
+  function sendMessage(
+    channel: PartialTextBasedChannelFields,
+    content: StringResolvable,
+    options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
+  ): Future<Maybe<Message>> {
+    return pipe(
+      Future.apply(() => channel.send(content, options)),
+      Future.map(Maybe.some),
+      Future.recover<Maybe<Message>>([
+        e => e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user',
+        Maybe.none
+      ])
+    )
   }
 
   function fullMember(member: GuildMember | PartialGuildMember): Future<GuildMember> {
