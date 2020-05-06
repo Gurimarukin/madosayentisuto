@@ -1,21 +1,23 @@
 import * as Obs from 'fp-ts-rxjs/lib/ObservableEither'
 import {
-  Client,
-  Message,
-  PartialTextBasedChannelFields,
-  StringResolvable,
-  MessageOptions,
-  MessageAdditions,
-  Channel,
-  User,
-  DiscordAPIError,
-  Presence,
   ActivityOptions,
-  PartialGuildMember,
-  GuildMember,
+  Channel,
+  Client,
+  DiscordAPIError,
+  Guild,
   GuildChannel,
+  GuildMember,
+  Invite,
   InviteOptions,
-  Invite
+  Message,
+  MessageAdditions,
+  MessageOptions,
+  PartialGuildMember,
+  PartialTextBasedChannelFields,
+  Presence,
+  Role,
+  StringResolvable,
+  User
 } from 'discord.js'
 import { fromEventPattern } from 'rxjs'
 
@@ -88,6 +90,12 @@ export const DiscordConnector = (client: Client) => {
       pipe(
         Future.apply(() => client.users.fetch(TSnowflake.unwrap(user))),
         Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
+      ),
+
+    fetchRole: (guild: Guild, role: TSnowflake): Future<Maybe<Role>> =>
+      pipe(
+        Future.apply(() => guild.roles.fetch(TSnowflake.unwrap(role))),
+        Future.map(Maybe.fromNullable)
       ),
 
     /**

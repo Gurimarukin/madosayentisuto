@@ -1,17 +1,20 @@
 import * as t from 'io-ts'
 import {
+  ClientSession,
   Collection,
   CollectionInsertOneOptions,
+  Cursor,
   FilterQuery,
   InsertOneWriteOpResult,
   FindOneOptions,
   ReplaceOneOptions,
+  ReplaceWriteOpResult,
   UpdateOneOptions,
   UpdateQuery,
   UpdateWriteOpResult
 } from 'mongodb'
 
-import { OptionalId, WithId } from '../models/MongoTypings'
+import { OptionalId, WithId, IndexSpecification } from '../models/MongoTypings'
 import { Logger } from '../services/Logger'
 import { Future, pipe, Maybe, Either } from '../utils/fp'
 
@@ -20,8 +23,18 @@ export const FpCollection = <A, O>(
   logger: Logger,
   collection: () => Future<Collection<O>>,
   codec: t.Type<A, OptionalId<O>>
-) => {
-  const insertOne = (
+) => ({
+  ensureIndexes: (
+    indexSpecs: IndexSpecification<A>[],
+    options?: { session?: ClientSession }
+  ): Future<void> =>
+    pipe(
+      Future.fromIOEither(logger.debug('ensureIndexes')),
+      Future.chain(_ => collection()),
+      Future.chain(_ => Future.apply(() => _.createIndexes(indexSpecs, options)))
+    ),
+
+  insertOne: (
     doc: A,
     options?: CollectionInsertOneOptions
   ): Future<InsertOneWriteOpResult<WithId<O>>> => {
@@ -36,9 +49,9 @@ export const FpCollection = <A, O>(
         )
       )
     )
-  }
+  },
 
-  const updateOne = (
+  updateOne: (
     filter: FilterQuery<O>,
     update: UpdateQuery<O> | Partial<O>,
     options?: UpdateOneOptions
@@ -52,9 +65,13 @@ export const FpCollection = <A, O>(
           Future.map(_ => res)
         )
       )
-    )
+    ),
 
-  const replaceOne = (filter: FilterQuery<O>, doc: A, options?: ReplaceOneOptions) => {
+  replaceOne: (
+    filter: FilterQuery<O>,
+    doc: A,
+    options?: ReplaceOneOptions
+  ): Future<ReplaceWriteOpResult> => {
     const encoded = codec.encode(doc)
     return pipe(
       collection(),
@@ -66,15 +83,15 @@ export const FpCollection = <A, O>(
         )
       )
     )
-  }
+  },
 
-  const count = (filter: FilterQuery<O>): Future<number> =>
+  count: (filter: FilterQuery<O>): Future<number> =>
     pipe(
       collection(),
       Future.chain(_ => Future.apply(() => _.countDocuments(filter)))
-    )
+    ),
 
-  const findOne = (filter: FilterQuery<O>, options?: FindOneOptions): Future<Maybe<A>> =>
+  findOne: (filter: FilterQuery<O>, options?: FindOneOptions): Future<Maybe<A>> =>
     pipe(
       collection(),
       Future.chain(_ => Future.apply(() => _.findOne(filter, options))),
@@ -82,17 +99,30 @@ export const FpCollection = <A, O>(
       Future.chain(
         Maybe.fold(
           () => Future.right(Maybe.none),
-          _ =>
+          u =>
             pipe(
-              codec.decode(_),
-              Either.bimap(_ => Error("Couldn't decode value"), Maybe.some),
+              codec.decode(u),
+              Either.bimap(_ => Error(`Couldn't decode value as ${codec.name}:\n${u}`), Maybe.some),
               Future.fromEither
             )
         )
       )
-    )
+    ),
 
-  const drop = (): Future<void> =>
+  find: (query: FilterQuery<O>, options?: FindOneOptions): Future<Cursor<Either<Error, A>>> =>
+    pipe(
+      collection(),
+      Future.map(_ =>
+        _.find(query, options).map(u =>
+          pipe(
+            codec.decode(u),
+            Either.mapLeft(_ => Error(`Couldn't decode value as ${codec.name}:\n${u}`))
+          )
+        )
+      )
+    ),
+
+  drop: (): Future<void> =>
     pipe(
       collection(),
       Future.chain(_ => Future.apply(() => _.drop())),
@@ -103,6 +133,4 @@ export const FpCollection = <A, O>(
         )
       )
     )
-
-  return { insertOne, updateOne, replaceOne, count, findOne, drop }
-}
+})

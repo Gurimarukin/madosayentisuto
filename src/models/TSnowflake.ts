@@ -1,8 +1,8 @@
-import { Newtype, iso } from 'newtype-ts'
 import * as t from 'io-ts'
 import { fromNewtype } from 'io-ts-types/lib/fromNewtype'
+import { Newtype, iso } from 'newtype-ts'
 
-export type TSnowflake = Newtype<{ readonly Password: unique symbol }, string>
+export type TSnowflake = Newtype<{ readonly TSnowflake: unique symbol }, string>
 
 const isoTSnowflake = iso<TSnowflake>()
 

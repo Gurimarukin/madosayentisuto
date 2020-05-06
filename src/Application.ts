@@ -10,9 +10,9 @@ import { PartialLogger } from './services/Logger'
 import { GuildMemberEventsHandler } from './services/handlers/GuildMemberEventsHandler'
 import { MessagesHandler } from './services/handlers/MessagesHandler'
 import { VoiceStateUpdatesHandler } from './services/handlers/VoiceStateUpdatesHandler'
-import { IO, pipe, Either, Future, Try } from './utils/fp'
-import { ReferentialService } from './services/ReferentialService'
-import { ReferentialPersistence } from './persistence/ReferentialPersistence'
+import { IO, pipe, Either, Future, Try, List } from './utils/fp'
+import { GuildStateService } from './services/GuildStateService'
+import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 
 export const Application = (config: Config, discord: DiscordConnector): Future<void> => {
   const Logger = PartialLogger(config, discord)
@@ -25,14 +25,24 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
       Future.map(_ => _.db(config.db.dbName).collection(coll))
     )
 
-  const referentialPersistence = ReferentialPersistence(Logger, mongoCollection)
+  const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
+
+  const persistences: { ensureIndexes: () => Future<void> }[] = [guildStatePersistence]
+  const ensureIndexes = (): Future<void> =>
+    pipe(
+      persistences,
+      List.map(_ => _.ensureIndexes()),
+      Future.sequence,
+      Future.map(_ => {})
+    )
 
   return pipe(
     discord.setActivity(config.playingActivity),
-    Future.chain(_ => ReferentialService(Logger, referentialPersistence)),
-    Future.chain(referentialService => {
-      const messagesHandler = MessagesHandler(Logger, config, discord, referentialService)
-      const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, referentialService)
+    Future.chain(_ => ensureIndexes()),
+    Future.chain(_ => GuildStateService(Logger, guildStatePersistence)),
+    Future.chain(guildStateService => {
+      const messagesHandler = MessagesHandler(Logger, config, discord, guildStateService)
+      const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, guildStateService, discord)
       const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, discord)
 
       return pipe(

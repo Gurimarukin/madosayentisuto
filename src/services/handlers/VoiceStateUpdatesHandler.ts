@@ -1,17 +1,15 @@
-import { GuildMember, VoiceChannel, Guild } from 'discord.js'
+import { GuildMember, VoiceChannel } from 'discord.js'
 
-// import { DiscordConnector } from '../DiscordConnector'
+import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
-import { ReferentialService } from '../ReferentialService'
-import { TSnowflake } from '../../models/TSnowflake'
+import { GuildStateService } from '../GuildStateService'
 import { VoiceStateUpdate } from '../../models/VoiceStateUpdate'
-import { ChannelUtils } from '../../utils/ChannelUtils'
-import { Future, Maybe, pipe, List } from '../../utils/fp'
+import { Future, Maybe, pipe } from '../../utils/fp'
 
 export const VoiceStateUpdatesHandler = (
   Logger: PartialLogger,
-  referentialService: ReferentialService
-  // discord: DiscordConnector
+  _guildStateService: GuildStateService,
+  _discord: DiscordConnector
 ): ((voiceStateUpdate: VoiceStateUpdate) => Future<unknown>) => {
   const logger = Logger('VoiceStateUpdatesHandler')
 
@@ -42,76 +40,7 @@ export const VoiceStateUpdatesHandler = (
         `[${channel.guild.name}]`,
         `${user.displayName} joined the channel "${channel.name}"`
       ),
-      Future.fromIOEither,
-      Future.chain(_ =>
-        ChannelUtils.isPublic(channel) ? onJoinedPublicChannel(user, channel) : Future.unit
-      )
-    )
-  }
-
-  function onJoinedPublicChannel(user: GuildMember, channel: VoiceChannel): Future<unknown> {
-    const toIgnore = referentialService.ignoredUsers(channel.guild)
-    return isIgnored(toIgnore)(user)
-      ? onIgnoredUserJoinedPublicChannel(user, channel, toIgnore)
-      : onOtherUserJoinedPublicChannel(user, channel, toIgnore)
-  }
-
-  function onIgnoredUserJoinedPublicChannel(
-    user: GuildMember,
-    channel: VoiceChannel,
-    toIgnore: TSnowflake[]
-  ): Future<unknown> {
-    const { ignored, others } = peopleInPublicVocalChans(channel.guild, toIgnore)
-    const isFirst = ignored.length + others.length === 1
-    return isFirst ? onIgnoredUserStartedCall(user, channel) : Future.unit
-  }
-
-  function onOtherUserJoinedPublicChannel(
-    user: GuildMember,
-    channel: VoiceChannel,
-    toIgnore: TSnowflake[]
-  ): Future<unknown> {
-    const { others } = peopleInPublicVocalChans(channel.guild, toIgnore)
-    const isFirstNonIgnored = others.length === 1
-    return isFirstNonIgnored ? onPublicCallStarted(user, channel) : Future.unit
-  }
-
-  function onPublicCallStarted(user: GuildMember, channel: VoiceChannel): Future<unknown> {
-    return pipe(
-      logger.debug(
-        `[${channel.guild.name}]`,
-        `Call started by ${user.displayName} in "${channel.name}"`
-      ),
       Future.fromIOEither
-      // Future.chain(_ =>
-      //   notifySubscribedChannels(
-      //     channel.guild,
-      //     `Haha, ${user} appelle **${channel.name}**... @everyone doit payer !`
-      //   )
-      // ),
-      // Future.chain(_ => {
-      //   const users = pipe(
-      //     channel.guild.members.cache.array(),
-      //     List.filter(_ => !discord.isSelf(_.user) && _.id !== user.id)
-      //   )
-      //   return notifyDmCallStarted(user, channel, users)
-      // })
-    )
-  }
-
-  function onIgnoredUserStartedCall(user: GuildMember, channel: VoiceChannel): Future<unknown> {
-    return pipe(
-      logger.debug(
-        `[${channel.guild.name}]`,
-        `${user.displayName} started a call in "${channel.name}" (but he's ignored)`
-      ),
-      Future.fromIOEither
-      // Future.chain(_ =>
-      //   notifySubscribedChannels(
-      //     channel.guild,
-      //     `Haha, ${user} appelle **${channel.name}**... Mais tout le monde s'en fout !`
-      //   )
-      // )
     )
   }
 
@@ -135,24 +64,7 @@ export const VoiceStateUpdatesHandler = (
         `[${channel.guild.name}]`,
         `${user.displayName} left the channel "${channel.name}"`
       ),
-      Future.fromIOEither,
-      Future.chain(_ =>
-        ChannelUtils.isPublic(channel) ? onLeftPublicChannel(channel) : Future.unit
-      )
-    )
-  }
-
-  function onLeftPublicChannel(channel: VoiceChannel): Future<unknown> {
-    const toIgnore = referentialService.ignoredUsers(channel.guild)
-    const { ignored, others } = peopleInPublicVocalChans(channel.guild, toIgnore)
-    return ignored.length + others.length === 0 ? onCallEnded(channel) : Future.unit
-  }
-
-  function onCallEnded(channel: VoiceChannel): Future<unknown> {
-    return pipe(
-      logger.debug(`[${channel.guild.name}]`, `Call ended in "${channel.name}"`),
       Future.fromIOEither
-      // Future.chain(_ => notifySubscribedChannels(channel.guild, `Un appel s'est terminé.`))
     )
   }
 
@@ -231,25 +143,25 @@ const getUser = (voiceStateUpdate: VoiceStateUpdate): Maybe<GuildMember> =>
     )
   )
 
-const peopleInPublicVocalChans = (guild: Guild, toIgnore: TSnowflake[]): IgnoredAndOther =>
-  pipe(
-    guild.channels.cache.array(),
-    List.filter(_ => ChannelUtils.isPublic(_) && _.type === 'voice'),
-    List.reduce(IgnoredAndOther([], []), (acc, chan) =>
-      pipe(
-        chan.members.array(),
-        List.partition(isIgnored(toIgnore)),
-        ({ left: others, right: ignored }) =>
-          IgnoredAndOther([...acc.ignored, ...ignored], [...acc.others, ...others])
-      )
-    )
-  )
+// const peopleInPublicVocalChans = (guild: Guild, toIgnore: TSnowflake[]): IgnoredAndOther =>
+//   pipe(
+//     guild.channels.cache.array(),
+//     List.filter(_ => ChannelUtils.isPublic(_) && _.type === 'voice'),
+//     List.reduce(IgnoredAndOther([], []), (acc, chan) =>
+//       pipe(
+//         chan.members.array(),
+//         List.partition(isIgnored(toIgnore)),
+//         ({ left: others, right: ignored }) =>
+//           IgnoredAndOther([...acc.ignored, ...ignored], [...acc.others, ...others])
+//       )
+//     )
+//   )
 
-const isIgnored = (toIgnore: TSnowflake[]) => (user: GuildMember): boolean =>
-  pipe(
-    toIgnore,
-    List.exists(_ => TSnowflake.unwrap(_) === user.id)
-  )
+// const isIgnored = (toIgnore: TSnowflake[]) => (user: GuildMember): boolean =>
+//   pipe(
+//     toIgnore,
+//     List.exists(_ => TSnowflake.unwrap(_) === user.id)
+//   )
 
 interface IgnoredAndOther {
   readonly ignored: GuildMember[]

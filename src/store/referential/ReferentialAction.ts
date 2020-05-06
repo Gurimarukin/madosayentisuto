@@ -1,41 +1,16 @@
-import { TSnowflake } from '../../models/TSnowflake'
+// import { TSnowflake } from '../../models/TSnowflake'
 
-export type ReferentialAction =
-  | ReferentialAction.CallsSubscribe
-  | ReferentialAction.CallsUnsubscribe
-  | ReferentialAction.CallsIgnore
+// export type ReferentialAction = ReferentialAction.SetDefaultRole
 
-export namespace ReferentialAction {
-  export interface CallsSubscribe {
-    readonly type: 'CallsSubscribe'
-    readonly guild: TSnowflake
-    readonly channel: TSnowflake
-  }
-  export const CallsSubscribe = (guild: TSnowflake, channel: TSnowflake): ReferentialAction => ({
-    type: 'CallsSubscribe',
-    guild,
-    channel
-  })
-
-  export interface CallsUnsubscribe {
-    readonly type: 'CallsUnsubscribe'
-    readonly guild: TSnowflake
-    readonly channel: TSnowflake
-  }
-  export const CallsUnsubscribe = (guild: TSnowflake, channel: TSnowflake): ReferentialAction => ({
-    type: 'CallsUnsubscribe',
-    guild,
-    channel
-  })
-
-  export interface CallsIgnore {
-    readonly type: 'CallsIgnore'
-    readonly guild: TSnowflake
-    readonly user: TSnowflake
-  }
-  export const CallsIgnore = (guild: TSnowflake, user: TSnowflake): ReferentialAction => ({
-    type: 'CallsIgnore',
-    guild,
-    user
-  })
-}
+// export namespace ReferentialAction {
+//   export interface SetDefaultRole {
+//     readonly type: 'SetDefaultRole'
+//     readonly guild: TSnowflake
+//     readonly role: TSnowflake
+//   }
+//   export const SetDefaultRole = (guild: TSnowflake, role: TSnowflake): ReferentialAction => ({
+//     type: 'SetDefaultRole',
+//     guild,
+//     role
+//   })
+// }
