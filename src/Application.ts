@@ -39,11 +39,11 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
   return pipe(
     discord.setActivity(config.playingActivity),
     Future.chain(_ => ensureIndexes()),
-    Future.chain(_ => GuildStateService(Logger, guildStatePersistence)),
+    Future.chain(_ => GuildStateService(Logger, guildStatePersistence, discord)),
     Future.chain(guildStateService => {
       const messagesHandler = MessagesHandler(Logger, config, discord, guildStateService)
       const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, guildStateService, discord)
-      const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, discord)
+      const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, guildStateService, discord)
 
       return pipe(
         subscribe(messagesHandler, discord.messages()),

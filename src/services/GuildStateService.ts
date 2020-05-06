@@ -1,5 +1,6 @@
 import { Guild, Role } from 'discord.js'
 
+import { DiscordConnector } from './DiscordConnector'
 import { PartialLogger } from './Logger'
 import { GuildId } from '../models/GuildId'
 import { GuildState } from '../models/GuildState'
@@ -9,11 +10,13 @@ import { pipe, Maybe, Future } from '../utils/fp'
 
 export interface GuildStateService {
   setDefaultRole: (guild: Guild, role: Role) => Future<boolean>
+  getDefaultRole: (guild: Guild) => Future<Maybe<Role>>
 }
 
 export const GuildStateService = (
   Logger: PartialLogger,
-  guildStatePersistence: GuildStatePersistence
+  guildStatePersistence: GuildStatePersistence,
+  discord: DiscordConnector
 ): Future<GuildStateService> =>
   pipe(
     guildStatePersistence.findAll(),
@@ -29,7 +32,22 @@ export const GuildStateService = (
             Future.map(GuildState.Lens.defaultRole.set(Maybe.some(TSnowflake.wrap(role.id)))),
             Future.chain(_ => guildStatePersistence.upsert(guildId, _))
           )
-        }
+        },
+
+        getDefaultRole: (guild: Guild): Future<Maybe<Role>> =>
+          pipe(
+            guildStatePersistence.find(GuildId.wrap(guild.id)),
+            Future.chain(_ =>
+              pipe(
+                _,
+                Maybe.chain(_ => _.defaultRole),
+                Maybe.fold(
+                  () => Future.right(Maybe.none),
+                  _ => discord.fetchRole(guild, _)
+                )
+              )
+            )
+          )
       }
     })
   )

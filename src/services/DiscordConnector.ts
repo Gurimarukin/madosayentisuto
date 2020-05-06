@@ -17,6 +17,7 @@ import {
   PartialTextBasedChannelFields,
   Presence,
   Role,
+  RoleResolvable,
   StringResolvable,
   User
 } from 'discord.js'
@@ -127,6 +128,17 @@ export const DiscordConnector = (client: Client) => {
         channel,
         new MessageEmbed().setColor(Colors.darkred).setDescription(content),
         options
+      ),
+
+    addRole: (
+      member: GuildMember,
+      roleOrRoles: RoleResolvable | RoleResolvable[],
+      reason?: string
+    ): Future<Maybe<void>> =>
+      pipe(
+        Future.apply(() => member.roles.add(roleOrRoles, reason)),
+        Future.map(_ => {}),
+        Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
       ),
 
     createInvite: (channel: GuildChannel, options?: InviteOptions): Future<Invite> =>

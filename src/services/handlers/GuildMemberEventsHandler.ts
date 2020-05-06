@@ -3,6 +3,7 @@ import { GuildMember, TextChannel, Guild, MessageEmbed } from 'discord.js'
 import { randomInt } from 'fp-ts/lib/Random'
 
 import { DiscordConnector } from '../DiscordConnector'
+import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
 import { GuildMemberEvent } from '../../models/GuildMemberEvent'
 import { Colors } from '../../utils/Colors'
@@ -12,6 +13,7 @@ import { StringUtils } from '../../utils/StringUtils'
 
 export const GuildMemberEventsHandler = (
   Logger: PartialLogger,
+  guildStateService: GuildStateService,
   discord: DiscordConnector
 ): ((event: GuildMemberEvent) => Future<unknown>) => {
   const logger = Logger('GuildMemberEventsHandler')
@@ -41,6 +43,26 @@ export const GuildMemberEventsHandler = (
             .setDescription('Tout le monde doit payer !')
             .setImage(
               'https://cdn.discordapp.com/attachments/636626556734930948/707499903450087464/aide.jpg'
+            )
+        )
+      ),
+      Future.chain(_ => guildStateService.getDefaultRole(member.guild)),
+      Future.chain(
+        Maybe.fold(
+          () => Future.unit,
+          role =>
+            pipe(
+              discord.addRole(member, role),
+              Future.chain(_ =>
+                pipe(
+                  _,
+                  Maybe.fold(
+                    () => logger.warn(`Couldn't add role "${role.name}" to "${member.user.tag}"`),
+                    _ => logger.debug(`Added role "${role.name}" to "${member.user.tag}"`)
+                  ),
+                  Future.fromIOEither
+                )
+              )
             )
         )
       )
