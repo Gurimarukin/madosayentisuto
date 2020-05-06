@@ -1,5 +1,5 @@
 import * as Ord from 'fp-ts/lib/Ord'
-import { GuildMember, TextChannel, MessageAttachment, Guild, MessageEmbed } from 'discord.js'
+import { GuildMember, TextChannel, Guild, MessageEmbed } from 'discord.js'
 import { randomInt } from 'fp-ts/lib/Random'
 
 import { DiscordConnector } from '../DiscordConnector'
@@ -56,14 +56,7 @@ export const GuildMemberEventsHandler = (
           goodbyeChannel(member.guild),
           Maybe.fold<TextChannel, Future<unknown>>(
             () => Future.unit,
-            chan =>
-              discord.sendMessage(
-                chan,
-                msg,
-                new MessageAttachment(
-                  'https://cdn.discordapp.com/attachments/636626556734930948/703943786253910096/b8029fe196b8f1382e90bbe81dab50dc.png'
-                )
-              )
+            chan => discord.sendMessage(chan, msg)
           )
         )
       )
