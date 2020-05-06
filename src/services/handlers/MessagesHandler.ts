@@ -9,9 +9,10 @@ import { Commands } from '../../commands/Commands'
 import { CommandWithPrefix } from '../../commands/CommandWithPrefix'
 import { Config } from '../../config/Config'
 import { TSnowflake } from '../../models/TSnowflake'
-import { IO, Maybe, pipe, Future, List, Either } from '../../utils/fp'
+import { Maybe, pipe, Future, List, Either } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
+import { LogUtils } from '../../utils/LogUtils'
 
 export const MessagesHandler = (
   Logger: PartialLogger,
@@ -27,30 +28,10 @@ export const MessagesHandler = (
     discord.isSelf(message.author)
       ? Future.unit
       : pipe(
-          logMessage(message),
+          LogUtils.withAuthor(logger, 'debug', message)(message.content),
           Future.fromIOEither,
           Future.chain(_ => handleMessage(message))
         )
-
-  function logMessage(message: Message): IO<void> {
-    return logger.debug(
-      [
-        ...pipe(
-          Maybe.fromNullable(message.guild),
-          Maybe.fold(
-            () => [],
-            _ =>
-              pipe(
-                List.cons(_.name, message.channel.type === 'text' ? [message.channel.name] : []),
-                _ => [`[${_.join(' #')}]`]
-              )
-          )
-        ),
-        `${message.author.username}:`,
-        message.content
-      ].join(' ')
-    )
-  }
 
   function handleMessage(message: Message): Future<unknown> {
     return pipe(
@@ -110,16 +91,11 @@ export const MessagesHandler = (
         deleted
           ? Future.unit
           : Future.fromIOEither(
-              logger.info(
-                `[${pipe(
-                  Maybe.fromNullable(message.guild),
-                  Maybe.fold(
-                    () => message.author.username,
-                    _ => _.name
-                  )
-                )}]`,
-                'Not enough permissions to delete message '
-              )
+              LogUtils.withAuthor(
+                logger,
+                'info',
+                message
+              )('Not enough permissions to delete message')
             )
       )
     )

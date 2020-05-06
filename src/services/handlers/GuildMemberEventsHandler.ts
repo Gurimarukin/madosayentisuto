@@ -10,6 +10,7 @@ import { Colors } from '../../utils/Colors'
 import { Future, pipe, IO, Maybe, List } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
+import { LogUtils } from '../../utils/LogUtils'
 
 export const GuildMemberEventsHandler = (
   Logger: PartialLogger,
@@ -22,7 +23,7 @@ export const GuildMemberEventsHandler = (
 
   function onAdd(member: GuildMember): Future<unknown> {
     return pipe(
-      logger.info(`[${member.guild.name}]`, `${member.user.tag} joined the server`),
+      LogUtils.withGuild(logger, 'info', member.guild)(`${member.user.tag} joined the server`),
       Future.fromIOEither,
       Future.chain(_ =>
         discord.sendMessage(
@@ -57,8 +58,18 @@ export const GuildMemberEventsHandler = (
                 pipe(
                   _,
                   Maybe.fold(
-                    () => logger.warn(`Couldn't add role "${role.name}" to "${member.user.tag}"`),
-                    _ => logger.debug(`Added role "${role.name}" to "${member.user.tag}"`)
+                    () =>
+                      LogUtils.withGuild(
+                        logger,
+                        'warn',
+                        member.guild
+                      )(`Couldn't add user "${member.user.tag}" to role "${role.name}"`),
+                    _ =>
+                      LogUtils.withGuild(
+                        logger,
+                        'debug',
+                        member.guild
+                      )(`Added user "${member.user.tag}" to role "${role.name}"`)
                   ),
                   Future.fromIOEither
                 )
@@ -71,7 +82,7 @@ export const GuildMemberEventsHandler = (
 
   function onRemove(member: GuildMember): Future<unknown> {
     return pipe(
-      logger.info(`[${member.guild.name}]`, `${member.user.tag} left the server`),
+      LogUtils.withGuild(logger, 'info', member.guild)(`${member.user.tag} left the server`),
       IO.chain(_ => randomLeaveMessage(member)),
       Future.fromIOEither,
       Future.chain(msg =>
