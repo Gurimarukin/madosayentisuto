@@ -3,15 +3,18 @@ import { GuildMember, TextChannel, Guild, MessageEmbed } from 'discord.js'
 import { randomInt } from 'fp-ts/lib/Random'
 
 import { DiscordConnector } from '../DiscordConnector'
+import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
 import { GuildMemberEvent } from '../../models/GuildMemberEvent'
 import { Colors } from '../../utils/Colors'
 import { Future, pipe, IO, Maybe, List } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
+import { LogUtils } from '../../utils/LogUtils'
 
 export const GuildMemberEventsHandler = (
   Logger: PartialLogger,
+  guildStateService: GuildStateService,
   discord: DiscordConnector
 ): ((event: GuildMemberEvent) => Future<unknown>) => {
   const logger = Logger('GuildMemberEventsHandler')
@@ -20,7 +23,7 @@ export const GuildMemberEventsHandler = (
 
   function onAdd(member: GuildMember): Future<unknown> {
     return pipe(
-      logger.info(`[${member.guild.name}]`, `${member.user.tag} joined the server`),
+      LogUtils.withGuild(logger, 'info', member.guild)(`${member.user.tag} joined the server`),
       Future.fromIOEither,
       Future.chain(_ =>
         discord.sendMessage(
@@ -43,13 +46,43 @@ export const GuildMemberEventsHandler = (
               'https://cdn.discordapp.com/attachments/636626556734930948/707499903450087464/aide.jpg'
             )
         )
+      ),
+      Future.chain(_ => guildStateService.getDefaultRole(member.guild)),
+      Future.chain(
+        Maybe.fold(
+          () => Future.unit,
+          role =>
+            pipe(
+              discord.addRole(member, role),
+              Future.chain(_ =>
+                pipe(
+                  _,
+                  Maybe.fold(
+                    () =>
+                      LogUtils.withGuild(
+                        logger,
+                        'warn',
+                        member.guild
+                      )(`Couldn't add user "${member.user.tag}" to role "${role.name}"`),
+                    _ =>
+                      LogUtils.withGuild(
+                        logger,
+                        'debug',
+                        member.guild
+                      )(`Added user "${member.user.tag}" to role "${role.name}"`)
+                  ),
+                  Future.fromIOEither
+                )
+              )
+            )
+        )
       )
     )
   }
 
   function onRemove(member: GuildMember): Future<unknown> {
     return pipe(
-      logger.info(`[${member.guild.name}]`, `${member.user.tag} left the server`),
+      LogUtils.withGuild(logger, 'info', member.guild)(`${member.user.tag} left the server`),
       IO.chain(_ => randomLeaveMessage(member)),
       Future.fromIOEither,
       Future.chain(msg =>

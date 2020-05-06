@@ -5,6 +5,7 @@ import { PartialLogger } from '../Logger'
 import { GuildStateService } from '../GuildStateService'
 import { VoiceStateUpdate } from '../../models/VoiceStateUpdate'
 import { Future, Maybe, pipe } from '../../utils/fp'
+import { LogUtils } from '../../utils/LogUtils'
 
 export const VoiceStateUpdatesHandler = (
   Logger: PartialLogger,
@@ -36,10 +37,11 @@ export const VoiceStateUpdatesHandler = (
    */
   function onJoinedChannel(user: GuildMember, channel: VoiceChannel): Future<unknown> {
     return pipe(
-      logger.debug(
-        `[${channel.guild.name}]`,
-        `${user.displayName} joined the channel "${channel.name}"`
-      ),
+      LogUtils.withGuild(
+        logger,
+        'debug',
+        channel.guild
+      )(`${user.displayName} joined the channel "${channel.name}"`),
       Future.fromIOEither
     )
   }
@@ -50,20 +52,22 @@ export const VoiceStateUpdatesHandler = (
     to: VoiceChannel
   ): Future<unknown> {
     return pipe(
-      logger.debug(
-        `[${from.guild.name}]`,
-        `${user.displayName} moved from channel "${from.name}" to "${to.name}"`
-      ),
+      LogUtils.withGuild(
+        logger,
+        'debug',
+        from.guild
+      )(`${user.displayName} moved from channel "${from.name}" to "${to.name}"`),
       Future.fromIOEither
     )
   }
 
   function onLeftChannel(user: GuildMember, channel: VoiceChannel): Future<unknown> {
     return pipe(
-      logger.debug(
-        `[${channel.guild.name}]`,
-        `${user.displayName} left the channel "${channel.name}"`
-      ),
+      LogUtils.withGuild(
+        logger,
+        'debug',
+        channel.guild
+      )(`${user.displayName} left the channel "${channel.name}"`),
       Future.fromIOEither
     )
   }
