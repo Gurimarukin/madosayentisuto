@@ -9,7 +9,7 @@ const main = (): Future<void> =>
   Do(Future.taskEither)
     .bind('config', Future.fromIOEither(Config.load()))
     .bindL('discord', ({ config }) => futureDiscord(config))
-    .bindL('_', ({ config, discord }) => Application(config, discord))
+    .doL(({ config, discord }) => Application(config, discord))
     .return(() => {})
 
 Future.runUnsafe(main())

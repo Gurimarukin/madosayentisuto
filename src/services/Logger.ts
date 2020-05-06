@@ -51,8 +51,8 @@ export const PartialLogger = (config: Config, discord: DiscordConnector): Partia
 
   const log = (level: LogLevel, msg: string): IO<void> =>
     Do(IO.ioEither)
-      .bind('_1', consoleLog(level, msg))
-      .bind('_2', IO.runFuture(discordDMLog(level, msg)))
+      .do(consoleLog(level, msg))
+      .do(IO.runFuture(discordDMLog(level, msg)))
       .return(() => {})
 
   const debug = (format: any, ...param: any[]) => log('debug', util.format(format, ...param))
