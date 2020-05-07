@@ -25,6 +25,7 @@ export const GuildMemberEventsHandler = (
     return pipe(
       LogUtils.withGuild(logger, 'info', member.guild)(`${member.user.tag} joined the server`),
       Future.fromIOEither,
+      // DM greeting message
       Future.chain(_ =>
         discord.sendMessage(
           member,
@@ -47,6 +48,7 @@ export const GuildMemberEventsHandler = (
             )
         )
       ),
+      // set default role
       Future.chain(_ => guildStateService.getDefaultRole(member.guild)),
       Future.chain(
         Maybe.fold(

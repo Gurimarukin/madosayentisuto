@@ -138,6 +138,19 @@ export const MessagesHandler = (
           () => Future.unit,
           guild => {
             switch (cmd._tag) {
+              case 'DefaultRoleGet':
+                return pipe(
+                  deleteMessage(message),
+                  Future.chain(_ => guildStateService.getDefaultRole(guild)),
+                  Future.map(
+                    Maybe.fold(
+                      () => "Il n'y a aucun rôle par défaut pour ce serveur.",
+                      _ => `Le rôle par défaut pour ce serveur est **@${_.name}**.`
+                    )
+                  ),
+                  Future.chain(_ => discord.sendPrettyMessage(message.author, _))
+                )
+
               case 'DefaultRoleSet':
                 return pipe(
                   deleteMessage(message),

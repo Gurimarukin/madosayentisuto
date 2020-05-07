@@ -8,14 +8,23 @@ import { Opts } from './Opts'
 import { TSnowflake } from '../models/TSnowflake'
 import { pipe, Either } from '../utils/fp'
 
-type AdminTextChannel = Commands.DefaultRoleSet
+type AdminTextChannel = Commands.DefaultRoleGet | Commands.DefaultRoleSet
 
 export namespace Cli {
   export const adminTextChannel = (prefix: string): CommandWithPrefix<AdminTextChannel> =>
-    CommandWithPrefix(prefix, Command('defaultRole')(Opts.subcommand(defaultRoleSet)))
+    CommandWithPrefix(
+      prefix,
+      Command('defaultRole')(
+        pipe(
+          Opts.subcommand(defaultRoleGet),
+          Opts.orElse(() => Opts.subcommand(defaultRoleSet))
+        )
+      )
+    )
 }
 
-const defaultRoleSet = Command('set')(
+const defaultRoleGet = Command('get')<AdminTextChannel>(pipe(Opts.pure(Commands.DefaultRoleGet)))
+const defaultRoleSet = Command('set')<AdminTextChannel>(
   pipe(Opts.argument('role', decodeMention), Opts.map(Commands.DefaultRoleSet))
 )
 

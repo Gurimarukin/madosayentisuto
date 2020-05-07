@@ -8,7 +8,7 @@ import { StringUtils } from '../../src/utils/StringUtils'
 describe('Cli.adminTextChannel', () => {
   const cmd = Cli.adminTextChannel('okb')
 
-  it('should parse "defaultRole set"', () => {
+  it('should parse "defaultRole set <@toto>"', () => {
     expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@toto>']))).toEqual(
       Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
     )
@@ -19,6 +19,12 @@ describe('Cli.adminTextChannel', () => {
 
     expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@&toto>']))).toEqual(
       Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
+    )
+  })
+
+  it('should parse "defaultRole get"', () => {
+    expect(pipe(cmd, Command.parse(['defaultRole', 'get']))).toEqual(
+      Either.right(Commands.DefaultRoleGet)
     )
   })
 
@@ -38,8 +44,9 @@ describe('Cli.adminTextChannel', () => {
     expect(pipe(cmd, Command.parse(['defaultRole']))).toEqual(
       Either.left(
         StringUtils.stripMargins(
-          `Missing expected command (set)
+          `Missing expected command (get or set)
           |Usage:
+          |    okb defaultRole get
           |    okb defaultRole set <role>`
         )
       )
