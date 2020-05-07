@@ -1,4 +1,5 @@
-import { Guild, Role } from 'discord.js'
+import { Guild, Role, Message } from 'discord.js'
+import { Lens } from 'monocle-ts'
 
 import { DiscordConnector } from './DiscordConnector'
 import { PartialLogger } from './Logger'
@@ -9,6 +10,7 @@ import { GuildStatePersistence } from '../persistence/GuildStatePersistence'
 import { pipe, Maybe, Future } from '../utils/fp'
 
 export interface GuildStateService {
+  setCallsMessage: (guild: Guild, message: Message) => Future<boolean>
   setDefaultRole: (guild: Guild, role: Role) => Future<boolean>
   getDefaultRole: (guild: Guild) => Future<Maybe<Role>>
 }
@@ -24,15 +26,11 @@ export const GuildStateService = (
       const _logger = Logger('GuildStateService')
 
       return {
-        setDefaultRole: (guild: Guild, role: Role): Future<boolean> => {
-          const guildId = GuildId.wrap(guild.id)
-          return pipe(
-            guildStatePersistence.find(guildId),
-            Future.map(Maybe.getOrElse(() => GuildState.empty(guildId))),
-            Future.map(GuildState.Lens.defaultRole.set(Maybe.some(TSnowflake.wrap(role.id)))),
-            Future.chain(_ => guildStatePersistence.upsert(guildId, _))
-          )
-        },
+        setCallsMessage: (guild: Guild, message: Message): Future<boolean> =>
+          set(guild, GuildState.Lens.callsMessage, Maybe.some(TSnowflake.wrap(message.id))),
+
+        setDefaultRole: (guild: Guild, role: Role): Future<boolean> =>
+          set(guild, GuildState.Lens.defaultRole, Maybe.some(TSnowflake.wrap(role.id))),
 
         getDefaultRole: (guild: Guild): Future<Maybe<Role>> =>
           pipe(
@@ -48,6 +46,16 @@ export const GuildStateService = (
               )
             )
           )
+      }
+
+      function set<A>(guild: Guild, lens: Lens<GuildState, A>, a: A): Future<boolean> {
+        const guildId = GuildId.wrap(guild.id)
+        return pipe(
+          guildStatePersistence.find(guildId),
+          Future.map(Maybe.getOrElse(() => GuildState.empty(guildId))),
+          Future.map(lens.set(a)),
+          Future.chain(_ => guildStatePersistence.upsert(guildId, _))
+        )
       }
     })
   )

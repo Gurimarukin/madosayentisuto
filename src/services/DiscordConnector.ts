@@ -4,6 +4,7 @@ import {
   Channel,
   Client,
   DiscordAPIError,
+  EmojiIdentifierResolvable,
   Guild,
   GuildChannel,
   GuildMember,
@@ -13,6 +14,7 @@ import {
   MessageAdditions,
   MessageEmbed,
   MessageOptions,
+  MessageReaction,
   PartialGuildMember,
   PartialTextBasedChannelFields,
   Presence,
@@ -129,6 +131,9 @@ export const DiscordConnector = (client: Client) => {
         new MessageEmbed().setColor(Colors.darkred).setDescription(content),
         options
       ),
+
+    reactMessage: (message: Message, emoji: EmojiIdentifierResolvable): Future<MessageReaction> =>
+      Future.apply(() => message.react(emoji)),
 
     addRole: (
       member: GuildMember,

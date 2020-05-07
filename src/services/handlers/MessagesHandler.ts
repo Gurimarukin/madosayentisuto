@@ -9,7 +9,7 @@ import { Commands } from '../../commands/Commands'
 import { CommandWithPrefix } from '../../commands/CommandWithPrefix'
 import { Config } from '../../config/Config'
 import { TSnowflake } from '../../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either, todo } from '../../utils/fp'
+import { Maybe, pipe, Future, List, Either } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 import { LogUtils } from '../../utils/LogUtils'
@@ -139,7 +139,32 @@ export const MessagesHandler = (
           guild => {
             switch (cmd._tag) {
               case 'CallsInit':
-                return todo()
+                return pipe(
+                  deleteMessage(message),
+                  Future.chain(() =>
+                    discord.sendPrettyMessage(
+                      message.channel,
+                      StringUtils.stripMargins(
+                        `Haha !
+                        |Tu peux t'abonner aux appels sur ce serveur en réagissant avec :bell: !`
+                      )
+                    )
+                  ),
+                  Future.chain(
+                    Maybe.fold<Message, Future<unknown>>(
+                      () =>
+                        discord.sendPrettyMessage(
+                          message.author,
+                          "Impossible d'envoyer un message dans ce salon."
+                        ),
+                      message =>
+                        pipe(
+                          discord.reactMessage(message, '🔔'),
+                          Future.chain(_ => guildStateService.setCallsMessage(guild, message))
+                        )
+                    )
+                  )
+                )
 
               case 'DefaultRoleGet':
                 return pipe(
