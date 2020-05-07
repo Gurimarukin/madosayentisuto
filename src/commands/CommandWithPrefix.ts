@@ -1,11 +1,11 @@
-import { Command } from './Command'
+import { Opts } from './Opts'
 
 export interface CommandWithPrefix<A> {
   readonly prefix: string
-  readonly command: Command<A>
+  readonly opts: Opts<A>
 }
 
-export const CommandWithPrefix = <A>(
-  prefix: string,
-  command: Command<A>
-): CommandWithPrefix<A> => ({ prefix, command })
+export const CommandWithPrefix = <A>(prefix: string, opts: Opts<A>): CommandWithPrefix<A> => ({
+  prefix,
+  opts
+})

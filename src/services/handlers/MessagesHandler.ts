@@ -9,7 +9,7 @@ import { Commands } from '../../commands/Commands'
 import { CommandWithPrefix } from '../../commands/CommandWithPrefix'
 import { Config } from '../../config/Config'
 import { TSnowflake } from '../../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either } from '../../utils/fp'
+import { Maybe, pipe, Future, List, Either, todo } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 import { LogUtils } from '../../utils/LogUtils'
@@ -138,6 +138,9 @@ export const MessagesHandler = (
           () => Future.unit,
           guild => {
             switch (cmd._tag) {
+              case 'CallsInit':
+                return todo()
+
               case 'DefaultRoleGet':
                 return pipe(
                   deleteMessage(message),
