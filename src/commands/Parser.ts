@@ -167,7 +167,7 @@ namespace Accumulator {
             parser,
             Either.map(leftResult =>
               pipe(
-                // sequenceT(getValidation(getSemigroup<Result.Failure>()))(
+                // sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<Result.Failure>()))(
                 //   ValidatedNea.fromEither(leftResult),
                 //   ValidatedNea.fromEither(this.right.result)
                 // ),
