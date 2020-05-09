@@ -1,118 +1,146 @@
-import { Lazy } from 'fp-ts/lib/function'
+import { Apply1 } from 'fp-ts/lib/Apply'
+import { flow } from 'fp-ts/lib/function'
+import { pipeable } from 'fp-ts/lib/pipeable'
 
 import { Command } from './Command'
-import { Diff } from '../models/Diff'
-import { NonEmptyArray, Either, pipe, Maybe } from '../utils/fp'
+import { ValidatedNea } from '../models/ValidatedNea'
+import { NonEmptyArray, Either, pipe } from '../utils/fp'
 
-export type Opts<A> = Opts.Pure<A> | Opts.OrElse<A> | Opts.Argument<A> | Opts.Subcommand<A>
+declare module 'fp-ts/lib/HKT' {
+  interface URItoKind<A> {
+    readonly Opts: Opts<A>
+  }
+}
+
+export const URI = 'Opts'
+export type URI = typeof URI
+
+export type Opts<A> =
+  | Opts.Pure<A>
+  | Opts.App<unknown, A>
+  | Opts.OrElse<A>
+  | Opts.Single<A>
+  | Opts.Repeated<A>
+  | Opts.Subcommand<A>
+  | Opts.Validate<unknown, A>
 
 export namespace Opts {
+  export const opts: Apply1<URI> = {
+    URI,
+    map: <A, B>(fa: Opts<A>, f: (a: A) => B): Opts<B> => mapValidated(flow(f, Either.right))(fa),
+    ap: <A, B>(fab: Opts<(a: A) => B>, fa: Opts<A>): Opts<B> => App(fab, fa)
+  }
+
   /**
-   * Pure
+   * methods
+   */
+  export const mapValidated = <A, B>(f: (a: A) => ValidatedNea<string, B>) => (
+    opts: Opts<A>
+  ): Opts<B> => {
+    switch (opts._tag) {
+      case 'Validate':
+        return Validate(opts.value, flow(opts.validate, Either.chain(f)))
+
+      default:
+        return Validate(opts, f)
+    }
+  }
+
+  export const { map } = pipeable(opts)
+
+  export const orElse = <A>(other: Opts<A>) => (opts: Opts<A>): Opts<A> => OrElse(opts, other)
+
+  /**
+   * subtypes
    */
   export interface Pure<A> {
     readonly _tag: 'Pure'
     readonly a: A
   }
-  export const pure = <A>(a: A): Opts<A> => ({ _tag: 'Pure', a })
+  export const Pure = <A>(a: A): Pure<A> => ({ _tag: 'Pure', a })
 
-  export const unit: Opts<void> = pure(undefined)
+  export interface App<A, B> {
+    readonly _tag: 'App'
+    readonly f: Opts<(a: A) => B>
+    readonly a: Opts<A>
+  }
+  export const App = <A, B>(f: Opts<(a: A) => B>, a: Opts<A>): Opts<B> =>
+    ({ _tag: 'App', f, a } as Opts<B>)
 
-  export const isPure = <A>(opts: Opts<A>): opts is Pure<A> => opts._tag === 'Pure'
-
-  /**
-   * OrElse
-   */
   export interface OrElse<A> {
     readonly _tag: 'OrElse'
     readonly a: Opts<A>
-    readonly b: Lazy<Opts<A>>
+    readonly b: Opts<A>
   }
+  export const OrElse = <A>(a: Opts<A>, b: Opts<A>): Opts<A> => ({ _tag: 'OrElse', a, b })
 
-  export const OrElse = <A>(a: Opts<A>, b: Lazy<Opts<A>>): Opts<A> => ({ _tag: 'OrElse', a, b })
-
-  export const isOrElse = <A>(opts: Opts<A>): opts is OrElse<A> => opts._tag === 'OrElse'
-
-  /**
-   * Argument
-   */
-  export interface Argument<A> {
-    readonly _tag: 'Argument'
-    readonly metavar: string
-    readonly decode: (raw: string) => Either<string, A>
+  export interface Single<A> {
+    readonly _tag: 'Single'
+    readonly opt: Opt<A>
   }
+  export const Single = <A>(opt: Opt<A>): Single<A> => ({ _tag: 'Single', opt })
 
-  export const isArgument = <A>(opts: Opts<A>): opts is Argument<A> => opts._tag === 'Argument'
+  export interface Repeated<A> {
+    readonly _tag: 'Repeated'
+    readonly opt: Opt<A>
+  }
+  export const Repeated = <A>(opt: Opt<A>): Repeated<A> => ({ _tag: 'Repeated', opt })
 
-  /**
-   * Subcommand
-   */
   export interface Subcommand<A> {
     readonly _tag: 'Subcommand'
     readonly command: Command<A>
   }
+  export const Subcommand = <A>(command: Command<A>): Subcommand<A> => ({
+    _tag: 'Subcommand',
+    command
+  })
 
-  export const isSubcommand = <A>(opts: Opts<A>): opts is Subcommand<A> =>
-    opts._tag === 'Subcommand'
+  export interface Validate<A, B> {
+    readonly _tag: 'Validate'
+    readonly value: Opts<A>
+    readonly validate: (a: A) => ValidatedNea<string, B>
+  }
+  export const Validate = <A, B>(
+    value: Opts<A>,
+    validate: (a: A) => ValidatedNea<string, B>
+  ): Opts<B> => ({ _tag: 'Validate', value, validate } as Opts<B>)
 
   /**
-   * Helpers
+   * helpers
    */
-  export const argument = <A>(
+
+  export const unit: Opts<void> = Pure(undefined)
+
+  export const pure = <A>(a: A): Opts<A> => Pure(a)
+
+  // export const option = <A>(long: string): Opts<A> => ???
+  // export const options = <A>(long: string): Opts<NonEmptyArray<A>> => ???
+
+  // export const flag = (long: string): Opts<void> => ???
+  // export const flags = (long: string): Opts<number> => ???
+
+  export const param = <A>(
     metavar: string,
-    decode: (raw: string) => Either<string, A>
-  ): Opts<A> => ({ _tag: 'Argument', metavar, decode })
+    codec: (raw: string) => ValidatedNea<string, A>
+  ): Opts<A> => pipe(Single(Opt.Argument<A>(metavar)), mapValidated(codec))
 
-  export const subcommand = <A>(command: Command<A>): Opts<A> => ({ _tag: 'Subcommand', command })
+  export const params = <A>(
+    metavar: string,
+    codec: (raw: string) => ValidatedNea<string, NonEmptyArray<A>>
+  ): Opts<NonEmptyArray<A>> => pipe(Repeated(Opt.Argument<A>(metavar)), mapValidated(codec))
 
-  export const map = <A, B>(f: (a: A) => B) => (opts: Opts<A>): Opts<B> =>
-    pipe(
-      opts,
-      fold({
-        onPure: a => pure(f(a)),
-        onOrElse: (a, b) => OrElse(pipe(a, map(f)), () => pipe(b(), map(f))),
-        onArgument: (m, d) => argument(m, u => pipe(d(u), Either.map(f))),
-        onSubcommand: c => subcommand(pipe(c, Command.map(f)))
-      })
-    )
+  export const subcommand = <A>(command: Command<A>): Opts<A> => Subcommand(command)
 
-  export const orElse = <A>(b: Lazy<Opts<A>>) => (a: Opts<A>): Opts<A> => OrElse(a, b)
+  /**
+   * Opt
+   */
+  export type Opt<A> = Opt.Argument
 
-  export const flatten = <A>(opts: Opts<A>): NonEmptyArray<Diff<Opts<A>, Opts.OrElse<A>>> =>
-    isOrElse(opts)
-      ? NonEmptyArray.concat(flatten(opts.a), flatten(opts.b()))
-      : NonEmptyArray.of(opts)
-
-  export const toString = <A>(opts: Opts<A>): Maybe<string> =>
-    pipe(
-      opts,
-      fold({
-        onPure: _ => Maybe.none,
-        onOrElse: (_1, _2) => Maybe.none,
-        onArgument: (m, _) => Maybe.some(`<${m}>`),
-        onSubcommand: c => Maybe.some(c.name)
-      })
-    )
-
-  export const fold = <A, B>({ onPure, onOrElse, onArgument, onSubcommand }: FoldArgs<A, B>) => (
-    opts: Opts<A>
-  ): B => {
-    switch (opts._tag) {
-      case 'Pure':
-        return onPure(opts.a)
-      case 'OrElse':
-        return onOrElse(opts.a, opts.b)
-      case 'Argument':
-        return onArgument(opts.metavar, opts.decode)
-      case 'Subcommand':
-        return onSubcommand(opts.command)
+  export namespace Opt {
+    export interface Argument {
+      readonly _tag: 'Argument'
+      readonly metavar: string
     }
+    export const Argument = <A>(metavar: string): Opt<A> => ({ _tag: 'Argument', metavar })
   }
-}
-
-interface FoldArgs<A, B> {
-  onPure: (a: A) => B
-  onOrElse: (a: Opts<A>, b: Lazy<Opts<A>>) => B
-  onArgument: (metavar: string, decode: (raw: string) => Either<string, A>) => B
-  onSubcommand: (command: Command<A>) => B
 }

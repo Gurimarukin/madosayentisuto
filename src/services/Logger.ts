@@ -55,10 +55,10 @@ export const PartialLogger = (config: Config, discord: DiscordConnector): Partia
       .do(IO.runFuture(discordDMLog(level, msg)))
       .return(() => {})
 
-  const debug = (format: any, ...param: any[]) => log('debug', util.format(format, ...param))
-  const info = (format: any, ...param: any[]) => log('info', util.format(format, ...param))
-  const warn = (format: any, ...param: any[]) => log('warn', util.format(format, ...param))
-  const error = (format: any, ...param: any[]) => log('error', util.format(format, ...param))
+  const debug = (param: any, ...params: any[]) => log('debug', util.format(param, ...params))
+  const info = (param: any, ...params: any[]) => log('info', util.format(param, ...params))
+  const warn = (param: any, ...params: any[]) => log('warn', util.format(param, ...params))
+  const error = (param: any, ...params: any[]) => log('error', util.format(param, ...params))
 
   return { debug, info, warn, error }
 }

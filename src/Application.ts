@@ -3,6 +3,7 @@ import { MongoClient, Collection } from 'mongodb'
 import * as Obs from 'fp-ts-rxjs/lib/ObservableEither'
 import { Subscription } from 'rxjs'
 
+import { Cli } from './commands/Cli'
 import { Config } from './config/Config'
 import { ObservableE } from './models/ObservableE'
 import { DiscordConnector } from './services/DiscordConnector'
@@ -41,7 +42,8 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
     Future.chain(_ => ensureIndexes()),
     Future.chain(_ => GuildStateService(Logger, guildStatePersistence, discord)),
     Future.chain(guildStateService => {
-      const messagesHandler = MessagesHandler(Logger, config, discord, guildStateService)
+      const cli = Cli(config.cmdPrefix)
+      const messagesHandler = MessagesHandler(Logger, config, cli, discord, guildStateService)
       const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, guildStateService, discord)
       const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, guildStateService, discord)
 

@@ -2,9 +2,10 @@ import * as t from 'io-ts'
 import { sequenceT } from 'fp-ts/lib/Apply'
 import { nonEmptyArray } from 'io-ts-types/lib/nonEmptyArray'
 
-import { ConfReader, ValidatedNea } from './ConfReader'
+import { ConfReader } from './ConfReader'
 import { LogLevelOrOff } from '../models/LogLevel'
 import { TSnowflake } from '../models/TSnowflake'
+import { ValidatedNea } from '../models/ValidatedNea'
 import { IO, pipe, Either, NonEmptyArray } from '../utils/fp'
 
 export interface Config {
@@ -41,7 +42,7 @@ export namespace Config {
   }
 }
 
-function readConfig(reader: ConfReader): ValidatedNea<Config> {
+function readConfig(reader: ConfReader): ValidatedNea<string, Config> {
   return pipe(
     sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(t.string)('clientSecret'),
@@ -77,7 +78,7 @@ export function LoggerConfig(
   }
 }
 
-function readLoggerConfig(reader: ConfReader): ValidatedNea<LoggerConfig> {
+function readLoggerConfig(reader: ConfReader): ValidatedNea<string, LoggerConfig> {
   return pipe(
     sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(LogLevelOrOff.codec)('logger', 'consoleLevel'),
@@ -103,7 +104,7 @@ export function DbConfig(host: string, dbName: string, user: string, password: s
   return { host, dbName, user, password }
 }
 
-export const readDbConfig = (reader: ConfReader): ValidatedNea<DbConfig> =>
+export const readDbConfig = (reader: ConfReader): ValidatedNea<string, DbConfig> =>
   pipe(
     sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(t.string)('db', 'host'),

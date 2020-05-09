@@ -6,7 +6,6 @@ import { GuildStateService } from '../GuildStateService'
 import { Cli } from '../../commands/Cli'
 import { Command } from '../../commands/Command'
 import { Commands } from '../../commands/Commands'
-import { CommandWithPrefix } from '../../commands/CommandWithPrefix'
 import { Config } from '../../config/Config'
 import { TSnowflake } from '../../models/TSnowflake'
 import { Maybe, pipe, Future, List, Either } from '../../utils/fp'
@@ -17,6 +16,7 @@ import { LogUtils } from '../../utils/LogUtils'
 export const MessagesHandler = (
   Logger: PartialLogger,
   config: Config,
+  cli: Cli,
   discord: DiscordConnector,
   guildStateService: GuildStateService
 ): ((message: Message) => Future<unknown>) => {
@@ -70,7 +70,7 @@ export const MessagesHandler = (
 
       return Maybe.some(
         isAdmin
-          ? parseCommand(message, StringUtils.splitWords(rawCmd), Cli.adminTextChannel)
+          ? parseCommand(message, StringUtils.splitWords(rawCmd), cli.adminTextChannel)
           : pipe(
               deleteMessage(message),
               Future.chain(_ =>
@@ -101,13 +101,9 @@ export const MessagesHandler = (
     )
   }
 
-  function parseCommand(
-    message: Message,
-    args: string[],
-    cmd: (prefix: string) => CommandWithPrefix<Commands>
-  ): Future<unknown> {
+  function parseCommand(message: Message, args: string[], cmd: Command<Commands>): Future<unknown> {
     return pipe(
-      cmd(config.cmdPrefix),
+      cmd,
       Command.parse(args),
       Either.fold(
         e =>

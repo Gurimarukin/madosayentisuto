@@ -1,42 +1,46 @@
 import * as t from 'io-ts'
+import { sequenceT } from 'fp-ts/lib/Apply'
 import { failure } from 'io-ts/lib/PathReporter'
 
 import { Command } from './Command'
 import { Commands } from './Commands'
-import { CommandWithPrefix } from './CommandWithPrefix'
 import { Opts } from './Opts'
-import { Validated } from './Validated'
 import { TSnowflake } from '../models/TSnowflake'
-import { pipe, Either } from '../utils/fp'
+import { ValidatedNea } from '../models/ValidatedNea'
+import { pipe, Either, NonEmptyArray } from '../utils/fp'
 
 type AdminTextChannel = Commands.CallsInit | Commands.DefaultRoleGet | Commands.DefaultRoleSet
 
-export namespace Cli {
-  export const adminTextChannel = (prefix: string): CommandWithPrefix<AdminTextChannel> =>
-    CommandWithPrefix(
-      prefix,
-      pipe(
-        Opts.subcommand(calls),
-        Opts.orElse(() => Opts.subcommand(defaultRole))
-      )
+export type Cli = ReturnType<typeof Cli>
+
+export function Cli(prefix: string) {
+  return {
+    adminTextChannel: Command(prefix)(
+      pipe(Opts.subcommand(calls), Opts.orElse(Opts.subcommand(defaultRole)))
     )
+  }
 }
 
-const callsInit = Command('init')(Opts.pure(Commands.CallsInit))
+const callsInit = Command('init')<AdminTextChannel>(
+  pipe(
+    sequenceT(Opts.opts)(
+      Opts.param('channel', decodeTextChannel),
+      Opts.param('mention', decodeMention)
+    ),
+    Opts.map(_ => Commands.CallsInit(..._))
+  )
+)
 const calls = Command('calls')(Opts.subcommand(callsInit))
 
 const defaultRoleGet = Command('get')<AdminTextChannel>(pipe(Opts.pure(Commands.DefaultRoleGet)))
 const defaultRoleSet = Command('set')<AdminTextChannel>(
-  pipe(Opts.argument('role', decodeMention), Opts.map(Commands.DefaultRoleSet))
+  pipe(Opts.param('role', decodeMention), Opts.map(Commands.DefaultRoleSet))
 )
 const defaultRole = Command('defaultRole')(
-  pipe(
-    Opts.subcommand(defaultRoleGet),
-    Opts.orElse(() => Opts.subcommand(defaultRoleSet))
-  )
+  pipe(Opts.subcommand(defaultRoleGet), Opts.orElse(Opts.subcommand(defaultRoleSet)))
 )
 
-function decodeMention(u: string): Validated<TSnowflake> {
+function decodeMention(u: string): ValidatedNea<string, TSnowflake> {
   return pipe(
     codecToDecode(t.string)(u),
     Either.chain(str =>
@@ -46,16 +50,27 @@ function decodeMention(u: string): Validated<TSnowflake> {
             sliced => (sliced.startsWith('!') || sliced.startsWith('&') ? sliced.slice(1) : sliced),
             Either.right
           )
-        : Either.left(`Invalid mention: ${str}`)
+        : Either.left(NonEmptyArray.of(`Invalid mention: ${str}`))
     ),
     Either.map(TSnowflake.wrap)
   )
 }
 
-function codecToDecode<I, A>(codec: t.Decoder<I, A>): (u: I) => Either<string, A> {
+function decodeTextChannel(u: string): ValidatedNea<string, TSnowflake> {
+  return pipe(
+    codecToDecode(t.string)(u),
+    Either.chain(str =>
+      str.startsWith('<#') && str.endsWith('>')
+        ? pipe(str.slice(2, -1), TSnowflake.wrap, Either.right)
+        : Either.left(NonEmptyArray.of(`Invalid channel: ${str}`))
+    )
+  )
+}
+
+function codecToDecode<I, A>(codec: t.Decoder<I, A>): (u: I) => ValidatedNea<string, A> {
   return u =>
     pipe(
       codec.decode(u),
-      Either.mapLeft(_ => failure(_).join('\n'))
+      Either.mapLeft(_ => failure(_) as NonEmptyArray<string>)
     )
 }

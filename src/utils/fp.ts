@@ -33,6 +33,8 @@ export const todo = (..._: any): never => {
 export const List = {
   ..._Array,
 
+  concat: <A>(a: A[], b: A[]): A[] => [...a, ...b],
+
   exists: <A>(predicate: Predicate<A>) => (l: A[]): boolean =>
     pipe(l, List.findIndex(predicate), Maybe.isSome)
 }

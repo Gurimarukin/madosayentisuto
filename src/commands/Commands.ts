@@ -6,8 +6,14 @@ export namespace Commands {
   // calls
   export interface CallsInit {
     readonly _tag: 'CallsInit'
+    readonly channel: TSnowflake // channel where to notify calls
+    readonly role: TSnowflake // role to notify
   }
-  export const CallsInit: CallsInit = { _tag: 'CallsInit' }
+  export const CallsInit = (channel: TSnowflake, role: TSnowflake): CallsInit => ({
+    _tag: 'CallsInit',
+    channel,
+    role
+  })
 
   // defaultRole
   export interface DefaultRoleGet {

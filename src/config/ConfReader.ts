@@ -1,16 +1,15 @@
 import * as Nea from 'fp-ts/lib/NonEmptyArray'
-import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as t from 'io-ts'
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 
+import { ValidatedNea } from '../models/ValidatedNea'
 import { FileUtils } from '../utils/FileUtils'
 import { unknownToError } from '../utils/unknownToError'
 import { Either, pipe, IO, Maybe, Do, List } from '../utils/fp'
 
-export type ValidatedNea<A> = Either<NonEmptyArray<string>, A>
-
 export type ConfReader = <A>(
   codec: t.Decoder<unknown, A>
-) => (path: string, ...paths: string[]) => ValidatedNea<A>
+) => (path: string, ...paths: string[]) => ValidatedNea<string, A>
 
 export namespace ConfReader {
   export const fromFiles = (path: string, ...paths: string[]): IO<ConfReader> =>
@@ -23,8 +22,8 @@ export namespace ConfReader {
 
   export const fromJsons = (json: unknown, ...jsons: unknown[]): ConfReader => <A>(
     codec: t.Decoder<unknown, A>
-  ) => (path: string, ...paths: string[]): ValidatedNea<A> => {
-    const allPaths: NonEmptyArray<string> = [path, ...paths]
+  ) => (path: string, ...paths: string[]): ValidatedNea<string, A> => {
+    const allPaths: NonEmptyArray<string> = List.cons(path, paths)
 
     const valueForPath = pipe(
       jsons.reduce<Maybe<unknown>>(
