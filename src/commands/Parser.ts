@@ -1,15 +1,12 @@
 import { sequenceT } from 'fp-ts/lib/Apply'
-import { getValidation } from 'fp-ts/lib/Either'
 import { eqString } from 'fp-ts/lib/Eq'
 import { flow } from 'fp-ts/lib/function'
-import { getSemigroup } from 'fp-ts/lib/NonEmptyArray'
 
 import { Command } from './Command'
 import { Help } from './Help'
 import { Opts } from './Opts'
 import { Result } from './Result'
 import { Either, pipe, NonEmptyArray, Maybe, List } from '../utils/fp'
-import { ValidatedNea } from '../models/ValidatedNea'
 
 export type Parser<A> = (args: string[]) => Either<Help, A>
 type ArgOut<A> = NonEmptyArray<Either<Accumulator<A>, Accumulator<A>>>
@@ -26,7 +23,7 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
 
   function evalResult<A>(out: Result<A>): Either<Help, A> {
     return pipe(
-      out,
+      out.get,
       Either.fold(
         failed => failure(...pipe(failed, Result.Failure.messages, List.uniq(eqString))),
         // NB: if any of the user-provided functions have side-effects, they will happen here!
@@ -115,7 +112,8 @@ namespace Accumulator {
   /**
    * subclasses
    */
-  class APure<A> extends Accumulator<A> {
+  // eslint-disable-next-line @typescript-eslint/class-name-casing
+  class _Pure<A> extends Accumulator<A> {
     constructor(public value: Result<A>) {
       super()
     }
@@ -128,10 +126,11 @@ namespace Accumulator {
       return this.value
     }
   }
-  export type Pure<A> = APure<A>
-  export const Pure = <A>(value: Result<A>): Pure<A> => new APure(value)
+  export type Pure<A> = _Pure<A>
+  export const Pure = <A>(value: Result<A>): Pure<A> => new _Pure(value)
 
-  class AAp<A, B> extends Accumulator<B> {
+  // eslint-disable-next-line @typescript-eslint/class-name-casing
+  class _Ap<A, B> extends Accumulator<B> {
     constructor(public left: Accumulator<(a: A) => B>, public right: Accumulator<A>) {
       super()
     }
@@ -167,12 +166,8 @@ namespace Accumulator {
             parser,
             Either.map(leftResult =>
               pipe(
-                // sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<Result.Failure>()))(
-                //   ValidatedNea.fromEither(leftResult),
-                //   ValidatedNea.fromEither(this.right.result)
-                // ),
-                sequenceT(Either.either)(leftResult, this.right.result),
-                Either.map(([fab, fa]) => () => pipe(fab(), Either.ap(fa())))
+                sequenceT(Result.result)(leftResult, this.right.result),
+                Result.map(([f, a]) => f(a))
               )
             )
           )
@@ -185,8 +180,8 @@ namespace Accumulator {
             parser,
             Either.map(rightResult =>
               pipe(
-                sequenceT(Either.either)(this.left.result, rightResult),
-                Either.map(([fab, fa]) => () => pipe(fab(), Either.ap(fa())))
+                sequenceT(Result.result)(this.left.result, rightResult),
+                Result.map(([f, a]) => f(a))
               )
             )
           )
@@ -202,11 +197,12 @@ namespace Accumulator {
       return pipe(this.left.result, Result.ap(this.right.result))
     }
   }
-  export type Ap<A, B> = AAp<A, B>
+  export type Ap<A, B> = _Ap<A, B>
   export const Ap = <A, B>(left: Accumulator<(a: A) => B>, right: Accumulator<A>): Ap<A, B> =>
-    new AAp(left, right)
+    new _Ap(left, right)
 
-  export class AOrElse<A> extends Accumulator<A> {
+  // eslint-disable-next-line @typescript-eslint/class-name-casing
+  export class _OrElse<A> extends Accumulator<A> {
     constructor(public left: Accumulator<A>, public right: Accumulator<A>) {
       super()
     }
@@ -230,7 +226,7 @@ namespace Accumulator {
           return Either.right(
             pipe(
               lh.right,
-              Either.alt(() => rh.right)
+              Result.alt(() => rh.right)
             )
           )
         })
@@ -245,15 +241,16 @@ namespace Accumulator {
     get result(): Result<A> {
       return pipe(
         this.left.result,
-        Either.alt(() => this.right.result)
+        Result.alt(() => this.right.result)
       )
     }
   }
-  export type OrElse<A> = AOrElse<A>
+  export type OrElse<A> = _OrElse<A>
   export const OrElse = <A>(left: Accumulator<A>, right: Accumulator<A>): OrElse<A> =>
-    new AOrElse(left, right)
+    new _OrElse(left, right)
 
-  class AArgument extends Accumulator<string> {
+  // eslint-disable-next-line @typescript-eslint/class-name-casing
+  class _Argument extends Accumulator<string> {
     parseArg(arg: string): ArgOut<string> {
       return NonEmptyArray.of(Either.right(Pure(Result.success(arg))))
     }
@@ -266,18 +263,21 @@ namespace Accumulator {
       return Result.missingArgument
     }
   }
-  export type Argument = AArgument
-  export const Argument: Argument = new AArgument()
+  export type Argument = _Argument
+  export const Argument: Argument = new _Argument()
 
-  class AArguments extends Accumulator<NonEmptyArray<string>> {
+  // eslint-disable-next-line @typescript-eslint/class-name-casing
+  class _Arguments extends Accumulator<NonEmptyArray<string>> {
     constructor(public stack: string[]) {
       super()
     }
 
     parseArg(arg: string): ArgOut<NonEmptyArray<string>> {
       const noMore = Pure(
-        Either.right(() =>
-          Either.right(pipe(NonEmptyArray.cons(arg, this.stack), NonEmptyArray.reverse))
+        Result(
+          Either.right(() =>
+            Either.right(pipe(NonEmptyArray.cons(arg, this.stack), NonEmptyArray.reverse))
+          )
         )
       )
       const yesMore = Arguments(List.cons(arg, this.stack))
@@ -297,10 +297,11 @@ namespace Accumulator {
       )
     }
   }
-  export type Arguments = AArguments
-  export const Arguments = (stack: string[]): Arguments => new AArguments(stack)
+  export type Arguments = _Arguments
+  export const Arguments = (stack: string[]): Arguments => new _Arguments(stack)
 
-  class ASubcommand<A> extends Accumulator<A> {
+  // eslint-disable-next-line @typescript-eslint/class-name-casing
+  class _Subcommand<A> extends Accumulator<A> {
     constructor(public name: string, public action: Parser<A>) {
       super()
     }
@@ -316,11 +317,12 @@ namespace Accumulator {
       return Result.missingCommand(this.name)
     }
   }
-  export type Subcommand<A> = ASubcommand<A>
+  export type Subcommand<A> = _Subcommand<A>
   export const Subcommand = <A>(name: string, action: Parser<A>): Subcommand<A> =>
-    new ASubcommand(name, action)
+    new _Subcommand(name, action)
 
-  class AValidate<A, B> extends Accumulator<B> {
+  // eslint-disable-next-line @typescript-eslint/class-name-casing
+  class _Validate<A, B> extends Accumulator<B> {
     constructor(public a: Accumulator<A>, public f: (a: A) => Either<string[], B>) {
       super()
     }
@@ -348,11 +350,11 @@ namespace Accumulator {
       return pipe(this.a.result, Result.mapValidated(this.f))
     }
   }
-  export type Validate<A, B> = AValidate<A, B>
+  export type Validate<A, B> = _Validate<A, B>
   export const Validate = <A, B>(
     a: Accumulator<A>,
     f: (a: A) => Either<string[], B>
-  ): Validate<A, B> => new AValidate(a, f)
+  ): Validate<A, B> => new _Validate(a, f)
 
   /**
    * helpers
