@@ -31,34 +31,20 @@ export const GuildStateService = (
           set(guild, GuildState.Lens.callsMessage, Maybe.some(TSnowflake.wrap(message.id))),
 
         getCallsMessage: (guild: Guild): Future<Maybe<Message>> =>
-          pipe(
-            guildStatePersistence.find(GuildId.wrap(guild.id)),
-            Future.chain(
-              flow(
-                Maybe.chain(_ => _.callsMessage),
-                Maybe.fold(
-                  () => Future.right(Maybe.none),
-                  _ => discord.fetchMessage(guild, _)
-                )
-              )
-            )
+          get(
+            guild,
+            _ => _.callsMessage,
+            _ => discord.fetchMessage(guild, _)
           ),
 
         setDefaultRole: (guild: Guild, role: Role): Future<boolean> =>
           set(guild, GuildState.Lens.defaultRole, Maybe.some(TSnowflake.wrap(role.id))),
 
         getDefaultRole: (guild: Guild): Future<Maybe<Role>> =>
-          pipe(
-            guildStatePersistence.find(GuildId.wrap(guild.id)),
-            Future.chain(
-              flow(
-                Maybe.chain(_ => _.defaultRole),
-                Maybe.fold(
-                  () => Future.right(Maybe.none),
-                  _ => discord.fetchRole(guild, _)
-                )
-              )
-            )
+          get(
+            guild,
+            _ => _.defaultRole,
+            _ => discord.fetchRole(guild, _)
           )
       }
 
@@ -69,6 +55,22 @@ export const GuildStateService = (
           Future.map(Maybe.getOrElse(() => GuildState.empty(guildId))),
           Future.map(lens.set(a)),
           Future.chain(_ => guildStatePersistence.upsert(guildId, _))
+        )
+      }
+
+      function get<A, B>(
+        guild: Guild,
+        getter: (state: GuildState) => Maybe<A>,
+        fetch: (a: A) => Future<Maybe<B>>
+      ): Future<Maybe<B>> {
+        return pipe(
+          guildStatePersistence.find(GuildId.wrap(guild.id)),
+          Future.chain(
+            flow(
+              Maybe.chain(getter),
+              Maybe.fold(() => Future.right(Maybe.none), fetch)
+            )
+          )
         )
       }
     })
