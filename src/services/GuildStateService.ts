@@ -1,17 +1,19 @@
-import { Guild, Role, Message } from 'discord.js'
+import { Guild, Role } from 'discord.js'
 import { Lens } from 'monocle-ts'
 
 import { DiscordConnector } from './DiscordConnector'
 import { PartialLogger } from './Logger'
 import { GuildId } from '../models/GuildId'
-import { GuildState } from '../models/GuildState'
+import { Calls } from '../models/guildState/Calls'
+import { GuildState } from '../models/guildState/GuildState'
+import { StaticCalls } from '../models/guildState/StaticCalls'
 import { TSnowflake } from '../models/TSnowflake'
 import { GuildStatePersistence } from '../persistence/GuildStatePersistence'
-import { pipe, Maybe, Future, flow } from '../utils/fp'
+import { pipe, Maybe, Future, flow, Do } from '../utils/fp'
 
 export interface GuildStateService {
-  setCallsMessage: (guild: Guild, message: Message) => Future<boolean>
-  getCallsMessage: (guild: Guild) => Future<Maybe<Message>>
+  setCalls: (guild: Guild, calls: Calls) => Future<boolean>
+  getCalls: (guild: Guild) => Future<Maybe<Calls>>
   setDefaultRole: (guild: Guild, role: Role) => Future<boolean>
   getDefaultRole: (guild: Guild) => Future<Maybe<Role>>
 }
@@ -27,14 +29,25 @@ export const GuildStateService = (
       const _logger = Logger('GuildStateService')
 
       return {
-        setCallsMessage: (guild: Guild, message: Message): Future<boolean> =>
-          set(guild, GuildState.Lens.callsMessage, Maybe.some(TSnowflake.wrap(message.id))),
+        setCalls: (guild: Guild, calls: Calls): Future<boolean> =>
+          set(guild, GuildState.Lens.calls, Maybe.some(StaticCalls.fromCalls(calls))),
 
-        getCallsMessage: (guild: Guild): Future<Maybe<Message>> =>
+        getCalls: (guild: Guild): Future<Maybe<Calls>> =>
           get(
             guild,
-            _ => _.callsMessage,
-            _ => discord.fetchMessage(guild, _)
+            _ => _.calls,
+            ({ message, channel, role }) =>
+              Do(Future.taskEitherSeq)
+                .bind('message', discord.fetchMessage(guild, message))
+                .bind('channel', discord.fetchChannel(channel))
+                .bind('role', discord.fetchRole(guild, role))
+                .return(({ message, channel, role }) =>
+                  Do(Maybe.option)
+                    .bind('message', message)
+                    .bind('channel', channel)
+                    .bind('role', role)
+                    .done()
+                )
           ),
 
         setDefaultRole: (guild: Guild, role: Role): Future<boolean> =>

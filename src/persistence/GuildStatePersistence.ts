@@ -2,9 +2,9 @@ import { Collection } from 'mongodb'
 
 import { FpCollection } from './FpCollection'
 import { GuildId } from '../models/GuildId'
+import { GuildState } from '../models/guildState/GuildState'
 import { PartialLogger } from '../services/Logger'
 import { Future, pipe, Maybe, Either, Task, List } from '../utils/fp'
-import { GuildState } from '../models/GuildState'
 
 export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>
 

@@ -9,6 +9,7 @@ import { Cli } from '../../commands/Cli'
 import { Command } from '../../commands/Command'
 import { Commands } from '../../commands/Commands'
 import { Config } from '../../config/Config'
+import { Calls } from '../../models/guildState/Calls'
 import { TSnowflake } from '../../models/TSnowflake'
 import { Maybe, pipe, Future, List, Either, flow, NonEmptyArray } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
@@ -247,9 +248,17 @@ export const MessagesHandler = (
           message =>
             pipe(
               discord.reactMessage(message, callsEmoji),
-              Future.chain(_ => guildStateService.getCallsMessage(guild)),
-              Future.chain(Maybe.fold(() => Future.unit, deleteMessage)),
-              Future.chain(_ => guildStateService.setCallsMessage(guild, message))
+              Future.chain(_ => guildStateService.getCalls(guild)),
+              Future.chain(
+                Maybe.fold<Calls, Future<unknown>>(
+                  () => Future.unit,
+                  calls =>
+                    pipe(
+                      deleteMessage(calls.message),
+                      Future.chain(_ => guildStateService.setCalls(guild, calls))
+                    )
+                )
+              )
             )
         )
       )
