@@ -14,6 +14,7 @@ namespace Many {
    * Methods
    */
   export const asProd = <A>(many: Many<A>): Many.Prod<A> => Many.Prod(many)
+
   export const asSum = <A>(many: Many<A>): Many.Sum<A> => Many.Sum(many)
 
   /**
@@ -146,12 +147,18 @@ export namespace Usage {
   /**
    * methods
    */
+  export const show = (usage: Usage): string[] => {
+    const opts = showOptions(usage.opts)
+    const args = showArgs(usage.args)
 
-  export const show = (usage: Usage): string[] =>
-    Do(List.array)
-      .bind('opt', showOptions(usage.opts))
-      .bind('arg', showArgs(usage.args))
+    if (List.isEmpty(opts)) return args
+    if (List.isEmpty(args)) return opts
+
+    return Do(List.array)
+      .bind('opt', opts)
+      .bind('arg', args)
       .return(({ opt, arg }) => concat([opt, arg]))
+  }
 
   /**
    * helpers

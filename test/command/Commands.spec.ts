@@ -38,9 +38,11 @@ describe('Cli.adminTextChannel', () => {
     expect(pipe(cmd, Command.parse([]))).toEqual(
       Either.left(
         StringUtils.stripMargins(
-          `Missing expected command (calls or defaultRole)!
+          `Missing expected command (calls or defaultRole)
           |
-          |Usage: okb
+          |Usage:
+          |    okb calls
+          |    okb defaultRole
           |
           |Subcommands:
           |    calls
@@ -50,84 +52,99 @@ describe('Cli.adminTextChannel', () => {
     )
   })
 
-  // it('should return "Missing command" error for "okb"', () => {
-  //   expect(pipe(cmd, Command.parse(['defaultRole']))).toEqual(
-  //     Either.left(
-  //       StringUtils.stripMargins(
-  //         `Missing expected command (set)!
-  //         |Usage:
-  //         |    okb defaultRole get
-  //         |    okb defaultRole set <role>`
-  //       )
-  //     )
-  //   )
-  // })
+  it('should return "Missing command" error for "okb"', () => {
+    expect(pipe(cmd, Command.parse(['defaultRole']))).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Missing expected command (get or set)
+          |
+          |Usage:
+          |    okb defaultRole get
+          |    okb defaultRole set
+          |
+          |Subcommands:
+          |    get
+          |    set`
+        )
+      )
+    )
+  })
 
-  // it('should return "Unexpected argument" error for "kallz"', () => {
-  //   expect(pipe(cmd, Command.parse(['kallz']))).toEqual(
-  //     Either.left(
-  //       StringUtils.stripMargins(
-  //         `Unexpected argument: kallz
-  //         |Usage:
-  //         |    okb calls
-  //         |    okb defaultRole`
-  //       )
-  //     )
-  //   )
-  // })
+  it('should return "Unexpected argument" error for "kallz"', () => {
+    expect(pipe(cmd, Command.parse(['kallz']))).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Unexpected argument: kallz
+          |
+          |Usage:
+          |    okb calls
+          |    okb defaultRole
+          |
+          |Subcommands:
+          |    calls
+          |    defaultRole`
+        )
+      )
+    )
+  })
 
-  // it('should return "Unexpected argument" error for "defaultRole gett"', () => {
-  //   expect(pipe(cmd, Command.parse(['defaultRole', 'retrieve']))).toEqual(
-  //     Either.left(
-  //       StringUtils.stripMargins(
-  //         `Unexpected argument: retrieve
-  //         |Usage:
-  //         |    okb defaultRole get
-  //         |    okb defaultRole set <role>`
-  //       )
-  //     )
-  //   )
-  // })
+  it('should return "Unexpected argument" error for "defaultRole retrieve"', () => {
+    expect(pipe(cmd, Command.parse(['defaultRole', 'retrieve']))).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Unexpected argument: retrieve
+          |
+          |Usage:
+          |    okb defaultRole get
+          |    okb defaultRole set
+          |
+          |Subcommands:
+          |    get
+          |    set`
+        )
+      )
+    )
+  })
 
-  // it('should correctly prioritize failures', () => {
-  //   expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@toto>', 'a']))).toEqual(
-  //     Either.left(
-  //       StringUtils.stripMargins(
-  //         `To many arguments
-  //         |Usage:
-  //         |    okb defaultRole set <role>`
-  //       )
-  //     )
-  //   )
+  it('should correctly prioritize failures', () => {
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@toto>', 'a']))).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Unexpected argument: a
+          |
+          |Usage: okb defaultRole set <role>`
+        )
+      )
+    )
 
-  //   expect(pipe(cmd, Command.parse(['defaultRole', 'set']))).toEqual(
-  //     Either.left(
-  //       StringUtils.stripMargins(
-  //         `Missing expected argument: <role>
-  //         |Usage:
-  //         |    okb defaultRole set <role>`
-  //       )
-  //     )
-  //   )
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set']))).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Missing expected positional argument
+          |
+          |Usage: okb defaultRole set <role>`
+        )
+      )
+    )
 
-  //   expect(pipe(cmd, Command.parse(['defaultRole', 'set', 'role']))).toEqual(
-  //     Either.left(
-  //       StringUtils.stripMargins(
-  //         `Invalid mention: role
-  //         |Usage:
-  //         |    okb defaultRole set <role>`
-  //       )
-  //     )
-  //   )
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', 'role']))).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Invalid mention: role
+          |
+          |Usage: okb defaultRole set <role>`
+        )
+      )
+    )
 
-  //   expect(pipe(cmd, Command.parse(['defaultRole', 'set', 'role', 'a']))).toEqual(
-  //     Either.left(
-  //       StringUtils.stripMargins(
-  //         `Invalid mention: role
-  //         |Usage:
-  //         |    okb defaultRole set <role>`
-  //       )
-  //     )
-  //   )
-  // })
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', 'role', 'a']))).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Unexpected argument: a
+          |
+          |Usage: okb defaultRole set <role>`
+        )
+      )
+    )
+  })
 })

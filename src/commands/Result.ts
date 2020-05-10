@@ -53,7 +53,7 @@ export namespace Result {
 
       const argString = Maybe.fromPredicate(_ => missing.argument)('positional argument')
 
-      return `Missing expected ${List.compact([commandString, argString]).join(', or ')}!`
+      return `Missing expected ${List.compact([commandString, argString]).join(', or ')}`
     }
   }
 
