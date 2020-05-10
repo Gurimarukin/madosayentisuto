@@ -1,11 +1,10 @@
-import * as Nea from 'fp-ts/lib/NonEmptyArray'
 import * as t from 'io-ts'
-import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 
 import { ValidatedNea } from '../models/ValidatedNea'
 import { FileUtils } from '../utils/FileUtils'
 import { unknownToError } from '../utils/unknownToError'
-import { Either, pipe, IO, Maybe, Do, List } from '../utils/fp'
+import { Either, pipe, IO, Maybe, Do, List, NonEmptyArray } from '../utils/fp'
+import { StringUtils } from '../utils/StringUtils'
 
 export type ConfReader = <A>(
   codec: t.Decoder<unknown, A>
@@ -16,7 +15,7 @@ export namespace ConfReader {
     pipe(
       parseJsonFiles(path, ...paths),
       IO.map<NonEmptyArray<unknown>, ConfReader>(jsons =>
-        fromJsons(Nea.head(jsons), ...Nea.tail(jsons))
+        fromJsons(NonEmptyArray.head(jsons), ...NonEmptyArray.tail(jsons))
       )
     )
 
@@ -34,7 +33,7 @@ export namespace ConfReader {
           ),
         readPath(allPaths, json)
       ),
-      Either.fromOption(() => Nea.of('missing key'))
+      Either.fromOption(() => NonEmptyArray.of('missing key'))
     )
 
     return pipe(
@@ -50,7 +49,9 @@ export namespace ConfReader {
           )
         )
       ),
-      Either.mapLeft(Nea.map(_ => `key ${allPaths.join('.')}: ${_}`))
+      Either.mapLeft(
+        NonEmptyArray.map(_ => pipe(allPaths, StringUtils.mkString('key ', '.', `: ${_}`)))
+      )
     )
   }
 }
@@ -61,8 +62,8 @@ const parseJsonFiles = (path: string, ...paths: string[]): IO<NonEmptyArray<unkn
       Do(IO.ioEither)
         .bindL('acc', () => acc)
         .bindL('newConf', () => loadConfigFile(path))
-        .return(({ acc, newConf }) => Nea.snoc(acc, newConf)),
-    pipe(loadConfigFile(path), IO.map(Nea.of))
+        .return(({ acc, newConf }) => NonEmptyArray.snoc(acc, newConf)),
+    pipe(loadConfigFile(path), IO.map(NonEmptyArray.of))
   )
 
 const loadConfigFile = (path: string): IO<unknown> =>

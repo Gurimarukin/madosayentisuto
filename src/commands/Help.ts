@@ -6,6 +6,7 @@ import { Command } from './Command'
 import { Opts } from './Opts'
 import { Usage } from './Usage'
 import { NonEmptyArray, pipe, List, Maybe } from '../utils/fp'
+import { StringUtils } from '../utils/StringUtils'
 
 export interface Help {
   readonly errors: string[]
@@ -29,15 +30,20 @@ export namespace Help {
   })
 
   export const stringify = (help: Help): string => {
-    const maybeErrors = List.isEmpty(help.errors) ? List.empty : List.of(help.errors.join('\n'))
-    const prefixString = help.prefix.join(' ')
+    const maybeErrors = List.isEmpty(help.errors)
+      ? List.empty
+      : pipe(help.errors, StringUtils.mkString('\n'), List.of)
+    const prefixString = pipe(help.prefix, StringUtils.mkString(' '))
     const usageString = List.isEmpty(help.usage)
       ? `Usage: ${prefixString}`
       : help.usage.length === 1
       ? `Usage: ${prefixString} ${help.usage[0]}`
-      : List.cons('Usage:', help.usage).join(`\n    ${prefixString} `)
+      : pipe(List.cons('Usage:', help.usage), StringUtils.mkString(`\n    ${prefixString} `))
 
-    return List.concat(maybeErrors, List.cons(usageString, help.body)).join('\n\n')
+    return pipe(
+      List.concat(maybeErrors, List.cons(usageString, help.body)),
+      StringUtils.mkString('\n\n')
+    )
   }
 
   /**
@@ -51,13 +57,13 @@ export namespace Help {
       : pipe(
           commands,
           List.chain(command => List.of(withIndent(4, command.name))),
-          texts => List.of(List.cons('Subcommands:', texts).join('\n'))
+          texts => pipe(List.cons('Subcommands:', texts), StringUtils.mkString('\n'), List.of)
         )
 
     const optionsDetail = detail(parser.opts)
     const optionsHelp = List.isEmpty(optionsDetail)
       ? List.empty
-      : List.of(List.cons('Options:', optionsDetail).join('\n'))
+      : pipe(List.cons('Options:', optionsDetail), StringUtils.mkString('\n'), List.of)
 
     return {
       errors: List.empty,
@@ -142,10 +148,11 @@ export namespace Help {
 
   const withIndent = (indent: number, str: string): string => {
     const tab = ' '.repeat(indent)
-    return str
-      .split('\n')
-      .map(_ => `${tab}${_}`)
-      .join('\n')
+    return pipe(
+      str.split('\n'),
+      List.map(_ => `${tab}${_}`),
+      StringUtils.mkString('\n')
+    )
   }
 }
 

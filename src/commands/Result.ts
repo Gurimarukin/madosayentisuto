@@ -5,7 +5,8 @@ import { flow, Lazy } from 'fp-ts/lib/function'
 import { pipeable } from 'fp-ts/lib/pipeable'
 import { Semigroup } from 'fp-ts/lib/Semigroup'
 
-import { Either, pipe, List, Maybe } from '../utils/fp'
+import { Either, pipe, List, Maybe, inspect } from '../utils/fp'
+import { StringUtils } from '../utils/StringUtils'
 
 declare module 'fp-ts/lib/HKT' {
   interface URItoKind<A> {
@@ -47,13 +48,22 @@ export namespace Result {
     }
 
     export const message = (missing: Missing): string => {
-      const commandString = Maybe.fromPredicate(_ => !List.isEmpty(missing.commands))(
-        `command (${pipe(missing.commands, List.uniq(eqString)).join(' or ')})`
+      const commandString = List.isEmpty(missing.commands)
+        ? Maybe.none
+        : Maybe.some(
+            pipe(
+              missing.commands,
+              List.uniq(eqString),
+              StringUtils.mkString('command (', ' or ', ')')
+            )
+          )
+
+      const argString = missing.argument ? Maybe.some('positional argument') : Maybe.none
+
+      return pipe(
+        List.compact([commandString, argString]),
+        StringUtils.mkString('Missing expected ', ', or ', '')
       )
-
-      const argString = Maybe.fromPredicate(_ => missing.argument)('positional argument')
-
-      return `Missing expected ${List.compact([commandString, argString]).join(', or ')}`
     }
   }
 

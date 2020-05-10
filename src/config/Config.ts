@@ -7,6 +7,7 @@ import { LogLevelOrOff } from '../models/LogLevel'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
 import { IO, pipe, Either, NonEmptyArray } from '../utils/fp'
+import { StringUtils } from '../utils/StringUtils'
 
 export interface Config {
   readonly clientSecret: string
@@ -34,7 +35,12 @@ export namespace Config {
       IO.chain(reader =>
         pipe(
           readConfig(reader),
-          Either.mapLeft(errors => new Error(`Errors while reading config:\n${errors.join('\n')}`)),
+          Either.mapLeft(
+            errors =>
+              new Error(
+                pipe(errors, StringUtils.mkString('Errors while reading config:\n', '\n', ''))
+              )
+          ),
           IO.fromEither
         )
       )

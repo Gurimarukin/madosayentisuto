@@ -238,7 +238,11 @@ export namespace Usage {
 const isEmptyProd = <A>(many: Many<A>): many is Many.Prod<A> =>
   Many.isProd(many) && List.isEmpty(many.allOf)
 
-const concat = (all: string[]): string => all.filter(_ => _ !== '').join(' ')
+const concat = (all: string[]): string => pipe(
+  all,
+  List.filter(_ => _!== ''),
+  StringUtils.mkString(' ')
+)
 
 const asOptional = <A>(list: Many<A>[]): Maybe<Many<A>[]> => {
   if (List.isEmpty(list)) return Maybe.none
