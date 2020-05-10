@@ -12,10 +12,15 @@ export type Logger = Record<LogLevel, (arg: any, ...args: any[]) => IO<void>>
 export type PartialLogger = (name: string) => Logger
 
 export const PartialLogger = (config: Config, discord: DiscordConnector): PartialLogger => name => {
-  const consoleLog = (level: LogLevel, msg: string): IO<void> =>
+  const consoleLog = (level: LogLevel, msg: string): Future<void> =>
     shouldLog(config.logger.consoleLevel, level)
-      ? IO.apply(() => console.log(formatConsole(name, level, msg)))
-      : IO.right(undefined)
+      ? Future.apply(
+          () =>
+            new Promise<void>(resolve => {
+              resolve(console.log(formatConsole(name, level, msg)))
+            })
+        )
+      : Future.unit
 
   const discordDMLog = (level: LogLevel, rawMsg: string): Future<void> => {
     if (shouldLog(config.logger.discordDM.level, level)) {
@@ -50,10 +55,12 @@ export const PartialLogger = (config: Config, discord: DiscordConnector): Partia
   }
 
   const log = (level: LogLevel, msg: string): IO<void> =>
-    Do(IO.ioEither)
-      .do(consoleLog(level, msg))
-      .do(IO.runFuture(discordDMLog(level, msg)))
-      .return(() => {})
+    IO.runFuture(
+      Do(Future.taskEither)
+        .do(consoleLog(level, msg))
+        .do(discordDMLog(level, msg))
+        .return(() => {})
+    )
 
   const debug = (param: any, ...params: any[]) => log('debug', util.format(param, ...params))
   const info = (param: any, ...params: any[]) => log('info', util.format(param, ...params))
