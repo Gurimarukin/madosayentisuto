@@ -1,13 +1,13 @@
 import * as Ord from 'fp-ts/lib/Ord'
-import { GuildMember, TextChannel, Guild, MessageEmbed } from 'discord.js'
+import { GuildMember, TextChannel, Guild, MessageEmbed, PartialGuildMember } from 'discord.js'
 import { randomInt } from 'fp-ts/lib/Random'
 
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
-import { GuildMemberEvent } from '../../models/GuildMemberEvent'
+import { AddRemove } from '../../models/AddRemove'
 import { Colors } from '../../utils/Colors'
-import { Future, pipe, IO, Maybe, List } from '../../utils/fp'
+import { Future, pipe, IO, Maybe, List, flow } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 import { LogUtils } from '../../utils/LogUtils'
@@ -16,10 +16,16 @@ export const GuildMemberEventsHandler = (
   Logger: PartialLogger,
   guildStateService: GuildStateService,
   discord: DiscordConnector
-): ((event: GuildMemberEvent) => Future<unknown>) => {
+): ((event: AddRemove<GuildMember | PartialGuildMember>) => Future<unknown>) => {
   const logger = Logger('GuildMemberEventsHandler')
 
-  return GuildMemberEvent.fold({ onAdd, onRemove })
+  return flow(
+    AddRemove.map(discord.fetchPartial),
+    AddRemove.fold({
+      onAdd: Future.chain(onAdd),
+      onRemove: Future.chain(onRemove)
+    })
+  )
 
   function onAdd(member: GuildMember): Future<unknown> {
     return pipe(

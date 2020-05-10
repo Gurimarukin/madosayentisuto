@@ -22,15 +22,18 @@ import {
   RoleResolvable,
   StringResolvable,
   TextChannel,
-  User
+  User,
+  PartialUser,
+  Partialize,
+  UserResolvable
 } from 'discord.js'
 import { fromEventPattern } from 'rxjs'
 
 import { ObservableE } from '../models/ObservableE'
 import { TSnowflake } from '../models/TSnowflake'
+import { AddRemove } from '../models/AddRemove'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
-import { Maybe, pipe, Future, Task, Either, flow, List } from '../utils/fp'
-import { GuildMemberEvent } from '../models/GuildMemberEvent'
+import { Maybe, pipe, Future, flow, List } from '../utils/fp'
 import { Colors } from '../utils/Colors'
 import { ChannelUtils } from '../utils/ChannelUtils'
 
@@ -63,23 +66,28 @@ export const DiscordConnector = (client: Client) => {
         Obs.rightObservable
       ),
 
-    guildMemberEvents: (): ObservableE<GuildMemberEvent> =>
+    guildMemberEvents: (): ObservableE<AddRemove<GuildMember | PartialGuildMember>> =>
       pipe(
-        fromEventPattern<GuildMemberEvent>(handler => {
-          client.on('guildMemberAdd', member =>
-            pipe(
-              fullMember(member),
-              Future.map(_ => handler(GuildMemberEvent.Add(_))),
-              Future.runUnsafe
+        fromEventPattern<AddRemove<GuildMember | PartialGuildMember>>(handler => {
+          client.on('guildMemberAdd', member => handler(AddRemove.Add(member)))
+          client.on('guildMemberRemove', member => handler(AddRemove.Remove(member)))
+        }),
+        Obs.rightObservable
+      ),
+
+    messageReactions: (): ObservableE<AddRemove<[MessageReaction, User | PartialUser]>> =>
+      pipe(
+        fromEventPattern<AddRemove<[MessageReaction, User | PartialUser]>>(handler => {
+          client.on('messageReactionAdd', (reaction, user) => {
+            handler(
+              AddRemove.Add<[MessageReaction, User | PartialUser]>([reaction, user])
             )
-          )
-          client.on('guildMemberRemove', member =>
-            pipe(
-              fullMember(member),
-              Future.map(_ => handler(GuildMemberEvent.Remove(_))),
-              Future.runUnsafe
+          })
+          client.on('messageReactionRemove', (reaction, user) => {
+            handler(
+              AddRemove.Remove<[MessageReaction, User | PartialUser]>([reaction, user])
             )
-          )
+          })
         }),
         Obs.rightObservable
       ),
@@ -87,16 +95,37 @@ export const DiscordConnector = (client: Client) => {
     /**
      * Read
      */
+    fetchPartial: <A extends { partial: boolean; fetch(): Promise<A> }, K extends string>(
+      partial: A | Partialize<A, K>
+    ) => (partial.partial ? Future.apply(() => partial.fetch()) : Future.right(partial)),
+
     fetchChannel: (channel: TSnowflake): Future<Maybe<Channel>> =>
       pipe(
         Future.apply(() => client.channels.fetch(TSnowflake.unwrap(channel))),
-        Task.map(flow(Maybe.fromEither, Either.right))
+        Future.map(Maybe.some),
+        Future.recover<Maybe<Channel>>()
+        //   [
+        //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
+        //   Maybe.none
+        // ]
       ),
 
     fetchUser: (user: TSnowflake): Future<Maybe<User>> =>
       pipe(
         Future.apply(() => client.users.fetch(TSnowflake.unwrap(user))),
-        Task.map(flow(Maybe.fromEither, Either.right))
+        Future.map(Maybe.some),
+        Future.recover<Maybe<User>>()
+        //   [
+        //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
+        //   Maybe.none
+        // ]
+      ),
+
+    fetchMemberForUser: (guild: Guild, user: UserResolvable): Future<Maybe<GuildMember>> =>
+      pipe(
+        Future.apply(() => guild.members.fetch(user)),
+        Future.map(Maybe.some),
+        Future.recover<Maybe<GuildMember>>()
       ),
 
     fetchRole: (guild: Guild, role: TSnowflake): Future<Maybe<Role>> =>
@@ -151,8 +180,24 @@ export const DiscordConnector = (client: Client) => {
     ): Future<Maybe<void>> =>
       pipe(
         Future.apply(() => member.roles.add(roleOrRoles, reason)),
-        Future.map(_ => {}),
-        Task.map(flow(Maybe.fromEither, Either.right))
+        Future.map(_ => Maybe.some(undefined)),
+        Future.recover<Maybe<void>>()
+        // [e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
+        // Maybe.none]
+        // Future.map(_ => {}),
+      ),
+
+    removeRole: (
+      member: GuildMember,
+      roleOrRoles: RoleResolvable | RoleResolvable[],
+      reason?: string
+    ): Future<Maybe<void>> =>
+      pipe(
+        Future.apply(() => member.roles.remove(roleOrRoles, reason)),
+        Future.map(_ => Maybe.some(undefined)),
+        Future.recover<Maybe<void>>()
+        //[ e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
+        // Maybe.none]
       ),
 
     createInvite: (channel: GuildChannel, options?: InviteOptions): Future<Invite> =>
@@ -201,9 +246,5 @@ export const DiscordConnector = (client: Client) => {
         Maybe.none
       ])
     )
-  }
-
-  function fullMember(member: GuildMember | PartialGuildMember): Future<GuildMember> {
-    return member.partial ? Future.apply(() => member.fetch()) : Future.right(member)
   }
 }

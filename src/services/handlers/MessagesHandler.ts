@@ -5,6 +5,7 @@ import { sequenceT } from 'fp-ts/lib/Apply'
 import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
 import { GuildStateService } from '../GuildStateService'
+import { callsEmoji } from '../../Application'
 import { Cli } from '../../commands/Cli'
 import { Command } from '../../commands/Command'
 import { Commands } from '../../commands/Commands'
@@ -265,8 +266,6 @@ export const MessagesHandler = (
     )
   }
 }
-
-const callsEmoji = '🔔'
 
 const fromOption = <E, A>(ma: Maybe<A>, e: E): ValidatedNea<E, A> =>
   pipe(

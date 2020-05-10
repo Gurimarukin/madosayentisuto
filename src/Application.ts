@@ -15,6 +15,8 @@ import { IO, pipe, Either, Future, Try, List } from './utils/fp'
 import { GuildStateService } from './services/GuildStateService'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 
+export const callsEmoji = ':bell:'
+
 export const Application = (config: Config, discord: DiscordConnector): Future<void> => {
   const Logger = PartialLogger(config, discord)
   const logger = Logger('Application')
