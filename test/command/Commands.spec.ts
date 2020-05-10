@@ -8,7 +8,7 @@ import { StringUtils } from '../../src/utils/StringUtils'
 describe('Cli.adminTextChannel', () => {
   const cmd = Cli('okb').adminTextChannel
 
-  it('should parse "calls init"', () => {
+  it('should parse "calls init <#channel> <@mention>"', () => {
     expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>', '<@mention>']))).toEqual(
       Either.right(Commands.CallsInit(TSnowflake.wrap('channel'), TSnowflake.wrap('mention')))
     )
@@ -143,6 +143,43 @@ describe('Cli.adminTextChannel', () => {
           `Unexpected argument: a
           |
           |Usage: okb defaultRole set <role>`
+        )
+      )
+    )
+  })
+
+  it('should return Missing argument for "calls init"', () => {
+    expect(pipe(cmd, Command.parse(['calls', 'init']))).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Missing expected positional argument
+          |
+          |Usage: okb calls init <channel> <mention>`
+        )
+      )
+    )
+  })
+
+  it('should return Missing argument for "calls init <#channel>"', () => {
+    expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>']))).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Missing expected positional argument
+          |
+          |Usage: okb calls init <channel> <mention>`
+        )
+      )
+    )
+  })
+
+  it('should return Invalid channel for "calls init <@mention> <#channel>"', () => {
+    expect(pipe(cmd, Command.parse(['calls', 'init', '<@mention>', '<#channel>']))).toEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Invalid channel: <@mention>
+          |Invalid mention: <#channel>
+          |
+          |Usage: okb calls init <channel> <mention>`
         )
       )
     )

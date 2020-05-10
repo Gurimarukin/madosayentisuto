@@ -152,6 +152,8 @@ export namespace Usage {
     if (List.isEmpty(opts)) return args
     if (List.isEmpty(args)) return opts
 
+    if (opts.length === args.length) return pipe(List.concat(opts, args), concat, List.of)
+
     return List.comprehension([opts, args], (opt, arg) => concat([opt, arg]))
   }
 
