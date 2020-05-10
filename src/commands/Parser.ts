@@ -1,12 +1,11 @@
 import { sequenceT } from 'fp-ts/lib/Apply'
 import { eqString } from 'fp-ts/lib/Eq'
-import { flow } from 'fp-ts/lib/function'
 
 import { Command } from './Command'
 import { Help } from './Help'
 import { Opts } from './Opts'
 import { Result } from './Result'
-import { Either, pipe, NonEmptyArray, Maybe, List } from '../utils/fp'
+import { Either, flow, pipe, NonEmptyArray, Maybe, List } from '../utils/fp'
 
 export type Parser<A> = (args: string[]) => Either<Help, A>
 type ArgOut<A> = NonEmptyArray<Either<Accumulator<A>, Accumulator<A>>>
@@ -61,16 +60,14 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
           Either.chain(evalResult)
         )
       ),
-      Maybe.fold(
-        () =>
-          pipe(
-            toOption(accumulator.parseArg(arg)),
-            Maybe.fold(
-              () => failure(`Unexpected argument: ${arg}`),
-              next => consumeAll(tail, next)
-            )
-          ),
-        _ => _
+      Maybe.getOrElse(() =>
+        pipe(
+          toOption(accumulator.parseArg(arg)),
+          Maybe.fold(
+            () => failure(`Unexpected argument: ${arg}`),
+            next => consumeAll(tail, next)
+          )
+        )
       )
     )
   }

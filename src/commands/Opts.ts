@@ -1,10 +1,10 @@
+import { Alt1 } from 'fp-ts/lib/Alt'
 import { Apply1 } from 'fp-ts/lib/Apply'
-import { flow } from 'fp-ts/lib/function'
 import { pipeable } from 'fp-ts/lib/pipeable'
 
 import { Command } from './Command'
 import { ValidatedNea } from '../models/ValidatedNea'
-import { NonEmptyArray, Either, pipe } from '../utils/fp'
+import { NonEmptyArray, Either, flow, pipe } from '../utils/fp'
 
 declare module 'fp-ts/lib/HKT' {
   interface URItoKind<A> {
@@ -25,10 +25,11 @@ export type Opts<A> =
   | Opts.Validate<unknown, A>
 
 export namespace Opts {
-  export const opts: Apply1<URI> = {
+  export const opts: Apply1<URI> & Alt1<URI> = {
     URI,
     map: <A, B>(fa: Opts<A>, f: (a: A) => B): Opts<B> => mapValidated(flow(f, Either.right))(fa),
-    ap: <A, B>(fab: Opts<(a: A) => B>, fa: Opts<A>): Opts<B> => App(fab, fa)
+    ap: <A, B>(fab: Opts<(a: A) => B>, fa: Opts<A>): Opts<B> => App(fab, fa),
+    alt: <A>(fx: Opts<A>, fy: () => Opts<A>): Opts<A> => OrElse(fx, fy())
   }
 
   /**
@@ -46,9 +47,7 @@ export namespace Opts {
     }
   }
 
-  export const { map } = pipeable(opts)
-
-  export const orElse = <A>(other: Opts<A>) => (opts: Opts<A>): Opts<A> => OrElse(opts, other)
+  export const { map, ap, alt } = pipeable(opts)
 
   /**
    * subtypes

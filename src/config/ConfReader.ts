@@ -25,13 +25,12 @@ export namespace ConfReader {
     const allPaths: NonEmptyArray<string> = List.cons(path, paths)
 
     const valueForPath = pipe(
-      jsons.reduce<Maybe<unknown>>(
-        (acc, json) =>
-          pipe(
-            acc,
-            Maybe.alt(() => readPath(allPaths, json))
-          ),
-        readPath(allPaths, json)
+      jsons,
+      List.reduce(readPath(allPaths, json), (acc, json) =>
+        pipe(
+          acc,
+          Maybe.alt(() => readPath(allPaths, json))
+        )
       ),
       Either.fromOption(() => NonEmptyArray.of('missing key'))
     )
@@ -41,14 +40,10 @@ export namespace ConfReader {
       Either.chain(val =>
         pipe(
           codec.decode(val),
-          Either.mapLeft(
-            errors =>
-              errors.map(
-                _ => `expected ${codec.name} got ${JSON.stringify(_.value)}`
-              ) as NonEmptyArray<string>
-          )
+          Either.mapLeft(List.map(_ => `expected ${codec.name} got ${JSON.stringify(_.value)}`))
         )
       ),
+      ValidatedNea.fromEmptyErrors,
       Either.mapLeft(
         NonEmptyArray.map(_ => pipe(allPaths, StringUtils.mkString('key ', '.', `: ${_}`)))
       )

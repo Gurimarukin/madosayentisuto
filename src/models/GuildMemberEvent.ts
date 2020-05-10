@@ -19,6 +19,7 @@ export namespace GuildMemberEvent {
     switch (event._tag) {
       case 'Add':
         return onAdd(event.member)
+
       case 'Remove':
         return onRemove(event.member)
     }

@@ -1,10 +1,8 @@
-import { flow } from 'fp-ts/lib/function'
-
 import { Help } from './Help'
 import { Opts } from './Opts'
 import { Parser } from './Parser'
 import { ValidatedNea } from '../models/ValidatedNea'
-import { Either, pipe } from '../utils/fp'
+import { Either, flow, pipe } from '../utils/fp'
 
 export interface Command<A> {
   readonly name: string

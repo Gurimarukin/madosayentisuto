@@ -16,7 +16,10 @@ export type Cli = ReturnType<typeof Cli>
 export function Cli(prefix: string) {
   return {
     adminTextChannel: Command(prefix)(
-      pipe(Opts.subcommand(calls), Opts.orElse(Opts.subcommand(defaultRole)))
+      pipe(
+        Opts.subcommand(calls),
+        Opts.alt(() => Opts.subcommand(defaultRole))
+      )
     )
   }
 }
@@ -37,7 +40,10 @@ const defaultRoleSet = Command('set')<AdminTextChannel>(
   pipe(Opts.param('role', decodeMention), Opts.map(Commands.DefaultRoleSet))
 )
 const defaultRole = Command('defaultRole')(
-  pipe(Opts.subcommand(defaultRoleGet), Opts.orElse(Opts.subcommand(defaultRoleSet)))
+  pipe(
+    Opts.subcommand(defaultRoleGet),
+    Opts.alt(() => Opts.subcommand(defaultRoleSet))
+  )
 )
 
 function decodeMention(u: string): ValidatedNea<string, TSnowflake> {
@@ -68,9 +74,5 @@ function decodeTextChannel(u: string): ValidatedNea<string, TSnowflake> {
 }
 
 function codecToDecode<I, A>(codec: t.Decoder<I, A>): (u: I) => ValidatedNea<string, A> {
-  return u =>
-    pipe(
-      codec.decode(u),
-      Either.mapLeft(_ => failure(_) as NonEmptyArray<string>)
-    )
+  return u => pipe(codec.decode(u), Either.mapLeft(failure), ValidatedNea.fromEmptyErrors)
 }

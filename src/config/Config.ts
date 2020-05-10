@@ -6,7 +6,7 @@ import { ConfReader } from './ConfReader'
 import { LogLevelOrOff } from '../models/LogLevel'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
-import { IO, pipe, Either, NonEmptyArray } from '../utils/fp'
+import { IO, pipe, Either, NonEmptyArray, flow } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 
 export interface Config {
@@ -36,10 +36,7 @@ export namespace Config {
         pipe(
           readConfig(reader),
           Either.mapLeft(
-            errors =>
-              new Error(
-                pipe(errors, StringUtils.mkString('Errors while reading config:\n', '\n', ''))
-              )
+            flow(StringUtils.mkString('Errors while reading config:\n', '\n', ''), Error)
           ),
           IO.fromEither
         )
@@ -118,5 +115,5 @@ export const readDbConfig = (reader: ConfReader): ValidatedNea<string, DbConfig>
       reader(t.string)('db', 'user'),
       reader(t.string)('db', 'password')
     ),
-    Either.map(([host, dbName, user, password]) => DbConfig(host, dbName, user, password))
+    Either.map(_ => DbConfig(..._))
   )

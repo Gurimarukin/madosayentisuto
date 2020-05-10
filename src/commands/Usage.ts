@@ -1,7 +1,5 @@
-import { flow } from 'fp-ts/lib/function'
-
 import { Opts } from './Opts'
-import { List, Do, pipe, Maybe } from '../utils/fp'
+import { List, flow, pipe, Maybe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 
 /**
@@ -154,10 +152,7 @@ export namespace Usage {
     if (List.isEmpty(opts)) return args
     if (List.isEmpty(args)) return opts
 
-    return Do(List.array)
-      .bind('opt', opts)
-      .bind('arg', args)
-      .return(({ opt, arg }) => concat([opt, arg]))
+    return List.comprehension([opts, args], (opt, arg) => concat([opt, arg]))
   }
 
   /**
@@ -169,15 +164,12 @@ export namespace Usage {
         return List.of(Usage())
 
       case 'App':
-        return Do(List.array)
-          .bind('l', fromOpts(opts.f))
-          .bind('r', fromOpts(opts.a))
-          .return(({ l, r }) =>
-            Usage({
-              opts: pipe(asProd(l.opts), and(asProd(r.opts))),
-              args: pipe(asProd(l.args), and(asProd(r.args)))
-            })
-          )
+        return List.comprehension([fromOpts(opts.f), fromOpts(opts.a)], (l, r) =>
+          Usage({
+            opts: pipe(asProd(l.opts), and(asProd(r.opts))),
+            args: pipe(asProd(l.args), and(asProd(r.args)))
+          })
+        )
 
       case 'OrElse':
         const left = pipe(fromOpts(opts.a), List.reverse)
@@ -238,11 +230,12 @@ export namespace Usage {
 const isEmptyProd = <A>(many: Many<A>): many is Many.Prod<A> =>
   Many.isProd(many) && List.isEmpty(many.allOf)
 
-const concat = (all: string[]): string => pipe(
-  all,
-  List.filter(_ => _!== ''),
-  StringUtils.mkString(' ')
-)
+const concat = (all: string[]): string =>
+  pipe(
+    all,
+    List.filter(_ => _ !== ''),
+    StringUtils.mkString(' ')
+  )
 
 const asOptional = <A>(list: Many<A>[]): Maybe<Many<A>[]> => {
   if (List.isEmpty(list)) return Maybe.none

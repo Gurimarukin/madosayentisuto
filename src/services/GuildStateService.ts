@@ -7,7 +7,7 @@ import { GuildId } from '../models/GuildId'
 import { GuildState } from '../models/GuildState'
 import { TSnowflake } from '../models/TSnowflake'
 import { GuildStatePersistence } from '../persistence/GuildStatePersistence'
-import { pipe, Maybe, Future } from '../utils/fp'
+import { pipe, Maybe, Future, flow } from '../utils/fp'
 
 export interface GuildStateService {
   setCallsMessage: (guild: Guild, message: Message) => Future<boolean>
@@ -35,9 +35,8 @@ export const GuildStateService = (
         getDefaultRole: (guild: Guild): Future<Maybe<Role>> =>
           pipe(
             guildStatePersistence.find(GuildId.wrap(guild.id)),
-            Future.chain(_ =>
-              pipe(
-                _,
+            Future.chain(
+              flow(
                 Maybe.chain(_ => _.defaultRole),
                 Maybe.fold(
                   () => Future.right(Maybe.none),

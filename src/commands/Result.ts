@@ -1,11 +1,11 @@
 import { Alt1 } from 'fp-ts/lib/Alt'
 import { sequenceT, Apply1 } from 'fp-ts/lib/Apply'
 import { eqString } from 'fp-ts/lib/Eq'
-import { flow, Lazy } from 'fp-ts/lib/function'
+import { Lazy } from 'fp-ts/lib/function'
 import { pipeable } from 'fp-ts/lib/pipeable'
 import { Semigroup } from 'fp-ts/lib/Semigroup'
 
-import { Either, pipe, List, Maybe, inspect } from '../utils/fp'
+import { Either, flow, pipe, List, Maybe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 
 declare module 'fp-ts/lib/HKT' {
@@ -145,7 +145,9 @@ export namespace Result {
 
   export const failure = (reversedMissing: Missing[]): Result<never> =>
     Result(Either.left(Failure(reversedMissing)))
+
   export const missingCommand = (command: string): Result<never> =>
     failure([Missing({ commands: [command] })])
+
   export const missingArgument: Result<never> = failure([Missing({ argument: true })])
 }

@@ -28,7 +28,7 @@ import { fromEventPattern } from 'rxjs'
 import { ObservableE } from '../models/ObservableE'
 import { TSnowflake } from '../models/TSnowflake'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
-import { Maybe, pipe, Future, Task, Either } from '../utils/fp'
+import { Maybe, pipe, Future, Task, Either, flow } from '../utils/fp'
 import { GuildMemberEvent } from '../models/GuildMemberEvent'
 import { Colors } from '../utils/Colors'
 
@@ -88,13 +88,13 @@ export const DiscordConnector = (client: Client) => {
     fetchChannel: (channel: TSnowflake): Future<Maybe<Channel>> =>
       pipe(
         Future.apply(() => client.channels.fetch(TSnowflake.unwrap(channel))),
-        Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
+        Task.map(flow(Maybe.fromEither, Either.right))
       ),
 
     fetchUser: (user: TSnowflake): Future<Maybe<User>> =>
       pipe(
         Future.apply(() => client.users.fetch(TSnowflake.unwrap(user))),
-        Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
+        Task.map(flow(Maybe.fromEither, Either.right))
       ),
 
     fetchRole: (guild: Guild, role: TSnowflake): Future<Maybe<Role>> =>
@@ -143,7 +143,7 @@ export const DiscordConnector = (client: Client) => {
       pipe(
         Future.apply(() => member.roles.add(roleOrRoles, reason)),
         Future.map(_ => {}),
-        Task.map(_ => pipe(_, Maybe.fromEither, Either.right))
+        Task.map(flow(Maybe.fromEither, Either.right))
       ),
 
     createInvite: (channel: GuildChannel, options?: InviteOptions): Future<Invite> =>
