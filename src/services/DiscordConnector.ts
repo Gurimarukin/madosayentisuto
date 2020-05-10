@@ -21,6 +21,7 @@ import {
   Role,
   RoleResolvable,
   StringResolvable,
+  TextChannel,
   User
 } from 'discord.js'
 import { fromEventPattern } from 'rxjs'
@@ -28,9 +29,10 @@ import { fromEventPattern } from 'rxjs'
 import { ObservableE } from '../models/ObservableE'
 import { TSnowflake } from '../models/TSnowflake'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
-import { Maybe, pipe, Future, Task, Either, flow } from '../utils/fp'
+import { Maybe, pipe, Future, Task, Either, flow, List } from '../utils/fp'
 import { GuildMemberEvent } from '../models/GuildMemberEvent'
 import { Colors } from '../utils/Colors'
+import { ChannelUtils } from '../utils/ChannelUtils'
 
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
 
@@ -103,6 +105,13 @@ export const DiscordConnector = (client: Client) => {
         Future.map(Maybe.fromNullable)
       ),
 
+    fetchMessage: (guild: Guild, message: TSnowflake): Future<Maybe<Message>> =>
+      pipe(
+        guild.channels.cache.array(),
+        List.filter(ChannelUtils.isText),
+        fetchMessageRec(TSnowflake.unwrap(message))
+      ),
+
     /**
      * Write
      */
@@ -158,6 +167,25 @@ export const DiscordConnector = (client: Client) => {
           false
         ])
       )
+  }
+
+  function fetchMessageRec(message: string): (channels: TextChannel[]) => Future<Maybe<Message>> {
+    return channels => {
+      if (List.isEmpty(channels)) return Future.right(Maybe.none)
+
+      const [head, ...tail] = channels
+      return pipe(
+        Future.apply(() => head.messages.fetch(message)),
+        Future.map(Maybe.some),
+        Future.recover<Maybe<Message>>([
+          e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
+          Maybe.none
+        ]),
+        Future.chain(
+          Maybe.fold(() => fetchMessageRec(message)(tail), flow(Maybe.some, Future.right))
+        )
+      )
+    }
   }
 
   function sendMessage(

@@ -11,6 +11,7 @@ import { pipe, Maybe, Future, flow } from '../utils/fp'
 
 export interface GuildStateService {
   setCallsMessage: (guild: Guild, message: Message) => Future<boolean>
+  getCallsMessage: (guild: Guild) => Future<Maybe<Message>>
   setDefaultRole: (guild: Guild, role: Role) => Future<boolean>
   getDefaultRole: (guild: Guild) => Future<Maybe<Role>>
 }
@@ -28,6 +29,20 @@ export const GuildStateService = (
       return {
         setCallsMessage: (guild: Guild, message: Message): Future<boolean> =>
           set(guild, GuildState.Lens.callsMessage, Maybe.some(TSnowflake.wrap(message.id))),
+
+        getCallsMessage: (guild: Guild): Future<Maybe<Message>> =>
+          pipe(
+            guildStatePersistence.find(GuildId.wrap(guild.id)),
+            Future.chain(
+              flow(
+                Maybe.chain(_ => _.callsMessage),
+                Maybe.fold(
+                  () => Future.right(Maybe.none),
+                  _ => discord.fetchMessage(guild, _)
+                )
+              )
+            )
+          ),
 
         setDefaultRole: (guild: Guild, role: Role): Future<boolean> =>
           set(guild, GuildState.Lens.defaultRole, Maybe.some(TSnowflake.wrap(role.id))),

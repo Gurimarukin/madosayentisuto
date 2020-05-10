@@ -1,4 +1,6 @@
-import { Message, Guild } from 'discord.js'
+import { Message, Guild, Channel, Role } from 'discord.js'
+
+import { sequenceT } from 'fp-ts/lib/Apply'
 
 import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
@@ -8,10 +10,11 @@ import { Command } from '../../commands/Command'
 import { Commands } from '../../commands/Commands'
 import { Config } from '../../config/Config'
 import { TSnowflake } from '../../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either } from '../../utils/fp'
+import { Maybe, pipe, Future, List, Either, flow, NonEmptyArray } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 import { LogUtils } from '../../utils/LogUtils'
+import { ValidatedNea } from '../../models/ValidatedNea'
 
 export const MessagesHandler = (
   Logger: PartialLogger,
@@ -136,44 +139,36 @@ export const MessagesHandler = (
             switch (cmd._tag) {
               case 'CallsInit':
                 return pipe(
-                  deleteMessage(message),
-                  Future.chain(() =>
-                    discord.sendPrettyMessage(
-                      message.channel,
-                      StringUtils.stripMargins(
-                        `Haha !
-                        |Tu peux t'abonner aux appels sur ce serveur en réagissant avec :bell: !`
+                  Future.parallel<unknown>([
+                    deleteMessage(message),
+                    pipe(
+                      fetchChannelAndRole(guild, cmd.channel, cmd.role),
+                      Future.chain(
+                        Either.fold(
+                          flow(StringUtils.mkString('\n'), _ =>
+                            discord.sendPrettyMessage(message.author, _)
+                          ),
+                          ([channel, role]) => callsInit(message, guild, channel, role)
+                        )
                       )
                     )
-                  ),
-                  Future.chain(
-                    Maybe.fold<Message, Future<unknown>>(
-                      () =>
-                        discord.sendPrettyMessage(
-                          message.author,
-                          "Impossible d'envoyer un message dans ce salon."
-                        ),
-                      message =>
-                        pipe(
-                          discord.reactMessage(message, '🔔'),
-                          Future.chain(_ => guildStateService.setCallsMessage(guild, message))
-                        )
-                    )
-                  )
+                  ])
                 )
 
               case 'DefaultRoleGet':
-                return pipe(
+                return Future.parallel<unknown>([
                   deleteMessage(message),
-                  Future.chain(_ => guildStateService.getDefaultRole(guild)),
-                  Future.map(
-                    Maybe.fold(
-                      () => "Il n'y a aucun rôle par défaut pour ce serveur.",
-                      _ => `Le rôle par défaut pour ce serveur est **@${_.name}**.`
-                    )
-                  ),
-                  Future.chain(_ => discord.sendPrettyMessage(message.author, _))
-                )
+                  pipe(
+                    guildStateService.getDefaultRole(guild),
+                    Future.map(
+                      Maybe.fold(
+                        () => "Il n'y a aucun rôle par défaut pour ce serveur.",
+                        _ => `Le rôle par défaut pour ce serveur est **@${_.name}**.`
+                      )
+                    ),
+                    Future.chain(_ => discord.sendPrettyMessage(message.author, _))
+                  )
+                ])
 
               case 'DefaultRoleSet':
                 return pipe(
@@ -209,4 +204,63 @@ export const MessagesHandler = (
         )
       )
   }
+
+  function fetchChannelAndRole(
+    guild: Guild,
+    channel: TSnowflake,
+    role: TSnowflake
+  ): Future<ValidatedNea<string, [Channel, Role]>> {
+    return pipe(
+      sequenceT(Future.taskEitherSeq)(
+        discord.fetchChannel(channel),
+        discord.fetchRole(guild, role)
+      ),
+      Future.map(([c, r]) =>
+        sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
+          fromOption(c, `Channel not found: <#${channel}>`),
+          fromOption(r, `Role not found: <@${role}>`)
+        )
+      )
+    )
+  }
+
+  function callsInit(message: Message, guild: Guild, channel: Channel, role: Role) {
+    return pipe(
+      discord.sendPrettyMessage(
+        message.channel,
+        StringUtils.stripMargins(
+          `Yoho, ${role} !
+          |
+          |Tu peux t'abonner aux appels sur ce serveur en réagissant avec ${callsEmoji}  !
+          |Ils seront notifié dans ${channel}.`
+        )
+      ),
+      Future.chain(
+        Maybe.fold<Message, Future<unknown>>(
+          () =>
+            discord.sendPrettyMessage(
+              message.author,
+              ChannelUtils.isDm(message.channel)
+                ? `Impossible d'envoyer le message d'abonnement dans ce salon.`
+                : `Impossible d'envoyer le message d'abonnement dans le salon **#${message.channel.name}**.`
+            ),
+          message =>
+            pipe(
+              discord.reactMessage(message, callsEmoji),
+              Future.chain(_ => guildStateService.getCallsMessage(guild)),
+              Future.chain(Maybe.fold(() => Future.unit, deleteMessage)),
+              Future.chain(_ => guildStateService.setCallsMessage(guild, message))
+            )
+        )
+      )
+    )
+  }
 }
+
+const callsEmoji = '🔔'
+
+const fromOption = <E, A>(ma: Maybe<A>, e: E): ValidatedNea<E, A> =>
+  pipe(
+    ma,
+    ValidatedNea.fromOption(() => e)
+  )
