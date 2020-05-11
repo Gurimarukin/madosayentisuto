@@ -52,7 +52,7 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
   return pipe(
     discord.setActivity(config.playingActivity),
     Future.chain(_ => ensureIndexes()),
-    Future.chain(_ => guildStateService.subscribeCallsMessages()),
+    // Future.chain(_ => guildStateService.subscribeCallsMessages()),
     Future.chain(_ =>
       pipe(
         subscribe(messagesHandler, discord.messages()),
