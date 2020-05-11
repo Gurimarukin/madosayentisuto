@@ -12,7 +12,7 @@ import { Commands } from '../../commands/Commands'
 import { Config } from '../../config/Config'
 import { Calls } from '../../models/guildState/Calls'
 import { TSnowflake } from '../../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either, flow, NonEmptyArray, IO } from '../../utils/fp'
+import { Maybe, pipe, Future, List, Either, flow, NonEmptyArray } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 import { LogUtils } from '../../utils/LogUtils'
@@ -258,19 +258,6 @@ export const MessagesHandler = (
                   )
                 ),
                 Future.chain(_ => guildStateService.setCalls(guild, Calls(message, channel, role)))
-              ),
-              pipe(
-                LogUtils.withGuild(
-                  logger,
-                  'info',
-                  guild
-                )(
-                  `Subscribing to message "${message.id}": ${StringUtils.ellipse(97)(
-                    message.content
-                  )}`
-                ),
-                IO.chain(_ => discord.subscribeReactions(message)),
-                Future.fromIOEither
               )
             ])
         )

@@ -18,6 +18,7 @@ export const MessageReactionsHandler = (
 
   return event => {
     const [reaction, user] = event.value
+    console.log(user.tag, '-', event._tag, reaction.emoji.name)
     return isCallsEmoji(reaction.emoji)
       ? pipe(
           Maybe.fromNullable(reaction.message.guild),

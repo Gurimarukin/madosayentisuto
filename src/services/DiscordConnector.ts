@@ -26,15 +26,15 @@ import {
   User,
   UserResolvable
 } from 'discord.js'
-import { Observable, fromEventPattern } from 'rxjs'
+import { fromEventPattern } from 'rxjs'
 
 import { Config } from '../config/Config'
 import { AddRemove } from '../models/AddRemove'
 import { GuildId } from '../models/GuildId'
-import { ObservableE, SubscriberE } from '../models/ObservableE'
+import { ObservableE } from '../models/ObservableE'
 import { TSnowflake } from '../models/TSnowflake'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
-import { Maybe, pipe, Future, flow, List, Try, Do, IO } from '../utils/fp'
+import { Maybe, pipe, Future, flow, List } from '../utils/fp'
 import { Colors } from '../utils/Colors'
 import { ChannelUtils } from '../utils/ChannelUtils'
 
@@ -43,11 +43,6 @@ type AddRemoveReaction = AddRemove<[MessageReaction, User]>
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
 
 export function DiscordConnector(client: Client) {
-  let subscriberMessageReactions: SubscriberE<AddRemoveReaction>
-  const messageReactions: ObservableE<AddRemoveReaction> = new Observable(
-    subscriber => (subscriberMessageReactions = subscriber)
-  )
-
   return {
     isSelf: (user: User): boolean =>
       pipe(
@@ -83,29 +78,18 @@ export function DiscordConnector(client: Client) {
         Obs.rightObservable
       ),
 
-    messageReactions: (): ObservableE<AddRemoveReaction> => messageReactions,
-
-    subscribeReactions: (message: Message): IO<void> =>
-      Do(IO.ioEither)
-        .bind(
-          'collector',
-          IO.apply(() => message.createReactionCollector(_ => true, { dispose: true }))
-        )
-        .doL(({ collector }) =>
-          IO.apply(() =>
-            collector.on('collect', (reaction, user) => {
-              subscriberMessageReactions.next(Try.right(AddRemove.Add([reaction, user])))
-            })
+    messageReactions: (): ObservableE<AddRemove<[MessageReaction, User]>> =>
+      pipe(
+        fromEventPattern<AddRemove<[MessageReaction, User]>>(handler => {
+          client.on('messageReactionAdd', (reaction, user) =>
+            handler(AddRemove.Add([reaction, user]))
           )
-        )
-        .doL(({ collector }) =>
-          IO.apply(() =>
-            collector.on('remove', (reaction, user) => {
-              subscriberMessageReactions.next(Try.right(AddRemove.Remove([reaction, user])))
-            })
+          client.on('messageReactionRemove', (reaction, user) =>
+            handler(AddRemove.Remove([reaction, user]))
           )
-        )
-        .return(() => {}),
+        }),
+        Obs.rightObservable
+      ),
 
     /**
      * Read
@@ -283,7 +267,9 @@ export namespace DiscordConnector {
     Future.apply(
       () =>
         new Promise<Client>(resolve => {
-          const client = new Client()
+          const client = new Client({
+            partials: ['USER', 'CHANNEL', 'GUILD_MEMBER', 'MESSAGE', 'REACTION']
+          })
           client.on('ready', () => resolve(client))
           client.login(config.clientSecret)
         })
