@@ -1,4 +1,12 @@
-import { MessageReaction, User, Message, GuildMember, GuildEmoji, ReactionEmoji } from 'discord.js'
+import {
+  MessageReaction,
+  User,
+  Message,
+  GuildMember,
+  GuildEmoji,
+  ReactionEmoji,
+  PartialUser
+} from 'discord.js'
 
 import { PartialLogger } from '../Logger'
 import { DiscordConnector } from '../DiscordConnector'
@@ -13,7 +21,7 @@ export const MessageReactionsHandler = (
   Logger: PartialLogger,
   guildStateService: GuildStateService,
   discord: DiscordConnector
-): ((event: AddRemove<[MessageReaction, User]>) => Future<unknown>) => {
+): ((event: AddRemove<[MessageReaction, User | PartialUser]>) => Future<unknown>) => {
   const logger = Logger('MessageReactionsHandler')
 
   return event => {
@@ -32,7 +40,8 @@ export const MessageReactionsHandler = (
                     () => Future.unit, // no Calls associated to this Guild
                     calls =>
                       pipe(
-                        discord.fetchMemberForUser(guild, user),
+                        discord.fetchPartial(user),
+                        Future.chain(_ => discord.fetchMemberForUser(guild, _)),
                         Future.chain(
                           Maybe.fold(
                             () => Future.unit, // couldn't retrieve GuildMember

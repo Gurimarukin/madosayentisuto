@@ -18,6 +18,7 @@ import {
   PartialGuildMember,
   Partialize,
   PartialTextBasedChannelFields,
+  PartialUser,
   Presence,
   Role,
   RoleResolvable,
@@ -78,9 +79,9 @@ export function DiscordConnector(client: Client) {
         Obs.rightObservable
       ),
 
-    messageReactions: (): ObservableE<AddRemove<[MessageReaction, User]>> =>
+    messageReactions: (): ObservableE<AddRemove<[MessageReaction, User | PartialUser]>> =>
       pipe(
-        fromEventPattern<AddRemove<[MessageReaction, User]>>(handler => {
+        fromEventPattern<AddRemove<[MessageReaction, User | PartialUser]>>(handler => {
           client.on('messageReactionAdd', (reaction, user) =>
             handler(AddRemove.Add([reaction, user]))
           )
