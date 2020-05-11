@@ -234,7 +234,7 @@ export const MessagesHandler = (
           `Yoho, ${role} !
           |
           |Tu peux t'abonner aux appels sur ce serveur en réagissant avec ${callsEmoji}  !
-          |Ils seront notifié dans ${channel}.`
+          |Ils seront notifiés dans ${channel}.`
         )
       ),
       Future.chain(
