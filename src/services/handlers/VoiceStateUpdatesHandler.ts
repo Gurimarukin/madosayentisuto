@@ -103,7 +103,7 @@ export const VoiceStateUpdatesHandler = (
           () => Future.unit,
           calls =>
             pipe(
-              discord.sendPrettyMessage(
+              discord.sendMessage(
                 calls.channel,
                 `Ha ha ! **@${member.displayName}** appelle **#${channel.name}**... ${calls.role} doit payer !`
               ),
@@ -140,7 +140,7 @@ export const VoiceStateUpdatesHandler = (
           () => Future.unit,
           calls =>
             pipe(
-              discord.sendPrettyMessage(calls.channel, `Un appel s'est terminé.`),
+              discord.sendMessage(calls.channel, `Un appel s'est terminé.`),
               Future.chain(
                 Maybe.fold(
                   () =>
