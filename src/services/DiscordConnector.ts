@@ -39,8 +39,6 @@ import { Maybe, pipe, Future, flow, List } from '../utils/fp'
 import { Colors } from '../utils/Colors'
 import { ChannelUtils } from '../utils/ChannelUtils'
 
-type AddRemoveReaction = AddRemove<[MessageReaction, User]>
-
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
 
 export function DiscordConnector(client: Client) {
