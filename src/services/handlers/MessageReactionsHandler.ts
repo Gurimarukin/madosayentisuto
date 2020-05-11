@@ -1,4 +1,4 @@
-import { MessageReaction, User, PartialUser, Message, GuildMember } from 'discord.js'
+import { MessageReaction, User, Message, GuildMember, GuildEmoji, ReactionEmoji } from 'discord.js'
 
 import { PartialLogger } from '../Logger'
 import { DiscordConnector } from '../DiscordConnector'
@@ -7,17 +7,18 @@ import { callsEmoji } from '../../Application'
 import { AddRemove } from '../../models/AddRemove'
 import { Calls } from '../../models/guildState/Calls'
 import { Future, pipe, Maybe } from '../../utils/fp'
+import { LogUtils } from '../../utils/LogUtils'
 
 export const MessageReactionsHandler = (
   Logger: PartialLogger,
-  discord: DiscordConnector,
-  guildStateService: GuildStateService
-): ((event: AddRemove<[MessageReaction, User | PartialUser]>) => Future<unknown>) => {
-  const _logger = Logger('MessagesHandler')
+  guildStateService: GuildStateService,
+  discord: DiscordConnector
+): ((event: AddRemove<[MessageReaction, User]>) => Future<unknown>) => {
+  const logger = Logger('MessageReactionsHandler')
 
   return event => {
     const [reaction, user] = event.value
-    return isCallsEmoji(reaction.emoji.identifier)
+    return isCallsEmoji(reaction.emoji)
       ? pipe(
           Maybe.fromNullable(reaction.message.guild),
           Maybe.fold(
@@ -30,8 +31,7 @@ export const MessageReactionsHandler = (
                     () => Future.unit, // no Calls associated to this Guild
                     calls =>
                       pipe(
-                        discord.fetchPartial(user),
-                        Future.chain(_ => discord.fetchMemberForUser(guild, _)),
+                        discord.fetchMemberForUser(guild, user),
                         Future.chain(
                           Maybe.fold(
                             () => Future.unit, // couldn't retrieve GuildMember
@@ -56,8 +56,8 @@ export const MessageReactionsHandler = (
       : Future.unit
   }
 
-  function isCallsEmoji(identifier: string): boolean {
-    return identifier === callsEmoji
+  function isCallsEmoji(emoji: GuildEmoji | ReactionEmoji): boolean {
+    return emoji.name === callsEmoji
   }
 
   function isCallsMessage(calls: Calls, message: Message): boolean {
@@ -65,10 +65,36 @@ export const MessageReactionsHandler = (
   }
 
   function onAdd(member: GuildMember, calls: Calls): (_: unknown) => Future<unknown> {
-    return _ => discord.addRole(member, calls.role)
+    return _ =>
+      pipe(
+        discord.addRole(member, calls.role),
+        Future.chain(_ =>
+          Future.fromIOEither(
+            LogUtils.withGuild(
+              logger,
+              'debug',
+              member.guild
+            )(`"${member.user.tag}" subscribed to calls (added to role "${calls.role.name}")`)
+          )
+        )
+      )
   }
 
   function onRemove(member: GuildMember, calls: Calls): (_: unknown) => Future<unknown> {
-    return _ => discord.removeRole(member, calls.role)
+    return _ =>
+      pipe(
+        discord.removeRole(member, calls.role),
+        Future.chain(_ =>
+          Future.fromIOEither(
+            LogUtils.withGuild(
+              logger,
+              'debug',
+              member.guild
+            )(
+              `"${member.user.tag}" unsubscribed from calls (removed from role "${calls.role.name}")`
+            )
+          )
+        )
+      )
   }
 }

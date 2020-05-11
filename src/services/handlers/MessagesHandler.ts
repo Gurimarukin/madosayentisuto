@@ -12,7 +12,7 @@ import { Commands } from '../../commands/Commands'
 import { Config } from '../../config/Config'
 import { Calls } from '../../models/guildState/Calls'
 import { TSnowflake } from '../../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either, flow, NonEmptyArray } from '../../utils/fp'
+import { Maybe, pipe, Future, List, Either, flow, NonEmptyArray, IO } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 import { LogUtils } from '../../utils/LogUtils'
@@ -247,20 +247,32 @@ export const MessagesHandler = (
                 : `Impossible d'envoyer le message d'abonnement dans le salon **#${message.channel.name}**.`
             ),
           message =>
-            pipe(
+            Future.parallel<unknown>([
               discord.reactMessage(message, callsEmoji),
-              Future.chain(_ => guildStateService.getCalls(guild)),
-              Future.chain(
-                Maybe.fold<Calls, Future<unknown>>(
-                  () => Future.unit,
-                  calls =>
-                    pipe(
-                      deleteMessage(calls.message),
-                      Future.chain(_ => guildStateService.setCalls(guild, calls))
-                    )
-                )
+              pipe(
+                guildStateService.getCalls(guild),
+                Future.chain(
+                  Maybe.fold(
+                    () => Future.unit,
+                    previous => deleteMessage(previous.message)
+                  )
+                ),
+                Future.chain(_ => guildStateService.setCalls(guild, Calls(message, channel, role)))
+              ),
+              pipe(
+                LogUtils.withGuild(
+                  logger,
+                  'info',
+                  guild
+                )(
+                  `Subscribing to message "${message.id}": ${StringUtils.ellipse(97)(
+                    message.content
+                  )}`
+                ),
+                IO.chain(_ => discord.subscribeReactions(message)),
+                Future.fromIOEither
               )
-            )
+            ])
         )
       )
     )

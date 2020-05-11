@@ -15,6 +15,9 @@ export namespace StringUtils {
         ? `${startOrSep}${list.join(sep)}${end}`
         : list.join(startOrSep)
   }
+
+  export const ellipse = (take: number) => (str: string): string =>
+    str.length > take ? `${str.substring(0, take)}...` : str
 }
 
 const margin = /^\s*\|/gm

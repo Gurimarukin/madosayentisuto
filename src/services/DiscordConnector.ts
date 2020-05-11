@@ -16,6 +16,7 @@ import {
   MessageOptions,
   MessageReaction,
   PartialGuildMember,
+  Partialize,
   PartialTextBasedChannelFields,
   Presence,
   Role,
@@ -23,23 +24,30 @@ import {
   StringResolvable,
   TextChannel,
   User,
-  PartialUser,
-  Partialize,
   UserResolvable
 } from 'discord.js'
-import { fromEventPattern } from 'rxjs'
+import { Observable, fromEventPattern } from 'rxjs'
 
-import { ObservableE } from '../models/ObservableE'
-import { TSnowflake } from '../models/TSnowflake'
+import { Config } from '../config/Config'
 import { AddRemove } from '../models/AddRemove'
+import { GuildId } from '../models/GuildId'
+import { ObservableE, SubscriberE } from '../models/ObservableE'
+import { TSnowflake } from '../models/TSnowflake'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
-import { Maybe, pipe, Future, flow, List } from '../utils/fp'
+import { Maybe, pipe, Future, flow, List, Try, Do, IO } from '../utils/fp'
 import { Colors } from '../utils/Colors'
 import { ChannelUtils } from '../utils/ChannelUtils'
 
+type AddRemoveReaction = AddRemove<[MessageReaction, User]>
+
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
 
-export const DiscordConnector = (client: Client) => {
+export function DiscordConnector(client: Client) {
+  let subscriberMessageReactions: SubscriberE<AddRemoveReaction>
+  const messageReactions: ObservableE<AddRemoveReaction> = new Observable(
+    subscriber => (subscriberMessageReactions = subscriber)
+  )
+
   return {
     isSelf: (user: User): boolean =>
       pipe(
@@ -75,26 +83,36 @@ export const DiscordConnector = (client: Client) => {
         Obs.rightObservable
       ),
 
-    messageReactions: (): ObservableE<AddRemove<[MessageReaction, User | PartialUser]>> =>
-      pipe(
-        fromEventPattern<AddRemove<[MessageReaction, User | PartialUser]>>(handler => {
-          client.on('messageReactionAdd', (reaction, user) => {
-            handler(
-              AddRemove.Add<[MessageReaction, User | PartialUser]>([reaction, user])
-            )
-          })
-          client.on('messageReactionRemove', (reaction, user) => {
-            handler(
-              AddRemove.Remove<[MessageReaction, User | PartialUser]>([reaction, user])
-            )
-          })
-        }),
-        Obs.rightObservable
-      ),
+    messageReactions: (): ObservableE<AddRemoveReaction> => messageReactions,
+
+    subscribeReactions: (message: Message): IO<void> =>
+      Do(IO.ioEither)
+        .bind(
+          'collector',
+          IO.apply(() => message.createReactionCollector(_ => true, { dispose: true }))
+        )
+        .doL(({ collector }) =>
+          IO.apply(() =>
+            collector.on('collect', (reaction, user) => {
+              subscriberMessageReactions.next(Try.right(AddRemove.Add([reaction, user])))
+            })
+          )
+        )
+        .doL(({ collector }) =>
+          IO.apply(() =>
+            collector.on('remove', (reaction, user) => {
+              subscriberMessageReactions.next(Try.right(AddRemove.Remove([reaction, user])))
+            })
+          )
+        )
+        .return(() => {}),
 
     /**
      * Read
      */
+    resolveGuild: (guildId: GuildId): Maybe<Guild> =>
+      Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId))),
+
     fetchPartial: <A extends { partial: boolean; fetch(): Promise<A> }, K extends string>(
       partial: A | Partialize<A, K>
     ) => (partial.partial ? Future.apply(() => partial.fetch()) : Future.right(partial)),
@@ -103,7 +121,8 @@ export const DiscordConnector = (client: Client) => {
       pipe(
         Future.apply(() => client.channels.fetch(TSnowflake.unwrap(channel))),
         Future.map(Maybe.some),
-        Future.recover<Maybe<Channel>>()
+        Future.recover<Maybe<Channel>>(),
+        debugLeft('fetchChannel')
         //   [
         //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
         //   Maybe.none
@@ -114,7 +133,8 @@ export const DiscordConnector = (client: Client) => {
       pipe(
         Future.apply(() => client.users.fetch(TSnowflake.unwrap(user))),
         Future.map(Maybe.some),
-        Future.recover<Maybe<User>>()
+        Future.recover<Maybe<User>>(),
+        debugLeft('fetchUser')
         //   [
         //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
         //   Maybe.none
@@ -125,7 +145,8 @@ export const DiscordConnector = (client: Client) => {
       pipe(
         Future.apply(() => guild.members.fetch(user)),
         Future.map(Maybe.some),
-        Future.recover<Maybe<GuildMember>>()
+        Future.recover<Maybe<GuildMember>>(),
+        debugLeft('fetchMemberForUser')
       ),
 
     fetchRole: (guild: Guild, role: TSnowflake): Future<Maybe<Role>> =>
@@ -181,7 +202,8 @@ export const DiscordConnector = (client: Client) => {
       pipe(
         Future.apply(() => member.roles.add(roleOrRoles, reason)),
         Future.map(_ => Maybe.some(undefined)),
-        Future.recover<Maybe<void>>()
+        Future.recover<Maybe<void>>(),
+        debugLeft('addRole')
         // [e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
         // Maybe.none]
         // Future.map(_ => {}),
@@ -195,7 +217,8 @@ export const DiscordConnector = (client: Client) => {
       pipe(
         Future.apply(() => member.roles.remove(roleOrRoles, reason)),
         Future.map(_ => Maybe.some(undefined)),
-        Future.recover<Maybe<void>>()
+        Future.recover<Maybe<void>>(),
+        debugLeft('removeRole')
         //[ e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
         // Maybe.none]
       ),
@@ -247,4 +270,22 @@ export const DiscordConnector = (client: Client) => {
       ])
     )
   }
+
+  function debugLeft<A>(functionName: string): (f: Future<A>) => Future<A> {
+    return Future.mapLeft(e =>
+      Error(`${functionName}:\n${(e as any).contructor.name}\n${e.message}`)
+    )
+  }
+}
+
+export namespace DiscordConnector {
+  export const futureClient = (config: Config): Future<Client> =>
+    Future.apply(
+      () =>
+        new Promise<Client>(resolve => {
+          const client = new Client()
+          client.on('ready', () => resolve(client))
+          client.login(config.clientSecret)
+        })
+    )
 }

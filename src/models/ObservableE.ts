@@ -1,6 +1,6 @@
 import * as O from 'fp-ts-rxjs/lib/Observable'
 import { Refinement, Predicate } from 'fp-ts/lib/function'
-import { Observable } from 'rxjs'
+import { Observable, Subscriber } from 'rxjs'
 
 import { Try, pipe, Either } from '../utils/fp'
 
@@ -15,3 +15,5 @@ export namespace ObservableE {
     return obs => pipe(obs, O.filter(Either.exists(predicate)))
   }
 }
+
+export type SubscriberE<A> = Subscriber<Try<A>>
