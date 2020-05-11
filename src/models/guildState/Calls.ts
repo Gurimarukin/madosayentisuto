@@ -1,11 +1,11 @@
-import { Message, Channel, Role } from 'discord.js'
+import { Message, Role, TextChannel } from 'discord.js'
 
 export interface Calls {
   readonly message: Message
-  readonly channel: Channel
+  readonly channel: TextChannel
   readonly role: Role
 }
 
-export function Calls(message: Message, channel: Channel, role: Role): Calls {
+export function Calls(message: Message, channel: TextChannel, role: Role): Calls {
   return { message, channel, role }
 }

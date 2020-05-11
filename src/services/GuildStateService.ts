@@ -10,6 +10,7 @@ import { StaticCalls } from '../models/guildState/StaticCalls'
 import { TSnowflake } from '../models/TSnowflake'
 import { GuildStatePersistence } from '../persistence/GuildStatePersistence'
 import { pipe, Maybe, Future, flow, Do, List, IO, NonEmptyArray } from '../utils/fp'
+import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 import { StringUtils } from '../utils/StringUtils'
 
@@ -46,7 +47,10 @@ export const GuildStateService = (
         ({ message, channel, role }) =>
           Do(Future.taskEitherSeq)
             .bind('message', discord.fetchMessage(guild, message))
-            .bind('channel', discord.fetchChannel(channel))
+            .bind(
+              'channel',
+              pipe(discord.fetchChannel(channel), Future.map(Maybe.filter(ChannelUtils.isText)))
+            )
             .bind('role', discord.fetchRole(guild, role))
             .return(({ message, channel, role }) =>
               Do(Maybe.option)

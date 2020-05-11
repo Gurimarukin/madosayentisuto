@@ -1,4 +1,4 @@
-import { Message, Guild, Channel, Role } from 'discord.js'
+import { Message, Guild, Role, TextChannel } from 'discord.js'
 
 import { sequenceT } from 'fp-ts/lib/Apply'
 
@@ -211,10 +211,10 @@ export const MessagesHandler = (
     guild: Guild,
     channel: TSnowflake,
     role: TSnowflake
-  ): Future<ValidatedNea<string, [Channel, Role]>> {
+  ): Future<ValidatedNea<string, [TextChannel, Role]>> {
     return pipe(
       sequenceT(Future.taskEitherSeq)(
-        discord.fetchChannel(channel),
+        pipe(discord.fetchChannel(channel), Future.map(Maybe.filter(ChannelUtils.isText))),
         discord.fetchRole(guild, role)
       ),
       Future.map(([c, r]) =>
@@ -226,7 +226,7 @@ export const MessagesHandler = (
     )
   }
 
-  function callsInit(message: Message, guild: Guild, channel: Channel, role: Role) {
+  function callsInit(message: Message, guild: Guild, channel: TextChannel, role: Role) {
     return pipe(
       discord.sendPrettyMessage(
         message.channel,
