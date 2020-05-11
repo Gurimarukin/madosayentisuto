@@ -2,10 +2,12 @@ import * as t from 'io-ts'
 import { sequenceT } from 'fp-ts/lib/Apply'
 import { nonEmptyArray } from 'io-ts-types/lib/nonEmptyArray'
 
-import { ConfReader, ValidatedNea } from './ConfReader'
+import { ConfReader } from './ConfReader'
 import { LogLevelOrOff } from '../models/LogLevel'
 import { TSnowflake } from '../models/TSnowflake'
-import { IO, pipe, Either, NonEmptyArray } from '../utils/fp'
+import { ValidatedNea } from '../models/ValidatedNea'
+import { IO, pipe, Either, NonEmptyArray, flow } from '../utils/fp'
+import { StringUtils } from '../utils/StringUtils'
 
 export interface Config {
   readonly clientSecret: string
@@ -33,7 +35,9 @@ export namespace Config {
       IO.chain(reader =>
         pipe(
           readConfig(reader),
-          Either.mapLeft(errors => new Error(`Errors while reading config:\n${errors.join('\n')}`)),
+          Either.mapLeft(
+            flow(StringUtils.mkString('Errors while reading config:\n', '\n', ''), Error)
+          ),
           IO.fromEither
         )
       )
@@ -41,7 +45,7 @@ export namespace Config {
   }
 }
 
-function readConfig(reader: ConfReader): ValidatedNea<Config> {
+function readConfig(reader: ConfReader): ValidatedNea<string, Config> {
   return pipe(
     sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(t.string)('clientSecret'),
@@ -77,7 +81,7 @@ export function LoggerConfig(
   }
 }
 
-function readLoggerConfig(reader: ConfReader): ValidatedNea<LoggerConfig> {
+function readLoggerConfig(reader: ConfReader): ValidatedNea<string, LoggerConfig> {
   return pipe(
     sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(LogLevelOrOff.codec)('logger', 'consoleLevel'),
@@ -103,7 +107,7 @@ export function DbConfig(host: string, dbName: string, user: string, password: s
   return { host, dbName, user, password }
 }
 
-export const readDbConfig = (reader: ConfReader): ValidatedNea<DbConfig> =>
+export const readDbConfig = (reader: ConfReader): ValidatedNea<string, DbConfig> =>
   pipe(
     sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(t.string)('db', 'host'),
@@ -111,5 +115,5 @@ export const readDbConfig = (reader: ConfReader): ValidatedNea<DbConfig> =>
       reader(t.string)('db', 'user'),
       reader(t.string)('db', 'password')
     ),
-    Either.map(([host, dbName, user, password]) => DbConfig(host, dbName, user, password))
+    Either.map(_ => DbConfig(..._))
   )

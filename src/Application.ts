@@ -3,6 +3,7 @@ import { MongoClient, Collection } from 'mongodb'
 import * as Obs from 'fp-ts-rxjs/lib/ObservableEither'
 import { Subscription } from 'rxjs'
 
+import { Cli } from './commands/Cli'
 import { Config } from './config/Config'
 import { ObservableE } from './models/ObservableE'
 import { DiscordConnector } from './services/DiscordConnector'
@@ -10,9 +11,12 @@ import { PartialLogger } from './services/Logger'
 import { GuildMemberEventsHandler } from './services/handlers/GuildMemberEventsHandler'
 import { MessagesHandler } from './services/handlers/MessagesHandler'
 import { VoiceStateUpdatesHandler } from './services/handlers/VoiceStateUpdatesHandler'
+import { MessageReactionsHandler } from './services/handlers/MessageReactionsHandler'
 import { IO, pipe, Either, Future, Try, List } from './utils/fp'
 import { GuildStateService } from './services/GuildStateService'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
+
+export const callsEmoji = '🔔' // :bell:
 
 export const Application = (config: Config, discord: DiscordConnector): Future<void> => {
   const Logger = PartialLogger(config, discord)
@@ -36,23 +40,29 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
       Future.map(_ => {})
     )
 
+  const guildStateService = GuildStateService(Logger, guildStatePersistence, discord)
+
+  const cli = Cli(config.cmdPrefix)
+
+  const messagesHandler = MessagesHandler(Logger, config, cli, discord, guildStateService)
+  const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, guildStateService, discord)
+  const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, guildStateService, discord)
+  const messageReactionsHandler = MessageReactionsHandler(Logger, guildStateService, discord)
+
   return pipe(
     discord.setActivity(config.playingActivity),
     Future.chain(_ => ensureIndexes()),
-    Future.chain(_ => GuildStateService(Logger, guildStatePersistence, discord)),
-    Future.chain(guildStateService => {
-      const messagesHandler = MessagesHandler(Logger, config, discord, guildStateService)
-      const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, guildStateService, discord)
-      const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, guildStateService, discord)
-
-      return pipe(
+    Future.chain(_ => guildStateService.subscribeCallsMessages()),
+    Future.chain(_ =>
+      pipe(
         subscribe(messagesHandler, discord.messages()),
         IO.chain(_ => subscribe(voiceStateUpdatesHandler, discord.voiceStateUpdates())),
         IO.chain(_ => subscribe(guildMemberEventsHandler, discord.guildMemberEvents())),
+        IO.chain(_ => subscribe(messageReactionsHandler, discord.messageReactions())),
         IO.chain(_ => logger.info('application started')),
         Future.fromIOEither
       )
-    })
+    )
   )
 
   function subscribe<A>(f: (a: A) => Future<unknown>, a: ObservableE<A>): IO<Subscription> {

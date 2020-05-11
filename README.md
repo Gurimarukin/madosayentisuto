@@ -5,7 +5,10 @@ Create `conf/local.conf.json` file using content of `conf/local.example.conf.jso
 
 ## Bot commands
 
-    okb defaultRole set <role>
+    okb defaultRole get
+    okb defaultRole set <@role>
+
+    okb calls init <#channel> <@role>
 
 
 ## Deploy
