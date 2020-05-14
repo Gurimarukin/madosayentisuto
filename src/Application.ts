@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs'
 import { Cli } from './commands/Cli'
 import { Config } from './config/Config'
 import { ObservableE } from './models/ObservableE'
+import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { DiscordConnector } from './services/DiscordConnector'
 import { PartialLogger } from './services/Logger'
 import { CommandsHandler } from './services/handlers/CommandsHandler'
@@ -13,9 +14,9 @@ import { GuildMemberEventsHandler } from './services/handlers/GuildMemberEventsH
 import { MessagesHandler } from './services/handlers/MessagesHandler'
 import { VoiceStateUpdatesHandler } from './services/handlers/VoiceStateUpdatesHandler'
 import { MessageReactionsHandler } from './services/handlers/MessageReactionsHandler'
-import { IO, pipe, Either, Future, Try, List } from './utils/fp'
+import { PlayerService } from './services/PlayerService'
 import { GuildStateService } from './services/GuildStateService'
-import { GuildStatePersistence } from './persistence/GuildStatePersistence'
+import { IO, pipe, Either, Future, Try, List } from './utils/fp'
 
 export const callsEmoji = '🔔' // :bell:
 
@@ -42,10 +43,11 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
     )
 
   const guildStateService = GuildStateService(Logger, guildStatePersistence, discord)
+  const playerService = PlayerService()
 
   const cli = Cli(config.cmdPrefix)
 
-  const commandsHandler = CommandsHandler(Logger, discord, guildStateService)
+  const commandsHandler = CommandsHandler(Logger, discord, guildStateService, playerService)
   const messagesHandler = MessagesHandler(Logger, config, cli, discord, commandsHandler)
   const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, guildStateService, discord)
   const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, guildStateService, discord)

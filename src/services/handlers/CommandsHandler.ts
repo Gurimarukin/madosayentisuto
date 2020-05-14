@@ -5,13 +5,14 @@ import { flow } from 'fp-ts/lib/function'
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
+import { PlayerService } from '../PlayerService'
 import { callsEmoji } from '../../Application'
 import { Commands } from '../../commands/Commands'
 import { TSnowflake } from '../../models/TSnowflake'
 import { ValidatedNea } from '../../models/ValidatedNea'
 import { Calls } from '../../models/guildState/Calls'
 import { ChannelUtils } from '../../utils/ChannelUtils'
-import { Future, pipe, Either, Maybe, NonEmptyArray, todo } from '../../utils/fp'
+import { Future, pipe, Either, Maybe, NonEmptyArray } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
 import { StringUtils } from '../../utils/StringUtils'
 
@@ -20,7 +21,8 @@ export type CommandsHandler = ReturnType<typeof CommandsHandler>
 export const CommandsHandler = (
   Logger: PartialLogger,
   discord: DiscordConnector,
-  guildStateService: GuildStateService
+  guildStateService: GuildStateService,
+  playerService: PlayerService
 ) => {
   const logger = Logger('CommandsHandler')
 
@@ -93,7 +95,7 @@ export const CommandsHandler = (
 
       // player
       case 'Play':
-        return todo()
+        return playerService.play(command.urls)
     }
   }
 
