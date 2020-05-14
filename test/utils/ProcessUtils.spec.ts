@@ -3,7 +3,7 @@ import { ProcessUtils } from '../../src/utils/ProcessUtils'
 
 describe('ProcessUtils.exec', () => {
   it('should return 0 for ls', () => {
-    const res = pipe(ProcessUtils.exec('ls', ['README.md']))()
+    const res = pipe(ProcessUtils.execAsync('ls', ['README.md']))()
     return res.then(_ =>
       expect(_).toEqual(
         Either.right({
@@ -16,7 +16,7 @@ describe('ProcessUtils.exec', () => {
   })
 
   it('should return error for invalid command', () => {
-    const res = pipe(ProcessUtils.exec('toto', ['titi']))()
+    const res = pipe(ProcessUtils.execAsync('toto', ['titi']))()
     return res.then(_ =>
       expect(_).toEqual(
         Either.right({

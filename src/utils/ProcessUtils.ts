@@ -9,7 +9,7 @@ interface CmdOutput {
 }
 
 export namespace ProcessUtils {
-  export const exec = (
+  export const execAsync = (
     command: string,
     args: string[],
     { cwd, env }: { cwd?: string; env?: Dict<string> } = {}
