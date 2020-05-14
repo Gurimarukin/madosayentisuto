@@ -1,6 +1,8 @@
 import { Config } from './config/Config'
-import { IO } from './utils/fp'
+import { Future, Do } from './utils/fp'
 
-const main = (): IO<unknown> => Config.load()
+const main = (): Future<unknown> => Do(Future.taskEitherSeq)
+  .do(Future.fromIOEither(Config.load()))
+  .done()
 
-IO.runUnsafe(main())
+Future.runUnsafe(main())
