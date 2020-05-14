@@ -1,6 +1,11 @@
 import { TSnowflake } from '../models/TSnowflake'
+import { NonEmptyArray } from '../utils/fp'
 
-export type Commands = Commands.CallsInit | Commands.DefaultRoleGet | Commands.DefaultRoleSet
+export type Commands =
+  | Commands.CallsInit
+  | Commands.DefaultRoleGet
+  | Commands.DefaultRoleSet
+  | Commands.Play
 
 export namespace Commands {
   // calls
@@ -29,4 +34,11 @@ export namespace Commands {
     _tag: 'DefaultRoleSet',
     role
   })
+
+  // player
+  export interface Play {
+    readonly _tag: 'Play'
+    readonly urls: NonEmptyArray<string>
+  }
+  export const Play = (urls: NonEmptyArray<string>): Play => ({ _tag: 'Play', urls })
 }

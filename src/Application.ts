@@ -8,6 +8,7 @@ import { Config } from './config/Config'
 import { ObservableE } from './models/ObservableE'
 import { DiscordConnector } from './services/DiscordConnector'
 import { PartialLogger } from './services/Logger'
+import { CommandsHandler } from './services/handlers/CommandsHandler'
 import { GuildMemberEventsHandler } from './services/handlers/GuildMemberEventsHandler'
 import { MessagesHandler } from './services/handlers/MessagesHandler'
 import { VoiceStateUpdatesHandler } from './services/handlers/VoiceStateUpdatesHandler'
@@ -44,7 +45,8 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
 
   const cli = Cli(config.cmdPrefix)
 
-  const messagesHandler = MessagesHandler(Logger, config, cli, discord, guildStateService)
+  const commandsHandler = CommandsHandler(Logger, discord, guildStateService)
+  const messagesHandler = MessagesHandler(Logger, config, cli, discord, commandsHandler)
   const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, guildStateService, discord)
   const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, guildStateService, discord)
   const messageReactionsHandler = MessageReactionsHandler(Logger, guildStateService, discord)

@@ -9,7 +9,13 @@ import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
 import { pipe, Either, NonEmptyArray } from '../utils/fp'
 
-type AdminTextChannel = Commands.CallsInit | Commands.DefaultRoleGet | Commands.DefaultRoleSet
+type AdminTextChannel =
+  | Commands.CallsInit
+  | Commands.DefaultRoleGet
+  | Commands.DefaultRoleSet
+  | UserTextChannel
+
+type UserTextChannel = Commands.Play
 
 export type Cli = ReturnType<typeof Cli>
 
@@ -18,9 +24,12 @@ export function Cli(prefix: string) {
     adminTextChannel: Command(prefix)(
       pipe(
         Opts.subcommand(calls),
-        Opts.alt(() => Opts.subcommand(defaultRole))
+        Opts.alt<AdminTextChannel>(() => Opts.subcommand(defaultRole)),
+        Opts.alt<AdminTextChannel>(() => player)
       )
-    )
+    ),
+
+    simpleUserTextChannel: Command(prefix)(player)
   }
 }
 
@@ -35,16 +44,21 @@ const callsInit = Command('init')<AdminTextChannel>(
 )
 const calls = Command('calls')(Opts.subcommand(callsInit))
 
-const defaultRoleGet = Command('get')<AdminTextChannel>(pipe(Opts.pure(Commands.DefaultRoleGet)))
-const defaultRoleSet = Command('set')<AdminTextChannel>(
+const defaultRoleGet = Command('get')(pipe(Opts.pure(Commands.DefaultRoleGet)))
+const defaultRoleSet = Command('set')(
   pipe(Opts.param('role', decodeMention), Opts.map(Commands.DefaultRoleSet))
 )
 const defaultRole = Command('defaultRole')(
   pipe(
     Opts.subcommand(defaultRoleGet),
-    Opts.alt(() => Opts.subcommand(defaultRoleSet))
+    Opts.alt<AdminTextChannel>(() => Opts.subcommand(defaultRoleSet))
   )
 )
+
+const play = Command('play')(
+  pipe(Opts.params('url', codecToDecode(t.string)), Opts.map(Commands.Play))
+)
+const player = Opts.subcommand(play)
 
 function decodeMention(u: string): ValidatedNea<string, TSnowflake> {
   return pipe(

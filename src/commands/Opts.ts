@@ -83,7 +83,7 @@ export namespace Opts {
     readonly _tag: 'Repeated'
     readonly opt: Opt<A>
   }
-  export const Repeated = <A>(opt: Opt<A>): Repeated<A> => ({ _tag: 'Repeated', opt })
+  export const Repeated = <A>(opt: Opt<A>): Opts<NonEmptyArray<A>> => ({ _tag: 'Repeated', opt })
 
   export interface Subcommand<A> {
     readonly _tag: 'Subcommand'
@@ -121,12 +121,20 @@ export namespace Opts {
   export const param = <A>(
     metavar: string,
     codec: (raw: string) => ValidatedNea<string, A>
-  ): Opts<A> => pipe(Single(Opt.Argument<A>(metavar)), mapValidated(codec))
+  ): Opts<A> => pipe(Single(Opt.Argument(metavar)), mapValidated(codec))
 
   export const params = <A>(
     metavar: string,
-    codec: (raw: string) => ValidatedNea<string, NonEmptyArray<A>>
-  ): Opts<NonEmptyArray<A>> => pipe(Repeated(Opt.Argument<A>(metavar)), mapValidated(codec))
+    codec: (raw: string) => ValidatedNea<string, A>
+  ): Opts<NonEmptyArray<A>> =>
+    pipe(
+      Repeated<string>(Opt.Argument(metavar)),
+      mapValidated(args =>
+        NonEmptyArray.nonEmptyArray.traverse(
+          Either.getValidation(NonEmptyArray.getSemigroup<string>())
+        )(args, codec)
+      )
+    )
 
   export const subcommand = <A>(command: Command<A>): Opts<A> => Subcommand(command)
 
@@ -140,6 +148,6 @@ export namespace Opts {
       readonly _tag: 'Argument'
       readonly metavar: string
     }
-    export const Argument = <A>(metavar: string): Opt<A> => ({ _tag: 'Argument', metavar })
+    export const Argument = (metavar: string): Opt<string> => ({ _tag: 'Argument', metavar })
   }
 }
