@@ -1,17 +1,43 @@
-export type CommandEvent = CommandEvent.Stdout | CommandEvent.Stderr | CommandEvent.Done
+import { Functor2 } from 'fp-ts/lib/Functor'
+import { pipeable } from 'fp-ts/lib/pipeable'
+
+declare module 'fp-ts/lib/HKT' {
+  interface URItoKind2<E, A> {
+    readonly CommandEvent: CommandEvent<E, A>
+  }
+}
+
+const URI = 'CommandEvent'
+type URI = typeof URI
+
+export type CommandEvent<E, A> = CommandEvent.Stdout<A> | CommandEvent.Stderr<E> | CommandEvent.Done
 
 export namespace CommandEvent {
-  export interface Stdout {
-    readonly _tag: 'Stdout'
-    readonly value: any
+  const commandEvent: Functor2<URI> = {
+    URI,
+    map: <E, A, B>(fa: CommandEvent<E, A>, f: (a: A) => B): CommandEvent<E, B> =>
+      isStdout(fa) ? Stdout(f(fa.value)) : fa
   }
-  export const Stdout = (value: any): Stdout => ({ _tag: 'Stdout', value })
 
-  export interface Stderr {
-    readonly _tag: 'Stderr'
-    readonly value: any
+  export const { map } = pipeable(commandEvent)
+
+  export interface Stdout<A> {
+    readonly _tag: 'Stdout'
+    readonly value: A
   }
-  export const Stderr = (value: any): Stderr => ({ _tag: 'Stderr', value })
+  export const Stdout = <A>(value: A): Stdout<A> => ({ _tag: 'Stdout', value })
+
+  export const isStdout = <E, A>(event: CommandEvent<E, A>): event is Stdout<A> =>
+    event._tag === 'Stdout'
+
+  export interface Stderr<E> {
+    readonly _tag: 'Stderr'
+    readonly value: E
+  }
+  export const Stderr = <E>(value: E): Stderr<E> => ({ _tag: 'Stderr', value })
+
+  export const isStderr = <E, A>(event: CommandEvent<E, A>): event is Stderr<E> =>
+    event._tag === 'Stderr'
 
   export interface Done {
     readonly _tag: 'Done'
@@ -19,24 +45,20 @@ export namespace CommandEvent {
   }
   export const Done = (code: number): Done => ({ _tag: 'Done', code })
 
-  export const fold = <A>({ onStdout, onStderr, onDone }: FoldArgs<A>) => (
-    event: CommandEvent
-  ): A => {
-    switch (event._tag) {
-      case 'Stdout':
-        return onStdout(event.value)
+  export const isDone = <E, A>(event: CommandEvent<E, A>): event is Done => event._tag === 'Done'
 
-      case 'Stderr':
-        return onStderr(event.value)
-
-      case 'Done':
-        return onDone(event.code)
-    }
-  }
+  export const fold = <E, A, B>({ onStdout, onStderr, onDone }: FoldArgs<E, A, B>) => (
+    event: CommandEvent<E, A>
+  ): B =>
+    isStdout(event)
+      ? onStdout(event.value)
+      : isStderr(event)
+      ? onStderr(event.value)
+      : onDone(event.code)
 }
 
-interface FoldArgs<A> {
-  readonly onStdout: (value: any) => A
-  readonly onStderr: (value: any) => A
-  readonly onDone: (code: number) => A
+interface FoldArgs<E, A, B> {
+  readonly onStdout: (value: A) => B
+  readonly onStderr: (value: E) => B
+  readonly onDone: (code: number) => B
 }
