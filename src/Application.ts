@@ -1,6 +1,5 @@
 import { MongoClient, Collection } from 'mongodb'
 
-import * as Obs from 'fp-ts-rxjs/lib/ObservableEither'
 import { Subscription } from 'rxjs'
 
 import { Cli } from './commands/Cli'
@@ -43,7 +42,7 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
     )
 
   const guildStateService = GuildStateService(Logger, guildStatePersistence, discord)
-  const playerService = PlayerService()
+  const playerService = PlayerService(Logger, discord)
 
   const cli = Cli(config.cmdPrefix)
 
@@ -56,7 +55,6 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
   return pipe(
     discord.setActivity(config.playingActivity),
     Future.chain(_ => ensureIndexes()),
-    // Future.chain(_ => guildStateService.subscribeCallsMessages()),
     Future.chain(_ =>
       pipe(
         subscribe(messagesHandler, discord.messages()),
@@ -72,23 +70,20 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
   function subscribe<A>(f: (a: A) => Future<unknown>, a: ObservableE<A>): IO<Subscription> {
     const obs = pipe(
       a,
-      Obs.chain(_ =>
+      ObservableE.chain(_ =>
         pipe(
           Try.apply(() => f(_)),
           Future.fromEither,
           Future.chain(f => Future.apply(() => Future.runUnsafe(f))),
-          Obs.fromTaskEither
+          ObservableE.fromTaskEither
         )
       )
     )
     return IO.apply(() =>
-      obs.subscribe(_ =>
-        pipe(
-          _,
-          Either.fold(
-            e => pipe(logger.error(e.stack), IO.runUnsafe),
-            _ => {}
-          )
+      obs.subscribe(
+        Either.fold<Error, unknown, void>(
+          e => pipe(logger.error(e.stack), IO.runUnsafe),
+          _ => {}
         )
       )
     )
