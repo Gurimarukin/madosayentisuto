@@ -3,7 +3,7 @@ import { Either, Future, pipe } from '../../src/utils/fp'
 describe('Future.recover', () => {
   it("should return f if it isn't failed", () => {
     const res = pipe(Future.right<Error, string>('toto'), Future.recover([_ => true, 'titi']))()
-    return res.then(_ => expect(_).toEqual(Either.right('toto')))
+    return res.then(_ => expect(_).toStrictEqual(Either.right('toto')))
   })
 
   it('should return first matching recovery', () => {
@@ -15,7 +15,7 @@ describe('Future.recover', () => {
         [e => e.message === 'this is an error', 'error message']
       )
     )()
-    return res.then(_ => expect(_).toEqual(Either.right('syntax error')))
+    return res.then(_ => expect(_).toStrictEqual(Either.right('syntax error')))
   })
 
   it('should return f if no matching error', () => {
@@ -26,6 +26,6 @@ describe('Future.recover', () => {
         [e => e.message === 'another message', 'error message']
       )
     )()
-    return res.then(_ => expect(_).toEqual(Either.left(SyntaxError('this is an error'))))
+    return res.then(_ => expect(_).toStrictEqual(Either.left(SyntaxError('this is an error'))))
   })
 })

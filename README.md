@@ -14,8 +14,8 @@ Create `conf/local.conf.json` file using content of `conf/local.example.conf.jso
 ## Deploy
 
     pnpm i
+    npm run checkEnv
     npm run build
-    npm run checkConfig
     node dist/src/index.js
 
 

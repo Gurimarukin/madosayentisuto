@@ -1,4 +1,3 @@
-import * as Obs from 'fp-ts-rxjs/lib/ObservableEither'
 import {
   ActivityOptions,
   Channel,
@@ -22,10 +21,13 @@ import {
   Presence,
   Role,
   RoleResolvable,
+  StreamDispatcher,
   StringResolvable,
   TextChannel,
   User,
-  UserResolvable
+  UserResolvable,
+  VoiceChannel,
+  VoiceConnection
 } from 'discord.js'
 import { fromEventPattern } from 'rxjs'
 
@@ -35,7 +37,7 @@ import { GuildId } from '../models/GuildId'
 import { ObservableE } from '../models/ObservableE'
 import { TSnowflake } from '../models/TSnowflake'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
-import { Maybe, pipe, Future, flow, List } from '../utils/fp'
+import { Maybe, pipe, Future, flow, List, IO } from '../utils/fp'
 import { Colors } from '../utils/Colors'
 import { ChannelUtils } from '../utils/ChannelUtils'
 
@@ -55,7 +57,7 @@ export function DiscordConnector(client: Client) {
     messages: (): ObservableE<Message> =>
       pipe(
         fromEventPattern<Message>(handler => client.on('message', handler)),
-        Obs.rightObservable
+        ObservableE.rightObservable
       ),
 
     voiceStateUpdates: (): ObservableE<VoiceStateUpdate> =>
@@ -65,7 +67,7 @@ export function DiscordConnector(client: Client) {
             handler(VoiceStateUpdate(oldState, newState))
           )
         ),
-        Obs.rightObservable
+        ObservableE.rightObservable
       ),
 
     guildMemberEvents: (): ObservableE<AddRemove<GuildMember | PartialGuildMember>> =>
@@ -74,7 +76,7 @@ export function DiscordConnector(client: Client) {
           client.on('guildMemberAdd', member => handler(AddRemove.Add(member)))
           client.on('guildMemberRemove', member => handler(AddRemove.Remove(member)))
         }),
-        Obs.rightObservable
+        ObservableE.rightObservable
       ),
 
     messageReactions: (): ObservableE<AddRemove<[MessageReaction, User | PartialUser]>> =>
@@ -87,7 +89,7 @@ export function DiscordConnector(client: Client) {
             handler(AddRemove.Remove([reaction, user]))
           )
         }),
-        Obs.rightObservable
+        ObservableE.rightObservable
       ),
 
     /**
@@ -185,7 +187,6 @@ export function DiscordConnector(client: Client) {
       pipe(
         Future.apply(() => member.roles.add(roleOrRoles, reason)),
         Future.map(_ => Maybe.some(undefined)),
-        Future.recover<Maybe<void>>(),
         debugLeft('addRole')
         // [e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
         // Maybe.none]
@@ -200,7 +201,6 @@ export function DiscordConnector(client: Client) {
       pipe(
         Future.apply(() => member.roles.remove(roleOrRoles, reason)),
         Future.map(_ => Maybe.some(undefined)),
-        Future.recover<Maybe<void>>(),
         debugLeft('removeRole')
         //[ e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
         // Maybe.none]
@@ -217,7 +217,16 @@ export function DiscordConnector(client: Client) {
           e => e instanceof DiscordAPIError && e.message === 'Missing Permissions',
           false
         ])
-      )
+      ),
+
+    joinVoiceChannel: (voiceChannel: VoiceChannel): Future<VoiceConnection> =>
+      pipe(
+        Future.apply(() => voiceChannel.join()),
+        debugLeft('joinVoiceChannel')
+      ),
+
+    connectionPlay: (connection: VoiceConnection, input: string): IO<StreamDispatcher> =>
+      IO.apply(() => connection.play(input))
   }
 
   function fetchMessageRec(message: string): (channels: TextChannel[]) => Future<Maybe<Message>> {

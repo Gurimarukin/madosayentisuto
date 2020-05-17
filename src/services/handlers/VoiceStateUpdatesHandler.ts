@@ -176,6 +176,6 @@ const getMember = (voiceStateUpdate: VoiceStateUpdate): Maybe<GuildMember> =>
 const peopleInPublicVocalChans = (guild: Guild): GuildMember[] =>
   pipe(
     guild.channels.cache.array(),
-    List.filter(_ => ChannelUtils.isPublic(_) && _.type === 'voice'),
+    List.filter(_ => ChannelUtils.isPublic(_) && ChannelUtils.isVoice(_)),
     List.chain(_ => _.members.array())
   )
