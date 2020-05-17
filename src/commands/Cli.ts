@@ -5,9 +5,11 @@ import { failure } from 'io-ts/lib/PathReporter'
 import { Command } from './Command'
 import { Commands } from './Commands'
 import { Opts } from './Opts'
+import { callsEmoji } from '../global'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
 import { pipe, Either, NonEmptyArray } from '../utils/fp'
+import { StringUtils } from '../utils/StringUtils'
 
 type AdminTextChannel = Commands.CallsInit | Commands.DefaultRoleGet | Commands.DefaultRoleSet
 
@@ -15,7 +17,7 @@ export type Cli = ReturnType<typeof Cli>
 
 export function Cli(prefix: string) {
   return {
-    adminTextChannel: Command(prefix)(
+    adminTextChannel: Command({ name: prefix, header: 'Everyone pays!' })(
       pipe(
         Opts.subcommand(calls),
         Opts.alt<AdminTextChannel>(() => Opts.subcommand(defaultRole))
@@ -24,22 +26,37 @@ export function Cli(prefix: string) {
   }
 }
 
-const callsInit = Command('init')<AdminTextChannel>(
+const callsInit = Command({
+  name: 'init',
+  header: StringUtils.stripMargins(
+    `Sends a message. Members reacting to it with ${callsEmoji} are added to the <role>.
+    |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
+  )
+})<AdminTextChannel>(
   pipe(
     sequenceT(Opts.opts)(
       Opts.param('channel', decodeTextChannel),
-      Opts.param('mention', decodeMention)
+      Opts.param('role', decodeMention)
     ),
     Opts.map(_ => Commands.CallsInit(..._))
   )
 )
-const calls = Command('calls')(Opts.subcommand(callsInit))
+const calls = Command({
+  name: 'calls',
+  header:
+    'When someone joins a voice channel and he is the only one connected to a public voice channel.'
+})(Opts.subcommand(callsInit))
 
-const defaultRoleGet = Command('get')(pipe(Opts.pure(Commands.DefaultRoleGet)))
-const defaultRoleSet = Command('set')(
+const defaultRoleGet = Command({ name: 'get', header: 'Show the default role for this server.' })(
+  pipe(Opts.pure(Commands.DefaultRoleGet))
+)
+const defaultRoleSet = Command({ name: 'set', header: 'Set the default role for this server.' })(
   pipe(Opts.param('role', decodeMention), Opts.map(Commands.DefaultRoleSet))
 )
-const defaultRole = Command('defaultRole')(
+const defaultRole = Command({
+  name: 'defaultRole',
+  header: 'Role for new members of this server.'
+})(
   pipe(
     Opts.subcommand(defaultRoleGet),
     Opts.alt<AdminTextChannel>(() => Opts.subcommand(defaultRoleSet))

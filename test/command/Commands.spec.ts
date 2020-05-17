@@ -44,9 +44,13 @@ describe('Cli.adminTextChannel', () => {
           |    okb calls
           |    okb defaultRole
           |
+          |Everyone pays!
+          |
           |Subcommands:
           |    calls
-          |    defaultRole`
+          |        When someone joins a voice channel and he is the only one connected to a public voice channel.
+          |    defaultRole
+          |        Role for new members of this server.`
         )
       )
     )
@@ -62,9 +66,13 @@ describe('Cli.adminTextChannel', () => {
           |    okb defaultRole get
           |    okb defaultRole set
           |
+          |Role for new members of this server.
+          |
           |Subcommands:
           |    get
-          |    set`
+          |        Show the default role for this server.
+          |    set
+          |        Set the default role for this server.`
         )
       )
     )
@@ -80,9 +88,13 @@ describe('Cli.adminTextChannel', () => {
           |    okb calls
           |    okb defaultRole
           |
+          |Everyone pays!
+          |
           |Subcommands:
           |    calls
-          |    defaultRole`
+          |        When someone joins a voice channel and he is the only one connected to a public voice channel.
+          |    defaultRole
+          |        Role for new members of this server.`
         )
       )
     )
@@ -98,9 +110,13 @@ describe('Cli.adminTextChannel', () => {
           |    okb defaultRole get
           |    okb defaultRole set
           |
+          |Role for new members of this server.
+          |
           |Subcommands:
           |    get
-          |    set`
+          |        Show the default role for this server.
+          |    set
+          |        Set the default role for this server.`
         )
       )
     )
@@ -112,7 +128,9 @@ describe('Cli.adminTextChannel', () => {
         StringUtils.stripMargins(
           `Unexpected argument: a
           |
-          |Usage: okb defaultRole set <role>`
+          |Usage: okb defaultRole set <role>
+          |
+          |Set the default role for this server.`
         )
       )
     )
@@ -122,7 +140,9 @@ describe('Cli.adminTextChannel', () => {
         StringUtils.stripMargins(
           `Missing expected positional argument
           |
-          |Usage: okb defaultRole set <role>`
+          |Usage: okb defaultRole set <role>
+          |
+          |Set the default role for this server.`
         )
       )
     )
@@ -132,7 +152,9 @@ describe('Cli.adminTextChannel', () => {
         StringUtils.stripMargins(
           `Invalid mention: role
           |
-          |Usage: okb defaultRole set <role>`
+          |Usage: okb defaultRole set <role>
+          |
+          |Set the default role for this server.`
         )
       )
     )
@@ -142,7 +164,9 @@ describe('Cli.adminTextChannel', () => {
         StringUtils.stripMargins(
           `Unexpected argument: a
           |
-          |Usage: okb defaultRole set <role>`
+          |Usage: okb defaultRole set <role>
+          |
+          |Set the default role for this server.`
         )
       )
     )
@@ -154,7 +178,10 @@ describe('Cli.adminTextChannel', () => {
         StringUtils.stripMargins(
           `Missing expected positional argument
           |
-          |Usage: okb calls init <channel> <mention>`
+          |Usage: okb calls init <channel> <role>
+          |
+          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
+          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
         )
       )
     )
@@ -166,7 +193,10 @@ describe('Cli.adminTextChannel', () => {
         StringUtils.stripMargins(
           `Missing expected positional argument
           |
-          |Usage: okb calls init <channel> <mention>`
+          |Usage: okb calls init <channel> <role>
+          |
+          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
+          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
         )
       )
     )
@@ -179,7 +209,10 @@ describe('Cli.adminTextChannel', () => {
           `Invalid channel: <@mention>
           |Invalid mention: <#channel>
           |
-          |Usage: okb calls init <channel> <mention>`
+          |Usage: okb calls init <channel> <role>
+          |
+          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
+          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
         )
       )
     )

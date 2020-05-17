@@ -56,7 +56,7 @@ export namespace Help {
       ? List.empty
       : pipe(
           commands,
-          List.chain(command => List.of(withIndent(4, command.name))),
+          List.chain(command => [withIndent(4, command.name), withIndent(8, command.header)]),
           texts => pipe(List.cons('Subcommands:', texts), StringUtils.mkString('\n'), List.of)
         )
 
@@ -69,7 +69,7 @@ export namespace Help {
       errors: List.empty,
       prefix: NonEmptyArray.of(parser.name),
       usage: pipe(Usage.fromOpts(parser.opts), List.chain(Usage.show)),
-      body: List.concat(optionsHelp, commandHelp)
+      body: List.cons(parser.header, List.concat(optionsHelp, commandHelp))
     }
   }
 
