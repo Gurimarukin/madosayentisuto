@@ -9,33 +9,33 @@ describe('Cli.adminTextChannel', () => {
   const cmd = Cli('okb').adminTextChannel
 
   it('should parse "calls init <#channel> <@mention>"', () => {
-    expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>', '<@mention>']))).toEqual(
+    expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>', '<@mention>']))).toStrictEqual(
       Either.right(Commands.CallsInit(TSnowflake.wrap('channel'), TSnowflake.wrap('mention')))
     )
   })
 
   it('should parse "defaultRole get"', () => {
-    expect(pipe(cmd, Command.parse(['defaultRole', 'get']))).toEqual(
+    expect(pipe(cmd, Command.parse(['defaultRole', 'get']))).toStrictEqual(
       Either.right(Commands.DefaultRoleGet)
     )
   })
 
   it('should parse "defaultRole set <@toto>"', () => {
-    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@toto>']))).toEqual(
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@toto>']))).toStrictEqual(
       Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
     )
 
-    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@!toto>']))).toEqual(
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@!toto>']))).toStrictEqual(
       Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
     )
 
-    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@&toto>']))).toEqual(
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@&toto>']))).toStrictEqual(
       Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
     )
   })
 
   it('should return "Missing command" error for ""', () => {
-    expect(pipe(cmd, Command.parse([]))).toEqual(
+    expect(pipe(cmd, Command.parse([]))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
           `Missing expected command (calls or defaultRole)
@@ -53,7 +53,7 @@ describe('Cli.adminTextChannel', () => {
   })
 
   it('should return "Missing command" error for "okb"', () => {
-    expect(pipe(cmd, Command.parse(['defaultRole']))).toEqual(
+    expect(pipe(cmd, Command.parse(['defaultRole']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
           `Missing expected command (get or set)
@@ -71,7 +71,7 @@ describe('Cli.adminTextChannel', () => {
   })
 
   it('should return "Unexpected argument" error for "kallz"', () => {
-    expect(pipe(cmd, Command.parse(['kallz']))).toEqual(
+    expect(pipe(cmd, Command.parse(['kallz']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
           `Unexpected argument: kallz
@@ -89,7 +89,7 @@ describe('Cli.adminTextChannel', () => {
   })
 
   it('should return "Unexpected argument" error for "defaultRole retrieve"', () => {
-    expect(pipe(cmd, Command.parse(['defaultRole', 'retrieve']))).toEqual(
+    expect(pipe(cmd, Command.parse(['defaultRole', 'retrieve']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
           `Unexpected argument: retrieve
@@ -107,7 +107,7 @@ describe('Cli.adminTextChannel', () => {
   })
 
   it('should correctly prioritize failures', () => {
-    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@toto>', 'a']))).toEqual(
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@toto>', 'a']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
           `Unexpected argument: a
@@ -117,7 +117,7 @@ describe('Cli.adminTextChannel', () => {
       )
     )
 
-    expect(pipe(cmd, Command.parse(['defaultRole', 'set']))).toEqual(
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
           `Missing expected positional argument
@@ -127,7 +127,7 @@ describe('Cli.adminTextChannel', () => {
       )
     )
 
-    expect(pipe(cmd, Command.parse(['defaultRole', 'set', 'role']))).toEqual(
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', 'role']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
           `Invalid mention: role
@@ -137,7 +137,7 @@ describe('Cli.adminTextChannel', () => {
       )
     )
 
-    expect(pipe(cmd, Command.parse(['defaultRole', 'set', 'role', 'a']))).toEqual(
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', 'role', 'a']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
           `Unexpected argument: a
@@ -149,7 +149,7 @@ describe('Cli.adminTextChannel', () => {
   })
 
   it('should return Missing argument for "calls init"', () => {
-    expect(pipe(cmd, Command.parse(['calls', 'init']))).toEqual(
+    expect(pipe(cmd, Command.parse(['calls', 'init']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
           `Missing expected positional argument
@@ -161,7 +161,7 @@ describe('Cli.adminTextChannel', () => {
   })
 
   it('should return Missing argument for "calls init <#channel>"', () => {
-    expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>']))).toEqual(
+    expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
           `Missing expected positional argument
@@ -173,7 +173,7 @@ describe('Cli.adminTextChannel', () => {
   })
 
   it('should return Invalid channel for "calls init <@mention> <#channel>"', () => {
-    expect(pipe(cmd, Command.parse(['calls', 'init', '<@mention>', '<#channel>']))).toEqual(
+    expect(pipe(cmd, Command.parse(['calls', 'init', '<@mention>', '<#channel>']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
           `Invalid channel: <@mention>

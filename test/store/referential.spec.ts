@@ -6,23 +6,23 @@
 
 describe('Referential store', () => {
   it('should work', () => {
-    expect(2).toEqual(2)
+    expect(2).toStrictEqual(2)
   })
 
   //   it('should init store', () => {
   //     const store = ReferentialReducer.createStore(Referential.empty)
-  //     expect(store.getState()).toEqual({})
+  //     expect(store.getState()).toStrictEqual({})
   //   })
 
   //   it('should dispatch SetDefaultRole', () => {
   //     const store = ReferentialReducer.createStore(Referential.empty)
   //     const guild = TSnowflake.wrap('guild')
   //     store.dispatch(ReferentialAction.SetDefaultRole(guild, TSnowflake.wrap('role1')))
-  //     expect(store.getState()).toEqual({
+  //     expect(store.getState()).toStrictEqual({
   //       guild: { defaultRole: Maybe.some(TSnowflake.wrap('role1')) }
   //     })
   //     store.dispatch(ReferentialAction.SetDefaultRole(guild, TSnowflake.wrap('role2')))
-  //     expect(store.getState()).toEqual({
+  //     expect(store.getState()).toStrictEqual({
   //       guild: { defaultRole: Maybe.some(TSnowflake.wrap('role2')) }
   //     })
   //   })

@@ -5,13 +5,13 @@ import { Future, Dict, Try, Either, pipe, flow, NonEmptyArray, Maybe } from './f
 import { CommandEvent } from '../models/CommandEvent'
 import { ObservableE } from '../models/ObservableE'
 
-interface CmdOutput {
+export interface CmdOutput {
   readonly code: number
   readonly stdout: string
   readonly stderr: string
 }
 
-interface ShortOptions {
+export interface ShortOptions {
   readonly cwd?: string
   readonly env?: Dict<string>
 }

@@ -7,14 +7,14 @@ describe('ConfReader.fromJsons', () => {
   it('should fail for non object', () => {
     const reader = ConfReader.fromJsons('fail')
 
-    expect(reader(t.string)('foo')).toEqual(Either.left(['key foo: missing key']))
+    expect(reader(t.string)('foo')).toStrictEqual(Either.left(['key foo: missing key']))
   })
 
   it('should fail for missing path', () => {
     const reader = ConfReader.fromJsons({ foo: { bar: 123 } })
 
-    expect(reader(t.number)('foo', 'baz')).toEqual(Either.left(['key foo.baz: missing key']))
-    expect(reader(t.number)('foo', 'bar', 'baz')).toEqual(
+    expect(reader(t.number)('foo', 'baz')).toStrictEqual(Either.left(['key foo.baz: missing key']))
+    expect(reader(t.number)('foo', 'bar', 'baz')).toStrictEqual(
       Either.left(['key foo.bar.baz: missing key'])
     )
   })
@@ -22,10 +22,10 @@ describe('ConfReader.fromJsons', () => {
   it('should fail for invalid value', () => {
     const reader = ConfReader.fromJsons({ foo: { bar: 'toto' } })
 
-    expect(reader(t.number)('foo')).toEqual(
+    expect(reader(t.number)('foo')).toStrictEqual(
       Either.left(['key foo: expected number got {"bar":"toto"}'])
     )
-    expect(reader(t.number)('foo', 'bar')).toEqual(
+    expect(reader(t.number)('foo', 'bar')).toStrictEqual(
       Either.left(['key foo.bar: expected number got "toto"'])
     )
   })
@@ -33,14 +33,14 @@ describe('ConfReader.fromJsons', () => {
   it('should parse path', () => {
     const reader = ConfReader.fromJsons({ foo: { bar: 123 } })
 
-    expect(reader(t.number)('foo', 'bar')).toEqual(Either.right(123))
+    expect(reader(t.number)('foo', 'bar')).toStrictEqual(Either.right(123))
   })
 
   it('should merge configs', () => {
     const reader = ConfReader.fromJsons({ foo: 123 }, { bar: 'toto' })
 
-    expect(reader(t.number)('foo')).toEqual(Either.right(123))
-    expect(reader(t.string)('bar')).toEqual(Either.right('toto'))
+    expect(reader(t.number)('foo')).toStrictEqual(Either.right(123))
+    expect(reader(t.string)('bar')).toStrictEqual(Either.right('toto'))
   })
 
   it('should merge configs and take first valid value', () => {
@@ -55,9 +55,9 @@ describe('ConfReader.fromJsons', () => {
       }
     )
 
-    expect(reader(t.number)('foo', 'bar')).toEqual(Either.right(123))
-    expect(reader(t.number)('baz', 'cde')).toEqual(Either.right(789))
-    expect(reader(t.string)('baz', 'cde')).toEqual(
+    expect(reader(t.number)('foo', 'bar')).toStrictEqual(Either.right(123))
+    expect(reader(t.number)('baz', 'cde')).toStrictEqual(Either.right(789))
+    expect(reader(t.string)('baz', 'cde')).toStrictEqual(
       Either.left(['key baz.cde: expected string got 789'])
     )
   })
