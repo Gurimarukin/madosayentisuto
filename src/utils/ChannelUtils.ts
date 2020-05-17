@@ -7,6 +7,8 @@ import {
   VoiceChannel
 } from 'discord.js'
 
+import { not } from './fp'
+
 export type SendableChannel = Channel & PartialTextBasedChannelFields
 
 export namespace ChannelUtils {
@@ -18,5 +20,5 @@ export namespace ChannelUtils {
     c.type === 'dm' || c.type == 'news' || c.type === 'text'
 
   export const isPublic = (c: GuildChannel): boolean => c.permissionOverwrites.size === 0
-  export const isPrivate = (c: GuildChannel): boolean => !isPublic(c)
+  export const isPrivate = not(isPublic)
 }

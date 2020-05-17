@@ -1,5 +1,5 @@
 import { Opts } from './Opts'
-import { List, flow, pipe, Maybe } from '../utils/fp'
+import { List, flow, pipe, Maybe, not } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 
 /**
@@ -233,17 +233,13 @@ const isEmptyProd = <A>(many: Many<A>): many is Many.Prod<A> =>
   Many.isProd(many) && List.isEmpty(many.allOf)
 
 const concat = (all: string[]): string =>
-  pipe(
-    all,
-    List.filter(_ => _ !== ''),
-    StringUtils.mkString(' ')
-  )
+  pipe(all, List.filter(not(StringUtils.isEmpty)), StringUtils.mkString(' '))
 
 const asOptional = <A>(list: Many<A>[]): Maybe<Many<A>[]> => {
   if (List.isEmpty(list)) return Maybe.none
   const [head, ...tail] = list
   return isEmptyProd(head)
-    ? Maybe.some(tail.filter(_ => !isEmptyProd(_)))
+    ? Maybe.some(tail.filter(not(isEmptyProd)))
     : pipe(
         asOptional(tail),
         Maybe.map(_ => List.cons(head, _))

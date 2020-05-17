@@ -7,7 +7,13 @@ import * as _Task from 'fp-ts/lib/Task'
 import * as _TaskEither from 'fp-ts/lib/TaskEither'
 import * as _IO from 'fp-ts/lib/IO'
 import * as _IOEither from 'fp-ts/lib/IOEither'
-import { identity as _identity, flow as _flow, Predicate, Lazy } from 'fp-ts/lib/function'
+import {
+  identity as _identity,
+  flow as _flow,
+  not as _not,
+  Predicate,
+  Lazy
+} from 'fp-ts/lib/function'
 import { pipe as _pipe } from 'fp-ts/lib/pipeable'
 
 import { Do as _Do } from 'fp-ts-contrib/lib/Do'
@@ -169,6 +175,8 @@ export const IO = {
 export const identity = _identity
 
 export const flow = _flow
+
+export const not = _not
 
 /**
  * pipe
