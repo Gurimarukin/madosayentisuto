@@ -73,7 +73,15 @@ export const MessagesHandler = (
       return Maybe.some(
         isAdmin
           ? parseCommand(message, args, cli.adminTextChannel)
-          : parseCommand(message, args, cli.simpleUserTextChannel)
+          : pipe(
+              deleteMessage(message),
+              Future.chain(_ =>
+                discord.sendPrettyMessage(
+                  message.author,
+                  'Gibier de potence, tu ne peux pas faire ça !'
+                )
+              )
+            )
       )
     }
   }

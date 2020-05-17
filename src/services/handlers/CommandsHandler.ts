@@ -1,17 +1,16 @@
-import { Guild, Message, TextChannel, Role, VoiceChannel, User } from 'discord.js'
+import { Guild, Message, TextChannel, Role } from 'discord.js'
 import { sequenceT } from 'fp-ts/lib/Apply'
 
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
-import { PlayerService } from '../PlayerService'
 import { callsEmoji } from '../../Application'
 import { Commands } from '../../commands/Commands'
 import { TSnowflake } from '../../models/TSnowflake'
 import { ValidatedNea } from '../../models/ValidatedNea'
 import { Calls } from '../../models/guildState/Calls'
 import { ChannelUtils } from '../../utils/ChannelUtils'
-import { Future, pipe, Either, Maybe, NonEmptyArray, List, flow } from '../../utils/fp'
+import { Future, pipe, Either, Maybe, NonEmptyArray, flow } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
 import { StringUtils } from '../../utils/StringUtils'
 
@@ -20,8 +19,7 @@ export type CommandsHandler = ReturnType<typeof CommandsHandler>
 export const CommandsHandler = (
   Logger: PartialLogger,
   discord: DiscordConnector,
-  guildStateService: GuildStateService,
-  playerService: PlayerService
+  guildStateService: GuildStateService
 ) => {
   const logger = Logger('CommandsHandler')
 
@@ -88,28 +86,6 @@ export const CommandsHandler = (
                         )
                   )
                 )
-            )
-          )
-        )
-
-      // player
-      case 'Play':
-        return pipe(
-          deleteMessage(message),
-          Future.chain(_ =>
-            pipe(
-              voiceChannelForMember(guild, message.author),
-              Maybe.fold(
-                () =>
-                  discord.sendPrettyMessage(
-                    message.author,
-                    'Écoute moi bien, gros malin : tu dois être dans un salon vocal pour pouvoir faire ça.'
-                  ),
-                voiceChannel =>
-                  ChannelUtils.isText(message.channel)
-                    ? playerService.play(voiceChannel, message.channel, command.urls)
-                    : Future.unit
-              )
             )
           )
         )
@@ -186,19 +162,6 @@ export const CommandsHandler = (
                 Future.chain(_ => guildStateService.setCalls(guild, Calls(message, channel, role)))
               )
             ])
-        )
-      )
-    )
-  }
-
-  function voiceChannelForMember(guild: Guild, user: User): Maybe<VoiceChannel> {
-    return pipe(
-      guild.channels.cache.array(),
-      List.filter(ChannelUtils.isVoice),
-      List.findFirst(_ =>
-        pipe(
-          _.members.array(),
-          List.exists(_ => _.user.id === user.id)
         )
       )
     )
