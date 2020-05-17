@@ -34,27 +34,19 @@ describe('Cli.adminTextChannel', () => {
     )
   })
 
-  it('should parse "play url1 url2"', () => {
-    expect(pipe(cmd, Command.parse(['play', 'url1', 'url2']))).toEqual(
-      Either.right(Commands.Play(['url1', 'url2']))
-    )
-  })
-
   it('should return "Missing command" error for ""', () => {
     expect(pipe(cmd, Command.parse([]))).toEqual(
       Either.left(
         StringUtils.stripMargins(
-          `Missing expected command (calls or defaultRole or play)
+          `Missing expected command (calls or defaultRole)
           |
           |Usage:
           |    okb calls
           |    okb defaultRole
-          |    okb play
           |
           |Subcommands:
           |    calls
-          |    defaultRole
-          |    play`
+          |    defaultRole`
         )
       )
     )
@@ -87,12 +79,10 @@ describe('Cli.adminTextChannel', () => {
           |Usage:
           |    okb calls
           |    okb defaultRole
-          |    okb play
           |
           |Subcommands:
           |    calls
-          |    defaultRole
-          |    play`
+          |    defaultRole`
         )
       )
     )
@@ -190,18 +180,6 @@ describe('Cli.adminTextChannel', () => {
           |Invalid mention: <#channel>
           |
           |Usage: okb calls init <channel> <mention>`
-        )
-      )
-    )
-  })
-
-  it('should return Missing argument for "play"', () => {
-    expect(pipe(cmd, Command.parse(['play']))).toEqual(
-      Either.left(
-        StringUtils.stripMargins(
-          `Missing expected positional argument
-          |
-          |Usage: okb play <url>...`
         )
       )
     )
