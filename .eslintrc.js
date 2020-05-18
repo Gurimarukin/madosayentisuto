@@ -23,7 +23,16 @@ module.exports = {
       { varsIgnorePattern: '^_', argsIgnorePattern: '^_' }
     ],
     '@typescript-eslint/no-var-requires': 'off',
-    '@typescript-eslint/no-use-before-define': 'off',
+    '@typescript-eslint/no-use-before-define': [
+      'warn',
+      {
+        functions: false,
+        classes: true,
+        variables: true,
+        enums: true,
+        typedefs: false
+      }
+    ],
     '@typescript-eslint/strict-boolean-expressions': 'warn',
     'arrow-body-style': ['warn', 'as-needed'],
     'array-callback-return': 'off',

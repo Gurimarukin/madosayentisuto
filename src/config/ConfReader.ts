@@ -19,40 +19,43 @@ export namespace ConfReader {
       )
     )
 
-  export const fromJsons = (json: unknown, ...jsons: unknown[]): ConfReader => <A>(
-    codec: t.Decoder<unknown, A>
-  ) => (path: string, ...paths: string[]): ValidatedNea<string, A> => {
-    const allPaths: NonEmptyArray<string> = List.cons(path, paths)
+  export function fromJsons(json: unknown, ...jsons: unknown[]): ConfReader {
+    return <A>(codec: t.Decoder<unknown, A>) => (
+      path: string,
+      ...paths: string[]
+    ): ValidatedNea<string, A> => {
+      const allPaths: NonEmptyArray<string> = List.cons(path, paths)
 
-    const valueForPath = pipe(
-      jsons,
-      List.reduce(readPath(allPaths, json), (acc, json) =>
-        pipe(
-          acc,
-          Maybe.alt(() => readPath(allPaths, json))
-        )
-      ),
-      Either.fromOption(() => NonEmptyArray.of('missing key'))
-    )
-
-    return pipe(
-      valueForPath,
-      Either.chain(val =>
-        pipe(
-          codec.decode(val),
-          Either.mapLeft(List.map(_ => `expected ${codec.name} got ${JSON.stringify(_.value)}`))
-        )
-      ),
-      ValidatedNea.fromEmptyErrors,
-      Either.mapLeft(
-        NonEmptyArray.map(_ => pipe(allPaths, StringUtils.mkString('key ', '.', `: ${_}`)))
+      const valueForPath = pipe(
+        jsons,
+        List.reduce(readPath(allPaths, json), (acc, json) =>
+          pipe(
+            acc,
+            Maybe.alt(() => readPath(allPaths, json))
+          )
+        ),
+        Either.fromOption(() => NonEmptyArray.of('missing key'))
       )
-    )
+
+      return pipe(
+        valueForPath,
+        Either.chain(val =>
+          pipe(
+            codec.decode(val),
+            Either.mapLeft(List.map(_ => `expected ${codec.name} got ${JSON.stringify(_.value)}`))
+          )
+        ),
+        ValidatedNea.fromEmptyErrors,
+        Either.mapLeft(
+          NonEmptyArray.map(_ => pipe(allPaths, StringUtils.mkString('key ', '.', `: ${_}`)))
+        )
+      )
+    }
   }
 }
 
-const parseJsonFiles = (path: string, ...paths: string[]): IO<NonEmptyArray<unknown>> =>
-  paths.reduce(
+function parseJsonFiles(path: string, ...paths: string[]): IO<NonEmptyArray<unknown>> {
+  return paths.reduce(
     (acc, path) =>
       Do(IO.ioEither)
         .bindL('acc', () => acc)
@@ -60,14 +63,16 @@ const parseJsonFiles = (path: string, ...paths: string[]): IO<NonEmptyArray<unkn
         .return(({ acc, newConf }) => NonEmptyArray.snoc(acc, newConf)),
     pipe(loadConfigFile(path), IO.map(NonEmptyArray.of))
   )
+}
 
-const loadConfigFile = (path: string): IO<unknown> =>
-  pipe(
+function loadConfigFile(path: string): IO<unknown> {
+  return pipe(
     FileUtils.readFileSync(path),
     IO.chain(_ => IO.fromEither(Either.parseJSON(_, unknownToError)))
   )
+}
 
-const readPath = (paths: string[], val: unknown): Maybe<unknown> => {
+function readPath(paths: string[], val: unknown): Maybe<unknown> {
   if (List.isEmpty(paths)) return Maybe.some(val)
 
   const [head, ...tail] = paths

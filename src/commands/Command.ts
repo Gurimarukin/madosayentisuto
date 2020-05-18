@@ -10,13 +10,7 @@ export interface Command<A> {
   readonly opts: Opts<A>
 }
 
-export function Command({
-  name,
-  header
-}: {
-  name: string
-  header: string
-}): <A>(opts: Opts<A>) => Command<A> {
+export function Command({ name, header }: CommandArgs): <A>(opts: Opts<A>) => Command<A> {
   return opts => ({ name, header, opts })
 }
 
@@ -34,4 +28,9 @@ export namespace Command {
 
   export const map = <A, B>(f: (a: A) => B): ((cmd: Command<A>) => Command<B>) =>
     mapValidated(flow(f, Either.right))
+}
+
+interface CommandArgs {
+  readonly name: string
+  readonly header: string
 }

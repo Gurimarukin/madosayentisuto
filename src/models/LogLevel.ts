@@ -2,8 +2,6 @@ import * as t from 'io-ts'
 
 import { Colors } from '../utils/Colors'
 
-export type LogLevel = t.TypeOf<typeof LogLevel.codec>
-
 export namespace LogLevel {
   export const codec = t.union([
     t.literal('debug'),
@@ -27,7 +25,7 @@ export namespace LogLevel {
   }
 }
 
-export type LogLevelOrOff = t.TypeOf<typeof LogLevelOrOff.codec>
+export type LogLevel = t.TypeOf<typeof LogLevel.codec>
 
 export namespace LogLevelOrOff {
   export const codec = t.union([LogLevel.codec, t.literal('off')])
@@ -40,3 +38,5 @@ export namespace LogLevelOrOff {
     off: 0
   }
 }
+
+export type LogLevelOrOff = t.TypeOf<typeof LogLevelOrOff.codec>

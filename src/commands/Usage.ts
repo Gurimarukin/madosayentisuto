@@ -77,12 +77,16 @@ namespace Options {
     readonly text: string
   }
 
+  export const Required = (text: string): Required => ({ _tag: 'Required', text })
+
   export const isRequired = (opts: Options): opts is Required => opts._tag === 'Required'
 
   export interface Repeated {
     readonly _tag: 'Repeated'
     readonly text: string
   }
+
+  export const Repeated = (text: string): Repeated => ({ _tag: 'Repeated', text })
 
   export const isRepeated = (opts: Options): opts is Repeated => opts._tag === 'Repeated'
 }
@@ -214,26 +218,46 @@ export namespace Usage {
     }
   }
 
-  const single = (opt: Opts.Opt<unknown>): Usage[] => {
+  function single(opt: Opts.Opt<unknown>): Usage[] {
     switch (opt._tag) {
+      case 'Regular':
+        return List.of(
+          Usage({
+            opts: Many.Just(
+              Options.Required(`${Opts.Name.stringify(opt.names[0])} <${opt.metavar}>`)
+            )
+          })
+        )
+
       case 'Argument':
         return List.of(Usage({ args: Many.Just(Args.Required(`<${opt.metavar}>`)) }))
     }
   }
 
-  const repeated = (opt: Opts.Opt<unknown>): Usage[] => {
+  function repeated(opt: Opts.Opt<unknown>): Usage[] {
     switch (opt._tag) {
+      case 'Regular':
+        return List.of(
+          Usage({
+            opts: Many.Just(
+              Options.Repeated(`${Opts.Name.stringify(opt.names[0])} <${opt.metavar}>`)
+            )
+          })
+        )
+
       case 'Argument':
         return List.of(Usage({ args: Many.Just(Args.Repeated(`<${opt.metavar}>`)) }))
     }
   }
 }
 
-const isEmptyProd = <A>(many: Many<A>): many is Many.Prod<A> =>
-  Many.isProd(many) && List.isEmpty(many.allOf)
+function isEmptyProd<A>(many: Many<A>): many is Many.Prod<A> {
+  return Many.isProd(many) && List.isEmpty(many.allOf)
+}
 
-const concat = (all: string[]): string =>
-  pipe(all, List.filter(not(StringUtils.isEmpty)), StringUtils.mkString(' '))
+function concat(all: string[]): string {
+  return pipe(all, List.filter(not(StringUtils.isEmpty)), StringUtils.mkString(' '))
+}
 
 const asOptional = <A>(list: Many<A>[]): Maybe<Many<A>[]> => {
   if (List.isEmpty(list)) return Maybe.none
@@ -246,7 +270,7 @@ const asOptional = <A>(list: Many<A>[]): Maybe<Many<A>[]> => {
       )
 }
 
-const showOptions = (opts: Many<Options>): string[] => {
+function showOptions(opts: Many<Options>): string[] {
   switch (opts._tag) {
     case 'Sum':
       return pipe(
@@ -256,7 +280,7 @@ const showOptions = (opts: Many<Options>): string[] => {
           l =>
             // l matches List.of(Many.Just(Options.Repeated(_)))
             l.length === 1 && Many.isJust(l[0]) && Options.isRepeated(l[0].value)
-              ? List.of(`[${l[0].value.text}...`)
+              ? List.of(`[${l[0].value.text}]...`)
               : l.map(flow(showOptions, StringUtils.mkString('[', ' | ', ']'))) // decline uses traverse ¯\_(ツ)_/¯
         )
       )
@@ -275,7 +299,7 @@ const showOptions = (opts: Many<Options>): string[] => {
   }
 }
 
-const showArgs = (args: Many<Args>): string[] => {
+function showArgs(args: Many<Args>): string[] {
   switch (args._tag) {
     case 'Sum':
       if (List.isEmpty(args.anyOf)) return List.empty

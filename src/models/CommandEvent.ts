@@ -25,10 +25,13 @@ export namespace CommandEvent {
     readonly _tag: 'Stdout'
     readonly value: A
   }
-  export const Stdout = <A>(value: A): Stdout<A> => ({ _tag: 'Stdout', value })
+  export function Stdout<A>(value: A): Stdout<A> {
+    return { _tag: 'Stdout', value }
+  }
 
-  export const isStdout = <E, A>(event: CommandEvent<E, A>): event is Stdout<A> =>
-    event._tag === 'Stdout'
+  export function isStdout<E, A>(event: CommandEvent<E, A>): event is Stdout<A> {
+    return event._tag === 'Stdout'
+  }
 
   export interface Stderr<E> {
     readonly _tag: 'Stderr'

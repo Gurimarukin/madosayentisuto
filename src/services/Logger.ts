@@ -70,10 +70,11 @@ export const PartialLogger = (config: Config, discord: DiscordConnector): Partia
   return { debug, info, warn, error }
 }
 
-const shouldLog = (setLevel: LogLevelOrOff, level: LogLevel): boolean =>
-  LogLevelOrOff.value[setLevel] >= LogLevelOrOff.value[level]
+function shouldLog(setLevel: LogLevelOrOff, level: LogLevel): boolean {
+  return LogLevelOrOff.value[setLevel] >= LogLevelOrOff.value[level]
+}
 
-const formatConsole = (name: string, level: LogLevel, msg: string): string => {
+function formatConsole(name: string, level: LogLevel, msg: string): string {
   const withName = `${name} - ${msg}`
   const withTimestamp = `${color(fmt('yyyy/mm/dd HH:MM:ss'), '30;1')} ${withName}`
   const c = LogLevel.shellColor[level]
@@ -82,14 +83,17 @@ const formatConsole = (name: string, level: LogLevel, msg: string): string => {
     : `[${color(level.toUpperCase(), c)}] ${withTimestamp}`
 }
 
-const formatDMCompact = (name: string, level: LogLevel, msg: string): string => {
+function formatDMCompact(name: string, level: LogLevel, msg: string): string {
   const withName = `${name} - ${msg}`
   return level === 'info' || level === 'warn'
     ? `\`[${level.toUpperCase()}]  ${withName}\``
     : `\`[${level.toUpperCase()}] ${withName}\``
 }
 
-const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageEmbed =>
-  new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`)
+function formatDMEmbed(name: string, level: LogLevel, msg: string): MessageEmbed {
+  return new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`)
+}
 
-const color = (s: string, c: string): string => (process.stdout.isTTY ? `\x1B[${c}m${s}\x1B[0m` : s)
+function color(s: string, c: string): string {
+  return process.stdout.isTTY ? `\x1B[${c}m${s}\x1B[0m` : s
+}

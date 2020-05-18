@@ -1,10 +1,11 @@
 import { Alt1 } from 'fp-ts/lib/Alt'
 import { Apply1 } from 'fp-ts/lib/Apply'
+import { Lazy } from 'fp-ts/lib/function'
 import { pipeable } from 'fp-ts/lib/pipeable'
 
 import { Command } from './Command'
 import { ValidatedNea } from '../models/ValidatedNea'
-import { NonEmptyArray, Either, flow, pipe } from '../utils/fp'
+import { NonEmptyArray, Either, flow, pipe, List, Maybe } from '../utils/fp'
 
 declare module 'fp-ts/lib/HKT' {
   interface URItoKind<A> {
@@ -25,6 +26,35 @@ export type Opts<A> =
   | Opts.Validate<unknown, A>
 
 export namespace Opts {
+  /**
+   * Opt
+   */
+  export type Opt<A> = Opt.Regular | Opt.Argument
+
+  export namespace Opt {
+    export interface Regular {
+      readonly _tag: 'Regular'
+      readonly names: Name[]
+      readonly metavar: string
+      readonly help: string
+    }
+    export const Regular = (names: Name[], metavar: string, help: string): Opt<string> => ({
+      _tag: 'Regular',
+      names,
+      metavar,
+      help
+    })
+
+    export interface Argument {
+      readonly _tag: 'Argument'
+      readonly metavar: string
+    }
+    export const Argument = (metavar: string): Opt<string> => ({ _tag: 'Argument', metavar })
+  }
+
+  /**
+   * Opts
+   */
   export const opts: Apply1<URI> & Alt1<URI> = {
     URI,
     map: <A, B>(fa: Opts<A>, f: (a: A) => B): Opts<B> => mapValidated(flow(f, Either.right))(fa),
@@ -35,19 +65,35 @@ export namespace Opts {
   /**
    * methods
    */
-  export const mapValidated = <A, B>(f: (a: A) => ValidatedNea<string, B>) => (
-    opts: Opts<A>
-  ): Opts<B> => {
-    switch (opts._tag) {
-      case 'Validate':
-        return Validate(opts.value, flow(opts.validate, Either.chain(f)))
-
-      default:
-        return Validate(opts, f)
-    }
+  export function mapValidated<A, B>(
+    f: (a: A) => ValidatedNea<string, B>
+  ): (opts: Opts<A>) => Opts<B> {
+    return opts =>
+      opts._tag === 'Validate'
+        ? Validate(opts.value, flow(opts.validate, Either.chain(f)))
+        : Validate(opts, f)
   }
 
   export const { map, ap, alt } = pipeable(opts)
+
+  export const withDefault = <A>(fy: Lazy<A>) => (opts: Opts<A>): Opts<A> =>
+    pipe(
+      opts,
+      alt(() => Opts.pure(fy()))
+    )
+
+  export const orNone = <A>(opts: Opts<A>): Opts<Maybe<A>> =>
+    pipe(
+      opts,
+      map(Maybe.some),
+      withDefault<Maybe<A>>(() => Maybe.none)
+    )
+
+  export const orEmpty = <A>(opts: Opts<NonEmptyArray<A>>): Opts<A[]> =>
+    pipe(
+      opts,
+      withDefault<A[]>(() => [])
+    )
 
   /**
    * subtypes
@@ -63,15 +109,18 @@ export namespace Opts {
     readonly f: Opts<(a: A) => B>
     readonly a: Opts<A>
   }
-  export const App = <A, B>(f: Opts<(a: A) => B>, a: Opts<A>): Opts<B> =>
-    ({ _tag: 'App', f, a } as Opts<B>)
+  export function App<A, B>(f: Opts<(a: A) => B>, a: Opts<A>): Opts<B> {
+    return { _tag: 'App', f, a } as Opts<B>
+  }
 
   export interface OrElse<A> {
     readonly _tag: 'OrElse'
     readonly a: Opts<A>
     readonly b: Opts<A>
   }
-  export const OrElse = <A>(a: Opts<A>, b: Opts<A>): Opts<A> => ({ _tag: 'OrElse', a, b })
+  export function OrElse<A>(a: Opts<A>, b: Opts<A>): Opts<A> {
+    return { _tag: 'OrElse', a, b }
+  }
 
   export interface Single<A> {
     readonly _tag: 'Single'
@@ -99,33 +148,52 @@ export namespace Opts {
     readonly value: Opts<A>
     readonly validate: (a: A) => ValidatedNea<string, B>
   }
-  export const Validate = <A, B>(
+  export function Validate<A, B>(
     value: Opts<A>,
     validate: (a: A) => ValidatedNea<string, B>
-  ): Opts<B> => ({ _tag: 'Validate', value, validate } as Opts<B>)
+  ): Opts<B> {
+    return { _tag: 'Validate', value, validate } as Opts<B>
+  }
 
   /**
    * helpers
    */
-
   export const unit: Opts<void> = Pure(undefined)
 
   export const pure = <A>(a: A): Opts<A> => Pure(a)
 
-  // export const option = <A>(long: string): Opts<A> => ???
-  // export const options = <A>(long: string): Opts<NonEmptyArray<A>> => ???
+  export const option = <A>(codec: (raw: string) => ValidatedNea<string, A>) => ({
+    long,
+    help,
+    short = '',
+    metavar
+  }: OptionArgs): Opts<A> =>
+    pipe(Single(Opt.Regular(namesFor(long, short), metavar, help)), mapValidated(codec))
+
+  export const options = <A>(codec: (raw: string) => ValidatedNea<string, A>) => ({
+    long,
+    help,
+    short = '',
+    metavar
+  }: OptionArgs): Opts<NonEmptyArray<A>> =>
+    pipe(
+      Repeated<string>(Opt.Regular(namesFor(long, short), metavar, help)),
+      mapValidated(args =>
+        NonEmptyArray.nonEmptyArray.traverse(
+          Either.getValidation(NonEmptyArray.getSemigroup<string>())
+        )(args, codec)
+      )
+    )
 
   // export const flag = (long: string): Opts<void> => ???
   // export const flags = (long: string): Opts<number> => ???
 
-  export const param = <A>(
-    metavar: string,
-    codec: (raw: string) => ValidatedNea<string, A>
+  export const param = <A>(codec: (raw: string) => ValidatedNea<string, A>) => (
+    metavar: string
   ): Opts<A> => pipe(Single(Opt.Argument(metavar)), mapValidated(codec))
 
-  export const params = <A>(
-    metavar: string,
-    codec: (raw: string) => ValidatedNea<string, A>
+  export const params = <A>(codec: (raw: string) => ValidatedNea<string, A>) => (
+    metavar: string
   ): Opts<NonEmptyArray<A>> =>
     pipe(
       Repeated<string>(Opt.Argument(metavar)),
@@ -139,15 +207,35 @@ export namespace Opts {
   export const subcommand = <A>(command: Command<A>): Opts<A> => Subcommand(command)
 
   /**
-   * Opt
+   * Name
    */
-  export type Opt<A> = Opt.Argument
+  export type Name = Name.LongName | Name.ShortName
 
-  export namespace Opt {
-    export interface Argument {
-      readonly _tag: 'Argument'
-      readonly metavar: string
+  export namespace Name {
+    export interface LongName {
+      readonly _tag: 'LongName'
+      readonly flag: string
     }
-    export const Argument = (metavar: string): Opt<string> => ({ _tag: 'Argument', metavar })
+    export const LongName = (flag: string): LongName => ({ _tag: 'LongName', flag })
+
+    export interface ShortName {
+      readonly _tag: 'ShortName'
+      readonly flag: string
+    }
+    export const ShortName = (flag: string): ShortName => ({ _tag: 'ShortName', flag })
+
+    export const stringify = (name: Name): string =>
+      name._tag === 'LongName' ? `--${name.flag}` : `-${name.flag}`
   }
+
+  function namesFor(long: string, short: string): Name[] {
+    return List.cons<Name>(Name.LongName(long), short.split('').map(Name.ShortName))
+  }
+}
+
+interface OptionArgs {
+  readonly long: string
+  readonly help: string
+  readonly short?: string
+  readonly metavar: string
 }

@@ -62,7 +62,6 @@ function readConfig(reader: ConfReader): ValidatedNea<string, Config> {
 /**
  * LoggerConfig
  */
-
 export interface LoggerConfig {
   readonly consoleLevel: LogLevelOrOff
   readonly discordDM: {
@@ -70,6 +69,7 @@ export interface LoggerConfig {
     readonly compact: boolean
   }
 }
+
 export function LoggerConfig(
   consoleLevel: LogLevelOrOff,
   discordDMlevel: LogLevelOrOff,
@@ -95,7 +95,6 @@ function readLoggerConfig(reader: ConfReader): ValidatedNea<string, LoggerConfig
 /**
  * DbConfig
  */
-
 interface DbConfig {
   host: string
   dbName: string
@@ -103,12 +102,12 @@ interface DbConfig {
   password: string
 }
 
-export function DbConfig(host: string, dbName: string, user: string, password: string): DbConfig {
+function DbConfig(host: string, dbName: string, user: string, password: string): DbConfig {
   return { host, dbName, user, password }
 }
 
-export const readDbConfig = (reader: ConfReader): ValidatedNea<string, DbConfig> =>
-  pipe(
+function readDbConfig(reader: ConfReader): ValidatedNea<string, DbConfig> {
+  return pipe(
     sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(t.string)('db', 'host'),
       reader(t.string)('db', 'dbName'),
@@ -117,3 +116,4 @@ export const readDbConfig = (reader: ConfReader): ValidatedNea<string, DbConfig>
     ),
     Either.map(_ => DbConfig(..._))
   )
+}

@@ -10,11 +10,9 @@ import { TSnowflake } from '../../models/TSnowflake'
 import { ValidatedNea } from '../../models/ValidatedNea'
 import { Calls } from '../../models/guildState/Calls'
 import { ChannelUtils } from '../../utils/ChannelUtils'
-import { Future, pipe, Either, Maybe, NonEmptyArray, flow } from '../../utils/fp'
+import { Future, pipe, Either, Maybe, NonEmptyArray, flow, todo } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
 import { StringUtils } from '../../utils/StringUtils'
-
-export type CommandsHandler = ReturnType<typeof CommandsHandler>
 
 export const CommandsHandler = (
   Logger: PartialLogger,
@@ -89,6 +87,9 @@ export const CommandsHandler = (
             )
           )
         )
+
+      case 'Say':
+        return todo()
     }
   }
 
@@ -168,8 +169,11 @@ export const CommandsHandler = (
   }
 }
 
-const fromOption = <E, A>(ma: Maybe<A>, e: E): ValidatedNea<E, A> =>
-  pipe(
+export type CommandsHandler = ReturnType<typeof CommandsHandler>
+
+function fromOption<E, A>(ma: Maybe<A>, e: E): ValidatedNea<E, A> {
+  return pipe(
     ma,
     ValidatedNea.fromOption(() => e)
   )
+}

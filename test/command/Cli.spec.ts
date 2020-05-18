@@ -34,15 +34,26 @@ describe('Cli.adminTextChannel', () => {
     )
   })
 
+  it('should parse say', () => {
+    expect(pipe(cmd, Command.parse(['say', 'hello', 'world']))).toStrictEqual(
+      Either.right(Commands.Say([], ['hello', 'world']))
+    )
+
+    expect(
+      pipe(cmd, Command.parse(['say', '--attach', 'file1', '-a', 'file2', 'hello', 'world']))
+    ).toStrictEqual(Either.right(Commands.Say(['file1', 'file2'], ['hello', 'world'])))
+  })
+
   it('should return "Missing command" error for ""', () => {
     expect(pipe(cmd, Command.parse([]))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
-          `Missing expected command (calls or defaultRole)
+          `Missing expected command (calls or defaultRole or say)
           |
           |Usage:
           |    okb calls
           |    okb defaultRole
+          |    okb say
           |
           |Everyone pays!
           |
@@ -50,7 +61,9 @@ describe('Cli.adminTextChannel', () => {
           |    calls
           |        When someone joins a voice channel and he is the only one connected to a public voice channel.
           |    defaultRole
-          |        Role for new members of this server.`
+          |        Role for new members of this server.
+          |    say
+          |        Make the bot say something.`
         )
       )
     )
@@ -87,6 +100,7 @@ describe('Cli.adminTextChannel', () => {
           |Usage:
           |    okb calls
           |    okb defaultRole
+          |    okb say
           |
           |Everyone pays!
           |
@@ -94,7 +108,9 @@ describe('Cli.adminTextChannel', () => {
           |    calls
           |        When someone joins a voice channel and he is the only one connected to a public voice channel.
           |    defaultRole
-          |        Role for new members of this server.`
+          |        Role for new members of this server.
+          |    say
+          |        Make the bot say something.`
         )
       )
     )

@@ -1,3 +1,8 @@
+import { pipe, Maybe } from './fp'
+
+const margin = /^\s*\|/gm
+const whiteSpace = /\s+/
+
 export namespace StringUtils {
   export const isEmpty = (str: string): boolean => str === ''
 
@@ -20,7 +25,13 @@ export namespace StringUtils {
 
   export const ellipse = (take: number) => (str: string): string =>
     str.length > take ? `${str.substring(0, take)}...` : str
-}
 
-const margin = /^\s*\|/gm
-const whiteSpace = /\s+/
+  const matcher = <A>(regex: RegExp, f: (arr: RegExpMatchArray) => A) => (str: string): Maybe<A> =>
+    pipe(str.match(regex), Maybe.fromNullable, Maybe.map(f))
+
+  export const matcher1 = (regex: RegExp): ((str: string) => Maybe<string>) =>
+    matcher(regex, ([, _]) => _)
+
+  export const matcher2 = (regex: RegExp): ((str: string) => Maybe<[string, string]>) =>
+    matcher(regex, ([, a, b]) => [a, b])
+}

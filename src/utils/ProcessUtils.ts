@@ -101,12 +101,12 @@ export namespace ProcessUtils {
     })
 }
 
-const rawObservable = (
+function rawObservable(
   command: string,
   args: string[] = [],
   options: ShortOptions = {}
-): ObservableE<CommandEvent<any, any>> =>
-  new Observable<Try<CommandEvent<any, any>>>(subscriber => {
+): ObservableE<CommandEvent<any, any>> {
+  return new Observable<Try<CommandEvent<any, any>>>(subscriber => {
     const stream = spawn(command, args, { shell: true, cwd: options.cwd, env: options.env })
 
     stream.stdout.on('data', _ => subscriber.next(Either.right(CommandEvent.Stdout(_))))
@@ -117,3 +117,4 @@ const rawObservable = (
       subscriber.complete()
     })
   })
+}
