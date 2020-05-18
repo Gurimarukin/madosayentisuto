@@ -1,4 +1,5 @@
 import { Message, Guild } from 'discord.js'
+import { parse } from 'shell-quote'
 
 import { CommandsHandler } from './CommandsHandler'
 import { DiscordConnector } from '../DiscordConnector'
@@ -8,7 +9,7 @@ import { Command } from '../../commands/Command'
 import { Commands } from '../../commands/Commands'
 import { Config } from '../../config/Config'
 import { TSnowflake } from '../../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either } from '../../utils/fp'
+import { Maybe, pipe, Future, List, Either, NonEmptyArray, inspect } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 import { LogUtils } from '../../utils/LogUtils'
@@ -46,41 +47,43 @@ export const MessagesHandler = (
   }
 
   function command(message: Message): Maybe<Future<unknown>> {
-    return pipe(withoutPrefix(message.content), Maybe.chain(handleCommandWithRights(message)))
-  }
-
-  function withoutPrefix(msg: string): Maybe<string> {
-    return msg.startsWith(config.cmdPrefix)
-      ? Maybe.some(msg.substring(config.cmdPrefix.length))
-      : Maybe.none
-  }
-
-  function handleCommandWithRights(message: Message): (rawCmd: string) => Maybe<Future<unknown>> {
-    return rawCmd => {
-      if (ChannelUtils.isDm(message.channel)) return Maybe.none
-
-      const authorId = TSnowflake.wrap(message.author.id)
-      const isAdmin = pipe(
-        config.admins,
-        List.exists(_ => _ === authorId)
+    return pipe(
+      parse(message.content),
+      inspect('parsed:'),
+      List.filter(StringUtils.isString),
+      NonEmptyArray.fromArray,
+      Maybe.chain(([head, ...tail]) =>
+        pipe(
+          Maybe.some(head),
+          Maybe.filter(_ => _ === config.cmdPrefix),
+          Maybe.chain(_ => handleCommandWithRights(message, tail))
+        )
       )
+    )
+  }
 
-      const args = StringUtils.splitWords(rawCmd)
+  function handleCommandWithRights(message: Message, args: string[]): Maybe<Future<unknown>> {
+    if (ChannelUtils.isDm(message.channel)) return Maybe.none
 
-      return Maybe.some(
-        isAdmin
-          ? parseCommand(message, args, cli.adminTextChannel)
-          : pipe(
-              deleteMessage(message),
-              Future.chain(_ =>
-                discord.sendPrettyMessage(
-                  message.author,
-                  'Gibier de potence, tu ne peux pas faire ça !'
-                )
+    const authorId = TSnowflake.wrap(message.author.id)
+    const isAdmin = pipe(
+      config.admins,
+      List.exists(_ => _ === authorId)
+    )
+
+    return Maybe.some(
+      isAdmin
+        ? parseCommand(message, args, cli.adminTextChannel)
+        : pipe(
+            deleteMessage(message),
+            Future.chain(_ =>
+              discord.sendPrettyMessage(
+                message.author,
+                'Gibier de potence, tu ne peux pas faire ça !'
               )
             )
-      )
-    }
+          )
+    )
   }
 
   function deleteMessage(message: Message): Future<void> {

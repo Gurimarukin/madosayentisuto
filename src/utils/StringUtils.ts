@@ -1,14 +1,13 @@
 import { pipe, Maybe } from './fp'
 
 const margin = /^\s*\|/gm
-const whiteSpace = /\s+/
 
 export namespace StringUtils {
   export const isEmpty = (str: string): boolean => str === ''
 
-  export const stripMargins = (str: string): string => str.replace(margin, '')
+  export const isString = (u: unknown): u is string => typeof u === 'string'
 
-  export const splitWords = (str: string): string[] => str.trim().split(whiteSpace)
+  export const stripMargins = (str: string): string => str.replace(margin, '')
 
   export function mkString(sep: string): (list: string[]) => string
   export function mkString(start: string, sep: string, end: string): (list: string[]) => string
