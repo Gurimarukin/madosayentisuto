@@ -1,5 +1,5 @@
 import { Cli } from '../../src/commands/Cli'
-import { Command } from '../../src/commands/Command'
+import { Command } from '../../src/decline/Command'
 import { Commands } from '../../src/commands/Commands'
 import { TSnowflake } from '../../src/models/TSnowflake'
 import { Either, pipe } from '../../src/utils/fp'

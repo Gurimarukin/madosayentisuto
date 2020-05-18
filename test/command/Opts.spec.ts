@@ -1,7 +1,7 @@
 import { sequenceT } from 'fp-ts/lib/Apply'
 
-import { Command } from '../../src/commands/Command'
-import { Opts } from '../../src/commands/Opts'
+import { Command } from '../../src/decline/Command'
+import { Opts } from '../../src/decline/Opts'
 import { Either, pipe, Maybe } from '../../src/utils/fp'
 import { StringUtils } from '../../src/utils/StringUtils'
 

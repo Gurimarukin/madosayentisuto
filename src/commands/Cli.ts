@@ -2,9 +2,9 @@
 import { sequenceT } from 'fp-ts/lib/Apply'
 // import { failure } from 'io-ts/lib/PathReporter'
 
-import { Command } from './Command'
+import { Command } from '../decline/Command'
 import { Commands } from './Commands'
-import { Opts } from './Opts'
+import { Opts } from '../decline/Opts'
 import { callsEmoji } from '../global'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'

@@ -1,5 +1,5 @@
 import { Maybe } from '../../src/utils/fp'
-import { longOpt, longOptWithEquals, shortOpt } from '../../src/commands/Parser'
+import { longOpt, longOptWithEquals, shortOpt } from '../../src/decline/Parser'
 
 describe('longOpt', () => {
   it('should parse "--toto"', () => {
