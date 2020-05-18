@@ -22,10 +22,8 @@ export const MessagesHandler = (
 ): ((message: Message) => Future<unknown>) => {
   const logger = Logger('MessagesHandler')
 
-  const regex = new RegExp(`^\\s*${config.cmdPrefix}(.*)$`, 'm')
-
   return message =>
-    discord.isSelf(message.author)
+    message.author.bot
       ? Future.unit
       : pipe(
           LogUtils.withAuthor(logger, 'debug', message)(message.content),
@@ -52,10 +50,9 @@ export const MessagesHandler = (
   }
 
   function withoutPrefix(msg: string): Maybe<string> {
-    return pipe(
-      Maybe.fromNullable(msg.match(regex)),
-      Maybe.chain(_ => List.lookup(1, _))
-    )
+    return msg.startsWith(config.cmdPrefix)
+      ? Maybe.some(msg.substring(config.cmdPrefix.length))
+      : Maybe.none
   }
 
   function handleCommandWithRights(message: Message): (rawCmd: string) => Maybe<Future<unknown>> {

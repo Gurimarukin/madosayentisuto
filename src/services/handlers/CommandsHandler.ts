@@ -1,4 +1,4 @@
-import { Guild, Message, TextChannel, Role } from 'discord.js'
+import { Guild, Message, MessageAttachment, TextChannel, Role } from 'discord.js'
 import { sequenceT } from 'fp-ts/lib/Apply'
 
 import { DiscordConnector } from '../DiscordConnector'
@@ -10,7 +10,7 @@ import { TSnowflake } from '../../models/TSnowflake'
 import { ValidatedNea } from '../../models/ValidatedNea'
 import { Calls } from '../../models/guildState/Calls'
 import { ChannelUtils } from '../../utils/ChannelUtils'
-import { Future, pipe, Either, Maybe, NonEmptyArray, flow, todo } from '../../utils/fp'
+import { Future, pipe, Either, Maybe, NonEmptyArray, flow } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
 import { StringUtils } from '../../utils/StringUtils'
 
@@ -89,7 +89,28 @@ export const CommandsHandler = (
         )
 
       case 'Say':
-        return todo()
+        const i = message.content.indexOf(NonEmptyArray.head(command.things))
+        const content = message.content.substring(i)
+        return pipe(
+          deleteMessage(message),
+          Future.chain(_ =>
+            discord.sendMessage(
+              message.channel,
+              content,
+              command.attachments.map(_ => new MessageAttachment(_))
+            )
+          ),
+          Future.chain(
+            Maybe.fold<Message, Future<unknown>>(
+              () =>
+                discord.sendPrettyMessage(
+                  message.author,
+                  'En fait, je ne peux pas envoyer de messages dans ce salon.'
+                ),
+              _ => Future.unit
+            )
+          )
+        )
     }
   }
 
