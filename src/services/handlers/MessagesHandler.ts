@@ -9,7 +9,7 @@ import { Command } from '../../decline/Command'
 import { Commands } from '../../commands/Commands'
 import { Config } from '../../config/Config'
 import { TSnowflake } from '../../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either, NonEmptyArray, inspect } from '../../utils/fp'
+import { Maybe, pipe, Future, List, Either, NonEmptyArray } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 import { LogUtils } from '../../utils/LogUtils'
@@ -49,7 +49,6 @@ export const MessagesHandler = (
   function command(message: Message): Maybe<Future<unknown>> {
     return pipe(
       parse(message.content),
-      inspect('parsed:'),
       List.filter(StringUtils.isString),
       NonEmptyArray.fromArray,
       Maybe.chain(([head, ...tail]) =>

@@ -89,14 +89,12 @@ export const CommandsHandler = (
         )
 
       case 'Say':
-        const i = message.content.indexOf(NonEmptyArray.head(command.things))
-        const content = message.content.substring(i)
         return pipe(
           deleteMessage(message),
           Future.chain(_ =>
             discord.sendMessage(
               message.channel,
-              content,
+              command.message,
               command.attachments.map(_ => new MessageAttachment(_))
             )
           ),

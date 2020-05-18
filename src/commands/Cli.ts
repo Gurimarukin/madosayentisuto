@@ -68,7 +68,7 @@ const say = Command({
   header: 'Make the bot say something.'
 })(
   pipe(
-    sequenceT(Opts.opts)(attach, Opts.params(Either.right)('things')),
+    sequenceT(Opts.opts)(attach, Opts.param(Either.right)('message')),
     Opts.map(_ => Commands.Say(..._))
   )
 )

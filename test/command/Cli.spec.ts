@@ -8,43 +8,7 @@ import { StringUtils } from '../../src/utils/StringUtils'
 describe('Cli.adminTextChannel', () => {
   const cmd = Cli('okb').adminTextChannel
 
-  it('should parse "calls init <#channel> <@mention>"', () => {
-    expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>', '<@mention>']))).toStrictEqual(
-      Either.right(Commands.CallsInit(TSnowflake.wrap('channel'), TSnowflake.wrap('mention')))
-    )
-  })
-
-  it('should parse "defaultRole get"', () => {
-    expect(pipe(cmd, Command.parse(['defaultRole', 'get']))).toStrictEqual(
-      Either.right(Commands.DefaultRoleGet)
-    )
-  })
-
-  it('should parse "defaultRole set <@toto>"', () => {
-    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@toto>']))).toStrictEqual(
-      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
-    )
-
-    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@!toto>']))).toStrictEqual(
-      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
-    )
-
-    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@&toto>']))).toStrictEqual(
-      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
-    )
-  })
-
-  it('should parse say', () => {
-    expect(pipe(cmd, Command.parse(['say', 'hello', 'world']))).toStrictEqual(
-      Either.right(Commands.Say([], ['hello', 'world']))
-    )
-
-    expect(
-      pipe(cmd, Command.parse(['say', '--attach', 'file1', '-a', 'file2', 'hello', 'world']))
-    ).toStrictEqual(Either.right(Commands.Say(['file1', 'file2'], ['hello', 'world'])))
-  })
-
-  it('should return "Missing command" error for ""', () => {
+  it('should show help when no args', () => {
     expect(pipe(cmd, Command.parse([]))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
@@ -67,31 +31,7 @@ describe('Cli.adminTextChannel', () => {
         )
       )
     )
-  })
 
-  it('should return "Missing command" error for "okb"', () => {
-    expect(pipe(cmd, Command.parse(['defaultRole']))).toStrictEqual(
-      Either.left(
-        StringUtils.stripMargins(
-          `Missing expected command (get or set)
-          |
-          |Usage:
-          |    okb defaultRole get
-          |    okb defaultRole set
-          |
-          |Role for new members of this server.
-          |
-          |Subcommands:
-          |    get
-          |        Show the default role for this server.
-          |    set
-          |        Set the default role for this server.`
-        )
-      )
-    )
-  })
-
-  it('should return "Unexpected argument" error for "kallz"', () => {
     expect(pipe(cmd, Command.parse(['kallz']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
@@ -116,7 +56,73 @@ describe('Cli.adminTextChannel', () => {
     )
   })
 
-  it('should return "Unexpected argument" error for "defaultRole retrieve"', () => {
+  it('should parse "calls init"', () => {
+    expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>', '<@mention>']))).toStrictEqual(
+      Either.right(Commands.CallsInit(TSnowflake.wrap('channel'), TSnowflake.wrap('mention')))
+    )
+
+    expect(pipe(cmd, Command.parse(['calls', 'init']))).toStrictEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Missing expected positional argument
+          |
+          |Usage: okb calls init <channel> <role>
+          |
+          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
+          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
+        )
+      )
+    )
+
+    expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>']))).toStrictEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Missing expected positional argument
+          |
+          |Usage: okb calls init <channel> <role>
+          |
+          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
+          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
+        )
+      )
+    )
+
+    expect(pipe(cmd, Command.parse(['calls', 'init', '<@mention>', '<#channel>']))).toStrictEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Invalid channel: <@mention>
+          |Invalid mention: <#channel>
+          |
+          |Usage: okb calls init <channel> <role>
+          |
+          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
+          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
+        )
+      )
+    )
+  })
+
+  it('should show help for "defaultRole"', () => {
+    expect(pipe(cmd, Command.parse(['defaultRole']))).toStrictEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Missing expected command (get or set)
+          |
+          |Usage:
+          |    okb defaultRole get
+          |    okb defaultRole set
+          |
+          |Role for new members of this server.
+          |
+          |Subcommands:
+          |    get
+          |        Show the default role for this server.
+          |    set
+          |        Set the default role for this server.`
+        )
+      )
+    )
+
     expect(pipe(cmd, Command.parse(['defaultRole', 'retrieve']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
@@ -136,6 +142,50 @@ describe('Cli.adminTextChannel', () => {
         )
       )
     )
+  })
+
+  it('should parse "defaultRole get"', () => {
+    expect(pipe(cmd, Command.parse(['defaultRole', 'get']))).toStrictEqual(
+      Either.right(Commands.DefaultRoleGet)
+    )
+  })
+
+  it('should parse "defaultRole set"', () => {
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@toto>']))).toStrictEqual(
+      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
+    )
+
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@!toto>']))).toStrictEqual(
+      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
+    )
+
+    expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@&toto>']))).toStrictEqual(
+      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
+    )
+  })
+
+  it('should show help for "say"', () => {
+    expect(pipe(cmd, Command.parse(['say']))).toStrictEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Missing expected positional argument
+          |
+          |Usage: okb say [--attach <url>]... <message>
+          |
+          |Make the bot say something.`
+        )
+      )
+    )
+  })
+
+  it('should parse "say"', () => {
+    expect(pipe(cmd, Command.parse(['say', 'hello world']))).toStrictEqual(
+      Either.right(Commands.Say([], 'hello world'))
+    )
+
+    expect(
+      pipe(cmd, Command.parse(['say', '--attach', 'file1', '-a', 'file2', 'hello world']))
+    ).toStrictEqual(Either.right(Commands.Say(['file1', 'file2'], 'hello world')))
   })
 
   it('should correctly prioritize failures', () => {
@@ -183,52 +233,6 @@ describe('Cli.adminTextChannel', () => {
           |Usage: okb defaultRole set <role>
           |
           |Set the default role for this server.`
-        )
-      )
-    )
-  })
-
-  it('should return Missing argument for "calls init"', () => {
-    expect(pipe(cmd, Command.parse(['calls', 'init']))).toStrictEqual(
-      Either.left(
-        StringUtils.stripMargins(
-          `Missing expected positional argument
-          |
-          |Usage: okb calls init <channel> <role>
-          |
-          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
-          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
-        )
-      )
-    )
-  })
-
-  it('should return Missing argument for "calls init <#channel>"', () => {
-    expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>']))).toStrictEqual(
-      Either.left(
-        StringUtils.stripMargins(
-          `Missing expected positional argument
-          |
-          |Usage: okb calls init <channel> <role>
-          |
-          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
-          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
-        )
-      )
-    )
-  })
-
-  it('should return Invalid channel for "calls init <@mention> <#channel>"', () => {
-    expect(pipe(cmd, Command.parse(['calls', 'init', '<@mention>', '<#channel>']))).toStrictEqual(
-      Either.left(
-        StringUtils.stripMargins(
-          `Invalid channel: <@mention>
-          |Invalid mention: <#channel>
-          |
-          |Usage: okb calls init <channel> <role>
-          |
-          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
-          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
         )
       )
     )

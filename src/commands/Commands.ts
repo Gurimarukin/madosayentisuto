@@ -1,5 +1,4 @@
 import { TSnowflake } from '../models/TSnowflake'
-import { NonEmptyArray } from '../utils/fp'
 
 export type Commands =
   | Commands.CallsInit
@@ -39,11 +38,11 @@ export namespace Commands {
   export interface Say {
     readonly _tag: 'Say'
     readonly attachments: string[]
-    readonly things: NonEmptyArray<string>
+    readonly message: string
   }
-  export const Say = (attachments: string[], things: NonEmptyArray<string>): Say => ({
+  export const Say = (attachments: string[], message: string): Say => ({
     _tag: 'Say',
     attachments,
-    things
+    message
   })
 }
