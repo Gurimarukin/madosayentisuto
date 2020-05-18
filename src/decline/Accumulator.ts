@@ -1,96 +1,29 @@
+import util from 'util'
 import { sequenceT } from 'fp-ts/lib/Apply'
-import { eqString } from 'fp-ts/lib/Eq'
+import { Functor1 } from 'fp-ts/lib/Functor'
+import { Lazy } from 'fp-ts/lib/function'
+import { pipeable } from 'fp-ts/lib/pipeable'
 
-import { Command } from './Command'
 import { Help } from './Help'
 import { Opts } from './Opts'
+import { Parser } from './Parser'
 import { Result } from './Result'
 import { Either, flow, pipe, NonEmptyArray, Maybe, List } from '../utils/fp'
 
-export type Parser<A> = (args: string[]) => Either<Help, A>
-type ArgOut<A> = NonEmptyArray<Either<Accumulator<A>, Accumulator<A>>>
+declare module 'fp-ts/lib/HKT' {
+  interface URItoKind<A> {
+    readonly Match: Accumulator.Match<A>
+  }
+}
+
+const URI = 'Match'
+type URI = typeof URI
+
+export type ArgOut<A> = NonEmptyArray<Either<Accumulator<A>, Accumulator<A>>>
 type Err<A> = Either<string[], A>
 
-export const Parser = <A>(command: Command<A>): Parser<A> => {
-  const help = Help.fromCommand(command)
-
-  return args => consumeAll(args, Accumulator.fromOpts(command.opts))
-
-  function failure<A>(...reasons: string[]): Either<Help, A> {
-    return Either.left(pipe(help, Help.withErrors(reasons)))
-  }
-
-  function evalResult<A>(out: Result<A>): Either<Help, A> {
-    return pipe(
-      out.get,
-      Either.fold(
-        failed => failure(...pipe(failed, Result.Failure.messages, List.uniq(eqString))),
-        // NB: if any of the user-provided functions have side-effects, they will happen here!
-        fn =>
-          pipe(
-            fn(),
-            Either.fold(
-              messages => failure(...pipe(messages, List.uniq(eqString))),
-              result => Either.right(result)
-            )
-          )
-      )
-    )
-  }
-
-  function toOption<B>(args: ArgOut<B>): Maybe<Accumulator<B>> {
-    return pipe(
-      args,
-      List.filterMap(Maybe.fromEither),
-      NonEmptyArray.fromArray,
-      Maybe.map(([head, ...tail]) => pipe(tail, List.reduce(head, Accumulator.OrElse)))
-    )
-  }
-
-  function consumeAll(args: string[], accumulator: Accumulator<A>): Either<Help, A> {
-    if (List.isEmpty(args)) return evalResult(accumulator.result)
-
-    const [arg, ...tail] = args
-    return pipe(
-      accumulator.parseSub(arg),
-      Maybe.map(result =>
-        pipe(
-          result(tail),
-          Either.mapLeft(Help.withPrefix([command.name])),
-          Either.chain(evalResult)
-        )
-      ),
-      Maybe.getOrElse(() =>
-        pipe(
-          toOption(accumulator.parseArg(arg)),
-          Maybe.fold(
-            () => failure(`Unexpected argument: ${arg}`),
-            next => consumeAll(tail, next)
-          )
-        )
-      )
-    )
-  }
-}
-
-const squish = <A>(argOut: ArgOut<A>): ArgOut<A> => {
-  const [a, ...tail] = argOut
-  if (List.isEmpty(tail)) return argOut
-
-  const [b, ...rest] = tail
-
-  if (Either.isLeft(a) && Either.isLeft(b)) {
-    return squish(NonEmptyArray.cons(Either.left(Accumulator.OrElse(a.left, b.left)), rest))
-  }
-
-  if (Either.isRight(a) && Either.isRight(b)) {
-    return squish(NonEmptyArray.cons(Either.right(Accumulator.OrElse(a.right, b.right)), rest))
-  }
-
-  return NonEmptyArray.cons(a, squish(NonEmptyArray.cons(a, rest)))
-}
-
-abstract class Accumulator<A> {
+export abstract class Accumulator<A> {
+  abstract parseOption(name: Opts.Name): Maybe<Accumulator.Match<Accumulator<A>>>
   parseArg(_arg: string): ArgOut<A> {
     return NonEmptyArray.of(Either.left(this))
   }
@@ -105,7 +38,69 @@ abstract class Accumulator<A> {
   }
 }
 
-namespace Accumulator {
+export namespace Accumulator {
+  export type Match<A> = Match.MatchFlag<A> | Match.MatchOption<A> | Match.MatchAmbiguous
+
+  export namespace Match {
+    export interface MatchFlag<A> {
+      readonly _tag: 'MatchFlag'
+      readonly next: A
+    }
+    export const MatchFlag = <A>(next: A): MatchFlag<A> => ({ _tag: 'MatchFlag', next })
+    export const isMatchFlag = <A>(match: Match<A>): match is MatchFlag<A> =>
+      match._tag === 'MatchFlag'
+
+    export interface MatchOption<A> {
+      readonly _tag: 'MatchOption'
+      readonly next: (str: string) => A
+    }
+    export const MatchOption = <A>(next: (str: string) => A): MatchOption<A> => ({
+      _tag: 'MatchOption',
+      next
+    })
+    export const isMatchOption = <A>(match: Match<A>): match is MatchOption<A> =>
+      match._tag === 'MatchOption'
+
+    export interface MatchAmbiguous {
+      readonly _tag: 'MatchAmbiguous'
+    }
+    export const MatchAmbiguous: MatchAmbiguous = { _tag: 'MatchAmbiguous' }
+
+    const match: Functor1<URI> = {
+      URI,
+      map: <A, B>(fa: Match<A>, f: (a: A) => B): Match<B> =>
+        pipe(
+          fa,
+          fold<A, Match<B>>({
+            onFlag: _ => MatchFlag(f(_)),
+            onOption: _ => MatchOption(flow(_, f)),
+            onAmbiguous: () => MatchAmbiguous
+          })
+        )
+    }
+
+    export const { map } = pipeable(match)
+
+    export function fold<A, B>({
+      onFlag,
+      onOption,
+      onAmbiguous
+    }: FoldArgs<A, B>): (fa: Match<A>) => B {
+      return fa =>
+        fa._tag === 'MatchFlag'
+          ? onFlag(fa.next)
+          : fa._tag === 'MatchOption'
+          ? onOption(fa.next)
+          : onAmbiguous()
+    }
+  }
+
+  interface FoldArgs<A, B> {
+    readonly onFlag: (a: A) => B
+    readonly onOption: (next: (str: string) => A) => B
+    readonly onAmbiguous: Lazy<B>
+  }
+
   /**
    * subclasses
    */
@@ -113,6 +108,10 @@ namespace Accumulator {
   class _Pure<A> extends Accumulator<A> {
     constructor(public value: Result<A>) {
       super()
+    }
+
+    parseOption(_name: Opts.Name): Maybe<Match<Accumulator<A>>> {
+      return Maybe.none
     }
 
     parseSub(_command: string): Maybe<(opts: string[]) => Either<Help, Result<A>>> {
@@ -130,6 +129,33 @@ namespace Accumulator {
   class _Ap<A, B> extends Accumulator<B> {
     constructor(public left: Accumulator<(a: A) => B>, public right: Accumulator<A>) {
       super()
+    }
+
+    parseOption(name: Opts.Name): Maybe<Match<Accumulator<B>>> {
+      const left = this.left.parseOption(name)
+      const right = this.right.parseOption(name)
+
+      if (Maybe.isSome(left) && Maybe.isNone(right)) {
+        return Maybe.some(
+          pipe(
+            left.value,
+            Match.map(_ => Ap(_, this.right))
+          )
+        )
+      }
+
+      if (Maybe.isNone(left) && Maybe.isSome(right)) {
+        return Maybe.some(
+          pipe(
+            right.value,
+            Match.map(_ => Ap(this.left, _))
+          )
+        )
+      }
+
+      if (Maybe.isNone(left) && Maybe.isNone(right)) return Maybe.none
+
+      return Maybe.some(Match.MatchAmbiguous)
     }
 
     parseArg(arg: string): ArgOut<B> {
@@ -195,13 +221,39 @@ namespace Accumulator {
     }
   }
   export type Ap<A, B> = _Ap<A, B>
-  export const Ap = <A, B>(left: Accumulator<(a: A) => B>, right: Accumulator<A>): Ap<A, B> =>
-    new _Ap(left, right)
+  export function Ap<A, B>(left: Accumulator<(a: A) => B>, right: Accumulator<A>): Ap<A, B> {
+    return new _Ap(left, right)
+  }
 
   // eslint-disable-next-line @typescript-eslint/class-name-casing
   export class _OrElse<A> extends Accumulator<A> {
     constructor(public left: Accumulator<A>, public right: Accumulator<A>) {
       super()
+    }
+
+    parseOption(name: Opts.Name): Maybe<Match<Accumulator<A>>> {
+      const left = this.left.parseOption(name)
+      const right = this.right.parseOption(name)
+
+      if (Maybe.isSome(left) && Maybe.isSome(right)) {
+        const matchLeft = left.value
+        const matchRight = right.value
+
+        if (Match.isMatchFlag(matchLeft) && Match.isMatchFlag(matchRight)) {
+          return Maybe.some(Match.MatchFlag(OrElse(matchLeft.next, matchRight.next)))
+        }
+
+        if (Match.isMatchOption(matchLeft) && Match.isMatchOption(matchRight)) {
+          return Maybe.some(Match.MatchOption(v => OrElse(matchLeft.next(v), matchRight.next(v))))
+        }
+
+        return Maybe.some(Match.MatchAmbiguous)
+      }
+
+      if (Maybe.isSome(left) && Maybe.isNone(right)) return left
+      if (Maybe.isNone(left) && Maybe.isSome(right)) return right
+
+      return Maybe.none
     }
 
     parseArg(arg: string): ArgOut<A> {
@@ -243,11 +295,52 @@ namespace Accumulator {
     }
   }
   export type OrElse<A> = _OrElse<A>
-  export const OrElse = <A>(left: Accumulator<A>, right: Accumulator<A>): OrElse<A> =>
-    new _OrElse(left, right)
+  export function OrElse<A>(left: Accumulator<A>, right: Accumulator<A>): OrElse<A> {
+    return new _OrElse(left, right)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-name-casing
+  class _Regular extends Accumulator<NonEmptyArray<string>> {
+    constructor(public names: Opts.Name[], public values: string[] = []) {
+      super()
+    }
+
+    parseOption(name: Opts.Name): Maybe<Match<Accumulator<NonEmptyArray<string>>>> {
+      return pipe(
+        this.names,
+        List.exists(_ => util.isDeepStrictEqual(_, name))
+      )
+        ? Maybe.some(Match.MatchOption(v => Regular(this.names, List.cons(v, this.values))))
+        : Maybe.none
+    }
+
+    parseSub(
+      _command: string
+    ): Maybe<(opts: string[]) => Either<Help, Result<NonEmptyArray<string>>>> {
+      return Maybe.none
+    }
+
+    get result(): Result<NonEmptyArray<string>> {
+      return pipe(
+        this.values,
+        List.reverse,
+        NonEmptyArray.fromArray,
+        Maybe.map(Result.success),
+        Maybe.getOrElse<Result<NonEmptyArray<string>>>(() => Result.fail)
+      )
+    }
+  }
+  export type Regular = _Regular
+  export function Regular(names: Opts.Name[], values: string[] = []): Regular {
+    return new _Regular(names, values)
+  }
 
   // eslint-disable-next-line @typescript-eslint/class-name-casing
   class _Argument extends Accumulator<string> {
+    parseOption(_name: Opts.Name): Maybe<Match<Accumulator<string>>> {
+      return Maybe.none
+    }
+
     parseArg(arg: string): ArgOut<string> {
       return NonEmptyArray.of(Either.right(Pure(Result.success(arg))))
     }
@@ -267,6 +360,10 @@ namespace Accumulator {
   class _Arguments extends Accumulator<NonEmptyArray<string>> {
     constructor(public stack: string[]) {
       super()
+    }
+
+    parseOption(_name: Opts.Name): Maybe<Match<Accumulator<NonEmptyArray<string>>>> {
+      return Maybe.none
     }
 
     parseArg(arg: string): ArgOut<NonEmptyArray<string>> {
@@ -295,12 +392,18 @@ namespace Accumulator {
     }
   }
   export type Arguments = _Arguments
-  export const Arguments = (stack: string[]): Arguments => new _Arguments(stack)
+  export function Arguments(stack: string[]): Arguments {
+    return new _Arguments(stack)
+  }
 
   // eslint-disable-next-line @typescript-eslint/class-name-casing
   class _Subcommand<A> extends Accumulator<A> {
     constructor(public name: string, public action: Parser<A>) {
       super()
+    }
+
+    parseOption(_name: Opts.Name): Maybe<Match<Accumulator<A>>> {
+      return Maybe.none
     }
 
     parseSub(command: string): Maybe<(opts: string[]) => Either<Help, Result<A>>> {
@@ -322,6 +425,10 @@ namespace Accumulator {
   class _Validate<A, B> extends Accumulator<B> {
     constructor(public a: Accumulator<A>, public f: (a: A) => Either<string[], B>) {
       super()
+    }
+
+    parseOption(name: Opts.Name): Maybe<Match<Accumulator<B>>> {
+      return pipe(this.a.parseOption(name), Maybe.map(Match.map(_ => Validate(_, this.f))))
     }
 
     parseArg(arg: string): ArgOut<B> {
@@ -348,10 +455,12 @@ namespace Accumulator {
     }
   }
   export type Validate<A, B> = _Validate<A, B>
-  export const Validate = <A, B>(
+  export function Validate<A, B>(
     a: Accumulator<A>,
     f: (a: A) => Either<string[], B>
-  ): Validate<A, B> => new _Validate(a, f)
+  ): Validate<A, B> {
+    return new _Validate(a, f)
+  }
 
   /**
    * helpers
@@ -371,7 +480,7 @@ namespace Accumulator {
         return fromSingle(opts.opt) as any
 
       case 'Repeated':
-        return repeated(opts.opt) as any
+        return fromRepeated(opts.opt) as any
 
       case 'Subcommand':
         return Subcommand(opts.command.name, Parser(opts.command))
@@ -381,17 +490,40 @@ namespace Accumulator {
     }
   }
 
-  const fromSingle = <A>(opt: Opts.Opt<A>): Accumulator<string> => {
+  function fromSingle<A>(opt: Opts.Opt<A>): Accumulator<string> {
     switch (opt._tag) {
+      case 'Regular':
+        return Regular(opt.names).map(NonEmptyArray.last)
+
       case 'Argument':
         return Argument
     }
   }
 
-  const repeated = <A>(opt: Opts.Opt<A>): Accumulator<NonEmptyArray<string>> => {
+  function fromRepeated<A>(opt: Opts.Opt<A>): Accumulator<NonEmptyArray<string>> {
     switch (opt._tag) {
+      case 'Regular':
+        return Regular(opt.names)
+
       case 'Argument':
         return Arguments([])
     }
   }
+}
+
+function squish<A>(argOut: ArgOut<A>): ArgOut<A> {
+  const [a, ...tail] = argOut
+  if (List.isEmpty(tail)) return argOut
+
+  const [b, ...rest] = tail
+
+  if (Either.isLeft(a) && Either.isLeft(b)) {
+    return squish(NonEmptyArray.cons(Either.left(Accumulator.OrElse(a.left, b.left)), rest))
+  }
+
+  if (Either.isRight(a) && Either.isRight(b)) {
+    return squish(NonEmptyArray.cons(Either.right(Accumulator.OrElse(a.right, b.right)), rest))
+  }
+
+  return NonEmptyArray.cons(a, squish(NonEmptyArray.cons(b, rest)))
 }

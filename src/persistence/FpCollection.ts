@@ -18,7 +18,6 @@ import { OptionalId, WithId, IndexSpecification } from '../models/MongoTypings'
 import { Logger } from '../services/Logger'
 import { Future, pipe, Maybe, Either } from '../utils/fp'
 
-export type FpCollection = ReturnType<typeof FpCollection>
 export const FpCollection = <A, O>(
   logger: Logger,
   collection: () => Future<Collection<O>>,
@@ -137,5 +136,8 @@ export const FpCollection = <A, O>(
     )
 })
 
-const decodeError = <A, B>(codec: t.Type<A, B>, u: unknown): Error =>
-  Error(`Couldn't decode value as ${codec.name}:\n${util.format(u)}`)
+export type FpCollection = ReturnType<typeof FpCollection>
+
+function decodeError<A, B>(codec: t.Type<A, B>, u: unknown): Error {
+  return Error(`Couldn't decode value as ${codec.name}:\n${util.format(u)}`)
+}

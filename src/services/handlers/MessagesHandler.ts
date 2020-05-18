@@ -1,14 +1,15 @@
 import { Message, Guild } from 'discord.js'
+import { parse } from 'shell-quote'
 
 import { CommandsHandler } from './CommandsHandler'
 import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
 import { Cli } from '../../commands/Cli'
-import { Command } from '../../commands/Command'
+import { Command } from '../../decline/Command'
 import { Commands } from '../../commands/Commands'
 import { Config } from '../../config/Config'
 import { TSnowflake } from '../../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either } from '../../utils/fp'
+import { Maybe, pipe, Future, List, Either, NonEmptyArray } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { StringUtils } from '../../utils/StringUtils'
 import { LogUtils } from '../../utils/LogUtils'
@@ -22,10 +23,8 @@ export const MessagesHandler = (
 ): ((message: Message) => Future<unknown>) => {
   const logger = Logger('MessagesHandler')
 
-  const regex = new RegExp(`^\\s*${config.cmdPrefix}(.*)$`, 'm')
-
   return message =>
-    discord.isSelf(message.author)
+    message.author.bot
       ? Future.unit
       : pipe(
           LogUtils.withAuthor(logger, 'debug', message)(message.content),
@@ -48,42 +47,42 @@ export const MessagesHandler = (
   }
 
   function command(message: Message): Maybe<Future<unknown>> {
-    return pipe(withoutPrefix(message.content), Maybe.chain(handleCommandWithRights(message)))
-  }
-
-  function withoutPrefix(msg: string): Maybe<string> {
     return pipe(
-      Maybe.fromNullable(msg.match(regex)),
-      Maybe.chain(_ => List.lookup(1, _))
+      parse(message.content),
+      List.filter(StringUtils.isString),
+      NonEmptyArray.fromArray,
+      Maybe.chain(([head, ...tail]) =>
+        pipe(
+          Maybe.some(head),
+          Maybe.filter(_ => _ === config.cmdPrefix),
+          Maybe.chain(_ => handleCommandWithRights(message, tail))
+        )
+      )
     )
   }
 
-  function handleCommandWithRights(message: Message): (rawCmd: string) => Maybe<Future<unknown>> {
-    return rawCmd => {
-      if (ChannelUtils.isDm(message.channel)) return Maybe.none
+  function handleCommandWithRights(message: Message, args: string[]): Maybe<Future<unknown>> {
+    if (ChannelUtils.isDm(message.channel)) return Maybe.none
 
-      const authorId = TSnowflake.wrap(message.author.id)
-      const isAdmin = pipe(
-        config.admins,
-        List.exists(_ => _ === authorId)
-      )
+    const authorId = TSnowflake.wrap(message.author.id)
+    const isAdmin = pipe(
+      config.admins,
+      List.exists(_ => _ === authorId)
+    )
 
-      const args = StringUtils.splitWords(rawCmd)
-
-      return Maybe.some(
-        isAdmin
-          ? parseCommand(message, args, cli.adminTextChannel)
-          : pipe(
-              deleteMessage(message),
-              Future.chain(_ =>
-                discord.sendPrettyMessage(
-                  message.author,
-                  'Gibier de potence, tu ne peux pas faire ça !'
-                )
+    return Maybe.some(
+      isAdmin
+        ? parseCommand(message, args, cli.adminTextChannel)
+        : pipe(
+            deleteMessage(message),
+            Future.chain(_ =>
+              discord.sendPrettyMessage(
+                message.author,
+                'Gibier de potence, tu ne peux pas faire ça !'
               )
             )
-      )
-    }
+          )
+    )
   }
 
   function deleteMessage(message: Message): Future<void> {

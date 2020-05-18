@@ -7,7 +7,13 @@ import * as _Task from 'fp-ts/lib/Task'
 import * as _TaskEither from 'fp-ts/lib/TaskEither'
 import * as _IO from 'fp-ts/lib/IO'
 import * as _IOEither from 'fp-ts/lib/IOEither'
-import { identity as _identity, flow as _flow, Predicate, Lazy } from 'fp-ts/lib/function'
+import {
+  identity as _identity,
+  flow as _flow,
+  not as _not,
+  Predicate,
+  Lazy
+} from 'fp-ts/lib/function'
 import { pipe as _pipe } from 'fp-ts/lib/pipeable'
 
 import { Do as _Do } from 'fp-ts-contrib/lib/Do'
@@ -36,7 +42,7 @@ export const List = {
   concat: <A>(a: A[], b: A[]): A[] => [...a, ...b],
 
   exists: <A>(predicate: Predicate<A>) => (l: A[]): boolean =>
-    pipe(l, List.findIndex(predicate), Maybe.isSome)
+    _pipe(l, List.findIndex(predicate), _Option.isSome)
 }
 
 /**
@@ -55,11 +61,11 @@ export const Dict = {
   insertOrUpdateAt: <K extends string, A>(k: K, a: Lazy<A>, update: (a: A) => A) => (
     record: Record<K, A>
   ): Record<K, A> =>
-    pipe(
+    _pipe(
       _Record.lookup(k, record),
       _Option.fold(
-        () => pipe(record, _Record.insertAt(k, a())),
-        _ => pipe(record, _Record.insertAt(k, update(_)))
+        () => _pipe(record, _Record.insertAt(k, a())),
+        _ => _pipe(record, _Record.insertAt(k, update(_)))
       )
     )
 }
@@ -72,7 +78,7 @@ export const Maybe = {
   ..._Option,
 
   toArray: <A>(opt: _Option.Option<A>): A[] =>
-    pipe(
+    _pipe(
       opt,
       _Option.fold(
         () => [],
@@ -97,7 +103,7 @@ export const Try = {
   apply: <A>(a: Lazy<A>): Try<A> => Either.tryCatch(a, unknownToError),
 
   get: <A>(t: Try<A>): A =>
-    pipe(
+    _pipe(
       t,
       Either.getOrElse<Error, A>(e => {
         throw e
@@ -130,10 +136,10 @@ export const Future = {
 
   recover: <A>(...matchers: [(e: Error) => boolean, A][]): ((future: Future<A>) => Future<A>) =>
     Task.map(res =>
-      pipe(
+      _pipe(
         matchers,
         _Array.reduce(res, (acc, [cond, a]) =>
-          pipe(
+          _pipe(
             acc,
             _Either.orElse(e => (cond(e) ? _Either.right(a) : _Either.left(e)))
           )
@@ -141,7 +147,7 @@ export const Future = {
       )
     ),
 
-  runUnsafe: <A>(future: Future<A>): Promise<A> => pipe(future, _Task.map(Try.get))()
+  runUnsafe: <A>(future: Future<A>): Promise<A> => _pipe(future, _Task.map(Try.get))()
 }
 
 /**
@@ -169,6 +175,8 @@ export const IO = {
 export const identity = _identity
 
 export const flow = _flow
+
+export const not = _not
 
 /**
  * pipe

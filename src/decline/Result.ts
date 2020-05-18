@@ -126,15 +126,17 @@ export namespace Result {
     }
   }
 
-  export const mapValidated = <A, B>(f: (a: A) => Either<string[], B>) => (
-    res: Result<A>
-  ): Result<B> =>
-    Result(
-      pipe(
-        res.get,
-        Either.map(_ => () => pipe(_(), Either.chain(f)))
+  export function mapValidated<A, B>(
+    f: (a: A) => Either<string[], B>
+  ): (res: Result<A>) => Result<B> {
+    return res =>
+      Result(
+        pipe(
+          res.get,
+          Either.map(_ => () => pipe(_(), Either.chain(f)))
+        )
       )
-    )
+  }
 
   export const { map, ap, alt } = pipeable(result)
 
@@ -143,8 +145,11 @@ export namespace Result {
    */
   export const success = <A>(value: A): Result<A> => Result(Either.right(() => Either.right(value)))
 
-  export const failure = (reversedMissing: Missing[]): Result<never> =>
-    Result(Either.left(Failure(reversedMissing)))
+  export function failure(reversedMissing: Missing[]): Result<never> {
+    return Result(Either.left(Failure(reversedMissing)))
+  }
+
+  export const fail: Result<never> = failure([])
 
   export const missingCommand = (command: string): Result<never> =>
     failure([Missing({ commands: [command] })])

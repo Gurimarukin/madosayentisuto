@@ -11,7 +11,7 @@ import {
 import { PartialLogger } from '../Logger'
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
-import { callsEmoji } from '../../Application'
+import { callsEmoji } from '../../global'
 import { AddRemove } from '../../models/AddRemove'
 import { Calls } from '../../models/guildState/Calls'
 import { Future, pipe, Maybe } from '../../utils/fp'

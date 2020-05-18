@@ -16,8 +16,6 @@ import { MessageReactionsHandler } from './services/handlers/MessageReactionsHan
 import { GuildStateService } from './services/GuildStateService'
 import { IO, pipe, Either, Future, Try, List } from './utils/fp'
 
-export const callsEmoji = '🔔' // :bell:
-
 export const Application = (config: Config, discord: DiscordConnector): Future<void> => {
   const Logger = PartialLogger(config, discord)
   const logger = Logger('Application')

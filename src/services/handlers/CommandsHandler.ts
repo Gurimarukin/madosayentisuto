@@ -1,10 +1,10 @@
-import { Guild, Message, TextChannel, Role } from 'discord.js'
+import { Guild, Message, MessageAttachment, TextChannel, Role } from 'discord.js'
 import { sequenceT } from 'fp-ts/lib/Apply'
 
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
-import { callsEmoji } from '../../Application'
+import { callsEmoji } from '../../global'
 import { Commands } from '../../commands/Commands'
 import { TSnowflake } from '../../models/TSnowflake'
 import { ValidatedNea } from '../../models/ValidatedNea'
@@ -13,8 +13,6 @@ import { ChannelUtils } from '../../utils/ChannelUtils'
 import { Future, pipe, Either, Maybe, NonEmptyArray, flow } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
 import { StringUtils } from '../../utils/StringUtils'
-
-export type CommandsHandler = ReturnType<typeof CommandsHandler>
 
 export const CommandsHandler = (
   Logger: PartialLogger,
@@ -86,6 +84,28 @@ export const CommandsHandler = (
                         )
                   )
                 )
+            )
+          )
+        )
+
+      case 'Say':
+        return pipe(
+          deleteMessage(message),
+          Future.chain(_ =>
+            discord.sendMessage(
+              message.channel,
+              command.message,
+              command.attachments.map(_ => new MessageAttachment(_))
+            )
+          ),
+          Future.chain(
+            Maybe.fold<Message, Future<unknown>>(
+              () =>
+                discord.sendPrettyMessage(
+                  message.author,
+                  'En fait, je ne peux pas envoyer de messages dans ce salon.'
+                ),
+              _ => Future.unit
             )
           )
         )
@@ -168,8 +188,11 @@ export const CommandsHandler = (
   }
 }
 
-const fromOption = <E, A>(ma: Maybe<A>, e: E): ValidatedNea<E, A> =>
-  pipe(
+export type CommandsHandler = ReturnType<typeof CommandsHandler>
+
+function fromOption<E, A>(ma: Maybe<A>, e: E): ValidatedNea<E, A> {
+  return pipe(
     ma,
     ValidatedNea.fromOption(() => e)
   )
+}

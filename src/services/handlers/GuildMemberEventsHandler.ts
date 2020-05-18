@@ -106,8 +106,10 @@ export const GuildMemberEventsHandler = (
   }
 }
 
-const goodbyeChannel = (guild: Guild): Maybe<TextChannel> =>
-  pipe(
+const ordChannel = Ord.contramap((_: TextChannel) => _.position)(Ord.ordNumber)
+
+function goodbyeChannel(guild: Guild): Maybe<TextChannel> {
+  return pipe(
     Maybe.fromNullable(guild.systemChannel),
     Maybe.alt(() =>
       pipe(
@@ -118,15 +120,7 @@ const goodbyeChannel = (guild: Guild): Maybe<TextChannel> =>
       )
     )
   )
-
-const ordChannel = Ord.contramap((_: TextChannel) => _.position)(Ord.ordNumber)
-
-const randomLeaveMessage = (member: GuildMember): IO<string> =>
-  pipe(
-    randomInt(0, leaveMessages.length - 1),
-    IO.rightIO,
-    IO.map(_ => leaveMessages[_](`**${member.user.tag}**`))
-  )
+}
 
 const leaveMessages: ((member: string) => string)[] = [
   _ => `${_} est parti parce qu'il en avait marre de vous.`,
@@ -137,3 +131,11 @@ const leaveMessages: ((member: string) => string)[] = [
   _ => `Ne jamais faire confiance à ${_}.`,
   _ => `Je vais emmener ${_} aux quais-abattoirs...`
 ]
+
+function randomLeaveMessage(member: GuildMember): IO<string> {
+  return pipe(
+    randomInt(0, leaveMessages.length - 1),
+    IO.rightIO,
+    IO.map(_ => leaveMessages[_](`**${member.user.tag}**`))
+  )
+}

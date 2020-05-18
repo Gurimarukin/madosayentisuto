@@ -6,6 +6,7 @@ devDependencies:
   '@types/jest': 25.2.1
   '@types/mongodb': 3.5.11
   '@types/node': 13.13.2
+  '@types/shell-quote': 1.6.2
   '@types/ws': 7.2.4
   '@typescript-eslint/eslint-plugin': 2.29.0_68aa0cf1893d5414e11aa7fe89753d25
   '@typescript-eslint/parser': 2.29.0_eslint@6.8.0+typescript@3.8.3
@@ -27,6 +28,7 @@ devDependencies:
   prettier: 2.0.5
   redux: 4.0.5
   rxjs: 6.5.5
+  shell-quote: 1.7.2
   ts-jest: 25.4.0_jest@25.4.0+typescript@3.8.3
   ts-node: 8.9.0_typescript@3.8.3
   tslib: 1.11.1
@@ -642,6 +644,10 @@ packages:
     dev: true
     resolution:
       integrity: sha512-5qOlnZscTn4xxM5MeGXAMOsIOIKIbh9e85zJWfBRVPlRMEVawzoPhINYbRGkBZCI8LxvBe7tJCdWiarA99OZfQ==
+  /@types/shell-quote/1.6.2:
+    dev: true
+    resolution:
+      integrity: sha512-M5TzVuMwWzRtBqwa/edfiC5xOzuJHjrWVLrPishrLWCN83tTdDxjgMYWJG+anqP01ofPemijD2iWHzPqgkQ+wA==
   /@types/stack-utils/1.0.1:
     dev: true
     resolution:
@@ -4503,6 +4509,10 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==
+  /shell-quote/1.7.2:
+    dev: true
+    resolution:
+      integrity: sha512-mRz/m/JVscCrkMyPqHc/bczi3OQHkLTqXHEFu0zDhK/qfv3UcOA4SVmRCLmos4bhjr9ekVQubj/R7waKapmiQg==
   /shellwords/0.1.1:
     dev: true
     optional: true
@@ -5393,6 +5403,7 @@ specifiers:
   '@types/jest': ^25.1.4
   '@types/mongodb': ^3.5.11
   '@types/node': ^13.9.8
+  '@types/shell-quote': ^1.6.2
   '@types/ws': ^7.2.3
   '@typescript-eslint/eslint-plugin': ^2.26.0
   '@typescript-eslint/parser': ^2.26.0
@@ -5414,6 +5425,7 @@ specifiers:
   prettier: ^2.0.2
   redux: ^4.0.5
   rxjs: ^6.5.5
+  shell-quote: ^1.7.2
   ts-jest: ^25.3.0
   ts-node: ^8.8.1
   tslib: ^1.11.1

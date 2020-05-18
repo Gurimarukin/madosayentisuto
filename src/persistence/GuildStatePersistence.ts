@@ -6,8 +6,6 @@ import { GuildState } from '../models/guildState/GuildState'
 import { PartialLogger } from '../services/Logger'
 import { Future, pipe, Maybe, Either, Task, List } from '../utils/fp'
 
-export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>
-
 export const GuildStatePersistence = (
   Logger: PartialLogger,
   mongoCollection: (dbName: string) => Future<Collection>
@@ -35,3 +33,5 @@ export const GuildStatePersistence = (
       )
   }
 }
+
+export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>

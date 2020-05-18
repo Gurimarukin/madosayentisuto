@@ -56,7 +56,7 @@ export namespace Help {
       ? List.empty
       : pipe(
           commands,
-          List.chain(command => List.of(withIndent(4, command.name))),
+          List.chain(command => [withIndent(4, command.name), withIndent(8, command.header)]),
           texts => pipe(List.cons('Subcommands:', texts), StringUtils.mkString('\n'), List.of)
         )
 
@@ -69,7 +69,7 @@ export namespace Help {
       errors: List.empty,
       prefix: NonEmptyArray.of(parser.name),
       usage: pipe(Usage.fromOpts(parser.opts), List.chain(Usage.show)),
-      body: List.concat(optionsHelp, commandHelp)
+      body: List.cons(parser.header, List.concat(optionsHelp, commandHelp))
     }
   }
 
@@ -114,7 +114,7 @@ export namespace Help {
     }
   }
 
-  const commandList = (opts: Opts<unknown>): Command<unknown>[] => {
+  function commandList(opts: Opts<unknown>): Command<unknown>[] {
     switch (opts._tag) {
       case 'App':
         return List.concat(commandList(opts.f), commandList(opts.a))
@@ -133,8 +133,12 @@ export namespace Help {
     }
   }
 
-  const detail = (opts: Opts<unknown>): string[] =>
-    pipe(
+  const eqDeepStrict: Eq<[Opts.Opt<unknown>, boolean]> = fromEquals((a, b) =>
+    util.isDeepStrictEqual(a, b)
+  )
+
+  function detail(opts: Opts<unknown>): string[] {
+    return pipe(
       optionList(opts),
       Maybe.getOrElse<[Opts.Opt<unknown>, boolean][]>(() => List.empty),
       List.uniq(eqDeepStrict),
@@ -145,8 +149,9 @@ export namespace Help {
           List.empty
       )
     )
+  }
 
-  const withIndent = (indent: number, str: string): string => {
+  function withIndent(indent: number, str: string): string {
     const tab = ' '.repeat(indent)
     return pipe(
       str.split('\n'),
@@ -155,7 +160,3 @@ export namespace Help {
     )
   }
 }
-
-const eqDeepStrict: Eq<[Opts.Opt<unknown>, boolean]> = fromEquals((a, b) =>
-  util.isDeepStrictEqual(a, b)
-)

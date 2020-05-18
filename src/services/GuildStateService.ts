@@ -12,8 +12,6 @@ import { GuildStatePersistence } from '../persistence/GuildStatePersistence'
 import { pipe, Maybe, Future, flow, Do } from '../utils/fp'
 import { ChannelUtils } from '../utils/ChannelUtils'
 
-export type GuildStateService = ReturnType<typeof GuildStateService>
-
 export const GuildStateService = (
   Logger: PartialLogger,
   guildStatePersistence: GuildStatePersistence,
@@ -83,3 +81,5 @@ export const GuildStateService = (
     )
   }
 }
+
+export type GuildStateService = ReturnType<typeof GuildStateService>

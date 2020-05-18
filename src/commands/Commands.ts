@@ -1,6 +1,10 @@
 import { TSnowflake } from '../models/TSnowflake'
 
-export type Commands = Commands.CallsInit | Commands.DefaultRoleGet | Commands.DefaultRoleSet
+export type Commands =
+  | Commands.CallsInit
+  | Commands.DefaultRoleGet
+  | Commands.DefaultRoleSet
+  | Commands.Say
 
 export namespace Commands {
   // calls
@@ -28,5 +32,17 @@ export namespace Commands {
   export const DefaultRoleSet = (role: TSnowflake): DefaultRoleSet => ({
     _tag: 'DefaultRoleSet',
     role
+  })
+
+  // says
+  export interface Say {
+    readonly _tag: 'Say'
+    readonly attachments: string[]
+    readonly message: string
+  }
+  export const Say = (attachments: string[], message: string): Say => ({
+    _tag: 'Say',
+    attachments,
+    message
   })
 }

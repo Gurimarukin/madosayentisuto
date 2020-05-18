@@ -162,8 +162,8 @@ export const VoiceStateUpdatesHandler = (
 }
 
 // ensures that we have the same id
-const getMember = (voiceStateUpdate: VoiceStateUpdate): Maybe<GuildMember> =>
-  pipe(
+function getMember(voiceStateUpdate: VoiceStateUpdate): Maybe<GuildMember> {
+  return pipe(
     Maybe.fromNullable(voiceStateUpdate.oldState.member),
     Maybe.chain(u =>
       pipe(
@@ -172,10 +172,12 @@ const getMember = (voiceStateUpdate: VoiceStateUpdate): Maybe<GuildMember> =>
       )
     )
   )
+}
 
-const peopleInPublicVocalChans = (guild: Guild): GuildMember[] =>
-  pipe(
+function peopleInPublicVocalChans(guild: Guild): GuildMember[] {
+  return pipe(
     guild.channels.cache.array(),
     List.filter(_ => ChannelUtils.isPublic(_) && ChannelUtils.isVoice(_)),
     List.chain(_ => _.members.array())
   )
+}
