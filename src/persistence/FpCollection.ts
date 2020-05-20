@@ -28,7 +28,7 @@ export const FpCollection = <A, O>(
     options?: { session?: ClientSession }
   ): Future<void> =>
     pipe(
-      Future.fromIOEither(logger.debug('ensureIndexes')),
+      Future.fromIOEither(logger.debug('Ensuring indexes')),
       Future.chain(_ => collection()),
       Future.chain(_ => Future.apply(() => _.createIndexes(indexSpecs, options)))
     ),
