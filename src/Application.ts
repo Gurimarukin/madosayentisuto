@@ -14,7 +14,7 @@ import { MessagesHandler } from './services/handlers/MessagesHandler'
 import { VoiceStateUpdatesHandler } from './services/handlers/VoiceStateUpdatesHandler'
 import { MessageReactionsHandler } from './services/handlers/MessageReactionsHandler'
 import { GuildStateService } from './services/GuildStateService'
-import { IO, pipe, Either, Future, Try, List } from './utils/fp'
+import { IO, pipe, Either, Future, Try, List, Task } from './utils/fp'
 
 export const Application = (config: Config, discord: DiscordConnector): Future<void> => {
   const Logger = PartialLogger(config, discord)
@@ -32,10 +32,15 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
   const persistences: { ensureIndexes: () => Future<void> }[] = [guildStatePersistence]
   const ensureIndexes = (): Future<void> =>
     pipe(
-      persistences,
-      List.map(_ => _.ensureIndexes()),
-      Future.sequence,
-      Future.map(_ => {})
+      Future.fromIOEither(logger.info('Ensuring indexes')),
+      Future.chain(_ =>
+        pipe(
+          persistences,
+          List.map(_ => _.ensureIndexes()),
+          Future.sequence,
+          Future.map(_ => {})
+        )
+      )
     )
 
   const guildStateService = GuildStateService(Logger, guildStatePersistence, discord)
@@ -50,14 +55,14 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
 
   return pipe(
     discord.setActivity(config.playingActivity),
-    Future.chain(_ => ensureIndexes()),
+    Future.chain(_ => retryIfFailed(ensureIndexes())),
     Future.chain(_ =>
       pipe(
         subscribe(messagesHandler, discord.messages()),
         IO.chain(_ => subscribe(voiceStateUpdatesHandler, discord.voiceStateUpdates())),
         IO.chain(_ => subscribe(guildMemberEventsHandler, discord.guildMemberEvents())),
         IO.chain(_ => subscribe(messageReactionsHandler, discord.messageReactions())),
-        IO.chain(_ => logger.info('application started')),
+        IO.chain(_ => logger.info('Started')),
         Future.fromIOEither
       )
     )
@@ -80,6 +85,23 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
         Either.fold<Error, unknown, void>(
           e => pipe(logger.error(e.stack), IO.runUnsafe),
           _ => {}
+        )
+      )
+    )
+  }
+
+  function retryIfFailed(f: Future<void>, firstTime = true): Future<void> {
+    return pipe(
+      f,
+      Task.chain(
+        Either.fold(
+          e =>
+            pipe(
+              firstTime ? logger.error('Failed to ensure indexes:\n', e) : IO.unit,
+              IO.chain(_ => IO.runFuture(Task.delay(5 * 60 * 1000)(retryIfFailed(f, false)))),
+              Future.fromIOEither
+            ),
+          _ => Future.fromIOEither(logger.info('Ensured indexes'))
         )
       )
     )
