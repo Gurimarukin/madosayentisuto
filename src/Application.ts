@@ -54,7 +54,7 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
   const messageReactionsHandler = MessageReactionsHandler(Logger, guildStateService, discord)
 
   return pipe(
-    discord.setActivity(config.playingActivity),
+    discord.setActivity(config.activity),
     Future.chain(_ => retryIfFailed(ensureIndexes())),
     Future.chain(_ =>
       pipe(
