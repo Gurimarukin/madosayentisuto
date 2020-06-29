@@ -1,8 +1,9 @@
 import { Cli } from '../../src/commands/Cli'
+import { ActivityConfig } from '../../src/config/Config'
 import { Command } from '../../src/decline/Command'
 import { Commands } from '../../src/commands/Commands'
 import { TSnowflake } from '../../src/models/TSnowflake'
-import { Either, pipe } from '../../src/utils/fp'
+import { Either, pipe, Maybe } from '../../src/utils/fp'
 import { StringUtils } from '../../src/utils/StringUtils'
 
 describe('Cli.adminTextChannel', () => {
@@ -12,22 +13,25 @@ describe('Cli.adminTextChannel', () => {
     expect(pipe(cmd, Command.parse([]))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
-          `Missing expected command (calls or defaultRole or say)
+          `Missing expected command (calls or defaultRole or say or activity)
           |
           |Usage:
           |    okb calls
           |    okb defaultRole
           |    okb say
+          |    okb activity
           |
           |Everyone pays!
           |
           |Subcommands:
           |    calls
-          |        When someone joins a voice channel and he is the only one connected to a public voice channel.
+          |        When someone starts a call in a voice channel.
           |    defaultRole
           |        Role for new members of this server.
           |    say
-          |        Make the bot say something.`
+          |        Make the bot say something.
+          |    activity
+          |        Bot's activity status.`
         )
       )
     )
@@ -41,16 +45,19 @@ describe('Cli.adminTextChannel', () => {
           |    okb calls
           |    okb defaultRole
           |    okb say
+          |    okb activity
           |
           |Everyone pays!
           |
           |Subcommands:
           |    calls
-          |        When someone joins a voice channel and he is the only one connected to a public voice channel.
+          |        When someone starts a call in a voice channel.
           |    defaultRole
           |        Role for new members of this server.
           |    say
-          |        Make the bot say something.`
+          |        Make the bot say something.
+          |    activity
+          |        Bot's activity status.`
         )
       )
     )
@@ -186,6 +193,74 @@ describe('Cli.adminTextChannel', () => {
     expect(
       pipe(cmd, Command.parse(['say', '--attach', 'file1', '-a', 'file2', 'hello world']))
     ).toStrictEqual(Either.right(Commands.Say(['file1', 'file2'], 'hello world')))
+  })
+
+  it('should show help for "activity"', () => {
+    expect(pipe(cmd, Command.parse(['activity']))).toStrictEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Missing expected command (get or unset or set or refresh)
+          |
+          |Usage:
+          |    okb activity get
+          |    okb activity unset
+          |    okb activity set
+          |    okb activity refresh
+          |
+          |Bot's activity status.
+          |
+          |Subcommands:
+          |    get
+          |        Get the current Bot's activity.
+          |    unset
+          |        Unset Bot's activity status.
+          |    set
+          |        Set Bot's activity status.
+          |    refresh
+          |        Refresh Bot's activity status.`
+        )
+      )
+    )
+  })
+
+  it('should parse "activity"', () => {
+    expect(pipe(cmd, Command.parse(['activity', 'get']))).toStrictEqual(
+      Either.right(Commands.ActivityGet)
+    )
+
+    expect(pipe(cmd, Command.parse(['activity', 'unset']))).toStrictEqual(
+      Either.right(Commands.ActivityUnset)
+    )
+
+    expect(
+      pipe(cmd, Command.parse(['activity', 'set', '--type', 'watch', 'brûler ton navire']))
+    ).toStrictEqual(
+      Either.right(
+        Commands.ActivitySet(Maybe.some(ActivityConfig('WATCHING', 'brûler ton navire')))
+      )
+    )
+
+    expect(
+      pipe(cmd, Command.parse(['activity', 'set', '-t', 'watch', 'brûler ton navire']))
+    ).toStrictEqual(
+      Either.right(
+        Commands.ActivitySet(Maybe.some(ActivityConfig('WATCHING', 'brûler ton navire')))
+      )
+    )
+
+    expect(pipe(cmd, Command.parse(['activity', 'set', 'brûler ton navire']))).toStrictEqual(
+      Either.left(
+        StringUtils.stripMargins(
+          `Usage: okb activity set --type <play|stream|listen|watch> <message>
+          |
+          |Set Bot's activity status.`
+        )
+      )
+    )
+
+    expect(pipe(cmd, Command.parse(['activity', 'refresh']))).toStrictEqual(
+      Either.right(Commands.ActivitySet(Maybe.none))
+    )
   })
 
   it('should correctly prioritize failures', () => {

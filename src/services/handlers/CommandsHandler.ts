@@ -109,6 +109,15 @@ export const CommandsHandler = (
             )
           )
         )
+
+      case 'ActivityGet':
+        return Future.unit
+
+      case 'ActivityUnset':
+        return Future.unit
+
+      case 'ActivitySet':
+        return Future.unit
     }
   }
 
