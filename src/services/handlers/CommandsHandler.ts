@@ -149,7 +149,10 @@ export const CommandsHandler = (
         )
 
       case 'ActivityRefresh':
-        return Future.unit
+        return pipe(
+          deleteMessage(message),
+          Future.chain(_ => activityService.setActivityFromPersistence())
+        )
     }
   }
 
