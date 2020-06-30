@@ -3,18 +3,16 @@ import { sequenceT } from 'fp-ts/lib/Apply'
 import { nonEmptyArray } from 'io-ts-types/lib/nonEmptyArray'
 
 import { ConfReader } from './ConfReader'
-import { ActivityTypeBot } from '../models/ActivityTypeBot'
 import { LogLevelOrOff } from '../models/LogLevel'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
-import { IO, pipe, Either, NonEmptyArray, flow, Maybe } from '../utils/fp'
+import { IO, pipe, Either, NonEmptyArray, flow } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 
 export interface Config {
   readonly clientSecret: string
   readonly admins: NonEmptyArray<TSnowflake>
   readonly cmdPrefix: string
-  readonly activity: Maybe<ActivityConfig>
   readonly logger: LoggerConfig
   readonly db: DbConfig
 }
@@ -22,11 +20,10 @@ export function Config(
   clientSecret: string,
   admins: NonEmptyArray<TSnowflake>,
   cmdPrefix: string,
-  activity: Maybe<ActivityConfig>,
   logger: LoggerConfig,
   db: DbConfig
 ): Config {
-  return { clientSecret, admins, cmdPrefix, activity, logger, db }
+  return { clientSecret, admins, cmdPrefix, logger, db }
 }
 
 export namespace Config {
@@ -52,33 +49,11 @@ function readConfig(reader: ConfReader): ValidatedNea<string, Config> {
       reader(t.string)('clientSecret'),
       reader(nonEmptyArray(TSnowflake.codec))('admins'),
       reader(t.string)('cmdPrefix'),
-      readActivityConfig(reader),
       readLoggerConfig(reader),
       readDbConfig(reader)
     ),
     Either.map(_ => Config(..._))
   )
-}
-
-/**
- * ActivityConfig
- */
-export function ActivityConfig(type: ActivityTypeBot, name: string): ActivityConfig {
-  return { type, name }
-}
-
-export namespace ActivityConfig {
-  export const codec = t.strict({
-    type: ActivityTypeBot.codec,
-    name: t.string
-  })
-}
-
-export type ActivityConfig = t.TypeOf<typeof ActivityConfig.codec>
-
-const nullableActivitConfig = t.union([ActivityConfig.codec, t.null])
-function readActivityConfig(reader: ConfReader): ValidatedNea<string, Maybe<ActivityConfig>> {
-  return pipe(reader(nullableActivitConfig)('activity'), Either.map(Maybe.fromNullable))
 }
 
 /**

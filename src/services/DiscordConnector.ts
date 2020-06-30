@@ -30,7 +30,8 @@ import {
 } from 'discord.js'
 import { fromEventPattern } from 'rxjs'
 
-import { Config, ActivityConfig } from '../config/Config'
+import { Config } from '../config/Config'
+import { Activity } from '../models/Activity'
 import { AddRemove } from '../models/AddRemove'
 import { GuildId } from '../models/GuildId'
 import { ObservableE } from '../models/ObservableE'
@@ -149,7 +150,7 @@ export function DiscordConnector(client: Client) {
     /**
      * Write
      */
-    setActivity: (activity: Maybe<ActivityConfig>): Future<Maybe<Presence>> =>
+    setActivity: (activity: Maybe<Activity>): Future<Maybe<Presence>> =>
       pipe(
         Maybe.fromNullable(client.user),
         Maybe.fold(

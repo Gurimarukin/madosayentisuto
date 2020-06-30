@@ -1,5 +1,5 @@
+import { Activity } from '../models/Activity'
 import { TSnowflake } from '../models/TSnowflake'
-import { ActivityConfig } from '../config/Config'
 import { Maybe } from '../utils/fp'
 
 export type Commands =
@@ -59,9 +59,9 @@ export namespace Commands {
 
   export interface ActivitySet {
     readonly _tag: 'ActivitySet'
-    readonly config: Maybe<ActivityConfig>
+    readonly config: Maybe<Activity>
   }
-  export function ActivitySet(config: Maybe<ActivityConfig>): ActivitySet {
+  export function ActivitySet(config: Maybe<Activity>): ActivitySet {
     return { _tag: 'ActivitySet', config }
   }
 }

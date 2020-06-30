@@ -6,7 +6,7 @@ import { Command } from '../decline/Command'
 import { Opts } from '../decline/Opts'
 import { Commands } from './Commands'
 import { callsEmoji } from '../global'
-import { ActivityConfig } from '../config/Config'
+import { Activity } from '../models/Activity'
 import { ActivityTypeBot } from '../models/ActivityTypeBot'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
@@ -134,9 +134,7 @@ const activitySet = Command({ name: 'set', header: "Set Bot's activity status." 
       }),
       Opts.param(Either.right)('message')
     ),
-    Opts.map(([type, name]) =>
-      Commands.ActivitySet(Maybe.some(ActivityConfig(fromRaw(type), name)))
-    )
+    Opts.map(([type, name]) => Commands.ActivitySet(Maybe.some(Activity(fromRaw(type), name))))
   )
 )
 
