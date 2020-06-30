@@ -25,6 +25,14 @@ export function ActivityService(
 
     setActivityFromPersistence,
 
+    unsetActivity: (): Future<void> =>
+      pipe(
+        upsertActivity(Maybe.none),
+        Future.chain(_ => Future.fromIOEither(logger.info('Unsetting activity'))),
+        Future.chain(_ => discord.setActivity(Maybe.none)),
+        Future.map(_ => {})
+      ),
+
     scheduleRefreshActivity: (): IO<void> => {
       const now = new Date()
       const tomorrow8am = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 8)
