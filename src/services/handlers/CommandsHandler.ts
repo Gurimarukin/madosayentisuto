@@ -1,6 +1,7 @@
 import { Guild, Message, MessageAttachment, TextChannel, Role } from 'discord.js'
 import { sequenceT } from 'fp-ts/lib/Apply'
 
+import { ActivityService } from '../ActivityService'
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
@@ -9,7 +10,6 @@ import { Commands } from '../../commands/Commands'
 import { TSnowflake } from '../../models/TSnowflake'
 import { ValidatedNea } from '../../models/ValidatedNea'
 import { Calls } from '../../models/guildState/Calls'
-import { BotStatePersistence } from '../../persistence/BotStatePersistence'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { Future, pipe, Either, Maybe, NonEmptyArray, flow } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
@@ -17,8 +17,8 @@ import { StringUtils } from '../../utils/StringUtils'
 
 export const CommandsHandler = (
   Logger: PartialLogger,
-  botStatePersistence: BotStatePersistence,
   discord: DiscordConnector,
+  activityService: ActivityService,
   guildStateService: GuildStateService
 ) => {
   const logger = Logger('CommandsHandler')
@@ -115,12 +115,12 @@ export const CommandsHandler = (
       case 'ActivityGet':
         return pipe(
           deleteMessage(message),
-          Future.chain(_ => botStatePersistence.find()),
+          Future.chain(_ => activityService.getActivity()),
           Future.chain(_ =>
             discord.sendPrettyMessage(
               message.author,
               pipe(
-                _.activity,
+                _,
                 Maybe.fold(
                   () => 'Pas de statut',
                   _ =>

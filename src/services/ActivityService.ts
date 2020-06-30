@@ -1,5 +1,6 @@
 import { PartialLogger } from './Logger'
 import { DiscordConnector } from './DiscordConnector'
+import { Activity } from '../models/Activity'
 import { BotStatePersistence } from '../persistence/BotStatePersistence'
 import { IO, pipe, Task, Future, Maybe } from '../utils/fp'
 
@@ -13,6 +14,12 @@ export function ActivityService(
   const logger = Logger('ActivityService')
 
   return {
+    getActivity: (): Future<Maybe<Activity>> =>
+      pipe(
+        botStatePersistence.find(),
+        Future.map(({ activity }) => activity)
+      ),
+
     setActivityFromPersistence,
 
     scheduleRefreshActivity: (): IO<void> => {
