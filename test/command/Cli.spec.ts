@@ -3,7 +3,7 @@ import { Cli } from '../../src/commands/Cli'
 import { Commands } from '../../src/commands/Commands'
 import { Activity } from '../../src/models/Activity'
 import { TSnowflake } from '../../src/models/TSnowflake'
-import { Either, pipe, Maybe } from '../../src/utils/fp'
+import { Either, pipe } from '../../src/utils/fp'
 import { StringUtils } from '../../src/utils/StringUtils'
 
 describe('Cli.adminTextChannel', () => {
@@ -234,15 +234,11 @@ describe('Cli.adminTextChannel', () => {
 
     expect(
       pipe(cmd, Command.parse(['activity', 'set', '--type', 'watch', 'brûler ton navire']))
-    ).toStrictEqual(
-      Either.right(Commands.ActivitySet(Maybe.some(Activity('WATCHING', 'brûler ton navire'))))
-    )
+    ).toStrictEqual(Either.right(Commands.ActivitySet(Activity('WATCHING', 'brûler ton navire'))))
 
     expect(
       pipe(cmd, Command.parse(['activity', 'set', '-t', 'watch', 'brûler ton navire']))
-    ).toStrictEqual(
-      Either.right(Commands.ActivitySet(Maybe.some(Activity('WATCHING', 'brûler ton navire'))))
-    )
+    ).toStrictEqual(Either.right(Commands.ActivitySet(Activity('WATCHING', 'brûler ton navire'))))
 
     expect(pipe(cmd, Command.parse(['activity', 'set', 'brûler ton navire']))).toStrictEqual(
       Either.left(
@@ -255,7 +251,7 @@ describe('Cli.adminTextChannel', () => {
     )
 
     expect(pipe(cmd, Command.parse(['activity', 'refresh']))).toStrictEqual(
-      Either.right(Commands.ActivitySet(Maybe.none))
+      Either.right(Commands.ActivityRefresh)
     )
   })
 

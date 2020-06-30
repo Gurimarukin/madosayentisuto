@@ -10,7 +10,7 @@ import { Activity } from '../models/Activity'
 import { ActivityTypeBot } from '../models/ActivityTypeBot'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
-import { pipe, Either, NonEmptyArray, Maybe } from '../utils/fp'
+import { pipe, Either, NonEmptyArray } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 
 type AdminTextChannel =
@@ -21,6 +21,7 @@ type AdminTextChannel =
   | Commands.ActivityGet
   | Commands.ActivityUnset
   | Commands.ActivitySet
+  | Commands.ActivityRefresh
 
 /**
  * calls
@@ -134,12 +135,12 @@ const activitySet = Command({ name: 'set', header: "Set Bot's activity status." 
       }),
       Opts.param(Either.right)('message')
     ),
-    Opts.map(([type, name]) => Commands.ActivitySet(Maybe.some(Activity(fromRaw(type), name))))
+    Opts.map(([type, name]) => Commands.ActivitySet(Activity(fromRaw(type), name)))
   )
 )
 
 const activityRefresh = Command({ name: 'refresh', header: "Refresh Bot's activity status." })(
-  Opts.pure(Commands.ActivitySet(Maybe.none))
+  Opts.pure(Commands.ActivityRefresh)
 )
 
 const activity = Command({

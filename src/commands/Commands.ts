@@ -1,6 +1,5 @@
 import { Activity } from '../models/Activity'
 import { TSnowflake } from '../models/TSnowflake'
-import { Maybe } from '../utils/fp'
 
 export type Commands =
   | Commands.CallsInit
@@ -10,6 +9,7 @@ export type Commands =
   | Commands.ActivityGet
   | Commands.ActivityUnset
   | Commands.ActivitySet
+  | Commands.ActivityRefresh
 
 export namespace Commands {
   // calls
@@ -59,9 +59,14 @@ export namespace Commands {
 
   export interface ActivitySet {
     readonly _tag: 'ActivitySet'
-    readonly config: Maybe<Activity>
+    readonly activity: Activity
   }
-  export function ActivitySet(config: Maybe<Activity>): ActivitySet {
-    return { _tag: 'ActivitySet', config }
+  export function ActivitySet(activity: Activity): ActivitySet {
+    return { _tag: 'ActivitySet', activity }
   }
+
+  export interface ActivityRefresh {
+    readonly _tag: 'ActivityRefresh'
+  }
+  export const ActivityRefresh: ActivityRefresh = { _tag: 'ActivityRefresh' }
 }

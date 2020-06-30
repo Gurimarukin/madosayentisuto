@@ -140,6 +140,12 @@ export const CommandsHandler = (
         return Future.unit
 
       case 'ActivitySet':
+        return pipe(
+          deleteMessage(message),
+          Future.chain(_ => activityService.setActivity(command.activity))
+        )
+
+      case 'ActivityRefresh':
         return Future.unit
     }
   }

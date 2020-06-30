@@ -3,6 +3,7 @@ import { DiscordConnector } from './DiscordConnector'
 import { Activity } from '../models/Activity'
 import { BotStatePersistence } from '../persistence/BotStatePersistence'
 import { IO, pipe, Task, Future, Maybe } from '../utils/fp'
+import { BotState } from '../models/BotState'
 
 const refreshActivityEvery = 24 * 60 * 60 * 1000
 
@@ -14,10 +15,12 @@ export function ActivityService(
   const logger = Logger('ActivityService')
 
   return {
-    getActivity: (): Future<Maybe<Activity>> =>
+    getActivity,
+
+    setActivity: (activity: Activity): Future<void> =>
       pipe(
-        botStatePersistence.find(),
-        Future.map(({ activity }) => activity)
+        upsertActivity(Maybe.some(activity)),
+        Future.chain(_ => discordSetActivity(activity))
       ),
 
     setActivityFromPersistence,
@@ -33,6 +36,30 @@ export function ActivityService(
         IO.runFuture
       )
     }
+  }
+
+  function getActivity(): Future<Maybe<Activity>> {
+    return pipe(
+      botStatePersistence.find(),
+      Future.map(({ activity }) => activity)
+    )
+  }
+
+  function discordSetActivity(activity: Activity): Future<void> {
+    return pipe(
+      logger.info(`Setting activity: ${activity.type} ${activity.name}`),
+      Future.fromIOEither,
+      Future.chain(_ => discord.setActivity(Maybe.some(activity))),
+      Future.map(_ => {})
+    )
+  }
+
+  function upsertActivity(activity: Maybe<Activity>) {
+    return pipe(
+      botStatePersistence.find(),
+      Future.map(BotState.Lens.activity.set(activity)),
+      Future.chain(botStatePersistence.upsert)
+    )
   }
 
   function setRefreshActivityInterval(): IO<void> {
@@ -51,22 +78,13 @@ export function ActivityService(
     )
   }
 
-  function setActivityFromPersistence(): Future<void> {
+  function setActivityFromPersistence(): Future<unknown> {
     return pipe(
-      botStatePersistence.find(),
-      Future.chain(_ =>
-        pipe(
-          _.activity,
-          Maybe.fold(
-            () => pipe(logger.info('No activity to set'), Future.fromIOEither),
-            activity =>
-              pipe(
-                logger.info(`Setting activity: ${activity.type} ${activity.name}`),
-                Future.fromIOEither,
-                Future.chain(_ => discord.setActivity(Maybe.some(activity))),
-                Future.map(_ => {})
-              )
-          )
+      getActivity(),
+      Future.chain(
+        Maybe.fold(
+          () => pipe(logger.info('No activity to set'), Future.fromIOEither),
+          discordSetActivity
         )
       )
     )
