@@ -1,9 +1,9 @@
 import { PartialLogger } from './Logger'
 import { DiscordConnector } from './DiscordConnector'
 import { Activity } from '../models/Activity'
+import { BotState } from '../models/BotState'
 import { BotStatePersistence } from '../persistence/BotStatePersistence'
 import { IO, pipe, Task, Future, Maybe } from '../utils/fp'
-import { BotState } from '../models/BotState'
 
 const refreshActivityEvery = 24 * 60 * 60 * 1000
 
