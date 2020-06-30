@@ -1,3 +1,4 @@
+import { Activity } from '../models/Activity'
 import { TSnowflake } from '../models/TSnowflake'
 
 export type Commands =
@@ -5,6 +6,10 @@ export type Commands =
   | Commands.DefaultRoleGet
   | Commands.DefaultRoleSet
   | Commands.Say
+  | Commands.ActivityGet
+  | Commands.ActivityUnset
+  | Commands.ActivitySet
+  | Commands.ActivityRefresh
 
 export namespace Commands {
   // calls
@@ -13,11 +18,9 @@ export namespace Commands {
     readonly channel: TSnowflake // channel where to notify calls
     readonly role: TSnowflake // role to notify
   }
-  export const CallsInit = (channel: TSnowflake, role: TSnowflake): CallsInit => ({
-    _tag: 'CallsInit',
-    channel,
-    role
-  })
+  export function CallsInit(channel: TSnowflake, role: TSnowflake): CallsInit {
+    return { _tag: 'CallsInit', channel, role }
+  }
 
   // defaultRole
   export interface DefaultRoleGet {
@@ -29,10 +32,9 @@ export namespace Commands {
     readonly _tag: 'DefaultRoleSet'
     readonly role: TSnowflake
   }
-  export const DefaultRoleSet = (role: TSnowflake): DefaultRoleSet => ({
-    _tag: 'DefaultRoleSet',
-    role
-  })
+  export function DefaultRoleSet(role: TSnowflake): DefaultRoleSet {
+    return { _tag: 'DefaultRoleSet', role }
+  }
 
   // says
   export interface Say {
@@ -40,9 +42,31 @@ export namespace Commands {
     readonly attachments: string[]
     readonly message: string
   }
-  export const Say = (attachments: string[], message: string): Say => ({
-    _tag: 'Say',
-    attachments,
-    message
-  })
+  export function Say(attachments: string[], message: string): Say {
+    return { _tag: 'Say', attachments, message }
+  }
+
+  // activity
+  export interface ActivityGet {
+    readonly _tag: 'ActivityGet'
+  }
+  export const ActivityGet: ActivityGet = { _tag: 'ActivityGet' }
+
+  export interface ActivityUnset {
+    readonly _tag: 'ActivityUnset'
+  }
+  export const ActivityUnset: ActivityUnset = { _tag: 'ActivityUnset' }
+
+  export interface ActivitySet {
+    readonly _tag: 'ActivitySet'
+    readonly activity: Activity
+  }
+  export function ActivitySet(activity: Activity): ActivitySet {
+    return { _tag: 'ActivitySet', activity }
+  }
+
+  export interface ActivityRefresh {
+    readonly _tag: 'ActivityRefresh'
+  }
+  export const ActivityRefresh: ActivityRefresh = { _tag: 'ActivityRefresh' }
 }

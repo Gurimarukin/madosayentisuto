@@ -1,0 +1,5 @@
+- moderators/owner
+- polls
+- generalize bot
+- cache state?
+- images

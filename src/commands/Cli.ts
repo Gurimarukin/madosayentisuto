@@ -1,11 +1,13 @@
-// import * as t from 'io-ts'
+import * as t from 'io-ts'
 import { sequenceT } from 'fp-ts/lib/Apply'
-// import { failure } from 'io-ts/lib/PathReporter'
+import { failure } from 'io-ts/lib/PathReporter'
 
 import { Command } from '../decline/Command'
-import { Commands } from './Commands'
 import { Opts } from '../decline/Opts'
+import { Commands } from './Commands'
 import { callsEmoji } from '../global'
+import { Activity } from '../models/Activity'
+import { ActivityTypeBot } from '../models/ActivityTypeBot'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
 import { pipe, Either, NonEmptyArray } from '../utils/fp'
@@ -16,7 +18,14 @@ type AdminTextChannel =
   | Commands.DefaultRoleGet
   | Commands.DefaultRoleSet
   | Commands.Say
+  | Commands.ActivityGet
+  | Commands.ActivityUnset
+  | Commands.ActivitySet
+  | Commands.ActivityRefresh
 
+/**
+ * calls
+ */
 const callsInit = Command({
   name: 'init',
   header: StringUtils.stripMargins(
@@ -32,18 +41,23 @@ const callsInit = Command({
     Opts.map(_ => Commands.CallsInit(..._))
   )
 )
+
 const calls = Command({
   name: 'calls',
-  header:
-    'When someone joins a voice channel and he is the only one connected to a public voice channel.'
+  header: 'When someone starts a call in a voice channel.'
 })(Opts.subcommand(callsInit))
 
+/**
+ * defaultRole
+ */
 const defaultRoleGet = Command({ name: 'get', header: 'Show the default role for this server.' })(
-  pipe(Opts.pure(Commands.DefaultRoleGet))
+  Opts.pure(Commands.DefaultRoleGet)
 )
+
 const defaultRoleSet = Command({ name: 'set', header: 'Set the default role for this server.' })(
   pipe(Opts.param(decodeMention)('role'), Opts.map(Commands.DefaultRoleSet))
 )
+
 const defaultRole = Command({
   name: 'defaultRole',
   header: 'Role for new members of this server.'
@@ -54,6 +68,9 @@ const defaultRole = Command({
   )
 )
 
+/**
+ * say
+ */
 const attach = pipe(
   Opts.options(Either.right)({
     long: 'attach',
@@ -63,6 +80,7 @@ const attach = pipe(
   }),
   Opts.orEmpty
 )
+
 const say = Command({
   name: 'say',
   header: 'Make the bot say something.'
@@ -70,6 +88,70 @@ const say = Command({
   pipe(
     sequenceT(Opts.opts)(attach, Opts.param(Either.right)('message')),
     Opts.map(_ => Commands.Say(..._))
+  )
+)
+
+/**
+ * activity
+ */
+const activityGet = Command({ name: 'get', header: "Get the current Bot's activity." })(
+  pipe(Opts.pure(Commands.ActivityGet))
+)
+
+const activityUnset = Command({ name: 'unset', header: "Unset Bot's activity status." })(
+  Opts.pure(Commands.ActivityUnset)
+)
+
+const rawActivityCodec = t.union([
+  t.literal('play'),
+  t.literal('stream'),
+  t.literal('listen'),
+  t.literal('watch')
+])
+type RawActivity = t.TypeOf<typeof rawActivityCodec>
+function fromRaw(raw: RawActivity): ActivityTypeBot {
+  switch (raw) {
+    case 'play':
+      return 'PLAYING'
+    case 'stream':
+      return 'STREAMING'
+    case 'listen':
+      return 'LISTENING'
+    case 'watch':
+      return 'WATCHING'
+  }
+}
+const activitySet = Command({ name: 'set', header: "Set Bot's activity status." })(
+  pipe(
+    sequenceT(Opts.opts)(
+      Opts.option(codecToDecode(rawActivityCodec))({
+        long: 'type',
+        help: 'Type of activity.',
+        metavar: pipe(
+          rawActivityCodec.types.map(_ => _.value),
+          StringUtils.mkString('|')
+        ),
+        short: 't'
+      }),
+      Opts.param(Either.right)('message')
+    ),
+    Opts.map(([type, name]) => Commands.ActivitySet(Activity(fromRaw(type), name)))
+  )
+)
+
+const activityRefresh = Command({ name: 'refresh', header: "Refresh Bot's activity status." })(
+  Opts.pure(Commands.ActivityRefresh)
+)
+
+const activity = Command({
+  name: 'activity',
+  header: "Bot's activity status."
+})(
+  pipe(
+    Opts.subcommand(activityGet),
+    Opts.alt<AdminTextChannel>(() => Opts.subcommand(activityUnset)),
+    Opts.alt<AdminTextChannel>(() => Opts.subcommand(activitySet)),
+    Opts.alt<AdminTextChannel>(() => Opts.subcommand(activityRefresh))
   )
 )
 
@@ -81,7 +163,8 @@ export function Cli(prefix: string) {
       pipe(
         Opts.subcommand(calls),
         Opts.alt<AdminTextChannel>(() => Opts.subcommand(defaultRole)),
-        Opts.alt<AdminTextChannel>(() => Opts.subcommand(say))
+        Opts.alt<AdminTextChannel>(() => Opts.subcommand(say)),
+        Opts.alt<AdminTextChannel>(() => Opts.subcommand(activity))
       )
     )
   }
@@ -106,6 +189,6 @@ function decodeTextChannel(u: string): ValidatedNea<string, TSnowflake> {
     : Either.left(NonEmptyArray.of(`Invalid channel: ${u}`))
 }
 
-// function codecToDecode<I, A>(codec: t.Decoder<I, A>): (u: I) => ValidatedNea<string, A> {
-//   return u => pipe(codec.decode(u), Either.mapLeft(failure), ValidatedNea.fromEmptyErrors)
-// }
+function codecToDecode<I, A>(codec: t.Decoder<I, A>): (u: I) => ValidatedNea<string, A> {
+  return u => pipe(codec.decode(u), Either.mapLeft(failure), ValidatedNea.fromEmptyErrors)
+}

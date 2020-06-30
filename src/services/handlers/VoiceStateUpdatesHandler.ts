@@ -105,7 +105,7 @@ export const VoiceStateUpdatesHandler = (
             pipe(
               discord.sendMessage(
                 calls.channel,
-                `Ha ha ! **@${member.user.tag}** appelle **#${channel.name}**... ${calls.role} doit payer !`
+                `Ha ha ! **@${member.displayName}** appelle **#${channel.name}**... ${calls.role} doit payer !`
               ),
               Future.chain(
                 Maybe.fold(

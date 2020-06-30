@@ -1,6 +1,7 @@
 import { Guild, Message, MessageAttachment, TextChannel, Role } from 'discord.js'
 import { sequenceT } from 'fp-ts/lib/Apply'
 
+import { ActivityService } from '../ActivityService'
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
@@ -17,6 +18,7 @@ import { StringUtils } from '../../utils/StringUtils'
 export const CommandsHandler = (
   Logger: PartialLogger,
   discord: DiscordConnector,
+  activityService: ActivityService,
   guildStateService: GuildStateService
 ) => {
   const logger = Logger('CommandsHandler')
@@ -108,6 +110,48 @@ export const CommandsHandler = (
               _ => Future.unit
             )
           )
+        )
+
+      case 'ActivityGet':
+        return pipe(
+          deleteMessage(message),
+          Future.chain(_ => activityService.getActivity()),
+          Future.chain(_ =>
+            discord.sendPrettyMessage(
+              message.author,
+              pipe(
+                _,
+                Maybe.fold(
+                  () => 'Pas de statut',
+                  _ =>
+                    StringUtils.stripMargins(
+                      `Statut
+                      |\`\`\`
+                      |${JSON.stringify(_, null, 2)}
+                      |\`\`\``
+                    )
+                )
+              )
+            )
+          )
+        )
+
+      case 'ActivityUnset':
+        return pipe(
+          deleteMessage(message),
+          Future.chain(_ => activityService.unsetActivity())
+        )
+
+      case 'ActivitySet':
+        return pipe(
+          deleteMessage(message),
+          Future.chain(_ => activityService.setActivity(command.activity))
+        )
+
+      case 'ActivityRefresh':
+        return pipe(
+          deleteMessage(message),
+          Future.chain(_ => activityService.setActivityFromPersistence())
         )
     }
   }

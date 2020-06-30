@@ -2,7 +2,6 @@
   "clientSecret": "",
   "admins": [],
   "cmdPrefix": "okb",
-  "playingActivity": "jeanplank.blbl.ch",
   "logger": {
     "consoleLevel": "info",
     "discordDM": {

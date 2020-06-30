@@ -1,5 +1,4 @@
 import {
-  ActivityOptions,
   Channel,
   Client,
   DiscordAPIError,
@@ -32,6 +31,7 @@ import {
 import { fromEventPattern } from 'rxjs'
 
 import { Config } from '../config/Config'
+import { Activity } from '../models/Activity'
 import { AddRemove } from '../models/AddRemove'
 import { GuildId } from '../models/GuildId'
 import { ObservableE } from '../models/ObservableE'
@@ -150,14 +150,22 @@ export function DiscordConnector(client: Client) {
     /**
      * Write
      */
-    setActivity: (name: string, options?: ActivityOptions): Future<Maybe<Presence>> =>
+    setActivity: (activity: Maybe<Activity>): Future<Maybe<Presence>> =>
       pipe(
         Maybe.fromNullable(client.user),
         Maybe.fold(
           () => Future.right(Maybe.none),
-          _ =>
+          user =>
             pipe(
-              Future.apply(() => _.setActivity(name, options)),
+              Future.apply(() =>
+                pipe(
+                  activity,
+                  Maybe.fold(
+                    () => user.setActivity(),
+                    ({ type, name }) => user.setActivity(name, { type })
+                  )
+                )
+              ),
               Future.map(Maybe.fromNullable)
             )
         )

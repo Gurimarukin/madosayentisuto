@@ -5,7 +5,9 @@ import { Subscription } from 'rxjs'
 import { Cli } from './commands/Cli'
 import { Config } from './config/Config'
 import { ObservableE } from './models/ObservableE'
+import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
+import { ActivityService } from './services/ActivityService'
 import { DiscordConnector } from './services/DiscordConnector'
 import { PartialLogger } from './services/Logger'
 import { CommandsHandler } from './services/handlers/CommandsHandler'
@@ -27,6 +29,7 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
       Future.map(_ => _.db(config.db.dbName).collection(coll))
     )
 
+  const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
 
   const persistences: { ensureIndexes: () => Future<void> }[] = [guildStatePersistence]
@@ -43,19 +46,20 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
       )
     )
 
+  const activityService = ActivityService(Logger, botStatePersistence, discord)
   const guildStateService = GuildStateService(Logger, guildStatePersistence, discord)
 
   const cli = Cli(config.cmdPrefix)
 
-  const commandsHandler = CommandsHandler(Logger, discord, guildStateService)
+  const commandsHandler = CommandsHandler(Logger, discord, activityService, guildStateService)
   const messagesHandler = MessagesHandler(Logger, config, cli, discord, commandsHandler)
   const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, guildStateService, discord)
   const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, guildStateService, discord)
   const messageReactionsHandler = MessageReactionsHandler(Logger, guildStateService, discord)
 
   return pipe(
-    discord.setActivity(config.playingActivity),
-    Future.chain(_ => retryIfFailed(ensureIndexes())),
+    retryIfFailed(ensureIndexes()),
+    Future.chain(_ => activityService.setActivityFromPersistence()),
     Future.chain(_ =>
       pipe(
         subscribe(messagesHandler, discord.messages()),
