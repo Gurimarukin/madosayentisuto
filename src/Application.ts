@@ -51,7 +51,7 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
 
   const cli = Cli(config.cmdPrefix)
 
-  const commandsHandler = CommandsHandler(Logger, discord, guildStateService)
+  const commandsHandler = CommandsHandler(Logger, botStatePersistence, discord, guildStateService)
   const messagesHandler = MessagesHandler(Logger, config, cli, discord, commandsHandler)
   const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, guildStateService, discord)
   const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, guildStateService, discord)

@@ -9,6 +9,7 @@ import { Commands } from '../../commands/Commands'
 import { TSnowflake } from '../../models/TSnowflake'
 import { ValidatedNea } from '../../models/ValidatedNea'
 import { Calls } from '../../models/guildState/Calls'
+import { BotStatePersistence } from '../../persistence/BotStatePersistence'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { Future, pipe, Either, Maybe, NonEmptyArray, flow } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
@@ -16,6 +17,7 @@ import { StringUtils } from '../../utils/StringUtils'
 
 export const CommandsHandler = (
   Logger: PartialLogger,
+  botStatePersistence: BotStatePersistence,
   discord: DiscordConnector,
   guildStateService: GuildStateService
 ) => {
@@ -111,7 +113,28 @@ export const CommandsHandler = (
         )
 
       case 'ActivityGet':
-        return Future.unit
+        return pipe(
+          deleteMessage(message),
+          Future.chain(_ => botStatePersistence.find()),
+          Future.chain(_ =>
+            discord.sendPrettyMessage(
+              message.author,
+              pipe(
+                _.activity,
+                Maybe.fold(
+                  () => 'Pas de statut',
+                  _ =>
+                    StringUtils.stripMargins(
+                      `Statut
+                      |\`\`\`
+                      |${JSON.stringify(_, null, 2)}
+                      |\`\`\``
+                    )
+                )
+              )
+            )
+          )
+        )
 
       case 'ActivityUnset':
         return Future.unit
