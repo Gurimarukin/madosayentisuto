@@ -15,7 +15,9 @@
     "~run": "nodemon -e js,ts,json -x \"npm run --silent run\"",
     "test": "jest",
     "~test": "jest --watchAll",
-    "lint": "eslint --cache --fix --max-warnings 0 --ext .ts src/ test/"
+    "lint": "eslint --cache --fix --max-warnings 0 --ext .ts src/ test/",
+    "dc:graph": "depcruise --include-only '^src' --exclude 'fp\\.ts' --output-type dot . | dot -T svg > dependencygraph.svg",
+    "dc:osage": "depcruise --include-only '^src' --exclude 'fp\\.ts' --output-type dot . | osage -Gpack=16 -Gsplines=ortho -GpackMode=array2 -T svg > dependencygraph.svg"
   },
   "repository": {
     "type": "git",
@@ -40,6 +42,7 @@
     "@typescript-eslint/eslint-plugin": "^2.26.0",
     "@typescript-eslint/parser": "^2.26.0",
     "dateformat": "^3.0.3",
+    "dependency-cruiser": "^9.8.0",
     "discord.js": "^12.1.1",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.10.1",

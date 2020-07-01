@@ -124,15 +124,12 @@ function fromRaw(raw: RawActivity): ActivityTypeBot {
 const activitySet = Command({ name: 'set', header: "Set Bot's activity status." })(
   pipe(
     sequenceT(Opts.opts)(
-      Opts.option(codecToDecode(rawActivityCodec))({
-        long: 'type',
-        help: 'Type of activity.',
-        metavar: pipe(
+      Opts.param(codecToDecode(rawActivityCodec))(
+        pipe(
           rawActivityCodec.types.map(_ => _.value),
           StringUtils.mkString('|')
-        ),
-        short: 't'
-      }),
+        )
+      ),
       Opts.param(Either.right)('message')
     ),
     Opts.map(([type, name]) => Commands.ActivitySet(Activity(fromRaw(type), name)))
