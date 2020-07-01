@@ -233,17 +233,19 @@ describe('Cli.adminTextChannel', () => {
     )
 
     expect(
-      pipe(cmd, Command.parse(['activity', 'set', '--type', 'watch', 'brûler ton navire']))
+      pipe(cmd, Command.parse(['activity', 'set', 'watch', 'brûler ton navire']))
     ).toStrictEqual(Either.right(Commands.ActivitySet(Activity('WATCHING', 'brûler ton navire'))))
 
     expect(
-      pipe(cmd, Command.parse(['activity', 'set', '-t', 'watch', 'brûler ton navire']))
+      pipe(cmd, Command.parse(['activity', 'set', 'watch', 'brûler ton navire']))
     ).toStrictEqual(Either.right(Commands.ActivitySet(Activity('WATCHING', 'brûler ton navire'))))
 
-    expect(pipe(cmd, Command.parse(['activity', 'set', 'brûler ton navire']))).toStrictEqual(
+    expect(pipe(cmd, Command.parse(['activity', 'set']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
-          `Usage: okb activity set --type <play|stream|listen|watch> <message>
+          `Missing expected positional argument
+          |
+          |Usage: okb activity set <play|stream|listen|watch> <message>
           |
           |Set Bot's activity status.`
         )
