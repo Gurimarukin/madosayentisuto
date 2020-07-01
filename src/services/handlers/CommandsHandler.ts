@@ -137,16 +137,10 @@ export const CommandsHandler = (
         )
 
       case 'ActivityUnset':
-        return pipe(
-          deleteMessage(message),
-          Future.chain(_ => activityService.unsetActivity())
-        )
+        return activityService.unsetActivity()
 
       case 'ActivitySet':
-        return pipe(
-          deleteMessage(message),
-          Future.chain(_ => activityService.setActivity(command.activity))
-        )
+        return activityService.setActivity(command.activity)
 
       case 'ActivityRefresh':
         return pipe(
