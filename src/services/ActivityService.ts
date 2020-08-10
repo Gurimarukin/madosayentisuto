@@ -36,12 +36,19 @@ export function ActivityService(
     scheduleRefreshActivity: (): IO<void> => {
       const now = new Date()
       const tomorrow8am = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 8)
-      const untilTomorrow8am = tomorrow8am.getTime() - now.getTime()
+      const untilTomorrow8am = new Date(tomorrow8am.getTime() - now.getTime())
       return pipe(
-        setRefreshActivityInterval(),
-        Future.fromIOEither,
-        Task.delay(untilTomorrow8am),
-        IO.runFuture
+        logger.info(
+          `Scheduling activity refresh: 8am is in ${untilTomorrow8am.getHours()}h${untilTomorrow8am.getMinutes()}`
+        ),
+        IO.chain(_ =>
+          pipe(
+            setRefreshActivityInterval(),
+            Future.fromIOEither,
+            Task.delay(untilTomorrow8am.getTime()),
+            IO.runFuture
+          )
+        )
       )
     }
   }

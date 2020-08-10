@@ -62,7 +62,8 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
     Future.chain(_ => activityService.setActivityFromPersistence()),
     Future.chain(_ =>
       pipe(
-        subscribe(messagesHandler, discord.messages()),
+        activityService.scheduleRefreshActivity(),
+        IO.chain(_ => subscribe(messagesHandler, discord.messages())),
         IO.chain(_ => subscribe(voiceStateUpdatesHandler, discord.voiceStateUpdates())),
         IO.chain(_ => subscribe(guildMemberEventsHandler, discord.guildMemberEvents())),
         IO.chain(_ => subscribe(messageReactionsHandler, discord.messageReactions())),
