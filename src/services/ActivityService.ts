@@ -1,9 +1,9 @@
-import { PartialLogger } from './Logger'
-import { DiscordConnector } from './DiscordConnector'
 import { Activity } from '../models/Activity'
 import { BotState } from '../models/BotState'
 import { BotStatePersistence } from '../persistence/BotStatePersistence'
-import { IO, pipe, Task, Future, Maybe } from '../utils/fp'
+import { Future, IO, Maybe, Task, pipe } from '../utils/fp'
+import { DiscordConnector } from './DiscordConnector'
+import { PartialLogger } from './Logger'
 
 const refreshActivityEvery = 24 * 60 * 60 * 1000
 
@@ -39,7 +39,9 @@ export function ActivityService(
       const untilTomorrow8am = new Date(tomorrow8am.getTime() - now.getTime())
       return pipe(
         logger.info(
-          `Scheduling activity refresh: 8am is in ${untilTomorrow8am.getHours()}h${untilTomorrow8am.getMinutes()}`
+          `Scheduling activity refresh: 8am is in ${padded(untilTomorrow8am.getHours())}h${padded(
+            untilTomorrow8am.getMinutes()
+          )}`
         ),
         IO.chain(_ =>
           pipe(
@@ -107,3 +109,7 @@ export function ActivityService(
 }
 
 export type ActivityService = ReturnType<typeof ActivityService>
+
+function padded(n: number): string {
+  return n < 10 ? `0${n}` : `${n}`
+}
