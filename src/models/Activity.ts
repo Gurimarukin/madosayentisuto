@@ -1,4 +1,4 @@
-import * as t from 'io-ts'
+import * as C from 'io-ts/Codec'
 
 import { ActivityTypeBot } from './ActivityTypeBot'
 
@@ -7,10 +7,10 @@ export function Activity(type: ActivityTypeBot, name: string): Activity {
 }
 
 export namespace Activity {
-  export const codec = t.strict({
+  export const codec = C.type({
     type: ActivityTypeBot.codec,
-    name: t.string
+    name: C.string
   })
 }
 
-export type Activity = t.TypeOf<typeof Activity.codec>
+export type Activity = C.TypeOf<typeof Activity.codec>

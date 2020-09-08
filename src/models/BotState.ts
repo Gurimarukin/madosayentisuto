@@ -1,20 +1,21 @@
-import * as t from 'io-ts'
-import { optionFromNullable } from 'io-ts-types/lib/optionFromNullable'
+import * as C from 'io-ts/Codec'
 import { Lens as MonocleLens } from 'monocle-ts'
 
-import { Activity } from './Activity'
 import { Maybe } from '../utils/fp'
+import { Activity } from './Activity'
 
-export type BotState = t.TypeOf<typeof BotState.codec>
+export type BotState = C.TypeOf<typeof BotState.codec>
 
 export function BotState(activity: Maybe<Activity>): BotState {
   return { activity }
 }
 
 export namespace BotState {
-  export const codec = t.strict({
-    activity: optionFromNullable(Activity.codec)
+  export const codec = C.type({
+    activity: Maybe.codec(Activity.codec)
   })
+
+  export type Output = C.OutputOf<typeof codec>
 
   export const empty: BotState = BotState(Maybe.none)
 

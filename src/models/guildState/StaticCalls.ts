@@ -1,9 +1,9 @@
-import * as t from 'io-ts'
+import * as C from 'io-ts/Codec'
 
-import { Calls } from './Calls'
 import { TSnowflake } from '../TSnowflake'
+import { Calls } from './Calls'
 
-export type StaticCalls = t.TypeOf<typeof StaticCalls.codec>
+export type StaticCalls = C.TypeOf<typeof StaticCalls.codec>
 
 export function StaticCalls(
   message: TSnowflake,
@@ -14,7 +14,7 @@ export function StaticCalls(
 }
 
 export namespace StaticCalls {
-  export const codec = t.strict({
+  export const codec = C.type({
     message: TSnowflake.codec, // listen reactions to this message
     channel: TSnowflake.codec, // notify in this channel
     role: TSnowflake.codec // mention this role

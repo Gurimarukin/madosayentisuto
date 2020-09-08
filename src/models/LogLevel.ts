@@ -1,14 +1,14 @@
-import * as t from 'io-ts'
+import * as D from 'io-ts/Decoder'
 
 import { Colors } from '../utils/Colors'
 
 export namespace LogLevel {
-  export const codec = t.union([
-    t.literal('debug'),
-    t.literal('info'),
-    t.literal('warn'),
-    t.literal('error')
-  ])
+  export const decoder = D.union(
+    D.literal('debug'),
+    D.literal('info'),
+    D.literal('warn'),
+    D.literal('error')
+  )
 
   export const shellColor: Record<LogLevel, string> = {
     debug: '90',
@@ -25,10 +25,10 @@ export namespace LogLevel {
   }
 }
 
-export type LogLevel = t.TypeOf<typeof LogLevel.codec>
+export type LogLevel = D.TypeOf<typeof LogLevel.decoder>
 
 export namespace LogLevelOrOff {
-  export const codec = t.union([LogLevel.codec, t.literal('off')])
+  export const codec = D.union(LogLevel.decoder, D.literal('off'))
 
   export const value: Record<LogLevelOrOff, number> = {
     debug: 4,
@@ -39,4 +39,4 @@ export namespace LogLevelOrOff {
   }
 }
 
-export type LogLevelOrOff = t.TypeOf<typeof LogLevelOrOff.codec>
+export type LogLevelOrOff = D.TypeOf<typeof LogLevelOrOff.codec>
