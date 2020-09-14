@@ -14,9 +14,9 @@ import {
   MessageOptions,
   MessageReaction,
   PartialGuildMember,
-  Partialize,
   PartialTextBasedChannelFields,
   PartialUser,
+  Partialize,
   Presence,
   Role,
   RoleResolvable,
@@ -37,9 +37,9 @@ import { GuildId } from '../models/GuildId'
 import { ObservableE } from '../models/ObservableE'
 import { TSnowflake } from '../models/TSnowflake'
 import { VoiceStateUpdate } from '../models/VoiceStateUpdate'
-import { Maybe, pipe, Future, flow, List, IO } from '../utils/fp'
-import { Colors } from '../utils/Colors'
 import { ChannelUtils } from '../utils/ChannelUtils'
+import { Colors } from '../utils/Colors'
+import { Future, IO, List, Maybe, flow, pipe } from '../utils/fp'
 
 export type DiscordConnector = ReturnType<typeof DiscordConnector>
 
@@ -106,7 +106,7 @@ export function DiscordConnector(client: Client) {
       pipe(
         Future.apply(() => client.channels.fetch(TSnowflake.unwrap(channel))),
         Future.map(Maybe.some),
-        Future.recover<Maybe<Channel>>(),
+        Future.recover<Maybe<Channel>>(_ => Future.right(Maybe.none)),
         debugLeft('fetchChannel')
         //   [
         //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
@@ -118,7 +118,7 @@ export function DiscordConnector(client: Client) {
       pipe(
         Future.apply(() => client.users.fetch(TSnowflake.unwrap(user))),
         Future.map(Maybe.some),
-        Future.recover<Maybe<User>>(),
+        Future.recover<Maybe<User>>(_ => Future.right(Maybe.none)),
         debugLeft('fetchUser')
         //   [
         //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
@@ -130,7 +130,7 @@ export function DiscordConnector(client: Client) {
       pipe(
         Future.apply(() => guild.members.fetch(user)),
         Future.map(Maybe.some),
-        Future.recover<Maybe<GuildMember>>(),
+        Future.recover<Maybe<GuildMember>>(_ => Future.right(Maybe.none)),
         debugLeft('fetchMemberForUser')
       ),
 
@@ -221,10 +221,11 @@ export function DiscordConnector(client: Client) {
       pipe(
         Future.apply(() => message.delete()),
         Future.map(_ => true),
-        Future.recover<boolean>([
-          e => e instanceof DiscordAPIError && e.message === 'Missing Permissions',
-          false
-        ])
+        Future.recover(e =>
+          e instanceof DiscordAPIError && e.message === 'Missing Permissions'
+            ? Future.right(false)
+            : Future.left(e)
+        )
       ),
 
     joinVoiceChannel: (voiceChannel: VoiceChannel): Future<VoiceConnection> =>
@@ -245,10 +246,11 @@ export function DiscordConnector(client: Client) {
       return pipe(
         Future.apply(() => head.messages.fetch(message)),
         Future.map(Maybe.some),
-        Future.recover<Maybe<Message>>([
-          e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
-          Maybe.none
-        ]),
+        Future.recover<Maybe<Message>>(e =>
+          e instanceof DiscordAPIError && e.message === 'Unknown Message'
+            ? Future.right(Maybe.none)
+            : Future.left(e)
+        ),
         Future.chain(
           Maybe.fold(() => fetchMessageRec(message)(tail), flow(Maybe.some, Future.right))
         )
@@ -264,10 +266,11 @@ export function DiscordConnector(client: Client) {
     return pipe(
       Future.apply(() => channel.send(content, options)),
       Future.map(Maybe.some),
-      Future.recover<Maybe<Message>>([
-        e => e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user',
-        Maybe.none
-      ])
+      Future.recover<Maybe<Message>>(e =>
+        e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user'
+          ? Future.right(Maybe.none)
+          : Future.left(e)
+      )
     )
   }
 

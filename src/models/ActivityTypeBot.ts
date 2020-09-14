@@ -1,12 +1,16 @@
-import * as t from 'io-ts'
+import * as C from 'io-ts/Codec'
+import * as D from 'io-ts/Decoder'
+import * as E from 'io-ts/Encoder'
 
 export namespace ActivityTypeBot {
-  export const codec = t.union([
-    t.literal('PLAYING'),
-    t.literal('STREAMING'),
-    t.literal('LISTENING'),
-    t.literal('WATCHING')
-  ])
+  export const decoder = D.union(
+    C.literal('PLAYING'),
+    C.literal('STREAMING'),
+    C.literal('LISTENING'),
+    C.literal('WATCHING')
+  )
+  export const encoder = E.id<ActivityTypeBot>()
+  export const codec = C.make(decoder, encoder)
 }
 
-export type ActivityTypeBot = t.TypeOf<typeof ActivityTypeBot.codec>
+export type ActivityTypeBot = D.TypeOf<typeof ActivityTypeBot.decoder>

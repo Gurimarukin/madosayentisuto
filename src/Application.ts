@@ -1,49 +1,51 @@
-import { MongoClient, Collection } from 'mongodb'
-
 import { Subscription } from 'rxjs'
 
 import { Cli } from './commands/Cli'
 import { Config } from './config/Config'
+import { MsDuration } from './models/MsDuration'
 import { ObservableE } from './models/ObservableE'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { ActivityService } from './services/ActivityService'
 import { DiscordConnector } from './services/DiscordConnector'
-import { PartialLogger } from './services/Logger'
+import { GuildStateService } from './services/GuildStateService'
 import { CommandsHandler } from './services/handlers/CommandsHandler'
 import { GuildMemberEventsHandler } from './services/handlers/GuildMemberEventsHandler'
+import { MessageReactionsHandler } from './services/handlers/MessageReactionsHandler'
 import { MessagesHandler } from './services/handlers/MessagesHandler'
 import { VoiceStateUpdatesHandler } from './services/handlers/VoiceStateUpdatesHandler'
-import { MessageReactionsHandler } from './services/handlers/MessageReactionsHandler'
-import { GuildStateService } from './services/GuildStateService'
-import { IO, pipe, Either, Future, Try, List, Task } from './utils/fp'
+import { PartialLogger } from './services/Logger'
+import { Either, Future, IO, Try, pipe } from './utils/fp'
+import { FutureUtils } from './utils/FutureUtils'
+import { MongoPoolParty } from './utils/MongoPoolParty'
 
-export const Application = (config: Config, discord: DiscordConnector): Future<void> => {
-  const Logger = PartialLogger(config, discord)
+export const Application = (
+  Logger: PartialLogger,
+  config: Config,
+  discord: DiscordConnector,
+  mongo: MongoPoolParty
+): Future<void> => {
   const logger = Logger('Application')
 
-  const url = `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`
-  const mongoCollection = (coll: string): Future<Collection> =>
-    pipe(
-      Future.apply(() => new MongoClient(url, { useUnifiedTopology: true }).connect()),
-      Future.map(_ => _.db(config.db.dbName).collection(coll))
-    )
+  const { mongoCollection } = mongo
 
   const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
 
-  const persistences: { ensureIndexes: () => Future<void> }[] = [guildStatePersistence]
   const ensureIndexes = (): Future<void> =>
     pipe(
       Future.fromIOEither(logger.info('Ensuring indexes')),
       Future.chain(_ =>
         pipe(
-          persistences,
-          List.map(_ => _.ensureIndexes()),
-          Future.sequence,
+          [guildStatePersistence.ensureIndexes()],
+          Future.parallel,
           Future.map(_ => {})
         )
-      )
+      ),
+      FutureUtils.retryIfFailed(MsDuration.minutes(5), {
+        onFailure: e => logger.error('Failed to ensure indexes:\n', e),
+        onSuccess: _ => logger.info('Ensured indexes')
+      })
     )
 
   const activityService = ActivityService(Logger, botStatePersistence, discord)
@@ -58,7 +60,7 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
   const messageReactionsHandler = MessageReactionsHandler(Logger, guildStateService, discord)
 
   return pipe(
-    retryIfFailed(ensureIndexes()),
+    ensureIndexes(),
     Future.chain(_ => activityService.setActivityFromPersistence()),
     Future.chain(_ =>
       pipe(
@@ -90,23 +92,6 @@ export const Application = (config: Config, discord: DiscordConnector): Future<v
         Either.fold<Error, unknown, void>(
           e => pipe(logger.error(e.stack), IO.runUnsafe),
           _ => {}
-        )
-      )
-    )
-  }
-
-  function retryIfFailed(f: Future<void>, firstTime = true): Future<void> {
-    return pipe(
-      f,
-      Task.chain(
-        Either.fold(
-          e =>
-            pipe(
-              firstTime ? logger.error('Failed to ensure indexes:\n', e) : IO.unit,
-              IO.chain(_ => IO.runFuture(Task.delay(5 * 60 * 1000)(retryIfFailed(f, false)))),
-              Future.fromIOEither
-            ),
-          _ => Future.fromIOEither(logger.info('Ensured indexes'))
         )
       )
     )

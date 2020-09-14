@@ -1,23 +1,28 @@
 import { Collection } from 'mongodb'
 
-import { FpCollection } from './FpCollection'
 import { GuildId } from '../models/GuildId'
 import { GuildState } from '../models/guildState/GuildState'
 import { PartialLogger } from '../services/Logger'
-import { Future, pipe, Maybe, Either, Task, List } from '../utils/fp'
+import { Either, Future, List, Maybe, Task, pipe } from '../utils/fp'
+import { FpCollection } from './FpCollection'
 
 export const GuildStatePersistence = (
   Logger: PartialLogger,
-  mongoCollection: (dbName: string) => Future<Collection>
+  mongoCollection: (collName: string) => <A>(f: (coll: Collection) => Promise<A>) => Future<A>
 ) => {
   const logger = Logger('GuildStatePersistence')
-  const collection = FpCollection(logger, () => mongoCollection('guildState'), GuildState.codec)
+  const collection = FpCollection<GuildState, GuildState.Output>(
+    logger,
+    mongoCollection('guildState'),
+    GuildState.codec
+  )
 
   return {
     ensureIndexes: (): Future<void> =>
       collection.ensureIndexes([{ key: { id: -1 }, unique: true }]),
 
-    find: (id: GuildId): Future<Maybe<GuildState>> => collection.findOne({ id }),
+    find: (id: GuildId): Future<Maybe<GuildState>> =>
+      collection.findOne({ id: GuildId.unwrap(id) }),
 
     findAll: (): Future<GuildId[]> =>
       pipe(
@@ -28,7 +33,7 @@ export const GuildStatePersistence = (
 
     upsert: (id: GuildId, state: GuildState): Future<boolean> =>
       pipe(
-        collection.updateOne({ id }, state, { upsert: true }),
+        collection.updateOne({ id: GuildId.unwrap(id) }, state, { upsert: true }),
         Future.map(_ => _.modifiedCount + _.upsertedCount === 1)
       )
   }

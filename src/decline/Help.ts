@@ -1,12 +1,13 @@
 import util from 'util'
+
 import { sequenceT } from 'fp-ts/lib/Apply'
 import { Eq, fromEquals } from 'fp-ts/lib/Eq'
 
+import { List, Maybe, NonEmptyArray, pipe } from '../utils/fp'
+import { StringUtils } from '../utils/StringUtils'
 import { Command } from './Command'
 import { Opts } from './Opts'
 import { Usage } from './Usage'
-import { NonEmptyArray, pipe, List, Maybe } from '../utils/fp'
-import { StringUtils } from '../utils/StringUtils'
 
 export interface Help {
   readonly errors: string[]
@@ -26,7 +27,7 @@ export namespace Help {
 
   export const withPrefix = (prefix: string[]) => (help: Help): Help => ({
     ...help,
-    prefix: pipe(prefix, List.reduceRight(help.prefix, List.cons))
+    prefix: pipe(prefix, List.reduceRight(help.prefix, NonEmptyArray.cons))
   })
 
   export const stringify = (help: Help): string => {

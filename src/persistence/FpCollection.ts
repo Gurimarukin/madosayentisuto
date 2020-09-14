@@ -1,143 +1,150 @@
-import * as t from 'io-ts'
-import util from 'util'
+import * as C from 'io-ts/Codec'
+import * as D from 'io-ts/Decoder'
 import {
   ClientSession,
   Collection,
+  CollectionInsertManyOptions,
   CollectionInsertOneOptions,
   Cursor,
   FilterQuery,
-  InsertOneWriteOpResult,
   FindOneOptions,
+  InsertOneWriteOpResult,
+  InsertWriteOpResult,
+  OptionalId,
   ReplaceOneOptions,
   ReplaceWriteOpResult,
   UpdateOneOptions,
-  UpdateWriteOpResult
+  UpdateWriteOpResult,
+  WithId
 } from 'mongodb'
 
-import { OptionalId, WithId, IndexSpecification } from '../models/MongoTypings'
+import { IndexSpecification } from '../models/MongoTypings'
 import { Logger } from '../services/Logger'
-import { Future, pipe, Maybe, Either } from '../utils/fp'
-
-export const FpCollection = <A, O>(
-  logger: Logger,
-  collection: () => Future<Collection<O>>,
-  codec: t.Type<A, OptionalId<O>>
-) => ({
-  ensureIndexes: (
-    indexSpecs: IndexSpecification<A>[],
-    options?: { session?: ClientSession }
-  ): Future<void> =>
-    pipe(
-      Future.fromIOEither(logger.debug('Ensuring indexes')),
-      Future.chain(_ => collection()),
-      Future.chain(_ => Future.apply(() => _.createIndexes(indexSpecs, options)))
-    ),
-
-  insertOne: (
-    doc: A,
-    options?: CollectionInsertOneOptions
-  ): Future<InsertOneWriteOpResult<WithId<O>>> => {
-    const encoded = codec.encode(doc)
-    return pipe(
-      collection(),
-      Future.chain(_ => Future.apply(() => _.insertOne(encoded, options))),
-      Future.chain(res =>
-        pipe(
-          Future.fromIOEither(logger.debug('inserted', encoded)),
-          Future.map(_ => res)
-        )
-      )
-    )
-  },
-
-  updateOne: (
-    filter: FilterQuery<O>,
-    doc: A,
-    options?: UpdateOneOptions
-  ): Future<UpdateWriteOpResult> => {
-    const encoded = codec.encode(doc)
-    return pipe(
-      collection(),
-      Future.chain(_ => Future.apply(() => _.updateOne(filter, { $set: encoded }, options))),
-      Future.chain(res =>
-        pipe(
-          Future.fromIOEither(logger.debug('updated', encoded)),
-          Future.map(_ => res)
-        )
-      )
-    )
-  },
-
-  replaceOne: (
-    filter: FilterQuery<O>,
-    doc: A,
-    options?: ReplaceOneOptions
-  ): Future<ReplaceWriteOpResult> => {
-    const encoded = codec.encode(doc)
-    return pipe(
-      collection(),
-      Future.chain(_ => Future.apply(() => _.replaceOne(filter, encoded as O, options))),
-      Future.chain(res =>
-        pipe(
-          Future.fromIOEither(logger.debug('upserted', encoded)),
-          Future.map(_ => res)
-        )
-      )
-    )
-  },
-
-  count: (filter: FilterQuery<O>): Future<number> =>
-    pipe(
-      collection(),
-      Future.chain(_ => Future.apply(() => _.countDocuments(filter)))
-    ),
-
-  findOne: (filter: FilterQuery<O>, options?: FindOneOptions): Future<Maybe<A>> =>
-    pipe(
-      collection(),
-      Future.chain(_ => Future.apply(() => _.findOne(filter, options))),
-      Future.map(Maybe.fromNullable),
-      Future.chain(
-        Maybe.fold(
-          () => Future.right(Maybe.none),
-          u =>
-            pipe(
-              codec.decode(u),
-              Either.bimap(_ => decodeError(codec, u), Maybe.some),
-              Future.fromEither
-            )
-        )
-      )
-    ),
-
-  find: (query: FilterQuery<O>, options?: FindOneOptions): Future<Cursor<Either<Error, A>>> =>
-    pipe(
-      collection(),
-      Future.map(_ =>
-        _.find(query, options).map(u =>
-          pipe(
-            codec.decode(u),
-            Either.mapLeft(_ => decodeError(codec, u))
-          )
-        )
-      )
-    ),
-
-  drop: (): Future<void> =>
-    pipe(
-      collection(),
-      Future.chain(_ => Future.apply(() => _.drop())),
-      Future.chain(res =>
-        pipe(
-          Future.fromIOEither(logger.info('droped collection')),
-          Future.map(_ => res)
-        )
-      )
-    )
-})
+import { Either, Future, Maybe, flow, pipe } from '../utils/fp'
 
 export type FpCollection = ReturnType<typeof FpCollection>
 
-function decodeError<A, B>(codec: t.Type<A, B>, u: unknown): Error {
-  return Error(`Couldn't decode value as ${codec.name}:\n${util.format(u)}`)
+export function FpCollection<A, O extends { [key: string]: unknown }>(
+  logger: Logger,
+  collection: <T>(f: (coll: Collection<O>) => Promise<T>) => Future<T>,
+  codec: C.Codec<unknown, OptionalId<O>, A>
+) {
+  return {
+    collection,
+
+    ensureIndexes: (
+      indexSpecs: IndexSpecification<A>[],
+      options?: { session?: ClientSession }
+    ): Future<void> =>
+      pipe(
+        Future.fromIOEither(logger.debug('Ensuring indexes')),
+        Future.chain(_ => collection(c => c.createIndexes(indexSpecs, options)))
+      ),
+
+    insertOne: (
+      doc: A,
+      options?: CollectionInsertOneOptions
+    ): Future<InsertOneWriteOpResult<WithId<O>>> => {
+      const encoded = codec.encode(doc)
+      return pipe(
+        collection(c => c.insertOne(encoded, options)),
+        Future.chain(res =>
+          pipe(
+            Future.fromIOEither(logger.debug('inserted', encoded)),
+            Future.map(_ => res)
+          )
+        )
+      )
+    },
+
+    insertMany: (
+      docs: A[],
+      options?: CollectionInsertManyOptions
+    ): Future<InsertWriteOpResult<WithId<O>>> => {
+      const encoded = docs.map(codec.encode)
+      return pipe(
+        collection(c => c.insertMany(encoded, options)),
+        Future.chain(res =>
+          pipe(
+            Future.fromIOEither(logger.debug(`inserted ${res.insertedCount} documents`)),
+            Future.map(_ => res)
+          )
+        )
+      )
+    },
+
+    updateOne: (
+      filter: FilterQuery<O>,
+      doc: A,
+      options?: UpdateOneOptions
+    ): Future<UpdateWriteOpResult> => {
+      const encoded = codec.encode(doc)
+      return pipe(
+        collection(c => c.updateOne(filter, { $set: encoded }, options)),
+        Future.chain(res =>
+          pipe(
+            Future.fromIOEither(logger.debug('updated', encoded)),
+            Future.map(_ => res)
+          )
+        )
+      )
+    },
+
+    replaceOne: (
+      filter: FilterQuery<O>,
+      doc: A,
+      options?: ReplaceOneOptions
+    ): Future<ReplaceWriteOpResult> => {
+      const encoded = codec.encode(doc)
+      return pipe(
+        collection(c => c.replaceOne(filter, encoded as O, options)),
+        Future.chain(res =>
+          pipe(
+            Future.fromIOEither(logger.debug('upserted', encoded)),
+            Future.map(_ => res)
+          )
+        )
+      )
+    },
+
+    count: (filter: FilterQuery<O>): Future<number> => collection(c => c.countDocuments(filter)),
+
+    findOne: <T = O>(
+      filter: FilterQuery<O>,
+      options?: FindOneOptions<T extends O ? O : T>
+    ): Future<Maybe<A>> =>
+      pipe(
+        collection(c => c.findOne(filter, options)),
+        Future.map(Maybe.fromNullable),
+        Future.chain(
+          Maybe.fold(
+            () => Future.right(Maybe.none),
+            flow(codec.decode, Either.bimap(decodeError, Maybe.some), Future.fromEither)
+          )
+        )
+      ),
+
+    find: <T = O>(
+      query: FilterQuery<O>,
+      options?: FindOneOptions<T extends O ? O : T>
+    ): Future<Cursor<Either<Error, A>>> =>
+      collection(c =>
+        Promise.resolve(c.find(query, options).map(flow(codec.decode, Either.mapLeft(decodeError))))
+      ),
+
+    drop: (): Future<void> =>
+      pipe(
+        collection(c => c.drop()),
+        Future.chain(res =>
+          pipe(
+            Future.fromIOEither(logger.info('droped collection')),
+            Future.map(_ => res)
+          )
+        )
+      )
+  }
+}
+
+export function decodeError(e: D.DecodeError): Error {
+  return Error(`DecodeError:\n${D.draw(e)}`)
 }

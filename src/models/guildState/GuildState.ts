@@ -1,13 +1,12 @@
-import * as t from 'io-ts'
-import { optionFromNullable } from 'io-ts-types/lib/optionFromNullable'
+import * as C from 'io-ts/Codec'
 import { Lens as MonocleLens } from 'monocle-ts'
 
-import { StaticCalls } from './StaticCalls'
+import { Maybe } from '../../utils/fp'
 import { GuildId } from '../GuildId'
 import { TSnowflake } from '../TSnowflake'
-import { Maybe } from '../../utils/fp'
+import { StaticCalls } from './StaticCalls'
 
-export type GuildState = t.TypeOf<typeof GuildState.codec>
+export type GuildState = C.TypeOf<typeof GuildState.codec>
 
 export function GuildState(
   id: GuildId,
@@ -18,11 +17,13 @@ export function GuildState(
 }
 
 export namespace GuildState {
-  export const codec = t.strict({
+  export const codec = C.type({
     id: GuildId.codec,
-    calls: optionFromNullable(StaticCalls.codec),
-    defaultRole: optionFromNullable(TSnowflake.codec)
+    calls: Maybe.codec(StaticCalls.codec),
+    defaultRole: Maybe.codec(TSnowflake.codec)
   })
+
+  export type Output = C.OutputOf<typeof codec>
 
   export const empty = (id: GuildId): GuildState => GuildState(id, Maybe.none, Maybe.none)
 

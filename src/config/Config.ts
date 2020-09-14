@@ -1,13 +1,12 @@
-import * as t from 'io-ts'
 import { sequenceT } from 'fp-ts/lib/Apply'
-import { nonEmptyArray } from 'io-ts-types/lib/nonEmptyArray'
+import * as D from 'io-ts/Decoder'
 
-import { ConfReader } from './ConfReader'
 import { LogLevelOrOff } from '../models/LogLevel'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
-import { IO, pipe, Either, NonEmptyArray, flow } from '../utils/fp'
+import { Either, IO, NonEmptyArray, flow, pipe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
+import { ConfReader } from './ConfReader'
 
 export interface Config {
   readonly clientSecret: string
@@ -46,9 +45,9 @@ export namespace Config {
 function readConfig(reader: ConfReader): ValidatedNea<string, Config> {
   return pipe(
     sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
-      reader(t.string)('clientSecret'),
-      reader(nonEmptyArray(TSnowflake.codec))('admins'),
-      reader(t.string)('cmdPrefix'),
+      reader(D.string)('clientSecret'),
+      reader(NonEmptyArray.decoder(TSnowflake.codec))('admins'),
+      reader(D.string)('cmdPrefix'),
       readLoggerConfig(reader),
       readDbConfig(reader)
     ),
@@ -83,7 +82,7 @@ function readLoggerConfig(reader: ConfReader): ValidatedNea<string, LoggerConfig
     sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(LogLevelOrOff.codec)('logger', 'consoleLevel'),
       reader(LogLevelOrOff.codec)('logger', 'discordDM', 'level'),
-      reader(t.boolean)('logger', 'discordDM', 'compact')
+      reader(D.boolean)('logger', 'discordDM', 'compact')
     ),
     Either.map(_ => LoggerConfig(..._))
   )
@@ -106,10 +105,10 @@ function DbConfig(host: string, dbName: string, user: string, password: string):
 function readDbConfig(reader: ConfReader): ValidatedNea<string, DbConfig> {
   return pipe(
     sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
-      reader(t.string)('db', 'host'),
-      reader(t.string)('db', 'dbName'),
-      reader(t.string)('db', 'user'),
-      reader(t.string)('db', 'password')
+      reader(D.string)('db', 'host'),
+      reader(D.string)('db', 'dbName'),
+      reader(D.string)('db', 'user'),
+      reader(D.string)('db', 'password')
     ),
     Either.map(_ => DbConfig(..._))
   )

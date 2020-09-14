@@ -1,14 +1,18 @@
 import { Application } from './Application'
 import { Config } from './config/Config'
-import { Future, Do } from './utils/fp'
 import { DiscordConnector } from './services/DiscordConnector'
+import { PartialLogger } from './services/Logger'
+import { Do, Future, pipe } from './utils/fp'
+import { MongoPoolParty } from './utils/MongoPoolParty'
 
-const main = (): Future<void> =>
+pipe(
   Do(Future.taskEither)
     .bind('config', Future.fromIOEither(Config.load()))
     .bindL('client', ({ config }) => DiscordConnector.futureClient(config))
     .letL('discord', ({ client }) => DiscordConnector(client))
-    .doL(({ config, discord }) => Application(config, discord))
-    .return(() => {})
-
-Future.runUnsafe(main())
+    .letL('Logger', ({ config, discord }) => PartialLogger(config, discord))
+    .bindL('mongo', ({ Logger, config }) => MongoPoolParty(Logger, config))
+    .doL(({ Logger, config, discord, mongo }) => Application(Logger, config, discord, mongo))
+    .return(() => {}),
+  Future.runUnsafe
+)

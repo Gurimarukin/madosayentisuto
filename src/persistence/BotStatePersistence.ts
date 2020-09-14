@@ -1,16 +1,20 @@
 import { Collection } from 'mongodb'
 
-import { FpCollection } from './FpCollection'
 import { BotState } from '../models/BotState'
 import { PartialLogger } from '../services/Logger'
-import { Future, pipe, Maybe } from '../utils/fp'
+import { Future, Maybe, pipe } from '../utils/fp'
+import { FpCollection } from './FpCollection'
 
 export const BotStatePersistence = (
   Logger: PartialLogger,
-  mongoCollection: (dbName: string) => Future<Collection>
+  mongoCollection: (collName: string) => <A>(f: (coll: Collection) => Promise<A>) => Future<A>
 ) => {
   const logger = Logger('BotStatePersistence')
-  const collection = FpCollection(logger, () => mongoCollection('botState'), BotState.codec)
+  const collection = FpCollection<BotState, BotState.Output>(
+    logger,
+    mongoCollection('botState'),
+    BotState.codec
+  )
 
   return {
     find: (): Future<BotState> =>

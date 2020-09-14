@@ -1,27 +1,25 @@
-import * as _Array from 'fp-ts/lib/Array'
-import * as _NonEmptyArray from 'fp-ts/lib/NonEmptyArray'
-import * as _Record from 'fp-ts/lib/Record'
-import * as _Option from 'fp-ts/lib/Option'
-import * as _Either from 'fp-ts/lib/Either'
-import * as _Task from 'fp-ts/lib/Task'
-import * as _TaskEither from 'fp-ts/lib/TaskEither'
-import * as _IO from 'fp-ts/lib/IO'
-import * as _IOEither from 'fp-ts/lib/IOEither'
-import {
-  identity as _identity,
-  flow as _flow,
-  not as _not,
-  Predicate,
-  Lazy
-} from 'fp-ts/lib/function'
-import { pipe as _pipe } from 'fp-ts/lib/pipeable'
-
 import { Do as _Do } from 'fp-ts-contrib/lib/Do'
+import * as _Array from 'fp-ts/Array'
+import * as _Either from 'fp-ts/Either'
+import { Lazy, Predicate, flow as _flow, identity as _identity, not as _not } from 'fp-ts/function'
+import * as _IO from 'fp-ts/IO'
+import * as _IOEither from 'fp-ts/IOEither'
+import * as _NonEmptyArray from 'fp-ts/NonEmptyArray'
+import * as _Option from 'fp-ts/Option'
+import { pipe as _pipe } from 'fp-ts/pipeable'
+import * as _Record from 'fp-ts/Record'
+import * as _Task from 'fp-ts/Task'
+import * as _TaskEither from 'fp-ts/TaskEither'
+import * as C from 'io-ts/Codec'
+import * as D from 'io-ts/Decoder'
+import * as E from 'io-ts/Encoder'
+
+import { MsDuration } from '../models/MsDuration'
 
 export const unknownToError = (e: unknown): Error =>
   e instanceof Error ? e : new Error('unknown error')
 
-export const inspect = (...label: any[]) => <A>(a: A): A => {
+export const inspect = (...label: unknown[]) => <A>(a: A): A => {
   console.log(...label, a)
   return a
 }
@@ -29,7 +27,7 @@ export const inspect = (...label: any[]) => <A>(a: A): A => {
 /**
  * ???
  */
-export const todo = (..._: any): never => {
+export const todo = (..._: unknown[]): never => {
   throw Error('missing implementation')
 }
 
@@ -49,7 +47,28 @@ export const List = {
  * NonEmptyArray
  */
 export type NonEmptyArray<A> = _NonEmptyArray.NonEmptyArray<A>
-export const NonEmptyArray = _NonEmptyArray
+
+function neaDecoder<A>(decoder: D.Decoder<unknown, A>): D.Decoder<unknown, NonEmptyArray<A>> {
+  return _pipe(
+    D.array(decoder),
+    D.refine((a): a is NonEmptyArray<A> => a.length > 0, 'NonEmptyArray')
+  )
+}
+
+function neaEncoder<O, A>(encoder: E.Encoder<O, A>): E.Encoder<O[], NonEmptyArray<A>> {
+  return { encode: _ => E.array(encoder).encode(_) }
+}
+
+export const NonEmptyArray = {
+  ..._NonEmptyArray,
+
+  decoder: neaDecoder,
+
+  encoder: neaEncoder,
+
+  codec: <O, A>(codec: C.Codec<unknown, O, A>): C.Codec<unknown, O[], NonEmptyArray<A>> =>
+    C.make(neaDecoder(codec), neaEncoder(codec))
+}
 
 /**
  * Record
@@ -74,17 +93,38 @@ export const Dict = {
  * Option
  */
 export type Maybe<A> = _Option.Option<A>
+
+function optDecoder<I, A>(decoder: D.Decoder<I, A>): D.Decoder<I, Maybe<A>> {
+  return {
+    decode: (u: I) =>
+      u === null || u === undefined
+        ? D.success(_Option.none)
+        : _pipe(decoder.decode(u), _Either.map(_Option.some))
+  }
+}
+
+function optEncoder<O, A>(encoder: E.Encoder<O, A>): E.Encoder<O | null, Maybe<A>> {
+  return { encode: _flow(_Option.map(encoder.encode), _Option.toNullable) }
+}
+
 export const Maybe = {
   ..._Option,
 
-  toArray: <A>(opt: _Option.Option<A>): A[] =>
+  toArray: <A>(opt: Maybe<A>): A[] =>
     _pipe(
       opt,
       _Option.fold(
         () => [],
         _ => [_]
       )
-    )
+    ),
+
+  decoder: optDecoder,
+
+  encoder: optEncoder,
+
+  codec: <O, A>(codec: C.Codec<unknown, O, A>): C.Codec<unknown, O | null, Maybe<A>> =>
+    C.make(optDecoder(codec), optEncoder(codec))
 }
 
 /**
@@ -98,6 +138,8 @@ export const Either = _Either
  */
 export type Try<A> = Either<Error, A>
 export const Try = {
+  ..._Either,
+
   right: <A>(a: A): Try<A> => Either.right(a),
 
   apply: <A>(a: Lazy<A>): Try<A> => Either.tryCatch(a, unknownToError),
@@ -115,7 +157,11 @@ export const Try = {
  * Task
  */
 export type Task<A> = _Task.Task<A>
-export const Task = _Task
+export const Task = {
+  ..._Task,
+
+  run: <A>(task: Task<A>): Promise<A> => task()
+}
 
 /**
  * Future
@@ -123,6 +169,10 @@ export const Task = _Task
 export type Future<A> = _Task.Task<Try<A>>
 export const Future = {
   ..._TaskEither,
+
+  right: <A>(a: A): Future<A> => _TaskEither.right(a),
+
+  left: <A = never>(e: Error): Future<A> => _TaskEither.left(e),
 
   apply: <A>(f: Lazy<Promise<A>>): Future<A> => Future.tryCatch(f, unknownToError),
 
@@ -134,20 +184,18 @@ export const Future = {
   sequence: <A>(futures: Future<A>[]): Future<A[]> =>
     List.array.sequence(Future.taskEitherSeq)(futures),
 
-  recover: <A>(...matchers: [(e: Error) => boolean, A][]): ((future: Future<A>) => Future<A>) =>
-    Task.map(res =>
-      _pipe(
-        matchers,
-        _Array.reduce(res, (acc, [cond, a]) =>
-          _pipe(
-            acc,
-            _Either.orElse(e => (cond(e) ? _Either.right(a) : _Either.left(e)))
-          )
-        )
+  recover: <A>(onError: (e: Error) => Future<A>): ((future: Future<A>) => Future<A>) =>
+    _Task.chain(
+      _Either.fold(
+        e => onError(e),
+        _ => _TaskEither.right(_)
       )
     ),
 
-  runUnsafe: <A>(future: Future<A>): Promise<A> => _pipe(future, _Task.map(Try.get))()
+  runUnsafe: <A>(future: Future<A>): Promise<A> => _pipe(future, _Task.map(Try.get))(),
+
+  delay: <A>(ms: MsDuration) => (future: Future<A>): Future<A> =>
+    _pipe(future, _Task.delay(MsDuration.unwrap(ms)))
 }
 
 /**

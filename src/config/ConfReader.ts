@@ -1,13 +1,13 @@
-import * as t from 'io-ts'
+import * as D from 'io-ts/Decoder'
 
 import { ValidatedNea } from '../models/ValidatedNea'
 import { FileUtils } from '../utils/FileUtils'
-import { unknownToError } from '../utils/unknownToError'
-import { Either, pipe, IO, Maybe, Do, List, NonEmptyArray } from '../utils/fp'
+import { Do, Either, IO, List, Maybe, NonEmptyArray, flow, pipe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
+import { unknownToError } from '../utils/unknownToError'
 
 export type ConfReader = <A>(
-  codec: t.Decoder<unknown, A>
+  decoder: D.Decoder<unknown, A>
 ) => (path: string, ...paths: string[]) => ValidatedNea<string, A>
 
 export namespace ConfReader {
@@ -20,7 +20,7 @@ export namespace ConfReader {
     )
 
   export function fromJsons(json: unknown, ...jsons: unknown[]): ConfReader {
-    return <A>(codec: t.Decoder<unknown, A>) => (
+    return <A>(decoder: D.Decoder<unknown, A>) => (
       path: string,
       ...paths: string[]
     ): ValidatedNea<string, A> => {
@@ -40,10 +40,7 @@ export namespace ConfReader {
       return pipe(
         valueForPath,
         Either.chain(val =>
-          pipe(
-            codec.decode(val),
-            Either.mapLeft(List.map(_ => `expected ${codec.name} got ${JSON.stringify(_.value)}`))
-          )
+          pipe(decoder.decode(val), Either.mapLeft(flow(D.draw, NonEmptyArray.of)))
         ),
         ValidatedNea.fromEmptyErrors,
         Either.mapLeft(
