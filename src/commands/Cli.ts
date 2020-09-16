@@ -1,19 +1,22 @@
-import * as t from 'io-ts'
 import { sequenceT } from 'fp-ts/lib/Apply'
+import * as t from 'io-ts'
 import { failure } from 'io-ts/lib/PathReporter'
 
 import { Command } from '../decline/Command'
 import { Opts } from '../decline/Opts'
-import { Commands } from './Commands'
 import { callsEmoji } from '../global'
 import { Activity } from '../models/Activity'
 import { ActivityTypeBot } from '../models/ActivityTypeBot'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
-import { pipe, Either, NonEmptyArray } from '../utils/fp'
+import { Either, NonEmptyArray, pipe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
+import { Commands } from './Commands'
+
+type UserTextChannel = Commands.Image
 
 type AdminTextChannel =
+  | UserTextChannel
   | Commands.CallsInit
   | Commands.DefaultRoleGet
   | Commands.DefaultRoleSet
@@ -152,19 +155,31 @@ const activity = Command({
   )
 )
 
+/**
+ * <image>
+ */
+const image = pipe(Opts.param(codecToDecode(t.string))('image'), Opts.map(Commands.Image))
+
 export type Cli = ReturnType<typeof Cli>
 
+const header = 'Everyone pays!'
+
 export function Cli(prefix: string) {
-  return {
-    adminTextChannel: Command({ name: prefix, header: 'Everyone pays!' })(
-      pipe(
-        Opts.subcommand(calls),
-        Opts.alt<AdminTextChannel>(() => Opts.subcommand(defaultRole)),
-        Opts.alt<AdminTextChannel>(() => Opts.subcommand(say)),
-        Opts.alt<AdminTextChannel>(() => Opts.subcommand(activity))
-      )
+  const userTextChannelOpts: Opts<UserTextChannel> = image
+
+  const userTextChannel = Command({ name: prefix, header })<UserTextChannel>(userTextChannelOpts)
+
+  const adminTextChannel = Command({ name: prefix, header })<AdminTextChannel>(
+    pipe(
+      Opts.subcommand(calls),
+      Opts.alt<AdminTextChannel>(() => Opts.subcommand(defaultRole)),
+      Opts.alt<AdminTextChannel>(() => Opts.subcommand(say)),
+      Opts.alt<AdminTextChannel>(() => Opts.subcommand(activity)),
+      Opts.alt<AdminTextChannel>(() => userTextChannelOpts)
     )
-  }
+  )
+
+  return { adminTextChannel, userTextChannel }
 }
 
 function decodeMention(u: string): ValidatedNea<string, TSnowflake> {

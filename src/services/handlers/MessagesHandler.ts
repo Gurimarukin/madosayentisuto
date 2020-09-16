@@ -1,18 +1,18 @@
-import { Message, Guild } from 'discord.js'
+import { Guild, Message } from 'discord.js'
 import { parse } from 'shell-quote'
 
-import { CommandsHandler } from './CommandsHandler'
-import { DiscordConnector } from '../DiscordConnector'
-import { PartialLogger } from '../Logger'
 import { Cli } from '../../commands/Cli'
-import { Command } from '../../decline/Command'
 import { Commands } from '../../commands/Commands'
 import { Config } from '../../config/Config'
+import { Command } from '../../decline/Command'
 import { TSnowflake } from '../../models/TSnowflake'
-import { Maybe, pipe, Future, List, Either, NonEmptyArray } from '../../utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
-import { StringUtils } from '../../utils/StringUtils'
+import { Either, Future, List, Maybe, NonEmptyArray, pipe } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
+import { StringUtils } from '../../utils/StringUtils'
+import { DiscordConnector } from '../DiscordConnector'
+import { PartialLogger } from '../Logger'
+import { CommandsHandler } from './CommandsHandler'
 
 export const MessagesHandler = (
   Logger: PartialLogger,
@@ -73,15 +73,7 @@ export const MessagesHandler = (
     return Maybe.some(
       isAdmin
         ? parseCommand(message, args, cli.adminTextChannel)
-        : pipe(
-            deleteMessage(message),
-            Future.chain(_ =>
-              discord.sendPrettyMessage(
-                message.author,
-                'Gibier de potence, tu ne peux pas faire ça !'
-              )
-            )
-          )
+        : parseCommand(message, args, cli.userTextChannel)
     )
   }
 

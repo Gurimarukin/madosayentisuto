@@ -1,6 +1,6 @@
-import { Command } from '../../src/decline/Command'
 import { Cli } from '../../src/commands/Cli'
 import { Commands } from '../../src/commands/Commands'
+import { Command } from '../../src/decline/Command'
 import { Activity } from '../../src/models/Activity'
 import { TSnowflake } from '../../src/models/TSnowflake'
 import { Either, pipe } from '../../src/utils/fp'
@@ -13,13 +13,14 @@ describe('Cli.adminTextChannel', () => {
     expect(pipe(cmd, Command.parse([]))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
-          `Missing expected command (calls or defaultRole or say or activity)
+          `Missing expected command (calls or defaultRole or say or activity), or positional argument
           |
           |Usage:
           |    okb calls
           |    okb defaultRole
           |    okb say
           |    okb activity
+          |    okb <image>
           |
           |Everyone pays!
           |
@@ -36,16 +37,17 @@ describe('Cli.adminTextChannel', () => {
       )
     )
 
-    expect(pipe(cmd, Command.parse(['kallz']))).toStrictEqual(
+    expect(pipe(cmd, Command.parse(['ka', 'llz']))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
-          `Unexpected argument: kallz
+          `Unexpected argument: llz
           |
           |Usage:
           |    okb calls
           |    okb defaultRole
           |    okb say
           |    okb activity
+          |    okb <image>
           |
           |Everyone pays!
           |

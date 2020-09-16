@@ -1,19 +1,23 @@
-import { Guild, Message, MessageAttachment, TextChannel, Role } from 'discord.js'
+import { Guild, Message, MessageAttachment, Role, TextChannel } from 'discord.js'
 import { sequenceT } from 'fp-ts/lib/Apply'
 
+import { Commands } from '../../commands/Commands'
+import { callsEmoji } from '../../global'
+import { Calls } from '../../models/guildState/Calls'
+import { TSnowflake } from '../../models/TSnowflake'
+import { ValidatedNea } from '../../models/ValidatedNea'
+import { ChannelUtils } from '../../utils/ChannelUtils'
+import { Dict, Either, Future, Maybe, NonEmptyArray, flow, pipe } from '../../utils/fp'
+import { LogUtils } from '../../utils/LogUtils'
+import { StringUtils } from '../../utils/StringUtils'
 import { ActivityService } from '../ActivityService'
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
-import { callsEmoji } from '../../global'
-import { Commands } from '../../commands/Commands'
-import { TSnowflake } from '../../models/TSnowflake'
-import { ValidatedNea } from '../../models/ValidatedNea'
-import { Calls } from '../../models/guildState/Calls'
-import { ChannelUtils } from '../../utils/ChannelUtils'
-import { Future, pipe, Either, Maybe, NonEmptyArray, flow } from '../../utils/fp'
-import { LogUtils } from '../../utils/LogUtils'
-import { StringUtils } from '../../utils/StringUtils'
+
+const images: Dict<string> = {
+  mefian: 'https://imgur.com/a/9umwDvt'
+}
 
 export const CommandsHandler = (
   Logger: PartialLogger,
@@ -146,6 +150,16 @@ export const CommandsHandler = (
         return pipe(
           deleteMessage(message),
           Future.chain(_ => activityService.setActivityFromPersistence())
+        )
+
+      case 'Image':
+        return pipe(
+          images,
+          Dict.lookup(command.value),
+          Maybe.fold<string, Future<unknown>>(
+            () => Future.unit,
+            image => discord.sendMessage(message.channel, image)
+          )
         )
     }
   }

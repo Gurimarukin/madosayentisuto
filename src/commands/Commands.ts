@@ -10,6 +10,7 @@ export type Commands =
   | Commands.ActivityUnset
   | Commands.ActivitySet
   | Commands.ActivityRefresh
+  | Commands.Image
 
 export namespace Commands {
   // calls
@@ -69,4 +70,13 @@ export namespace Commands {
     readonly _tag: 'ActivityRefresh'
   }
   export const ActivityRefresh: ActivityRefresh = { _tag: 'ActivityRefresh' }
+
+  // images
+  export interface Image {
+    readonly _tag: 'Image'
+    readonly value: string
+  }
+  export function Image(value: string): Image {
+    return { _tag: 'Image', value }
+  }
 }
