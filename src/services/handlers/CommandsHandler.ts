@@ -16,7 +16,11 @@ import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
 
 const images: Dict<string> = {
-  mefian: 'https://imgur.com/a/9umwDvt'
+  mefian:
+    'https://cdn.discordapp.com/attachments/636626556734930948/755886935796351106/jp-mefian.gif',
+  panse: 'https://cdn.discordapp.com/attachments/636626556734930948/755886940527525938/panse.gif',
+  flam: 'https://cdn.discordapp.com/attachments/636626556734930948/755886937205637120/flam.gif',
+  twi: 'https://cdn.discordapp.com/attachments/636626556734930948/755887402043572284/twi96.png'
 }
 
 export const CommandsHandler = (
@@ -157,7 +161,21 @@ export const CommandsHandler = (
           images,
           Dict.lookup(command.value),
           Maybe.fold<string, Future<unknown>>(
-            () => Future.unit,
+            () =>
+              pipe(
+                deleteMessage(message),
+                Future.chain(_ =>
+                  discord.sendPrettyMessage(
+                    message.author,
+                    StringUtils.stripMargins(
+                      `Images inconnue.
+                      |Images valides: ${Object.keys(images)
+                        .map(i => `\`${i}\``)
+                        .join(', ')}`
+                    )
+                  )
+                )
+              ),
             image => discord.sendMessage(message.channel, image)
           )
         )
