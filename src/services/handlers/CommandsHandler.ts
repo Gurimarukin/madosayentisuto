@@ -169,7 +169,7 @@ export const CommandsHandler = (
                   discord.sendPrettyMessage(
                     message.author,
                     StringUtils.stripMargins(
-                      `Images inconnue.
+                      `Image inconnue.
                       |Images valides: ${Object.keys(images)
                         .map(i => `\`${i}\``)
                         .join(', ')}`
