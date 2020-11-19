@@ -10,6 +10,7 @@ export type Commands =
   | Commands.ActivityUnset
   | Commands.ActivitySet
   | Commands.ActivityRefresh
+  | Commands.Kouizine
   | Commands.Image
 
 export namespace Commands {
@@ -70,6 +71,12 @@ export namespace Commands {
     readonly _tag: 'ActivityRefresh'
   }
   export const ActivityRefresh: ActivityRefresh = { _tag: 'ActivityRefresh' }
+
+  // kouizine
+  export interface Kouizine {
+    readonly _tag: 'Kouizine'
+  }
+  export const Kouizine: Kouizine = { _tag: 'Kouizine' }
 
   // images
   export interface Image {

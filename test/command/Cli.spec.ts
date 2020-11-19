@@ -13,26 +13,29 @@ describe('Cli.adminTextChannel', () => {
     expect(pipe(cmd, Command.parse([]))).toStrictEqual(
       Either.left(
         StringUtils.stripMargins(
-          `Missing expected command (calls or defaultRole or say or activity), or positional argument
+          `Missing expected command (calls or defaultRole or say or activity or kouizine), or positional argument
           |
           |Usage:
           |    okb calls
           |    okb defaultRole
           |    okb say
           |    okb activity
+          |    okb kouizine
           |    okb <image>
           |
-          |Everyone pays!
+          |Tout le monde doit payer !
           |
           |Subcommands:
           |    calls
-          |        When someone starts a call in a voice channel.
+          |        Jean Plank n'est pas votre secrétaire mais gère vos appels.
           |    defaultRole
-          |        Role for new members of this server.
+          |        Jean Plank donne un rôle au nouveau membres d'équipages.
           |    say
-          |        Make the bot say something.
+          |        Jean Plank prend la parole.
           |    activity
-          |        Bot's activity status.`
+          |        Jean Plank est un homme occupé et le fait savoir.
+          |    kouizine
+          |        Jean Plank, galant homme, remet les femmes à leur place.`
         )
       )
     )
@@ -47,19 +50,22 @@ describe('Cli.adminTextChannel', () => {
           |    okb defaultRole
           |    okb say
           |    okb activity
+          |    okb kouizine
           |    okb <image>
           |
-          |Everyone pays!
+          |Tout le monde doit payer !
           |
           |Subcommands:
           |    calls
-          |        When someone starts a call in a voice channel.
+          |        Jean Plank n'est pas votre secrétaire mais gère vos appels.
           |    defaultRole
-          |        Role for new members of this server.
+          |        Jean Plank donne un rôle au nouveau membres d'équipages.
           |    say
-          |        Make the bot say something.
+          |        Jean Plank prend la parole.
           |    activity
-          |        Bot's activity status.`
+          |        Jean Plank est un homme occupé et le fait savoir.
+          |    kouizine
+          |        Jean Plank, galant homme, remet les femmes à leur place.`
         )
       )
     )
@@ -77,8 +83,8 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb calls init <channel> <role>
           |
-          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
-          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
+          |Jean Plank envoie un message. Les membres d'équipage qui réagissent avec 🔔 obtiennent le rôle <role>.
+          |À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
         )
       )
     )
@@ -90,8 +96,8 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb calls init <channel> <role>
           |
-          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
-          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
+          |Jean Plank envoie un message. Les membres d'équipage qui réagissent avec 🔔 obtiennent le rôle <role>.
+          |À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
         )
       )
     )
@@ -104,8 +110,8 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb calls init <channel> <role>
           |
-          |Sends a message. Members reacting to it with 🔔 are added to the <role>.
-          |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
+          |Jean Plank envoie un message. Les membres d'équipage qui réagissent avec 🔔 obtiennent le rôle <role>.
+          |À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
         )
       )
     )
@@ -121,13 +127,13 @@ describe('Cli.adminTextChannel', () => {
           |    okb defaultRole get
           |    okb defaultRole set
           |
-          |Role for new members of this server.
+          |Jean Plank donne un rôle au nouveau membres d'équipages.
           |
           |Subcommands:
           |    get
-          |        Show the default role for this server.
+          |        Jean Plank vous informe du rôle par défaut de ce serveur.
           |    set
-          |        Set the default role for this server.`
+          |        Jean Plank veut bien changer le rôle par défaut de ce serveur.`
         )
       )
     )
@@ -141,13 +147,13 @@ describe('Cli.adminTextChannel', () => {
           |    okb defaultRole get
           |    okb defaultRole set
           |
-          |Role for new members of this server.
+          |Jean Plank donne un rôle au nouveau membres d'équipages.
           |
           |Subcommands:
           |    get
-          |        Show the default role for this server.
+          |        Jean Plank vous informe du rôle par défaut de ce serveur.
           |    set
-          |        Set the default role for this server.`
+          |        Jean Plank veut bien changer le rôle par défaut de ce serveur.`
         )
       )
     )
@@ -181,7 +187,7 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb say [--attach <url>]... <message>
           |
-          |Make the bot say something.`
+          |Jean Plank prend la parole.`
         )
       )
     )
@@ -209,17 +215,17 @@ describe('Cli.adminTextChannel', () => {
           |    okb activity set
           |    okb activity refresh
           |
-          |Bot's activity status.
+          |Jean Plank est un homme occupé et le fait savoir.
           |
           |Subcommands:
           |    get
-          |        Get the current Bot's activity.
+          |        Jean Plank veut bien répéter ce qu'il est en train de faire.
           |    unset
-          |        Unset Bot's activity status.
+          |        Jean Plank a finit ce qu'il était en train de faire.
           |    set
-          |        Set Bot's activity status.
+          |        Jean Plank annonce au monde qu'il est un homme occupé.
           |    refresh
-          |        Refresh Bot's activity status.`
+          |        Jean Plank a parfois besoin de rappeler au monde qu'il est un homme occupé.`
         )
       )
     )
@@ -249,7 +255,7 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb activity set <play|stream|listen|watch> <message>
           |
-          |Set Bot's activity status.`
+          |Jean Plank annonce au monde qu'il est un homme occupé.`
         )
       )
     )
@@ -267,7 +273,7 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb defaultRole set <role>
           |
-          |Set the default role for this server.`
+          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`
         )
       )
     )
@@ -279,7 +285,7 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb defaultRole set <role>
           |
-          |Set the default role for this server.`
+          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`
         )
       )
     )
@@ -291,7 +297,7 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb defaultRole set <role>
           |
-          |Set the default role for this server.`
+          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`
         )
       )
     )
@@ -303,7 +309,7 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb defaultRole set <role>
           |
-          |Set the default role for this server.`
+          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`
         )
       )
     )

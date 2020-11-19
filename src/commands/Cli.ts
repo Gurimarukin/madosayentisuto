@@ -13,7 +13,7 @@ import { Either, NonEmptyArray, pipe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 import { Commands } from './Commands'
 
-type UserTextChannel = Commands.Image
+type UserTextChannel = Commands.Kouizine | Commands.Image
 
 type AdminTextChannel =
   | UserTextChannel
@@ -32,8 +32,8 @@ type AdminTextChannel =
 const callsInit = Command({
   name: 'init',
   header: StringUtils.stripMargins(
-    `Sends a message. Members reacting to it with ${callsEmoji} are added to the <role>.
-    |After that, when a calls starts in this server, it will be notified in <channel> by mentionning <role>.`
+    `Jean Plank envoie un message. Les membres d'équipage qui réagissent avec ${callsEmoji} obtiennent le rôle <role>.
+    |À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
   )
 })<AdminTextChannel>(
   pipe(
@@ -47,23 +47,25 @@ const callsInit = Command({
 
 const calls = Command({
   name: 'calls',
-  header: 'When someone starts a call in a voice channel.'
+  header: "Jean Plank n'est pas votre secrétaire mais gère vos appels."
 })(Opts.subcommand(callsInit))
 
 /**
  * defaultRole
  */
-const defaultRoleGet = Command({ name: 'get', header: 'Show the default role for this server.' })(
-  Opts.pure(Commands.DefaultRoleGet)
-)
+const defaultRoleGet = Command({
+  name: 'get',
+  header: 'Jean Plank vous informe du rôle par défaut de ce serveur.'
+})(Opts.pure(Commands.DefaultRoleGet))
 
-const defaultRoleSet = Command({ name: 'set', header: 'Set the default role for this server.' })(
-  pipe(Opts.param(decodeMention)('role'), Opts.map(Commands.DefaultRoleSet))
-)
+const defaultRoleSet = Command({
+  name: 'set',
+  header: 'Jean Plank veut bien changer le rôle par défaut de ce serveur.'
+})(pipe(Opts.param(decodeMention)('role'), Opts.map(Commands.DefaultRoleSet)))
 
 const defaultRole = Command({
   name: 'defaultRole',
-  header: 'Role for new members of this server.'
+  header: "Jean Plank donne un rôle au nouveau membres d'équipages."
 })(
   pipe(
     Opts.subcommand(defaultRoleGet),
@@ -77,7 +79,7 @@ const defaultRole = Command({
 const attach = pipe(
   Opts.options(Either.right)({
     long: 'attach',
-    help: 'Add attachment.',
+    help: 'Jean Plank ne sait pas dessiner, mais il peut envoyer des images.',
     short: 'a',
     metavar: 'url'
   }),
@@ -86,7 +88,7 @@ const attach = pipe(
 
 const say = Command({
   name: 'say',
-  header: 'Make the bot say something.'
+  header: 'Jean Plank prend la parole.'
 })(
   pipe(
     sequenceT(Opts.opts)(attach, Opts.param(Either.right)('message')),
@@ -97,13 +99,15 @@ const say = Command({
 /**
  * activity
  */
-const activityGet = Command({ name: 'get', header: "Get the current Bot's activity." })(
-  pipe(Opts.pure(Commands.ActivityGet))
-)
+const activityGet = Command({
+  name: 'get',
+  header: "Jean Plank veut bien répéter ce qu'il est en train de faire."
+})(Opts.pure(Commands.ActivityGet))
 
-const activityUnset = Command({ name: 'unset', header: "Unset Bot's activity status." })(
-  Opts.pure(Commands.ActivityUnset)
-)
+const activityUnset = Command({
+  name: 'unset',
+  header: "Jean Plank a finit ce qu'il était en train de faire."
+})(Opts.pure(Commands.ActivityUnset))
 
 const rawActivityCodec = t.union([
   t.literal('play'),
@@ -124,7 +128,10 @@ function fromRaw(raw: RawActivity): ActivityTypeBot {
       return 'WATCHING'
   }
 }
-const activitySet = Command({ name: 'set', header: "Set Bot's activity status." })(
+const activitySet = Command({
+  name: 'set',
+  header: "Jean Plank annonce au monde qu'il est un homme occupé."
+})(
   pipe(
     sequenceT(Opts.opts)(
       Opts.param(codecToDecode(rawActivityCodec))(
@@ -139,13 +146,14 @@ const activitySet = Command({ name: 'set', header: "Set Bot's activity status." 
   )
 )
 
-const activityRefresh = Command({ name: 'refresh', header: "Refresh Bot's activity status." })(
-  Opts.pure(Commands.ActivityRefresh)
-)
+const activityRefresh = Command({
+  name: 'refresh',
+  header: "Jean Plank a parfois besoin de rappeler au monde qu'il est un homme occupé."
+})(Opts.pure(Commands.ActivityRefresh))
 
 const activity = Command({
   name: 'activity',
-  header: "Bot's activity status."
+  header: 'Jean Plank est un homme occupé et le fait savoir.'
 })(
   pipe(
     Opts.subcommand(activityGet),
@@ -156,16 +164,27 @@ const activity = Command({
 )
 
 /**
+ * kouizine
+ */
+const kouizine = Command({
+  name: 'kouizine',
+  header: 'Jean Plank, galant homme, remet les femmes à leur place.'
+})(Opts.pure(Commands.Kouizine))
+
+/**
  * <image>
  */
 const image = pipe(Opts.param(codecToDecode(t.string))('image'), Opts.map(Commands.Image))
 
 export type Cli = ReturnType<typeof Cli>
 
-const header = 'Everyone pays!'
+const header = 'Tout le monde doit payer !'
 
 export function Cli(prefix: string) {
-  const userTextChannelOpts: Opts<UserTextChannel> = image
+  const userTextChannelOpts: Opts<UserTextChannel> = pipe(
+    Opts.subcommand(kouizine),
+    Opts.alt<UserTextChannel>(() => image)
+  )
 
   const userTextChannel = Command({ name: prefix, header })<UserTextChannel>(userTextChannelOpts)
 

@@ -24,9 +24,7 @@ const images: Dict<string> = {
   ave: 'https://cdn.discordapp.com/attachments/636626556734930948/762580376949882900/eva96.png',
   grim: 'https://cdn.discordapp.com/attachments/636626556734930948/763694298242875412/grimb96.png',
   tyrale:
-    'https://cdn.discordapp.com/attachments/636626556734930948/763701889833107476/styrale96.png',
-  kouizine:
-    'https://cdn.discordapp.com/attachments/707623354143735868/778966161529241610/KOUIZINE.png'
+    'https://cdn.discordapp.com/attachments/636626556734930948/763701889833107476/styrale96.png'
 }
 
 export const CommandsHandler = (
@@ -160,6 +158,28 @@ export const CommandsHandler = (
         return pipe(
           deleteMessage(message),
           Future.chain(_ => activityService.setActivityFromPersistence())
+        )
+
+      case 'Kouizine':
+        return pipe(
+          discord.sendMessage(
+            message.channel,
+            "**LA PLACE DE LA FEMME, C'EST DANS LA**",
+            new MessageAttachment(
+              'https://cdn.discordapp.com/attachments/707623354143735868/778966161529241610/KOUIZINE.png'
+            )
+          ),
+
+          Future.chain(
+            Maybe.fold<Message, Future<unknown>>(
+              () =>
+                discord.sendPrettyMessage(
+                  message.author,
+                  'En fait, je ne peux pas envoyer de messages dans ce salon.'
+                ),
+              _ => Future.unit
+            )
+          )
         )
 
       case 'Image':
