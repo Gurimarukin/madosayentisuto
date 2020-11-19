@@ -14,7 +14,7 @@ import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
 import { CommandsHandler } from './CommandsHandler'
 
-const MENTIONS = ['jean', 'capitaine']
+const MENTIONS = ['jean', 'plank', 'capitaine']
 const THANKS = ['merci', 'remercie', 'remercier', 'remerciement', 'remerciements']
 
 export const MessagesHandler = (
