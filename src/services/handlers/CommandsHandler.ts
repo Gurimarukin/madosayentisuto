@@ -169,7 +169,6 @@ export const CommandsHandler = (
               'https://cdn.discordapp.com/attachments/707623354143735868/778966161529241610/KOUIZINE.png'
             )
           ),
-
           Future.chain(
             Maybe.fold<Message, Future<unknown>>(
               () =>

@@ -45,11 +45,7 @@ export type DiscordConnector = ReturnType<typeof DiscordConnector>
 
 export function DiscordConnector(client: Client) {
   return {
-    isSelf: (user: User): boolean =>
-      pipe(
-        Maybe.fromNullable(client.user),
-        Maybe.exists(_ => _.id === user.id)
-      ),
+    clientUser: Maybe.fromNullable(client.user),
 
     /**
      * Observables
