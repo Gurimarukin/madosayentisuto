@@ -15,7 +15,7 @@ import { PartialLogger } from '../Logger'
 import { CommandsHandler } from './CommandsHandler'
 
 const MENTIONS = ['jean', 'plank', 'capitaine']
-const THANKS = ['merci', 'remercie', 'remercier', 'remerciement', 'remerciements']
+const THANKS = ['merci', 'mercis', 'remercie', 'remercier', 'remerciement', 'remerciements']
 
 export const MessagesHandler = (
   Logger: PartialLogger,
