@@ -24,7 +24,9 @@ const images: Dict<string> = {
   ave: 'https://cdn.discordapp.com/attachments/636626556734930948/762580376949882900/eva96.png',
   grim: 'https://cdn.discordapp.com/attachments/636626556734930948/763694298242875412/grimb96.png',
   tyrale:
-    'https://cdn.discordapp.com/attachments/636626556734930948/763701889833107476/styrale96.png'
+    'https://cdn.discordapp.com/attachments/636626556734930948/763701889833107476/styrale96.png',
+  kouizine:
+    'https://cdn.discordapp.com/attachments/707623354143735868/778966161529241610/KOUIZINE.png'
 }
 
 export const CommandsHandler = (
