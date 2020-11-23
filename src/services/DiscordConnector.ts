@@ -3,6 +3,8 @@ import {
   Client,
   DiscordAPIError,
   EmojiIdentifierResolvable,
+  FetchMemberOptions,
+  FetchMembersOptions,
   Guild,
   GuildChannel,
   GuildMember,
@@ -11,7 +13,6 @@ import {
   Message,
   MessageAdditions,
   MessageEmbed,
-  MessageOptions,
   MessageReaction,
   PartialGuildMember,
   PartialTextBasedChannelFields,
@@ -122,7 +123,10 @@ export function DiscordConnector(client: Client) {
         // ]
       ),
 
-    fetchMemberForUser: (guild: Guild, user: UserResolvable): Future<Maybe<GuildMember>> =>
+    fetchMemberForUser: (
+      guild: Guild,
+      user: UserResolvable | FetchMemberOptions | (FetchMembersOptions & { user: UserResolvable })
+    ): Future<Maybe<GuildMember>> =>
       pipe(
         Future.apply(() => guild.members.fetch(user)),
         Future.map(Maybe.some),
@@ -171,14 +175,9 @@ export function DiscordConnector(client: Client) {
 
     sendPrettyMessage: (
       channel: PartialTextBasedChannelFields,
-      content: string,
-      options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
+      content: string
     ): Future<Maybe<Message>> =>
-      sendMessage(
-        channel,
-        new MessageEmbed().setColor(Colors.darkred).setDescription(content),
-        options
-      ),
+      sendMessage(channel, '', new MessageEmbed().setColor(Colors.darkred).setDescription(content)),
 
     reactMessage: (message: Message, emoji: EmojiIdentifierResolvable): Future<MessageReaction> =>
       Future.apply(() => message.react(emoji)),
@@ -257,10 +256,10 @@ export function DiscordConnector(client: Client) {
   function sendMessage(
     channel: PartialTextBasedChannelFields,
     content: StringResolvable,
-    options?: MessageOptions | (MessageOptions & { split?: false }) | MessageAdditions
+    options?: MessageAdditions
   ): Future<Maybe<Message>> {
     return pipe(
-      Future.apply(() => channel.send(content, options)),
+      Future.apply(() => channel.send(content, options ?? {})),
       Future.map(Maybe.some),
       Future.recover<Maybe<Message>>(e =>
         e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user'

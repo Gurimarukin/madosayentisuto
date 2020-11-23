@@ -1,16 +1,16 @@
+import { Guild, GuildMember, MessageEmbed, PartialGuildMember, TextChannel } from 'discord.js'
 import * as Ord from 'fp-ts/lib/Ord'
-import { GuildMember, TextChannel, Guild, MessageEmbed, PartialGuildMember } from 'discord.js'
 import { randomInt } from 'fp-ts/lib/Random'
 
+import { AddRemove } from '../../models/AddRemove'
+import { ChannelUtils } from '../../utils/ChannelUtils'
+import { Colors } from '../../utils/Colors'
+import { Future, IO, List, Maybe, flow, pipe } from '../../utils/fp'
+import { LogUtils } from '../../utils/LogUtils'
+import { StringUtils } from '../../utils/StringUtils'
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
-import { AddRemove } from '../../models/AddRemove'
-import { Colors } from '../../utils/Colors'
-import { Future, pipe, IO, Maybe, List, flow } from '../../utils/fp'
-import { ChannelUtils } from '../../utils/ChannelUtils'
-import { StringUtils } from '../../utils/StringUtils'
-import { LogUtils } from '../../utils/LogUtils'
 
 export const GuildMemberEventsHandler = (
   Logger: PartialLogger,

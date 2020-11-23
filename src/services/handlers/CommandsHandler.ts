@@ -109,7 +109,7 @@ export const CommandsHandler = (
             discord.sendMessage(
               message.channel,
               command.message,
-              command.attachments.map(_ => new MessageAttachment(_))
+              command.attachments.map(a => new MessageAttachment(a))
             )
           ),
           Future.chain(

@@ -1,21 +1,21 @@
 import {
-  MessageReaction,
-  User,
-  Message,
-  GuildMember,
   GuildEmoji,
+  GuildMember,
+  Message,
+  MessageReaction,
+  PartialUser,
   ReactionEmoji,
-  PartialUser
+  User
 } from 'discord.js'
 
-import { PartialLogger } from '../Logger'
-import { DiscordConnector } from '../DiscordConnector'
-import { GuildStateService } from '../GuildStateService'
 import { callsEmoji } from '../../global'
 import { AddRemove } from '../../models/AddRemove'
 import { Calls } from '../../models/guildState/Calls'
-import { Future, pipe, Maybe } from '../../utils/fp'
+import { Future, Maybe, pipe } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
+import { DiscordConnector } from '../DiscordConnector'
+import { GuildStateService } from '../GuildStateService'
+import { PartialLogger } from '../Logger'
 
 export const MessageReactionsHandler = (
   Logger: PartialLogger,
@@ -40,7 +40,7 @@ export const MessageReactionsHandler = (
                     calls =>
                       pipe(
                         discord.fetchPartial(user),
-                        Future.chain(_ => discord.fetchMemberForUser(guild, _)),
+                        Future.chain(u => discord.fetchMemberForUser(guild, u.id)),
                         Future.chain(
                           Maybe.fold(
                             () => Future.unit, // couldn't retrieve GuildMember
