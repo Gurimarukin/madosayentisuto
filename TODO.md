@@ -2,4 +2,3 @@
 - polls
 - generalize bot
 - cache state?
-- images
