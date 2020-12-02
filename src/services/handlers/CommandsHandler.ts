@@ -164,7 +164,7 @@ export const CommandsHandler = (
         return pipe(
           discord.sendMessage(
             message.channel,
-            "**LA PLACE DE LA FEMME, C'EST DANS LA**",
+            "**LA PLACE DE LA FEMME, C'EST À LA**",
             new MessageAttachment(
               'https://cdn.discordapp.com/attachments/707623354143735868/778966161529241610/KOUIZINE.png'
             )
