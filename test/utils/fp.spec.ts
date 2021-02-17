@@ -4,7 +4,7 @@ describe('Future.recover', () => {
   it("should return f if it isn't failed", () => {
     const res = pipe(
       Future.right<string>('toto'),
-      Future.recover(_ => Future.right('titi'))
+      Future.recover(_ => Future.right('titi')),
     )()
     return res.then(_ => expect(_).toStrictEqual(Either.right('toto')))
   })
@@ -19,8 +19,8 @@ describe('Future.recover', () => {
           ? Future.right('syntax error')
           : e.message === 'this is an error'
           ? Future.right('error message')
-          : Future.left(e)
-      )
+          : Future.left(e),
+      ),
     )()
     return res.then(_ => expect(_).toStrictEqual(Either.right('syntax error')))
   })
@@ -33,8 +33,8 @@ describe('Future.recover', () => {
           ? Future.right('eval error')
           : e.message === 'another message'
           ? Future.right('error message')
-          : Future.left(e)
-      )
+          : Future.left(e),
+      ),
     )()
     return res.then(_ => expect(_).toStrictEqual(Either.left(SyntaxError('this is an error'))))
   })

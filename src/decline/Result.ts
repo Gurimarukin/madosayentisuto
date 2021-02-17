@@ -43,8 +43,8 @@ export namespace Result {
       concat: (x: Missing, y: Missing): Missing =>
         Missing({
           commands: List.concat(x.commands, y.commands),
-          argument: x.argument || y.argument
-        })
+          argument: x.argument || y.argument,
+        }),
     }
 
     export const message = (missing: Missing): string => {
@@ -54,15 +54,15 @@ export namespace Result {
             pipe(
               missing.commands,
               List.uniq(eqString),
-              StringUtils.mkString('command (', ' or ', ')')
-            )
+              StringUtils.mkString('command (', ' or ', ')'),
+            ),
           )
 
       const argString = missing.argument ? Maybe.some('positional argument') : Maybe.none
 
       return pipe(
         List.compact([commandString, argString]),
-        StringUtils.mkString('Missing expected ', ', or ', '')
+        StringUtils.mkString('Missing expected ', ', or ', ''),
       )
     }
   }
@@ -81,7 +81,7 @@ export namespace Result {
   export namespace Failure {
     export const semigroup: Semigroup<Failure> = {
       concat: (x: Failure, y: Failure): Failure =>
-        Failure(List.concat(y.reversedMissing, x.reversedMissing))
+        Failure(List.concat(y.reversedMissing, x.reversedMissing)),
     }
 
     export const messages = (failure: Failure): string[] =>
@@ -105,10 +105,10 @@ export namespace Result {
           Either.map(([fab, fa]) => () =>
             pipe(
               sequenceT(stringsValidation)(fab(), fa()),
-              Either.map(([f, a]) => f(a))
-            )
-          )
-        )
+              Either.map(([f, a]) => f(a)),
+            ),
+          ),
+        ),
       ),
     alt: <A>(fx: Result<A>, fy: () => Result<A>): Result<A> => {
       if (Either.isRight(fx.get)) return fx
@@ -121,20 +121,20 @@ export namespace Result {
       return pipe(
         List.zip(fx.get.left.reversedMissing, y.get.left.reversedMissing),
         List.map(([a, b]) => Missing.semigroup.concat(a, b)),
-        failure
+        failure,
       )
-    }
+    },
   }
 
   export function mapValidated<A, B>(
-    f: (a: A) => Either<string[], B>
+    f: (a: A) => Either<string[], B>,
   ): (res: Result<A>) => Result<B> {
     return res =>
       Result(
         pipe(
           res.get,
-          Either.map(_ => () => pipe(_(), Either.chain(f)))
-        )
+          Either.map(_ => () => pipe(_(), Either.chain(f))),
+        ),
       )
   }
 

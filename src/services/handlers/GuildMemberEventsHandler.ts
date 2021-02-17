@@ -15,7 +15,7 @@ import { PartialLogger } from '../Logger'
 export const GuildMemberEventsHandler = (
   Logger: PartialLogger,
   guildStateService: GuildStateService,
-  discord: DiscordConnector
+  discord: DiscordConnector,
 ): ((event: AddRemove<GuildMember | PartialGuildMember>) => Future<unknown>) => {
   const logger = Logger('GuildMemberEventsHandler')
 
@@ -23,8 +23,8 @@ export const GuildMemberEventsHandler = (
     AddRemove.map(discord.fetchPartial),
     AddRemove.fold({
       onAdd: Future.chain(onAdd),
-      onRemove: Future.chain(onRemove)
-    })
+      onRemove: Future.chain(onRemove),
+    }),
   )
 
   function onAdd(member: GuildMember): Future<unknown> {
@@ -39,20 +39,20 @@ export const GuildMemberEventsHandler = (
             `Ha ha !
             |Tu as rejoint le serveur **${member.guild.name}**, quelle erreur !
             |En guise de cadeau de bienvenue, découvre immédiatement l'histoire du véritable capitaine en cliquant sur ce lien plein de malice !
-            |(C'est comme OSS 117 mais en moins bien.)`
+            |(C'est comme OSS 117 mais en moins bien.)`,
           ),
           new MessageEmbed()
             .setColor(Colors.darkred)
             .setTitle('Jean Plank')
             .setURL('https://jeanplank.blbl.ch')
             .setThumbnail(
-              'https://cdn.discordapp.com/attachments/636626556734930948/707502811600125962/thumbnail.jpg'
+              'https://cdn.discordapp.com/attachments/636626556734930948/707502811600125962/thumbnail.jpg',
             )
             .setDescription('Tout le monde doit payer !')
             .setImage(
-              'https://cdn.discordapp.com/attachments/636626556734930948/707499903450087464/aide.jpg'
-            )
-        )
+              'https://cdn.discordapp.com/attachments/636626556734930948/707499903450087464/aide.jpg',
+            ),
+        ),
       ),
       // set default role
       Future.chain(_ => guildStateService.getDefaultRole(member.guild)),
@@ -70,21 +70,21 @@ export const GuildMemberEventsHandler = (
                       LogUtils.withGuild(
                         logger,
                         'warn',
-                        member.guild
+                        member.guild,
                       )(`Couldn't add user "${member.user.tag}" to role "${role.name}"`),
                     _ =>
                       LogUtils.withGuild(
                         logger,
                         'debug',
-                        member.guild
-                      )(`Added user "${member.user.tag}" to role "${role.name}"`)
+                        member.guild,
+                      )(`Added user "${member.user.tag}" to role "${role.name}"`),
                   ),
-                  Future.fromIOEither
-                )
-              )
-            )
-        )
-      )
+                  Future.fromIOEither,
+                ),
+              ),
+            ),
+        ),
+      ),
     )
   }
 
@@ -98,10 +98,10 @@ export const GuildMemberEventsHandler = (
           goodbyeChannel(member.guild),
           Maybe.fold<TextChannel, Future<unknown>>(
             () => Future.unit,
-            chan => discord.sendPrettyMessage(chan, msg)
-          )
-        )
-      )
+            chan => discord.sendPrettyMessage(chan, msg),
+          ),
+        ),
+      ),
     )
   }
 }
@@ -116,9 +116,9 @@ function goodbyeChannel(guild: Guild): Maybe<TextChannel> {
         guild.channels.cache.array(),
         List.filter(ChannelUtils.isText),
         List.sort(ordChannel),
-        List.head
-      )
-    )
+        List.head,
+      ),
+    ),
   )
 }
 
@@ -129,13 +129,13 @@ const leaveMessages: ((member: string) => string)[] = [
   _ => `${_} me tourne le dos et invite mon poignard.`,
   _ => `J'ai perdu ${_}, mais pas mon âme.`,
   _ => `Ne jamais faire confiance à ${_}.`,
-  _ => `Je vais emmener ${_} aux quais-abattoirs...`
+  _ => `Je vais emmener ${_} aux quais-abattoirs...`,
 ]
 
 function randomLeaveMessage(member: GuildMember): IO<string> {
   return pipe(
     randomInt(0, leaveMessages.length - 1),
     IO.rightIO,
-    IO.map(_ => leaveMessages[_](`**${member.user.tag}**`))
+    IO.map(_ => leaveMessages[_](`**${member.user.tag}**`)),
   )
 }

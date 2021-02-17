@@ -7,5 +7,5 @@ export interface VoiceStateUpdate {
 
 export const VoiceStateUpdate = (oldState: VoiceState, newState: VoiceState): VoiceStateUpdate => ({
   oldState,
-  newState
+  newState,
 })

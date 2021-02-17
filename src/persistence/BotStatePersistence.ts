@@ -1,19 +1,15 @@
-import { Collection } from 'mongodb'
-
 import { BotState } from '../models/BotState'
+import { MongoCollection } from '../models/MongoCollection'
 import { PartialLogger } from '../services/Logger'
 import { Future, Maybe, pipe } from '../utils/fp'
 import { FpCollection } from './FpCollection'
 
-export const BotStatePersistence = (
-  Logger: PartialLogger,
-  mongoCollection: (collName: string) => <A>(f: (coll: Collection) => Promise<A>) => Future<A>
-) => {
+export const BotStatePersistence = (Logger: PartialLogger, mongoCollection: MongoCollection) => {
   const logger = Logger('BotStatePersistence')
   const collection = FpCollection<BotState, BotState.Output>(
     logger,
     mongoCollection('botState'),
-    BotState.codec
+    BotState.codec,
   )
 
   return {
@@ -23,8 +19,8 @@ export const BotStatePersistence = (
     upsert: (state: BotState): Future<boolean> =>
       pipe(
         collection.updateOne({}, state, { upsert: true }),
-        Future.map(_ => _.modifiedCount + _.upsertedCount === 1)
-      )
+        Future.map(_ => _.modifiedCount + _.upsertedCount === 1),
+      ),
   }
 }
 

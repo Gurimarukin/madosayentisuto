@@ -22,12 +22,12 @@ export namespace Help {
    */
   export const withErrors = (moreErrors: string[]) => (help: Help): Help => ({
     ...help,
-    errors: List.concat(help.errors, moreErrors)
+    errors: List.concat(help.errors, moreErrors),
   })
 
   export const withPrefix = (prefix: string[]) => (help: Help): Help => ({
     ...help,
-    prefix: pipe(prefix, List.reduceRight(help.prefix, NonEmptyArray.cons))
+    prefix: pipe(prefix, List.reduceRight(help.prefix, NonEmptyArray.cons)),
   })
 
   export const stringify = (help: Help): string => {
@@ -43,7 +43,7 @@ export namespace Help {
 
     return pipe(
       List.concat(maybeErrors, List.cons(usageString, help.body)),
-      StringUtils.mkString('\n\n')
+      StringUtils.mkString('\n\n'),
     )
   }
 
@@ -58,7 +58,7 @@ export namespace Help {
       : pipe(
           commands,
           List.chain(command => [withIndent(4, command.name), withIndent(8, command.header)]),
-          texts => pipe(List.cons('Subcommands:', texts), StringUtils.mkString('\n'), List.of)
+          texts => pipe(List.cons('Subcommands:', texts), StringUtils.mkString('\n'), List.of),
         )
 
     const optionsDetail = detail(parser.opts)
@@ -70,7 +70,7 @@ export namespace Help {
       errors: List.empty,
       prefix: NonEmptyArray.of(parser.name),
       usage: pipe(Usage.fromOpts(parser.opts), List.chain(Usage.show)),
-      body: List.cons(parser.header, List.concat(optionsHelp, commandHelp))
+      body: List.cons(parser.header, List.concat(optionsHelp, commandHelp)),
     }
   }
 
@@ -82,7 +82,7 @@ export namespace Help {
       case 'App':
         return pipe(
           sequenceT(Maybe.option)(optionList(opts.f), optionList(opts.a)),
-          Maybe.map(([a, b]) => List.concat(a, b))
+          Maybe.map(([a, b]) => List.concat(a, b)),
         )
 
       case 'OrElse':
@@ -94,11 +94,11 @@ export namespace Help {
               b,
               Maybe.fold(
                 () => a,
-                _ => List.concat(a, _)
-              )
-            )
+                _ => List.concat(a, _),
+              ),
+            ),
           ),
-          Maybe.alt(() => b)
+          Maybe.alt(() => b),
         )
 
       case 'Single':
@@ -135,7 +135,7 @@ export namespace Help {
   }
 
   const eqDeepStrict: Eq<[Opts.Opt<unknown>, boolean]> = fromEquals((a, b) =>
-    util.isDeepStrictEqual(a, b)
+    util.isDeepStrictEqual(a, b),
   )
 
   function detail(opts: Opts<unknown>): string[] {
@@ -147,8 +147,8 @@ export namespace Help {
         ([_opt, _]) =>
           // if (opt._tag === 'Regular') ???
           // if (opt._tag === 'Flag') ???
-          List.empty
-      )
+          List.empty,
+      ),
     )
   }
 
@@ -157,7 +157,7 @@ export namespace Help {
     return pipe(
       str.split('\n'),
       List.map(_ => `${tab}${_}`),
-      StringUtils.mkString('\n')
+      StringUtils.mkString('\n'),
     )
   }
 }

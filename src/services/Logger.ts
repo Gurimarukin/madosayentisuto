@@ -18,7 +18,7 @@ export const PartialLogger = (config: Config, discord: DiscordConnector): Partia
           () =>
             new Promise<void>(resolve => {
               resolve(console.log(formatConsole(name, level, msg)))
-            })
+            }),
         )
       : Future.unit
 
@@ -38,16 +38,16 @@ export const PartialLogger = (config: Config, discord: DiscordConnector): Partia
                 pipe(
                   Future.apply(() => user.createDM()),
                   Future.chain(_ => Future.apply(() => _.send(msg))),
-                  Future.map(_ => {})
-                )
-            )
-          )
-        )
+                  Future.map(_ => {}),
+                ),
+            ),
+          ),
+        ),
       )
 
       return pipe(
         Future.parallel(futures),
-        Future.map(_ => {})
+        Future.map(_ => {}),
       )
     } else {
       return Future.unit
@@ -59,7 +59,7 @@ export const PartialLogger = (config: Config, discord: DiscordConnector): Partia
       Do(Future.taskEither)
         .do(consoleLog(level, msg))
         .do(discordDMLog(level, msg))
-        .return(() => {})
+        .return(() => {}),
     )
 
   const debug = (param: any, ...params: any[]) => log('debug', util.format(param, ...params))

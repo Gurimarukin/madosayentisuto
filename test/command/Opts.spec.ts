@@ -7,7 +7,7 @@ import { StringUtils } from '../../src/utils/StringUtils'
 
 const prefix = Command({
   name: 'toto',
-  header: ''
+  header: '',
 })
 
 describe('Cli.option', () => {
@@ -16,15 +16,15 @@ describe('Cli.option', () => {
       long: 'attach',
       help: '',
       short: 'a',
-      metavar: 'file'
-    })
+      metavar: 'file',
+    }),
   )
 
   it('should parse', () => {
     expect(pipe(cmd, Command.parse(['--attach', 'file']))).toStrictEqual(Either.right('file'))
     expect(pipe(cmd, Command.parse(['-a', 'file']))).toStrictEqual(Either.right('file'))
     expect(pipe(cmd, Command.parse(['-a', 'file1', '-a', 'file2']))).toStrictEqual(
-      Either.right('file2')
+      Either.right('file2'),
     )
   })
 
@@ -34,9 +34,9 @@ describe('Cli.option', () => {
         StringUtils.stripMargins(
           `Usage: toto --attach <file>
           |
-          |`
-        )
-      )
+          |`,
+        ),
+      ),
     )
   })
 
@@ -48,9 +48,9 @@ describe('Cli.option', () => {
           |
           |Usage: toto --attach <file>
           |
-          |`
-        )
-      )
+          |`,
+        ),
+      ),
     )
   })
 })
@@ -61,7 +61,7 @@ describe('Opts.params', () => {
   it('should parse', () => {
     expect(pipe(cmd, Command.parse(['thing1']))).toStrictEqual(Either.right(['thing1']))
     expect(pipe(cmd, Command.parse(['thing1', 'thing2']))).toStrictEqual(
-      Either.right(['thing1', 'thing2'])
+      Either.right(['thing1', 'thing2']),
     )
   })
 
@@ -73,9 +73,9 @@ describe('Opts.params', () => {
           |
           |Usage: toto <things>...
           |
-          |`
-        )
-      )
+          |`,
+        ),
+      ),
     )
   })
 })
@@ -87,10 +87,10 @@ describe('Opts.orNone', () => {
         long: 'attach',
         help: '',
         short: 'a',
-        metavar: 'file'
+        metavar: 'file',
       }),
-      Opts.orNone
-    )
+      Opts.orNone,
+    ),
   )
 
   it('should parse', () => {
@@ -106,7 +106,7 @@ describe('Opts.orEmpty', () => {
     expect(pipe(cmd, Command.parse([]))).toStrictEqual(Either.right([]))
     expect(pipe(cmd, Command.parse(['file']))).toStrictEqual(Either.right(['file']))
     expect(pipe(cmd, Command.parse(['file2', 'file2']))).toStrictEqual(
-      Either.right(['file2', 'file2'])
+      Either.right(['file2', 'file2']),
     )
   })
 })
@@ -114,11 +114,11 @@ describe('Opts.orEmpty', () => {
 describe('complex cases', () => {
   it('case 1', () => {
     const cmd = prefix(
-      sequenceT(Opts.opts)(Opts.param(Either.right)('arg'), Opts.params(Either.right)('thing'))
+      sequenceT(Opts.opts)(Opts.param(Either.right)('arg'), Opts.params(Either.right)('thing')),
     )
 
     expect(pipe(cmd, Command.parse(['titi', 'thing1', 'thing2']))).toStrictEqual(
-      Either.right(['titi', ['thing1', 'thing2']])
+      Either.right(['titi', ['thing1', 'thing2']]),
     )
   })
 
@@ -129,19 +129,19 @@ describe('complex cases', () => {
           long: 'attach',
           help: '',
           metavar: 'file',
-          short: 'a'
+          short: 'a',
         }),
-        Opts.params(Either.right)('thing')
-      )
+        Opts.params(Either.right)('thing'),
+      ),
     )
 
     expect(
-      pipe(cmd, Command.parse(['-a', 'file1', '--attach', 'file2', 'hello', 'world']))
+      pipe(cmd, Command.parse(['-a', 'file1', '--attach', 'file2', 'hello', 'world'])),
     ).toStrictEqual(
       Either.right([
         ['file1', 'file2'],
-        ['hello', 'world']
-      ])
+        ['hello', 'world'],
+      ]),
     )
   })
 })

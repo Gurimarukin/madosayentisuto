@@ -12,7 +12,7 @@ export function BotState(activity: Maybe<Activity>): BotState {
 
 export namespace BotState {
   export const codec = C.type({
-    activity: Maybe.codec(Activity.codec)
+    activity: Maybe.codec(Activity.codec),
   })
 
   export type Output = C.OutputOf<typeof codec>

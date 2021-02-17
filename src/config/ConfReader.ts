@@ -15,8 +15,8 @@ export namespace ConfReader {
     pipe(
       parseJsonFiles(path, ...paths),
       IO.map<NonEmptyArray<unknown>, ConfReader>(jsons =>
-        fromJsons(NonEmptyArray.head(jsons), ...NonEmptyArray.tail(jsons))
-      )
+        fromJsons(NonEmptyArray.head(jsons), ...NonEmptyArray.tail(jsons)),
+      ),
     )
 
   export function fromJsons(json: unknown, ...jsons: unknown[]): ConfReader {
@@ -31,21 +31,21 @@ export namespace ConfReader {
         List.reduce(readPath(allPaths, json), (acc, json) =>
           pipe(
             acc,
-            Maybe.alt(() => readPath(allPaths, json))
-          )
+            Maybe.alt(() => readPath(allPaths, json)),
+          ),
         ),
-        Either.fromOption(() => NonEmptyArray.of('missing key'))
+        Either.fromOption(() => NonEmptyArray.of('missing key')),
       )
 
       return pipe(
         valueForPath,
         Either.chain(val =>
-          pipe(decoder.decode(val), Either.mapLeft(flow(D.draw, NonEmptyArray.of)))
+          pipe(decoder.decode(val), Either.mapLeft(flow(D.draw, NonEmptyArray.of))),
         ),
         ValidatedNea.fromEmptyErrors,
         Either.mapLeft(
-          NonEmptyArray.map(_ => pipe(allPaths, StringUtils.mkString('key ', '.', `: ${_}`)))
-        )
+          NonEmptyArray.map(_ => pipe(allPaths, StringUtils.mkString('key ', '.', `: ${_}`))),
+        ),
       )
     }
   }
@@ -58,14 +58,14 @@ function parseJsonFiles(path: string, ...paths: string[]): IO<NonEmptyArray<unkn
         .bindL('acc', () => acc)
         .bindL('newConf', () => loadConfigFile(path))
         .return(({ acc, newConf }) => NonEmptyArray.snoc(acc, newConf)),
-    pipe(loadConfigFile(path), IO.map(NonEmptyArray.of))
+    pipe(loadConfigFile(path), IO.map(NonEmptyArray.of)),
   )
 }
 
 function loadConfigFile(path: string): IO<unknown> {
   return pipe(
     FileUtils.readFileSync(path),
-    IO.chain(_ => IO.fromEither(Either.parseJSON(_, unknownToError)))
+    IO.chain(_ => IO.fromEither(Either.parseJSON(_, unknownToError))),
   )
 }
 
@@ -76,6 +76,6 @@ function readPath(paths: string[], val: unknown): Maybe<unknown> {
   return pipe(
     Maybe.tryCatch(() => (val as any)[head]),
     Maybe.filter(_ => _ !== undefined),
-    Maybe.chain(newVal => readPath(tail, newVal))
+    Maybe.chain(newVal => readPath(tail, newVal)),
   )
 }

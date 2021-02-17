@@ -22,8 +22,8 @@ export namespace LogUtils {
         guild => {
           const chanName = message.channel.type === 'text' ? `#${message.channel.name}` : ''
           return `[${guild.name}${chanName}] `
-        }
-      )
+        },
+      ),
     )
     return logger[level](`${prefix}${message.author.tag}:`, ...args)
   }

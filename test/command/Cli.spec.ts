@@ -35,9 +35,9 @@ describe('Cli.adminTextChannel', () => {
           |    activity
           |        Jean Plank est un homme occupé et le fait savoir.
           |    kouizine
-          |        Jean Plank, galant homme, remet les femmes à leur place.`
-        )
-      )
+          |        Jean Plank, galant homme, remet les femmes à leur place.`,
+        ),
+      ),
     )
 
     expect(pipe(cmd, Command.parse(['ka', 'llz']))).toStrictEqual(
@@ -65,15 +65,15 @@ describe('Cli.adminTextChannel', () => {
           |    activity
           |        Jean Plank est un homme occupé et le fait savoir.
           |    kouizine
-          |        Jean Plank, galant homme, remet les femmes à leur place.`
-        )
-      )
+          |        Jean Plank, galant homme, remet les femmes à leur place.`,
+        ),
+      ),
     )
   })
 
   it('should parse "calls init"', () => {
     expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>', '<@mention>']))).toStrictEqual(
-      Either.right(Commands.CallsInit(TSnowflake.wrap('channel'), TSnowflake.wrap('mention')))
+      Either.right(Commands.CallsInit(TSnowflake.wrap('channel'), TSnowflake.wrap('mention'))),
     )
 
     expect(pipe(cmd, Command.parse(['calls', 'init']))).toStrictEqual(
@@ -84,9 +84,9 @@ describe('Cli.adminTextChannel', () => {
           |Usage: okb calls init <channel> <role>
           |
           |Jean Plank envoie un message. Les membres d'équipage qui réagissent avec 🔔 obtiennent le rôle <role>.
-          |À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
-        )
-      )
+          |À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`,
+        ),
+      ),
     )
 
     expect(pipe(cmd, Command.parse(['calls', 'init', '<#channel>']))).toStrictEqual(
@@ -97,9 +97,9 @@ describe('Cli.adminTextChannel', () => {
           |Usage: okb calls init <channel> <role>
           |
           |Jean Plank envoie un message. Les membres d'équipage qui réagissent avec 🔔 obtiennent le rôle <role>.
-          |À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
-        )
-      )
+          |À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`,
+        ),
+      ),
     )
 
     expect(pipe(cmd, Command.parse(['calls', 'init', '<@mention>', '<#channel>']))).toStrictEqual(
@@ -111,9 +111,9 @@ describe('Cli.adminTextChannel', () => {
           |Usage: okb calls init <channel> <role>
           |
           |Jean Plank envoie un message. Les membres d'équipage qui réagissent avec 🔔 obtiennent le rôle <role>.
-          |À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
-        )
-      )
+          |À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`,
+        ),
+      ),
     )
   })
 
@@ -133,9 +133,9 @@ describe('Cli.adminTextChannel', () => {
           |    get
           |        Jean Plank vous informe du rôle par défaut de ce serveur.
           |    set
-          |        Jean Plank veut bien changer le rôle par défaut de ce serveur.`
-        )
-      )
+          |        Jean Plank veut bien changer le rôle par défaut de ce serveur.`,
+        ),
+      ),
     )
 
     expect(pipe(cmd, Command.parse(['defaultRole', 'retrieve']))).toStrictEqual(
@@ -153,29 +153,29 @@ describe('Cli.adminTextChannel', () => {
           |    get
           |        Jean Plank vous informe du rôle par défaut de ce serveur.
           |    set
-          |        Jean Plank veut bien changer le rôle par défaut de ce serveur.`
-        )
-      )
+          |        Jean Plank veut bien changer le rôle par défaut de ce serveur.`,
+        ),
+      ),
     )
   })
 
   it('should parse "defaultRole get"', () => {
     expect(pipe(cmd, Command.parse(['defaultRole', 'get']))).toStrictEqual(
-      Either.right(Commands.DefaultRoleGet)
+      Either.right(Commands.DefaultRoleGet),
     )
   })
 
   it('should parse "defaultRole set"', () => {
     expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@toto>']))).toStrictEqual(
-      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
+      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto'))),
     )
 
     expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@!toto>']))).toStrictEqual(
-      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
+      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto'))),
     )
 
     expect(pipe(cmd, Command.parse(['defaultRole', 'set', '<@&toto>']))).toStrictEqual(
-      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto')))
+      Either.right(Commands.DefaultRoleSet(TSnowflake.wrap('toto'))),
     )
   })
 
@@ -187,19 +187,19 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb say [--attach <url>]... <message>
           |
-          |Jean Plank prend la parole.`
-        )
-      )
+          |Jean Plank prend la parole.`,
+        ),
+      ),
     )
   })
 
   it('should parse "say"', () => {
     expect(pipe(cmd, Command.parse(['say', 'hello world']))).toStrictEqual(
-      Either.right(Commands.Say([], 'hello world'))
+      Either.right(Commands.Say([], 'hello world')),
     )
 
     expect(
-      pipe(cmd, Command.parse(['say', '--attach', 'file1', '-a', 'file2', 'hello world']))
+      pipe(cmd, Command.parse(['say', '--attach', 'file1', '-a', 'file2', 'hello world'])),
     ).toStrictEqual(Either.right(Commands.Say(['file1', 'file2'], 'hello world')))
   })
 
@@ -225,27 +225,27 @@ describe('Cli.adminTextChannel', () => {
           |    set
           |        Jean Plank annonce au monde qu'il est un homme occupé.
           |    refresh
-          |        Jean Plank a parfois besoin de rappeler au monde qu'il est un homme occupé.`
-        )
-      )
+          |        Jean Plank a parfois besoin de rappeler au monde qu'il est un homme occupé.`,
+        ),
+      ),
     )
   })
 
   it('should parse "activity"', () => {
     expect(pipe(cmd, Command.parse(['activity', 'get']))).toStrictEqual(
-      Either.right(Commands.ActivityGet)
+      Either.right(Commands.ActivityGet),
     )
 
     expect(pipe(cmd, Command.parse(['activity', 'unset']))).toStrictEqual(
-      Either.right(Commands.ActivityUnset)
+      Either.right(Commands.ActivityUnset),
     )
 
     expect(
-      pipe(cmd, Command.parse(['activity', 'set', 'watch', 'brûler ton navire']))
+      pipe(cmd, Command.parse(['activity', 'set', 'watch', 'brûler ton navire'])),
     ).toStrictEqual(Either.right(Commands.ActivitySet(Activity('WATCHING', 'brûler ton navire'))))
 
     expect(
-      pipe(cmd, Command.parse(['activity', 'set', 'watch', 'brûler ton navire']))
+      pipe(cmd, Command.parse(['activity', 'set', 'watch', 'brûler ton navire'])),
     ).toStrictEqual(Either.right(Commands.ActivitySet(Activity('WATCHING', 'brûler ton navire'))))
 
     expect(pipe(cmd, Command.parse(['activity', 'set']))).toStrictEqual(
@@ -255,13 +255,13 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb activity set <play|stream|listen|watch> <message>
           |
-          |Jean Plank annonce au monde qu'il est un homme occupé.`
-        )
-      )
+          |Jean Plank annonce au monde qu'il est un homme occupé.`,
+        ),
+      ),
     )
 
     expect(pipe(cmd, Command.parse(['activity', 'refresh']))).toStrictEqual(
-      Either.right(Commands.ActivityRefresh)
+      Either.right(Commands.ActivityRefresh),
     )
   })
 
@@ -273,9 +273,9 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb defaultRole set <role>
           |
-          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`
-        )
-      )
+          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`,
+        ),
+      ),
     )
 
     expect(pipe(cmd, Command.parse(['defaultRole', 'set']))).toStrictEqual(
@@ -285,9 +285,9 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb defaultRole set <role>
           |
-          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`
-        )
-      )
+          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`,
+        ),
+      ),
     )
 
     expect(pipe(cmd, Command.parse(['defaultRole', 'set', 'role']))).toStrictEqual(
@@ -297,9 +297,9 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb defaultRole set <role>
           |
-          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`
-        )
-      )
+          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`,
+        ),
+      ),
     )
 
     expect(pipe(cmd, Command.parse(['defaultRole', 'set', 'role', 'a']))).toStrictEqual(
@@ -309,9 +309,9 @@ describe('Cli.adminTextChannel', () => {
           |
           |Usage: okb defaultRole set <role>
           |
-          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`
-        )
-      )
+          |Jean Plank veut bien changer le rôle par défaut de ce serveur.`,
+        ),
+      ),
     )
   })
 })

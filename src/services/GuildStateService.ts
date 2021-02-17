@@ -15,7 +15,7 @@ import { ChannelUtils } from '../utils/ChannelUtils'
 export const GuildStateService = (
   Logger: PartialLogger,
   guildStatePersistence: GuildStatePersistence,
-  discord: DiscordConnector
+  discord: DiscordConnector,
 ) => {
   const _logger = Logger('GuildStateService')
 
@@ -32,7 +32,7 @@ export const GuildStateService = (
             .bind('message', discord.fetchMessage(guild, message))
             .bind(
               'channel',
-              pipe(discord.fetchChannel(channel), Future.map(Maybe.filter(ChannelUtils.isText)))
+              pipe(discord.fetchChannel(channel), Future.map(Maybe.filter(ChannelUtils.isText))),
             )
             .bind('role', discord.fetchRole(guild, role))
             .return(({ message, channel, role }) =>
@@ -40,8 +40,8 @@ export const GuildStateService = (
                 .bind('message', message)
                 .bind('channel', channel)
                 .bind('role', role)
-                .done()
-            )
+                .done(),
+            ),
       ),
 
     setDefaultRole: (guild: Guild, role: Role): Future<boolean> =>
@@ -51,8 +51,8 @@ export const GuildStateService = (
       get(
         guild,
         _ => _.defaultRole,
-        _ => discord.fetchRole(guild, _)
-      )
+        _ => discord.fetchRole(guild, _),
+      ),
   }
 
   function set<A>(guild: Guild, lens: Lens<GuildState, A>, a: A): Future<boolean> {
@@ -61,23 +61,23 @@ export const GuildStateService = (
       guildStatePersistence.find(guildId),
       Future.map(Maybe.getOrElse(() => GuildState.empty(guildId))),
       Future.map(lens.set(a)),
-      Future.chain(_ => guildStatePersistence.upsert(guildId, _))
+      Future.chain(_ => guildStatePersistence.upsert(guildId, _)),
     )
   }
 
   function get<A, B>(
     guild: Guild,
     getter: (state: GuildState) => Maybe<A>,
-    fetch: (a: A) => Future<Maybe<B>>
+    fetch: (a: A) => Future<Maybe<B>>,
   ): Future<Maybe<B>> {
     return pipe(
       guildStatePersistence.find(GuildId.wrap(guild.id)),
       Future.chain(
         flow(
           Maybe.chain(getter),
-          Maybe.fold(() => Future.right(Maybe.none), fetch)
-        )
-      )
+          Maybe.fold(() => Future.right(Maybe.none), fetch),
+        ),
+      ),
     )
   }
 }

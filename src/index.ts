@@ -14,5 +14,5 @@ pipe(
     .bindL('mongo', ({ Logger, config }) => MongoPoolParty(Logger, config))
     .doL(({ Logger, config, discord, mongo }) => Application(Logger, config, discord, mongo))
     .return(() => {}),
-  Future.runUnsafe
+  Future.runUnsafe,
 )

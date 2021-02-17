@@ -9,7 +9,7 @@ type OnComplete<A> = Readonly<{
 export namespace FutureUtils {
   export function retryIfFailed<A>(
     delay: MsDuration,
-    onComplete: OnComplete<A>
+    onComplete: OnComplete<A>,
   ): (f: Future<A>) => Future<A> {
     return f => retryIfFailedRec(f, delay, onComplete, true)
   }
@@ -19,7 +19,7 @@ function retryIfFailedRec<A>(
   f: Future<A>,
   delay: MsDuration,
   onComplete: OnComplete<A>,
-  firstTime: boolean
+  firstTime: boolean,
 ): Future<A> {
   const { onFailure, onSuccess } = onComplete
   return pipe(
@@ -31,14 +31,14 @@ function retryIfFailedRec<A>(
             firstTime ? onFailure(e) : IO.unit,
             Future.fromIOEither,
             Future.chain(_ => retryIfFailedRec(f, delay, onComplete, false)),
-            Future.delay(delay)
+            Future.delay(delay),
           ),
         a =>
           pipe(
             Future.fromIOEither(onSuccess(a)),
-            Future.map(_ => a)
-          )
-      )
-    )
+            Future.map(_ => a),
+          ),
+      ),
+    ),
   )
 }

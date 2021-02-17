@@ -14,7 +14,7 @@ export namespace StringUtils {
   export function mkString(
     startOrSep: string,
     sep?: string,
-    end?: string
+    end?: string,
   ): (list: string[]) => string {
     return list =>
       sep !== undefined && end !== undefined

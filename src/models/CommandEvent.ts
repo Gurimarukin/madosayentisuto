@@ -16,7 +16,7 @@ export namespace CommandEvent {
   const commandEvent: Functor2<URI> = {
     URI,
     map: <E, A, B>(fa: CommandEvent<E, A>, f: (a: A) => B): CommandEvent<E, B> =>
-      isStdout(fa) ? Stdout(f(fa.value)) : fa
+      isStdout(fa) ? Stdout(f(fa.value)) : fa,
   }
 
   export const { map } = pipeable(commandEvent)
@@ -51,7 +51,7 @@ export namespace CommandEvent {
   export const isDone = <E, A>(event: CommandEvent<E, A>): event is Done => event._tag === 'Done'
 
   export const fold = <E, A, B>({ onStdout, onStderr, onDone }: FoldArgs<E, A, B>) => (
-    event: CommandEvent<E, A>
+    event: CommandEvent<E, A>,
   ): B =>
     isStdout(event)
       ? onStdout(event.value)

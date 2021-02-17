@@ -7,21 +7,21 @@ export namespace LogLevel {
     D.literal('debug'),
     D.literal('info'),
     D.literal('warn'),
-    D.literal('error')
+    D.literal('error'),
   )
 
   export const shellColor: Record<LogLevel, string> = {
     debug: '90',
     info: '36',
     warn: '33',
-    error: '31;1'
+    error: '31;1',
   }
 
   export const hexColor: Record<LogLevel, string> = {
     debug: Colors.dimgray,
     info: Colors.lightseagreen,
     warn: Colors.goldenrod,
-    error: Colors.tomato
+    error: Colors.tomato,
   }
 }
 
@@ -35,7 +35,7 @@ export namespace LogLevelOrOff {
     info: 3,
     warn: 2,
     error: 1,
-    off: 0
+    off: 0,
   }
 }
 

@@ -173,8 +173,8 @@ export namespace Usage {
         return List.comprehension([fromOpts(opts.f), fromOpts(opts.a)], (l, r) =>
           Usage({
             opts: pipe(asProd(l.opts), and(asProd(r.opts))),
-            args: pipe(asProd(l.args), and(asProd(r.args)))
-          })
+            args: pipe(asProd(l.args), and(asProd(r.args))),
+          }),
         )
 
       case 'OrElse':
@@ -190,7 +190,7 @@ export namespace Usage {
           return pipe(
             List.reverse(ls),
             _ => List.snoc(_, Usage({ opts: pipe(asSum(l.opts), or(asSum(r.opts))) })),
-            _ => List.concat(_, rs)
+            _ => List.concat(_, rs),
           )
         }
 
@@ -198,7 +198,7 @@ export namespace Usage {
           return pipe(
             List.reverse(ls),
             _ => List.snoc(_, Usage({ args: pipe(asSum(l.args), or(asSum(r.args))) })),
-            _ => List.concat(_, rs)
+            _ => List.concat(_, rs),
           )
         }
 
@@ -224,9 +224,9 @@ export namespace Usage {
         return List.of(
           Usage({
             opts: Many.Just(
-              Options.Required(`${Opts.Name.stringify(opt.names[0])} <${opt.metavar}>`)
-            )
-          })
+              Options.Required(`${Opts.Name.stringify(opt.names[0])} <${opt.metavar}>`),
+            ),
+          }),
         )
 
       case 'Argument':
@@ -240,9 +240,9 @@ export namespace Usage {
         return List.of(
           Usage({
             opts: Many.Just(
-              Options.Repeated(`${Opts.Name.stringify(opt.names[0])} <${opt.metavar}>`)
-            )
-          })
+              Options.Repeated(`${Opts.Name.stringify(opt.names[0])} <${opt.metavar}>`),
+            ),
+          }),
         )
 
       case 'Argument':
@@ -266,7 +266,7 @@ const asOptional = <A>(list: Many<A>[]): Maybe<Many<A>[]> => {
     ? Maybe.some(tail.filter(not(isEmptyProd)))
     : pipe(
         asOptional(tail),
-        Maybe.map(_ => List.cons(head, _))
+        Maybe.map(_ => List.cons(head, _)),
       )
 }
 
@@ -281,8 +281,8 @@ function showOptions(opts: Many<Options>): string[] {
             // l matches List.of(Many.Just(Options.Repeated(_)))
             l.length === 1 && Many.isJust(l[0]) && Options.isRepeated(l[0].value)
               ? List.of(`[${l[0].value.text}]...`)
-              : l.map(flow(showOptions, StringUtils.mkString('[', ' | ', ']'))) // decline uses traverse ¯\_(ツ)_/¯
-        )
+              : l.map(flow(showOptions, StringUtils.mkString('[', ' | ', ']'))), // decline uses traverse ¯\_(ツ)_/¯
+        ),
       )
 
     case 'Just':
@@ -308,8 +308,8 @@ function showArgs(args: Many<Args>): string[] {
         asOptional(args.anyOf),
         Maybe.fold(
           () => pipe(args.anyOf, List.chain(showArgs)),
-          List.map(flow(showArgs, StringUtils.mkString('[', ' | ', ']'))) // decline uses traverse ¯\_(ツ)_/¯
-        )
+          List.map(flow(showArgs, StringUtils.mkString('[', ' | ', ']'))), // decline uses traverse ¯\_(ツ)_/¯
+        ),
       )
 
     case 'Prod':

@@ -40,7 +40,7 @@ export const List = {
   concat: <A>(a: A[], b: A[]): A[] => [...a, ...b],
 
   exists: <A>(predicate: Predicate<A>) => (l: A[]): boolean =>
-    _pipe(l, List.findIndex(predicate), _Option.isSome)
+    _pipe(l, List.findIndex(predicate), _Option.isSome),
 }
 
 /**
@@ -51,7 +51,7 @@ export type NonEmptyArray<A> = _NonEmptyArray.NonEmptyArray<A>
 function neaDecoder<A>(decoder: D.Decoder<unknown, A>): D.Decoder<unknown, NonEmptyArray<A>> {
   return _pipe(
     D.array(decoder),
-    D.refine((a): a is NonEmptyArray<A> => a.length > 0, 'NonEmptyArray')
+    D.refine((a): a is NonEmptyArray<A> => a.length > 0, 'NonEmptyArray'),
   )
 }
 
@@ -67,7 +67,7 @@ export const NonEmptyArray = {
   encoder: neaEncoder,
 
   codec: <O, A>(codec: C.Codec<unknown, O, A>): C.Codec<unknown, O[], NonEmptyArray<A>> =>
-    C.make(neaDecoder(codec), neaEncoder(codec))
+    C.make(neaDecoder(codec), neaEncoder(codec)),
 }
 
 /**
@@ -78,15 +78,15 @@ export const Dict = {
   ..._Record,
 
   insertOrUpdateAt: <K extends string, A>(k: K, a: Lazy<A>, update: (a: A) => A) => (
-    record: Record<K, A>
+    record: Record<K, A>,
   ): Record<K, A> =>
     _pipe(
       _Record.lookup(k, record),
       _Option.fold(
         () => _pipe(record, _Record.insertAt(k, a())),
-        _ => _pipe(record, _Record.insertAt(k, update(_)))
-      )
-    )
+        _ => _pipe(record, _Record.insertAt(k, update(_))),
+      ),
+    ),
 }
 
 /**
@@ -99,7 +99,7 @@ function optDecoder<I, A>(decoder: D.Decoder<I, A>): D.Decoder<I, Maybe<A>> {
     decode: (u: I) =>
       u === null || u === undefined
         ? D.success(_Option.none)
-        : _pipe(decoder.decode(u), _Either.map(_Option.some))
+        : _pipe(decoder.decode(u), _Either.map(_Option.some)),
   }
 }
 
@@ -115,8 +115,8 @@ export const Maybe = {
       opt,
       _Option.fold(
         () => [],
-        _ => [_]
-      )
+        _ => [_],
+      ),
     ),
 
   decoder: optDecoder,
@@ -124,7 +124,7 @@ export const Maybe = {
   encoder: optEncoder,
 
   codec: <O, A>(codec: C.Codec<unknown, O, A>): C.Codec<unknown, O | null, Maybe<A>> =>
-    C.make(optDecoder(codec), optEncoder(codec))
+    C.make(optDecoder(codec), optEncoder(codec)),
 }
 
 /**
@@ -149,8 +149,8 @@ export const Try = {
       t,
       Either.getOrElse<Error, A>(e => {
         throw e
-      })
-    )
+      }),
+    ),
 }
 
 /**
@@ -160,7 +160,7 @@ export type Task<A> = _Task.Task<A>
 export const Task = {
   ..._Task,
 
-  run: <A>(task: Task<A>): Promise<A> => task()
+  run: <A>(task: Task<A>): Promise<A> => task(),
 }
 
 /**
@@ -188,14 +188,14 @@ export const Future = {
     _Task.chain(
       _Either.fold(
         e => onError(e),
-        _ => _TaskEither.right(_)
-      )
+        _ => _TaskEither.right(_),
+      ),
     ),
 
   runUnsafe: <A>(future: Future<A>): Promise<A> => _pipe(future, _Task.map(Try.get))(),
 
   delay: <A>(ms: MsDuration) => (future: Future<A>): Future<A> =>
-    _pipe(future, _Task.delay(MsDuration.unwrap(ms)))
+    _pipe(future, _Task.delay(MsDuration.unwrap(ms))),
 }
 
 /**
@@ -214,7 +214,7 @@ export const IO = {
       Future.runUnsafe(f)
     }),
 
-  runUnsafe: <A>(io: IO<A>): A => Try.get(io())
+  runUnsafe: <A>(io: IO<A>): A => Try.get(io()),
 }
 
 /**

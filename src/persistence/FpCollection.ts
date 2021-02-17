@@ -1,3 +1,4 @@
+import { flow, pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
 import {
@@ -15,35 +16,35 @@ import {
   ReplaceWriteOpResult,
   UpdateOneOptions,
   UpdateWriteOpResult,
-  WithId
+  WithId,
 } from 'mongodb'
 
-import { IndexSpecification } from '../models/MongoTypings'
+import { IndexSpecification, ReadonlyPartial, WithoutProjection } from '../models/MongoTypings'
 import { Logger } from '../services/Logger'
-import { Either, Future, Maybe, flow, pipe } from '../utils/fp'
+import { Either, Future, Maybe } from '../utils/fp'
 
 export type FpCollection = ReturnType<typeof FpCollection>
 
-export function FpCollection<A, O extends { [key: string]: unknown }>(
+export function FpCollection<A, O extends { readonly [key: string]: unknown }>(
   logger: Logger,
   collection: <T>(f: (coll: Collection<O>) => Promise<T>) => Future<T>,
-  codec: C.Codec<unknown, OptionalId<O>, A>
+  codec: C.Codec<unknown, OptionalId<O>, A>,
 ) {
   return {
     collection,
 
     ensureIndexes: (
       indexSpecs: IndexSpecification<A>[],
-      options?: { session?: ClientSession }
+      options?: { readonly session?: ClientSession },
     ): Future<void> =>
       pipe(
         Future.fromIOEither(logger.debug('Ensuring indexes')),
-        Future.chain(_ => collection(c => c.createIndexes(indexSpecs, options)))
+        Future.chain(() => collection(c => c.createIndexes(indexSpecs, options))),
       ),
 
     insertOne: (
       doc: A,
-      options?: CollectionInsertOneOptions
+      options?: CollectionInsertOneOptions,
     ): Future<InsertOneWriteOpResult<WithId<O>>> => {
       const encoded = codec.encode(doc)
       return pipe(
@@ -51,15 +52,15 @@ export function FpCollection<A, O extends { [key: string]: unknown }>(
         Future.chain(res =>
           pipe(
             Future.fromIOEither(logger.debug('inserted', encoded)),
-            Future.map(_ => res)
-          )
-        )
+            Future.map(() => res),
+          ),
+        ),
       )
     },
 
     insertMany: (
       docs: A[],
-      options?: CollectionInsertManyOptions
+      options?: CollectionInsertManyOptions,
     ): Future<InsertWriteOpResult<WithId<O>>> => {
       const encoded = docs.map(codec.encode)
       return pipe(
@@ -67,33 +68,33 @@ export function FpCollection<A, O extends { [key: string]: unknown }>(
         Future.chain(res =>
           pipe(
             Future.fromIOEither(logger.debug(`inserted ${res.insertedCount} documents`)),
-            Future.map(_ => res)
-          )
-        )
+            Future.map(() => res),
+          ),
+        ),
       )
     },
 
     updateOne: (
       filter: FilterQuery<O>,
       doc: A,
-      options?: UpdateOneOptions
+      options?: UpdateOneOptions,
     ): Future<UpdateWriteOpResult> => {
       const encoded = codec.encode(doc)
       return pipe(
-        collection(c => c.updateOne(filter, { $set: encoded }, options)),
+        collection(c => c.updateOne(filter, { $set: encoded as ReadonlyPartial<O> }, options)),
         Future.chain(res =>
           pipe(
             Future.fromIOEither(logger.debug('updated', encoded)),
-            Future.map(_ => res)
-          )
-        )
+            Future.map(() => res),
+          ),
+        ),
       )
     },
 
     replaceOne: (
       filter: FilterQuery<O>,
       doc: A,
-      options?: ReplaceOneOptions
+      options?: ReplaceOneOptions,
     ): Future<ReplaceWriteOpResult> => {
       const encoded = codec.encode(doc)
       return pipe(
@@ -101,17 +102,17 @@ export function FpCollection<A, O extends { [key: string]: unknown }>(
         Future.chain(res =>
           pipe(
             Future.fromIOEither(logger.debug('upserted', encoded)),
-            Future.map(_ => res)
-          )
-        )
+            Future.map(() => res),
+          ),
+        ),
       )
     },
 
     count: (filter: FilterQuery<O>): Future<number> => collection(c => c.countDocuments(filter)),
 
-    findOne: <T = O>(
+    findOne: (
       filter: FilterQuery<O>,
-      options?: FindOneOptions<T extends O ? O : T>
+      options?: WithoutProjection<FindOneOptions<O>>,
     ): Future<Maybe<A>> =>
       pipe(
         collection(c => c.findOne(filter, options)),
@@ -119,17 +120,19 @@ export function FpCollection<A, O extends { [key: string]: unknown }>(
         Future.chain(
           Maybe.fold(
             () => Future.right(Maybe.none),
-            flow(codec.decode, Either.bimap(decodeError, Maybe.some), Future.fromEither)
-          )
-        )
+            flow(codec.decode, Either.bimap(decodeError, Maybe.some), Future.fromEither),
+          ),
+        ),
       ),
 
-    find: <T = O>(
+    find: (
       query: FilterQuery<O>,
-      options?: FindOneOptions<T extends O ? O : T>
+      options?: WithoutProjection<FindOneOptions<O>>,
     ): Future<Cursor<Either<Error, A>>> =>
       collection(c =>
-        Promise.resolve(c.find(query, options).map(flow(codec.decode, Either.mapLeft(decodeError))))
+        Promise.resolve(
+          c.find(query, options).map(flow(codec.decode, Either.mapLeft(decodeError))),
+        ),
       ),
 
     drop: (): Future<void> =>
@@ -138,10 +141,10 @@ export function FpCollection<A, O extends { [key: string]: unknown }>(
         Future.chain(res =>
           pipe(
             Future.fromIOEither(logger.info('droped collection')),
-            Future.map(_ => res)
-          )
-        )
-      )
+            Future.map(() => res),
+          ),
+        ),
+      ),
   }
 }
 

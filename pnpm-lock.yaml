@@ -4,7 +4,7 @@ devDependencies:
   '@type-config/strict': 1.0.2
   '@types/dateformat': 3.0.1
   '@types/jest': 25.2.3
-  '@types/mongodb': 3.5.34
+  '@types/mongodb': 3.6.7
   '@types/node': 13.13.32
   '@types/shell-quote': 1.7.0
   '@types/ws': 7.4.0
@@ -21,7 +21,7 @@ devDependencies:
   fp-ts-rxjs: 0.6.11_fp-ts@2.9.0+rxjs@6.6.3
   io-ts: 2.2.13_fp-ts@2.9.0
   jest: 25.5.4
-  mongodb: 3.6.3
+  mongodb: 3.6.4
   monocle-ts: 2.3.3_fp-ts@2.9.0
   newtype-ts: 0.3.4_fp-ts@2.9.0+monocle-ts@2.3.3
   nodemon: 2.0.6
@@ -587,7 +587,7 @@ packages:
       integrity: sha512-Pzh9O3sTK8V6I1olsXpCfj2k/ygO2q1X0vhhnDrEQyYLHZesWz+zMZMVcwXLCYf0U36EtmyYaFGPfXlTtDHe3A==
   /@types/bson/4.0.3:
     dependencies:
-      '@types/node': 13.13.32
+      '@types/node': 13.13.42
     dev: true
     resolution:
       integrity: sha512-mVRvYnTOZJz3ccpxhr3wgxVmSeiYinW+zlzQz3SXWaJmD1DuL05Jeq7nKw3SnbKmbleW5qrLG5vdyWe/A9sXhw==
@@ -637,17 +637,21 @@ packages:
     dev: true
     resolution:
       integrity: sha1-7ihweulOEdK4J7y+UnC86n8+ce4=
-  /@types/mongodb/3.5.34:
+  /@types/mongodb/3.6.7:
     dependencies:
       '@types/bson': 4.0.3
-      '@types/node': 13.13.32
+      '@types/node': 13.13.42
     dev: true
     resolution:
-      integrity: sha512-73iy3+MiH+wxSM+hVA5jcW9ZTUaor2WKvM7hW+htOSgVb7E6/JBHOWaxj7rL1/vaxEBziKRr/VPecy3YAKqLuQ==
+      integrity: sha512-47P64kbkXarlleSMzSrRG04uzY+Dr3xAilOiqRIsqj/sZrmq6cUMx8njydY/iWMqi8IdE9ojFQl/X3ou9EsAlQ==
   /@types/node/13.13.32:
     dev: true
     resolution:
       integrity: sha512-sPBvDnrwZE1uePhkCEyI/qQlgZM5kePPAhHIFDWNsOrWBFRBOk3LKJYmVCLeLZlL9Ub/FzMJb31OTWCg2F+06g==
+  /@types/node/13.13.42:
+    dev: true
+    resolution:
+      integrity: sha512-g+w2QgbW7k2CWLOXzQXbO37a7v5P9ObPvYahKphdBLV5aqpbVZRhTpWCT0SMRqX1i30Aig791ZmIM2fJGL2S8A==
   /@types/normalize-package-data/2.4.0:
     dev: true
     resolution:
@@ -1615,12 +1619,12 @@ packages:
     dev: true
     resolution:
       integrity: sha1-hMbhWbgZBP3KWaDvRM2HDTElD5o=
-  /denque/1.4.1:
+  /denque/1.5.0:
     dev: true
     engines:
       node: '>=0.10'
     resolution:
-      integrity: sha512-OfzPuSZKGcgr96rf1oODnfjqBFmr1DVoc/TrItj3Ohe0Ah1C5WX5Baquw/9U9KovnQ88EqmJbD66rKYUQYN1tQ==
+      integrity: sha512-CYiCSgIF1p6EUByQPlGkKnP1M9g0ZV3qMIrqMqZqdwazygIA/YP2vrbcyl1h/WppKJTdl1F85cXIle+394iDAQ==
   /dependency-cruiser/9.17.1_typescript@3.9.7:
     dependencies:
       acorn: 8.0.4
@@ -3698,11 +3702,11 @@ packages:
     hasBin: true
     resolution:
       integrity: sha512-NKmAlESf6jMGym1++R0Ra7wvhV+wFW63FaSOFPwRahvea0gMUcGUhVeAg/0BC0wiv9ih5NYPB1Wn1UEI1/L+xQ==
-  /mongodb/3.6.3:
+  /mongodb/3.6.4:
     dependencies:
       bl: 2.2.1
       bson: 1.1.5
-      denque: 1.4.1
+      denque: 1.5.0
       require_optional: 1.0.1
       safe-buffer: 5.2.1
     dev: true
@@ -3731,7 +3735,7 @@ packages:
       snappy:
         optional: true
     resolution:
-      integrity: sha512-rOZuR0QkodZiM+UbQE5kDsJykBqWi0CL4Ec2i1nrGrUI3KO11r6Fbxskqmq3JK2NH7aW4dcccBuUujAP0ERl5w==
+      integrity: sha512-Y+Ki9iXE9jI+n9bVtbTOOdK0B95d6wVGSucwtBkvQ+HIvVdTCfpVRp01FDC24uhC/Q2WXQ8Lpq3/zwtB5Op9Qw==
   /monocle-ts/2.3.3_fp-ts@2.9.0:
     dependencies:
       fp-ts: 2.9.0
@@ -4467,7 +4471,7 @@ packages:
       request-promise-core: 1.1.4_request@2.88.2
       stealthy-require: 1.1.1
       tough-cookie: 2.5.0
-    deprecated: 'request-promise-native has been deprecated because it extends the now deprecated request package, see https://github.com/request/request/issues/3142'
+    deprecated: request-promise-native has been deprecated because it extends the now deprecated request package, see https://github.com/request/request/issues/3142
     dev: true
     engines:
       node: '>=0.12.0'
@@ -4497,7 +4501,7 @@ packages:
       tough-cookie: 2.5.0
       tunnel-agent: 0.6.0
       uuid: 3.4.0
-    deprecated: 'request has been deprecated, see https://github.com/request/request/issues/3142'
+    deprecated: request has been deprecated, see https://github.com/request/request/issues/3142
     dev: true
     engines:
       node: '>= 6'
@@ -4547,7 +4551,7 @@ packages:
     resolution:
       integrity: sha512-qYg9KP24dD5qka9J47d0aVky0N+b4fTU89LN9iDnjB5waksiC49rvMB0PrUJQGoTmH50XPiqOvAjDfaijGxYZw==
   /resolve-url/0.2.1:
-    deprecated: 'https://github.com/lydell/resolve-url#deprecated'
+    deprecated: https://github.com/lydell/resolve-url#deprecated
     dev: true
     resolution:
       integrity: sha1-LGN/53yJOv0qZj/iGqkIAGjiBSo=
@@ -5479,7 +5483,7 @@ packages:
     resolution:
       integrity: sha512-B0yRTzYdUCCn9n+F4+Gh4yIDtMQcaJsmYBDsTSG8g/OejKBodLQ2IHfN3bM7jUsRXndopT7OIXWdYqc1fjmV6g==
   /urix/0.1.0:
-    deprecated: 'Please see https://github.com/lydell/urix#deprecated'
+    deprecated: Please see https://github.com/lydell/urix#deprecated
     dev: true
     resolution:
       integrity: sha1-2pN/emLiH+wf0Y1Js1wpNQZ6bHI=
@@ -5739,7 +5743,7 @@ specifiers:
   '@type-config/strict': ^1.0.2
   '@types/dateformat': ^3.0.1
   '@types/jest': ^25.2.3
-  '@types/mongodb': ^3.5.34
+  '@types/mongodb': ^3.6.7
   '@types/node': ^13.13.32
   '@types/shell-quote': ^1.7.0
   '@types/ws': ^7.4.0
@@ -5756,7 +5760,7 @@ specifiers:
   fp-ts-rxjs: ^0.6.11
   io-ts: ^2.2.13
   jest: ^25.5.4
-  mongodb: ^3.6.3
+  mongodb: ^3.6.4
   monocle-ts: ^2.3.3
   newtype-ts: ^0.3.4
   nodemon: ^2.0.6

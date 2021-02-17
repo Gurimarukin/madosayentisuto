@@ -15,7 +15,7 @@ describe('ConfReader.fromJsons', () => {
 
     expect(reader(D.number)('foo', 'baz')).toStrictEqual(Either.left(['key foo.baz: missing key']))
     expect(reader(D.number)('foo', 'bar', 'baz')).toStrictEqual(
-      Either.left(['key foo.bar.baz: missing key'])
+      Either.left(['key foo.bar.baz: missing key']),
     )
   })
 
@@ -23,10 +23,10 @@ describe('ConfReader.fromJsons', () => {
     const reader = ConfReader.fromJsons({ foo: { bar: 'toto' } })
 
     expect(reader(D.number)('foo')).toStrictEqual(
-      Either.left(['key foo: cannot decode {"bar":"toto"}, should be number'])
+      Either.left(['key foo: cannot decode {"bar":"toto"}, should be number']),
     )
     expect(reader(D.number)('foo', 'bar')).toStrictEqual(
-      Either.left(['key foo.bar: cannot decode "toto", should be number'])
+      Either.left(['key foo.bar: cannot decode "toto", should be number']),
     )
   })
 
@@ -47,18 +47,18 @@ describe('ConfReader.fromJsons', () => {
     const reader = ConfReader.fromJsons(
       {
         foo: { bar: 123 },
-        baz: { cde: 789 }
+        baz: { cde: 789 },
       },
       {
         foo: { bar: 456 },
-        baz: { cde: 'toto' }
-      }
+        baz: { cde: 'toto' },
+      },
     )
 
     expect(reader(D.number)('foo', 'bar')).toStrictEqual(Either.right(123))
     expect(reader(D.number)('baz', 'cde')).toStrictEqual(Either.right(789))
     expect(reader(D.string)('baz', 'cde')).toStrictEqual(
-      Either.left(['key baz.cde: cannot decode 789, should be string'])
+      Either.left(['key baz.cde: cannot decode 789, should be string']),
     )
   })
 })

@@ -11,7 +11,7 @@ export type GuildState = C.TypeOf<typeof GuildState.codec>
 export function GuildState(
   id: GuildId,
   calls: Maybe<StaticCalls>,
-  defaultRole: Maybe<TSnowflake>
+  defaultRole: Maybe<TSnowflake>,
 ): GuildState {
   return { id, calls, defaultRole }
 }
@@ -20,7 +20,7 @@ export namespace GuildState {
   export const codec = C.type({
     id: GuildId.codec,
     calls: Maybe.codec(StaticCalls.codec),
-    defaultRole: Maybe.codec(TSnowflake.codec)
+    defaultRole: Maybe.codec(TSnowflake.codec),
   })
 
   export type Output = C.OutputOf<typeof codec>

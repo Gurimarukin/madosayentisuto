@@ -7,7 +7,7 @@ export namespace ActivityTypeBot {
     C.literal('PLAYING'),
     C.literal('STREAMING'),
     C.literal('LISTENING'),
-    C.literal('WATCHING')
+    C.literal('WATCHING'),
   )
   export const encoder = E.id<ActivityTypeBot>()
   export const codec = C.make(decoder, encoder)

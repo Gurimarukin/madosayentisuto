@@ -20,7 +20,7 @@ export namespace ProcessUtils {
   export const execAsync = (
     command: string,
     args: string[] = [],
-    options: ShortOptions = {}
+    options: ShortOptions = {},
   ): Future<CmdOutput> =>
     Future.apply(
       () =>
@@ -37,23 +37,23 @@ export namespace ProcessUtils {
                 onStderr: _ => {
                   stderr += _
                 },
-                onDone: code => resolve({ code, stdout, stderr })
-              })
-            )
+                onDone: code => resolve({ code, stdout, stderr }),
+              }),
+            ),
           )
-        })
+        }),
     )
 
   // emits a CommandEvent for each outputed line (which rawObservable doesn't)
   export const execObservable = (
     command: string,
     args: string[] = [],
-    options: ShortOptions = {}
+    options: ShortOptions = {},
   ): ObservableE<CommandEvent<any, any>> =>
     new Observable<Try<CommandEvent<any, any>>>(subscriber => {
       const acc = {
         stdout: '',
-        stderr: ''
+        stderr: '',
       }
 
       rawObservable(command, args, options).subscribe(
@@ -65,9 +65,9 @@ export namespace ProcessUtils {
             onDone: code => {
               pipe(code, next(CommandEvent.Done))
               subscriber.complete()
-            }
-          })
-        )
+            },
+          }),
+        ),
       )
 
       function onData(key: keyof typeof acc): (value: any) => void {
@@ -89,8 +89,8 @@ export namespace ProcessUtils {
 
                 // accumulate last
                 acc[key] = NonEmptyArray.last(tail)
-              }
-            )
+              },
+            ),
           )
         }
       }
@@ -104,7 +104,7 @@ export namespace ProcessUtils {
 function rawObservable(
   command: string,
   args: string[] = [],
-  options: ShortOptions = {}
+  options: ShortOptions = {},
 ): ObservableE<CommandEvent<any, any>> {
   return new Observable<Try<CommandEvent<any, any>>>(subscriber => {
     const stream = spawn(command, args, { shell: true, cwd: options.cwd, env: options.env })

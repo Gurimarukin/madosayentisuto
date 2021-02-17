@@ -10,7 +10,7 @@ export type ObservableE<A> = Observable<Try<A>>
 export const ObservableE = {
   ...OE,
   filter,
-  filterMap
+  filterMap,
 }
 
 function filter<A, B extends A>(
@@ -25,8 +25,8 @@ function filterMap<A, B>(f: (a: A) => Maybe<B>): (fa: ObservableE<A>) => Observa
   return O.filterMap(
     Either.fold<Error, A, Maybe<Try<B>>>(
       flow(Either.left, Maybe.some),
-      flow(f, Maybe.map(Either.right))
-    )
+      flow(f, Maybe.map(Either.right)),
+    ),
   )
 }
 

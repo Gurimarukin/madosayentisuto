@@ -17,8 +17,8 @@ export namespace AddRemove {
     URI,
     map: <A, B>(fa: AddRemove<A>, f: (a: A) => B): AddRemove<B> => ({
       _tag: fa._tag,
-      value: f(fa.value)
-    })
+      value: f(fa.value),
+    }),
   }
 
   export const { map } = pipeable(addRemove)

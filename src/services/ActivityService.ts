@@ -10,7 +10,7 @@ const refreshActivityEvery = 24 * 60 * 60 * 1000
 export function ActivityService(
   Logger: PartialLogger,
   botStatePersistence: BotStatePersistence,
-  discord: DiscordConnector
+  discord: DiscordConnector,
 ) {
   const logger = Logger('ActivityService')
 
@@ -20,7 +20,7 @@ export function ActivityService(
     setActivity: (activity: Activity): Future<void> =>
       pipe(
         upsertActivity(Maybe.some(activity)),
-        Future.chain(_ => discordSetActivity(activity))
+        Future.chain(_ => discordSetActivity(activity)),
       ),
 
     setActivityFromPersistence,
@@ -30,7 +30,7 @@ export function ActivityService(
         upsertActivity(Maybe.none),
         Future.chain(_ => Future.fromIOEither(logger.info('Unsetting activity'))),
         Future.chain(_ => discord.setActivity(Maybe.none)),
-        Future.map(_ => {})
+        Future.map(_ => {}),
       ),
 
     scheduleRefreshActivity: (): IO<void> => {
@@ -40,25 +40,25 @@ export function ActivityService(
       return pipe(
         logger.info(
           `Scheduling activity refresh: 8am is in ${padded(untilTomorrow8am.getHours())}h${padded(
-            untilTomorrow8am.getMinutes()
-          )}`
+            untilTomorrow8am.getMinutes(),
+          )}`,
         ),
         IO.chain(_ =>
           pipe(
             setRefreshActivityInterval(),
             Future.fromIOEither,
             Task.delay(untilTomorrow8am.getTime()),
-            IO.runFuture
-          )
-        )
+            IO.runFuture,
+          ),
+        ),
       )
-    }
+    },
   }
 
   function getActivity(): Future<Maybe<Activity>> {
     return pipe(
       botStatePersistence.find(),
-      Future.map(({ activity }) => activity)
+      Future.map(({ activity }) => activity),
     )
   }
 
@@ -67,7 +67,7 @@ export function ActivityService(
       logger.info(`Setting activity: ${activity.type} ${activity.name}`),
       Future.fromIOEither,
       Future.chain(_ => discord.setActivity(Maybe.some(activity))),
-      Future.map(_ => {})
+      Future.map(_ => {}),
     )
   }
 
@@ -75,7 +75,7 @@ export function ActivityService(
     return pipe(
       botStatePersistence.find(),
       Future.map(BotState.Lens.activity.set(activity)),
-      Future.chain(botStatePersistence.upsert)
+      Future.chain(botStatePersistence.upsert),
     )
   }
 
@@ -87,11 +87,11 @@ export function ActivityService(
         IO.apply(() =>
           setInterval(
             () => pipe(setActivityFromPersistence(), Future.runUnsafe),
-            refreshActivityEvery
-          )
-        )
+            refreshActivityEvery,
+          ),
+        ),
       ),
-      IO.map(_ => {})
+      IO.map(_ => {}),
     )
   }
 
@@ -101,9 +101,9 @@ export function ActivityService(
       Future.chain(
         Maybe.fold(
           () => pipe(logger.info('No activity to set'), Future.fromIOEither),
-          discordSetActivity
-        )
-      )
+          discordSetActivity,
+        ),
+      ),
     )
   }
 }

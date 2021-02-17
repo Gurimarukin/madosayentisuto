@@ -22,7 +22,7 @@ export const MessagesHandler = (
   config: Config,
   cli: Cli,
   discord: DiscordConnector,
-  commandsHandler: CommandsHandler
+  commandsHandler: CommandsHandler,
 ): ((message: Message) => Future<unknown>) => {
   const logger = Logger('MessagesHandler')
 
@@ -32,7 +32,7 @@ export const MessagesHandler = (
       : pipe(
           LogUtils.withAuthor(logger, 'debug', message)(message.content),
           Future.fromIOEither,
-          Future.chain(_ => handleMessage(message))
+          Future.chain(_ => handleMessage(message)),
         )
 
   function handleMessage(message: Message): Future<unknown> {
@@ -40,7 +40,7 @@ export const MessagesHandler = (
       pong(message),
       Maybe.alt(() => command(message)),
       Maybe.alt(() => reactToMention(message)),
-      Maybe.getOrElse<Future<unknown>>(() => Future.unit)
+      Maybe.getOrElse<Future<unknown>>(() => Future.unit),
     )
   }
 
@@ -59,9 +59,9 @@ export const MessagesHandler = (
         pipe(
           Maybe.some(head),
           Maybe.filter(_ => _ === config.cmdPrefix),
-          Maybe.chain(_ => handleCommandWithRights(message, tail))
-        )
-      )
+          Maybe.chain(_ => handleCommandWithRights(message, tail)),
+        ),
+      ),
     )
   }
 
@@ -71,13 +71,13 @@ export const MessagesHandler = (
     const authorId = TSnowflake.wrap(message.author.id)
     const isAdmin = pipe(
       config.admins,
-      List.exists(_ => _ === authorId)
+      List.exists(_ => _ === authorId),
     )
 
     return Maybe.some(
       isAdmin
         ? parseCommand(message, args, cli.adminTextChannel)
-        : parseCommand(message, args, cli.userTextChannel)
+        : parseCommand(message, args, cli.userTextChannel),
     )
   }
 
@@ -91,10 +91,10 @@ export const MessagesHandler = (
               LogUtils.withAuthor(
                 logger,
                 'info',
-                message
-              )('Not enough permissions to delete message')
-            )
-      )
+                message,
+              )('Not enough permissions to delete message'),
+            ),
+      ),
     )
   }
 
@@ -113,13 +113,13 @@ export const MessagesHandler = (
                   `Command invalide: \`${message.content}\`
                   |\`\`\`
                   |${e}
-                  |\`\`\``
-                )
-              )
-            )
+                  |\`\`\``,
+                ),
+              ),
+            ),
           ),
-        runCommand(message)
-      )
+        runCommand(message),
+      ),
     )
   }
 
@@ -127,7 +127,7 @@ export const MessagesHandler = (
     return cmd =>
       pipe(
         Maybe.fromNullable(message.guild),
-        Maybe.fold<Guild, Future<unknown>>(() => Future.unit, commandsHandler(message, cmd))
+        Maybe.fold<Guild, Future<unknown>>(() => Future.unit, commandsHandler(message, cmd)),
       )
   }
 
@@ -139,8 +139,8 @@ export const MessagesHandler = (
         Maybe.exists(
           u =>
             message.mentions.roles.some(r => r.members.has(u.id)) ||
-            message.mentions.users.has(u.id)
-        )
+            message.mentions.users.has(u.id),
+        ),
       ) || containsMention(cleanedWords)
     const isThanks = containsThanks(cleanedWords)
 
@@ -159,11 +159,11 @@ export const MessagesHandler = (
           () =>
             discord.sendPrettyMessage(
               message.author,
-              'En fait, je ne peux pas envoyer de messages dans ce salon.'
+              'En fait, je ne peux pas envoyer de messages dans ce salon.',
             ),
-          _ => Future.unit
-        )
-      )
+          _ => Future.unit,
+        ),
+      ),
     )
   }
 }

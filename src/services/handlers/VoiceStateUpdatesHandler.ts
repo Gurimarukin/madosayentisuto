@@ -11,7 +11,7 @@ import { ChannelUtils } from '../../utils/ChannelUtils'
 export const VoiceStateUpdatesHandler = (
   Logger: PartialLogger,
   guildStateService: GuildStateService,
-  discord: DiscordConnector
+  discord: DiscordConnector,
 ): ((voiceStateUpdate: VoiceStateUpdate) => Future<unknown>) => {
   const logger = Logger('VoiceStateUpdatesHandler')
 
@@ -30,7 +30,7 @@ export const VoiceStateUpdatesHandler = (
           ? onLeftChannel(member, oldChan.value)
           : Future.unit
       }),
-      Maybe.getOrElse<Future<unknown>>(() => Future.unit)
+      Maybe.getOrElse<Future<unknown>>(() => Future.unit),
     )
 
   /**
@@ -41,14 +41,14 @@ export const VoiceStateUpdatesHandler = (
       LogUtils.withGuild(
         logger,
         'debug',
-        channel.guild
+        channel.guild,
       )(`${member.displayName} joined the channel "${channel.name}"`),
       Future.fromIOEither,
       Future.chain(_ =>
         ChannelUtils.isPublic(channel) && peopleInPublicVocalChans(member.guild).length === 1
           ? onPublicCallStarted(member, channel)
-          : Future.unit
-      )
+          : Future.unit,
+      ),
     )
   }
 
@@ -57,7 +57,7 @@ export const VoiceStateUpdatesHandler = (
       LogUtils.withGuild(
         logger,
         'debug',
-        from.guild
+        from.guild,
       )(`${member.displayName} moved from channel "${from.name}" to "${to.name}"`),
       Future.fromIOEither,
       Future.chain(_ => {
@@ -69,7 +69,7 @@ export const VoiceStateUpdatesHandler = (
           : ChannelUtils.isPublic(from) && ChannelUtils.isPrivate(to) && List.isEmpty(inPublicChans)
           ? onPublicCallEnded(member, to)
           : Future.unit
-      })
+      }),
     )
   }
 
@@ -78,14 +78,14 @@ export const VoiceStateUpdatesHandler = (
       LogUtils.withGuild(
         logger,
         'debug',
-        channel.guild
+        channel.guild,
       )(`${member.displayName} left the channel "${channel.name}"`),
       Future.fromIOEither,
       Future.chain(_ =>
         ChannelUtils.isPublic(channel) && List.isEmpty(peopleInPublicVocalChans(member.guild))
           ? onPublicCallEnded(member, channel)
-          : Future.unit
-      )
+          : Future.unit,
+      ),
     )
   }
 
@@ -94,7 +94,7 @@ export const VoiceStateUpdatesHandler = (
       LogUtils.withGuild(
         logger,
         'info',
-        member.guild
+        member.guild,
       )(`Call started in "#${channel.name}" by "${member.user.tag}"`),
       Future.fromIOEither,
       Future.chain(_ => guildStateService.getCalls(member.guild)),
@@ -105,7 +105,7 @@ export const VoiceStateUpdatesHandler = (
             pipe(
               discord.sendMessage(
                 calls.channel,
-                `Ha ha ! **@${member.displayName}** appelle **#${channel.name}**... ${calls.role} doit payer !`
+                `Ha ha ! **@${member.displayName}** appelle **#${channel.name}**... ${calls.role} doit payer !`,
               ),
               Future.chain(
                 Maybe.fold(
@@ -114,15 +114,15 @@ export const VoiceStateUpdatesHandler = (
                       LogUtils.withGuild(
                         logger,
                         'warn',
-                        member.guild
-                      )(`Couldn't send call started notification in ${calls.channel}`)
+                        member.guild,
+                      )(`Couldn't send call started notification in ${calls.channel}`),
                     ),
-                  _ => Future.unit
-                )
-              )
-            )
-        )
-      )
+                  _ => Future.unit,
+                ),
+              ),
+            ),
+        ),
+      ),
     )
   }
 
@@ -131,7 +131,7 @@ export const VoiceStateUpdatesHandler = (
       LogUtils.withGuild(
         logger,
         'info',
-        member.guild
+        member.guild,
       )(`Call ended in "#${channel.name}" by "${member.user.tag}"`),
       Future.fromIOEither,
       Future.chain(_ => guildStateService.getCalls(member.guild)),
@@ -148,15 +148,15 @@ export const VoiceStateUpdatesHandler = (
                       LogUtils.withGuild(
                         logger,
                         'warn',
-                        member.guild
-                      )(`Couldn't send call ended notification in ${calls.channel}`)
+                        member.guild,
+                      )(`Couldn't send call ended notification in ${calls.channel}`),
                     ),
-                  _ => Future.unit
-                )
-              )
-            )
-        )
-      )
+                  _ => Future.unit,
+                ),
+              ),
+            ),
+        ),
+      ),
     )
   }
 }
@@ -168,9 +168,9 @@ function getMember(voiceStateUpdate: VoiceStateUpdate): Maybe<GuildMember> {
     Maybe.chain(u =>
       pipe(
         Maybe.fromNullable(voiceStateUpdate.newState.member),
-        Maybe.filter(_ => _.id === u.id)
-      )
-    )
+        Maybe.filter(_ => _.id === u.id),
+      ),
+    ),
   )
 }
 
@@ -178,6 +178,6 @@ function peopleInPublicVocalChans(guild: Guild): GuildMember[] {
   return pipe(
     guild.channels.cache.array(),
     List.filter(_ => ChannelUtils.isPublic(_) && ChannelUtils.isVoice(_)),
-    List.chain(_ => _.members.array())
+    List.chain(_ => _.members.array()),
   )
 }

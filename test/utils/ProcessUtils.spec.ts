@@ -11,9 +11,9 @@ describe('ProcessUtils.exec', () => {
         Either.right({
           code: 0,
           stdout: 'README.md\n',
-          stderr: ''
-        })
-      )
+          stderr: '',
+        }),
+      ),
     )
   })
 

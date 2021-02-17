@@ -42,7 +42,7 @@ export namespace Opts {
       _tag: 'Regular',
       names,
       metavar,
-      help
+      help,
     })
 
     export interface Argument {
@@ -59,14 +59,14 @@ export namespace Opts {
     URI,
     map: <A, B>(fa: Opts<A>, f: (a: A) => B): Opts<B> => mapValidated(flow(f, Either.right))(fa),
     ap: <A, B>(fab: Opts<(a: A) => B>, fa: Opts<A>): Opts<B> => App(fab, fa),
-    alt: <A>(fx: Opts<A>, fy: () => Opts<A>): Opts<A> => OrElse(fx, fy())
+    alt: <A>(fx: Opts<A>, fy: () => Opts<A>): Opts<A> => OrElse(fx, fy()),
   }
 
   /**
    * methods
    */
   export function mapValidated<A, B>(
-    f: (a: A) => ValidatedNea<string, B>
+    f: (a: A) => ValidatedNea<string, B>,
   ): (opts: Opts<A>) => Opts<B> {
     return opts =>
       opts._tag === 'Validate'
@@ -79,20 +79,20 @@ export namespace Opts {
   export const withDefault = <A>(fy: Lazy<A>) => (opts: Opts<A>): Opts<A> =>
     pipe(
       opts,
-      alt(() => Opts.pure(fy()))
+      alt(() => Opts.pure(fy())),
     )
 
   export const orNone = <A>(opts: Opts<A>): Opts<Maybe<A>> =>
     pipe(
       opts,
       map(Maybe.some),
-      withDefault<Maybe<A>>(() => Maybe.none)
+      withDefault<Maybe<A>>(() => Maybe.none),
     )
 
   export const orEmpty = <A>(opts: Opts<NonEmptyArray<A>>): Opts<A[]> =>
     pipe(
       opts,
-      withDefault<A[]>(() => [])
+      withDefault<A[]>(() => []),
     )
 
   /**
@@ -140,7 +140,7 @@ export namespace Opts {
   }
   export const Subcommand = <A>(command: Command<A>): Subcommand<A> => ({
     _tag: 'Subcommand',
-    command
+    command,
   })
 
   export interface Validate<A, B> {
@@ -150,7 +150,7 @@ export namespace Opts {
   }
   export function Validate<A, B>(
     value: Opts<A>,
-    validate: (a: A) => ValidatedNea<string, B>
+    validate: (a: A) => ValidatedNea<string, B>,
   ): Opts<B> {
     return { _tag: 'Validate', value, validate } as Opts<B>
   }
@@ -166,7 +166,7 @@ export namespace Opts {
     long,
     help,
     short = '',
-    metavar
+    metavar,
   }: OptionArgs): Opts<A> =>
     pipe(Single(Opt.Regular(namesFor(long, short), metavar, help)), mapValidated(codec))
 
@@ -174,34 +174,34 @@ export namespace Opts {
     long,
     help,
     short = '',
-    metavar
+    metavar,
   }: OptionArgs): Opts<NonEmptyArray<A>> =>
     pipe(
       Repeated<string>(Opt.Regular(namesFor(long, short), metavar, help)),
       mapValidated(args =>
         NonEmptyArray.nonEmptyArray.traverse(
-          Either.getValidation(NonEmptyArray.getSemigroup<string>())
-        )(args, codec)
-      )
+          Either.getValidation(NonEmptyArray.getSemigroup<string>()),
+        )(args, codec),
+      ),
     )
 
   // export const flag = (long: string): Opts<void> => ???
   // export const flags = (long: string): Opts<number> => ???
 
   export const param = <A>(codec: (raw: string) => ValidatedNea<string, A>) => (
-    metavar: string
+    metavar: string,
   ): Opts<A> => pipe(Single(Opt.Argument(metavar)), mapValidated(codec))
 
   export const params = <A>(codec: (raw: string) => ValidatedNea<string, A>) => (
-    metavar: string
+    metavar: string,
   ): Opts<NonEmptyArray<A>> =>
     pipe(
       Repeated<string>(Opt.Argument(metavar)),
       mapValidated(args =>
         NonEmptyArray.nonEmptyArray.traverse(
-          Either.getValidation(NonEmptyArray.getSemigroup<string>())
-        )(args, codec)
-      )
+          Either.getValidation(NonEmptyArray.getSemigroup<string>()),
+        )(args, codec),
+      ),
     )
 
   export const subcommand = <A>(command: Command<A>): Opts<A> => Subcommand(command)

@@ -4,7 +4,7 @@ export type ValidatedNea<E, A> = Either<NonEmptyArray<E>, A>
 
 export namespace ValidatedNea {
   export const fromEither: <E, A>(either: Either<E, A>) => ValidatedNea<E, A> = Either.mapLeft(
-    NonEmptyArray.of
+    NonEmptyArray.of,
   )
 
   export const fromOption = <E, A>(onNone: () => E): ((ma: Maybe<A>) => ValidatedNea<E, A>) =>
@@ -14,8 +14,8 @@ export namespace ValidatedNea {
     Either.mapLeft(
       flow(
         NonEmptyArray.fromArray,
-        Maybe.getOrElse(() => NonEmptyArray.of(e))
-      )
+        Maybe.getOrElse(() => NonEmptyArray.of(e)),
+      ),
     )
 
   export const fromEmptyErrors: <A>(

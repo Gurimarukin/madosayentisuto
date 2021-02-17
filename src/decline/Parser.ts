@@ -10,11 +10,11 @@ import { StringUtils } from '../utils/StringUtils'
 
 export const longOpt: (str: string) => Maybe<string> = StringUtils.matcher1(/--(.+)/)
 export const longOptWithEquals: (str: string) => Maybe<[string, string]> = StringUtils.matcher2(
-  /--(.+?)=(.+)/
+  /--(.+?)=(.+)/,
 )
 export const shortOpt: (str: string) => Maybe<[string, string]> = flow(
   StringUtils.matcher1(/-(.+)/),
-  Maybe.chain(nonEmptyString)
+  Maybe.chain(nonEmptyString),
 )
 
 function nonEmptyString(str: string): Maybe<[string, string]> {
@@ -43,10 +43,10 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
             fn(),
             Either.fold(
               messages => failure(...pipe(messages, List.uniq(eqString))),
-              result => Either.right(result)
-            )
-          )
-      )
+              result => Either.right(result),
+            ),
+          ),
+      ),
     )
   }
 
@@ -55,7 +55,7 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
       args,
       List.filterMap(Maybe.fromEither),
       NonEmptyArray.fromArray,
-      Maybe.map(([head, ...tail]) => pipe(tail, List.reduce(head, Accumulator.OrElse)))
+      Maybe.map(([head, ...tail]) => pipe(tail, List.reduce(head, Accumulator.OrElse))),
     )
   }
 
@@ -69,13 +69,13 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
       Maybe.alt(() => pipe(longOpt(arg), Maybe.map(consumeLongOpt(tail, accumulator)))),
       Maybe.alt(() => (arg === '--' ? Maybe.some(consumeArgs(tail, accumulator)) : Maybe.none)),
       Maybe.alt(() => pipe(shortOpt(arg), Maybe.map(consumeShortOpt(tail, accumulator)))),
-      Maybe.getOrElse(() => consumeDefault(arg, tail, accumulator))
+      Maybe.getOrElse(() => consumeDefault(arg, tail, accumulator)),
     )
   }
 
   function consumeLongOptWithEquals(
     tail: string[],
-    accumulator: Accumulator<A>
+    accumulator: Accumulator<A>,
   ): (match: [string, string]) => Either<Help, A> {
     return ([option, value]) =>
       pipe(
@@ -85,15 +85,15 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
           Accumulator.Match.fold({
             onFlag: _ => failure(`Got unexpected value for flag: --${option}`),
             onOption: next => consumeAll(tail, next(value)),
-            onAmbiguous: () => failure(`Ambiguous option/flag: --${option}`)
-          })
-        )
+            onAmbiguous: () => failure(`Ambiguous option/flag: --${option}`),
+          }),
+        ),
       )
   }
 
   function consumeLongOpt(
     rest: string[],
-    accumulator: Accumulator<A>
+    accumulator: Accumulator<A>,
   ): (match: string) => Either<Help, A> {
     return option =>
       pipe(
@@ -106,9 +106,9 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
               List.isEmpty(rest)
                 ? failure(`Missing value for option: --${option}`)
                 : pipe(rest, ([h, ...t]) => consumeAll(t, next(h))),
-            onAmbiguous: () => failure(`Ambiguous option/flag: --${option}`)
-          })
-        )
+            onAmbiguous: () => failure(`Ambiguous option/flag: --${option}`),
+          }),
+        ),
       )
   }
 
@@ -120,25 +120,25 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
       toOption(accumulator.parseArg(arg)),
       Maybe.fold(
         () => failure(`Unexpected argument: ${arg}`),
-        next => consumeArgs(tail, next)
-      )
+        next => consumeArgs(tail, next),
+      ),
     )
   }
 
   function consumeShortOpt(
     rest: string[],
-    accumulator: Accumulator<A>
+    accumulator: Accumulator<A>,
   ): (match: [string, string]) => Either<Help, A> {
     return ([flag, tail]) => {
       return pipe(
         consumeShort(flag, tail, accumulator),
-        Either.chain(([newRest, newAccumulator]) => consumeAll(newRest, newAccumulator))
+        Either.chain(([newRest, newAccumulator]) => consumeAll(newRest, newAccumulator)),
       )
 
       function consumeShort(
         char: string,
         tail: string,
-        accumulator: Accumulator<A>
+        accumulator: Accumulator<A>,
       ): Either<Help, [string[], Accumulator<A>]> {
         return pipe(
           accumulator.parseOption(Opts.Name.ShortName(char)),
@@ -150,8 +150,8 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
                   nonEmptyString(tail),
                   Maybe.fold(
                     () => Either.right([rest, next] as [string[], Accumulator<A>]),
-                    ([nextFlag, nextTail]) => consumeShort(nextFlag, nextTail, next)
-                  )
+                    ([nextFlag, nextTail]) => consumeShort(nextFlag, nextTail, next),
+                  ),
                 ),
               onOption: next =>
                 StringUtils.isEmpty(tail)
@@ -159,13 +159,13 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
                       NonEmptyArray.fromArray(rest),
                       Maybe.fold(
                         () => failure(`Missing value for option: -${char}`),
-                        ([v, ...r]) => Either.right([r, next(v)] as [string[], Accumulator<A>])
-                      )
+                        ([v, ...r]) => Either.right([r, next(v)] as [string[], Accumulator<A>]),
+                      ),
                     )
                   : Either.right([rest, next(tail)] as [string[], Accumulator<A>]),
-              onAmbiguous: () => failure(`Ambiguous option/flag: -${char}`)
-            })
-          )
+              onAmbiguous: () => failure(`Ambiguous option/flag: -${char}`),
+            }),
+          ),
         )
       }
     }
@@ -174,7 +174,7 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
   function consumeDefault(
     arg: string,
     tail: string[],
-    accumulator: Accumulator<A>
+    accumulator: Accumulator<A>,
   ): Either<Help, A> {
     return pipe(
       accumulator.parseSub(arg),
@@ -184,16 +184,16 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
             toOption(accumulator.parseArg(arg)),
             Maybe.fold(
               () => failure(`Unexpected argument: ${arg}`),
-              next => consumeAll(tail, next)
-            )
+              next => consumeAll(tail, next),
+            ),
           ),
         result =>
           pipe(
             result(tail),
             Either.mapLeft(Help.withPrefix(List.of(command.name))),
-            Either.chain(evalResult)
-          )
-      )
+            Either.chain(evalResult),
+          ),
+      ),
     )
   }
 }

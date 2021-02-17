@@ -20,7 +20,7 @@ export function Config(
   admins: NonEmptyArray<TSnowflake>,
   cmdPrefix: string,
   logger: LoggerConfig,
-  db: DbConfig
+  db: DbConfig,
 ): Config {
   return { clientSecret, admins, cmdPrefix, logger, db }
 }
@@ -33,11 +33,11 @@ export namespace Config {
         pipe(
           readConfig(reader),
           Either.mapLeft(
-            flow(StringUtils.mkString('Errors while reading config:\n', '\n', ''), Error)
+            flow(StringUtils.mkString('Errors while reading config:\n', '\n', ''), Error),
           ),
-          IO.fromEither
-        )
-      )
+          IO.fromEither,
+        ),
+      ),
     )
   }
 }
@@ -49,9 +49,9 @@ function readConfig(reader: ConfReader): ValidatedNea<string, Config> {
       reader(NonEmptyArray.decoder(TSnowflake.codec))('admins'),
       reader(D.string)('cmdPrefix'),
       readLoggerConfig(reader),
-      readDbConfig(reader)
+      readDbConfig(reader),
     ),
-    Either.map(_ => Config(..._))
+    Either.map(_ => Config(..._)),
   )
 }
 
@@ -69,11 +69,11 @@ export interface LoggerConfig {
 export function LoggerConfig(
   consoleLevel: LogLevelOrOff,
   discordDMlevel: LogLevelOrOff,
-  discordDMCompact: boolean
+  discordDMCompact: boolean,
 ): LoggerConfig {
   return {
     consoleLevel,
-    discordDM: { level: discordDMlevel, compact: discordDMCompact }
+    discordDM: { level: discordDMlevel, compact: discordDMCompact },
   }
 }
 
@@ -82,9 +82,9 @@ function readLoggerConfig(reader: ConfReader): ValidatedNea<string, LoggerConfig
     sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(LogLevelOrOff.codec)('logger', 'consoleLevel'),
       reader(LogLevelOrOff.codec)('logger', 'discordDM', 'level'),
-      reader(D.boolean)('logger', 'discordDM', 'compact')
+      reader(D.boolean)('logger', 'discordDM', 'compact'),
     ),
-    Either.map(_ => LoggerConfig(..._))
+    Either.map(_ => LoggerConfig(..._)),
   )
 }
 
@@ -108,8 +108,8 @@ function readDbConfig(reader: ConfReader): ValidatedNea<string, DbConfig> {
       reader(D.string)('db', 'host'),
       reader(D.string)('db', 'dbName'),
       reader(D.string)('db', 'user'),
-      reader(D.string)('db', 'password')
+      reader(D.string)('db', 'password'),
     ),
-    Either.map(_ => DbConfig(..._))
+    Either.map(_ => DbConfig(..._)),
   )
 }

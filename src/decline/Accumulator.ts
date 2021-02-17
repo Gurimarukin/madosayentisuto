@@ -56,7 +56,7 @@ export namespace Accumulator {
     }
     export const MatchOption = <A>(next: (str: string) => A): MatchOption<A> => ({
       _tag: 'MatchOption',
-      next
+      next,
     })
     export const isMatchOption = <A>(match: Match<A>): match is MatchOption<A> =>
       match._tag === 'MatchOption'
@@ -74,9 +74,9 @@ export namespace Accumulator {
           fold<A, Match<B>>({
             onFlag: _ => MatchFlag(f(_)),
             onOption: _ => MatchOption(flow(_, f)),
-            onAmbiguous: () => MatchAmbiguous
-          })
-        )
+            onAmbiguous: () => MatchAmbiguous,
+          }),
+        ),
     }
 
     export const { map } = pipeable(match)
@@ -84,7 +84,7 @@ export namespace Accumulator {
     export function fold<A, B>({
       onFlag,
       onOption,
-      onAmbiguous
+      onAmbiguous,
     }: FoldArgs<A, B>): (fa: Match<A>) => B {
       return fa =>
         fa._tag === 'MatchFlag'
@@ -139,8 +139,8 @@ export namespace Accumulator {
         return Maybe.some(
           pipe(
             left.value,
-            Match.map(_ => Ap(_, this.right))
-          )
+            Match.map(_ => Ap(_, this.right)),
+          ),
         )
       }
 
@@ -148,8 +148,8 @@ export namespace Accumulator {
         return Maybe.some(
           pipe(
             right.value,
-            Match.map(_ => Ap(this.left, _))
-          )
+            Match.map(_ => Ap(this.left, _)),
+          ),
         )
       }
 
@@ -171,13 +171,13 @@ export namespace Accumulator {
                 NonEmptyArray.map(
                   Either.bimap(
                     newRight => Ap(newLeft, newRight),
-                    newRight => Ap(newLeft, newRight)
-                  )
-                )
+                    newRight => Ap(newLeft, newRight),
+                  ),
+                ),
               ),
-            newLeft => NonEmptyArray.of(Either.right(Ap(newLeft, this.right)))
-          )
-        )
+            newLeft => NonEmptyArray.of(Either.right(Ap(newLeft, this.right))),
+          ),
+        ),
       )
     }
 
@@ -190,11 +190,11 @@ export namespace Accumulator {
             Either.map(leftResult =>
               pipe(
                 sequenceT(Result.result)(leftResult, this.right.result),
-                Result.map(([f, a]) => f(a))
-              )
-            )
-          )
-        )
+                Result.map(([f, a]) => f(a)),
+              ),
+            ),
+          ),
+        ),
       )
       const rightSub = pipe(
         this.right.parseSub(command),
@@ -204,15 +204,15 @@ export namespace Accumulator {
             Either.map(rightResult =>
               pipe(
                 sequenceT(Result.result)(this.left.result, rightResult),
-                Result.map(([f, a]) => f(a))
-              )
-            )
-          )
-        )
+                Result.map(([f, a]) => f(a)),
+              ),
+            ),
+          ),
+        ),
       )
       return pipe(
         leftSub,
-        Maybe.alt(() => rightSub)
+        Maybe.alt(() => rightSub),
       )
     }
 
@@ -275,8 +275,8 @@ export namespace Accumulator {
           return Either.right(
             pipe(
               lh.right,
-              Result.alt(() => rh.right)
-            )
+              Result.alt(() => rh.right),
+            ),
           )
         })
       }
@@ -290,7 +290,7 @@ export namespace Accumulator {
     get result(): Result<A> {
       return pipe(
         this.left.result,
-        Result.alt(() => this.right.result)
+        Result.alt(() => this.right.result),
       )
     }
   }
@@ -308,14 +308,14 @@ export namespace Accumulator {
     parseOption(name: Opts.Name): Maybe<Match<Accumulator<NonEmptyArray<string>>>> {
       return pipe(
         this.names,
-        List.exists(_ => util.isDeepStrictEqual(_, name))
+        List.exists(_ => util.isDeepStrictEqual(_, name)),
       )
         ? Maybe.some(Match.MatchOption(v => Regular(this.names, List.cons(v, this.values))))
         : Maybe.none
     }
 
     parseSub(
-      _command: string
+      _command: string,
     ): Maybe<(opts: string[]) => Either<Help, Result<NonEmptyArray<string>>>> {
       return Maybe.none
     }
@@ -326,7 +326,7 @@ export namespace Accumulator {
         List.reverse,
         NonEmptyArray.fromArray,
         Maybe.map(Result.success),
-        Maybe.getOrElse<Result<NonEmptyArray<string>>>(() => Result.fail)
+        Maybe.getOrElse<Result<NonEmptyArray<string>>>(() => Result.fail),
       )
     }
   }
@@ -370,16 +370,16 @@ export namespace Accumulator {
       const noMore = Pure(
         Result(
           Either.right(() =>
-            Either.right(pipe(NonEmptyArray.cons(arg, this.stack), NonEmptyArray.reverse))
-          )
-        )
+            Either.right(pipe(NonEmptyArray.cons(arg, this.stack), NonEmptyArray.reverse)),
+          ),
+        ),
       )
       const yesMore = Arguments(List.cons(arg, this.stack))
       return NonEmptyArray.of(Either.right(OrElse(noMore, yesMore)))
     }
 
     parseSub(
-      _command: string
+      _command: string,
     ): Maybe<(opts: string[]) => Either<Help, Result<NonEmptyArray<string>>>> {
       return Maybe.none
     }
@@ -387,7 +387,7 @@ export namespace Accumulator {
     get result(): Result<NonEmptyArray<string>> {
       return pipe(
         NonEmptyArray.fromArray(pipe(this.stack, List.reverse)),
-        Maybe.fold(() => Result.missingArgument, Result.success)
+        Maybe.fold(() => Result.missingArgument, Result.success),
       )
     }
   }
@@ -437,16 +437,16 @@ export namespace Accumulator {
         NonEmptyArray.map(
           Either.bimap(
             newA => newA.mapValidated(this.f),
-            newA => newA.mapValidated(this.f)
-          )
-        )
+            newA => newA.mapValidated(this.f),
+          ),
+        ),
       )
     }
 
     parseSub(command: string): Maybe<(opts: string[]) => Either<Help, Result<B>>> {
       return pipe(
         this.a.parseSub(command),
-        Maybe.map(_ => flow(_, Either.map(Result.mapValidated(this.f))))
+        Maybe.map(_ => flow(_, Either.map(Result.mapValidated(this.f)))),
       )
     }
 
@@ -457,7 +457,7 @@ export namespace Accumulator {
   export type Validate<A, B> = _Validate<A, B>
   export function Validate<A, B>(
     a: Accumulator<A>,
-    f: (a: A) => Either<string[], B>
+    f: (a: A) => Either<string[], B>,
   ): Validate<A, B> {
     return new _Validate(a, f)
   }

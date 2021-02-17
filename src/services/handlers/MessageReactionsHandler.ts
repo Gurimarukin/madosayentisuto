@@ -5,7 +5,7 @@ import {
   MessageReaction,
   PartialUser,
   ReactionEmoji,
-  User
+  User,
 } from 'discord.js'
 
 import { callsEmoji } from '../../global'
@@ -20,7 +20,7 @@ import { PartialLogger } from '../Logger'
 export const MessageReactionsHandler = (
   Logger: PartialLogger,
   guildStateService: GuildStateService,
-  discord: DiscordConnector
+  discord: DiscordConnector,
 ): ((event: AddRemove<[MessageReaction, User | PartialUser]>) => Future<unknown>) => {
   const logger = Logger('MessageReactionsHandler')
 
@@ -50,17 +50,17 @@ export const MessageReactionsHandler = (
                                     event,
                                     AddRemove.fold({
                                       onAdd: onAdd(member, calls),
-                                      onRemove: onRemove(member, calls)
-                                    })
+                                      onRemove: onRemove(member, calls),
+                                    }),
                                   )
-                                : Future.unit // a reaction, but not to Calls' message
-                          )
-                        )
-                      )
-                  )
-                )
-              )
-          )
+                                : Future.unit, // a reaction, but not to Calls' message
+                          ),
+                        ),
+                      ),
+                  ),
+                ),
+              ),
+          ),
         )
       : Future.unit
   }
@@ -82,10 +82,10 @@ export const MessageReactionsHandler = (
             LogUtils.withGuild(
               logger,
               'debug',
-              member.guild
-            )(`"${member.user.tag}" subscribed to calls (added to role "${calls.role.name}")`)
-          )
-        )
+              member.guild,
+            )(`"${member.user.tag}" subscribed to calls (added to role "${calls.role.name}")`),
+          ),
+        ),
       )
   }
 
@@ -98,12 +98,12 @@ export const MessageReactionsHandler = (
             LogUtils.withGuild(
               logger,
               'debug',
-              member.guild
+              member.guild,
             )(
-              `"${member.user.tag}" unsubscribed from calls (removed from role "${calls.role.name}")`
-            )
-          )
-        )
+              `"${member.user.tag}" unsubscribed from calls (removed from role "${calls.role.name}")`,
+            ),
+          ),
+        ),
       )
   }
 }

@@ -4,7 +4,7 @@ import {
   GuildChannel,
   PartialTextBasedChannelFields,
   TextChannel,
-  VoiceChannel
+  VoiceChannel,
 } from 'discord.js'
 
 import { not } from './fp'

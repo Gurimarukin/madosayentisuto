@@ -9,7 +9,7 @@ export function Activity(type: ActivityTypeBot, name: string): Activity {
 export namespace Activity {
   export const codec = C.type({
     type: ActivityTypeBot.codec,
-    name: C.string
+    name: C.string,
   })
 }
 

@@ -24,14 +24,14 @@ const images: Dict<string> = {
   ave: 'https://cdn.discordapp.com/attachments/636626556734930948/762580376949882900/eva96.png',
   grim: 'https://cdn.discordapp.com/attachments/636626556734930948/763694298242875412/grimb96.png',
   tyrale:
-    'https://cdn.discordapp.com/attachments/636626556734930948/763701889833107476/styrale96.png'
+    'https://cdn.discordapp.com/attachments/636626556734930948/763701889833107476/styrale96.png',
 }
 
 export const CommandsHandler = (
   Logger: PartialLogger,
   discord: DiscordConnector,
   activityService: ActivityService,
-  guildStateService: GuildStateService
+  guildStateService: GuildStateService,
 ) => {
   const logger = Logger('CommandsHandler')
 
@@ -47,13 +47,13 @@ export const CommandsHandler = (
               Future.chain(
                 Either.fold(
                   flow(StringUtils.mkString('\n'), _ =>
-                    discord.sendPrettyMessage(message.author, _)
+                    discord.sendPrettyMessage(message.author, _),
                   ),
-                  ([channel, role]) => callsInit(message, guild, channel, role)
-                )
-              )
-            )
-          ])
+                  ([channel, role]) => callsInit(message, guild, channel, role),
+                ),
+              ),
+            ),
+          ]),
         )
 
       // defaultRole
@@ -65,11 +65,11 @@ export const CommandsHandler = (
             Future.map(
               Maybe.fold(
                 () => "Il n'y a aucun rôle par défaut pour ce serveur.",
-                _ => `Le rôle par défaut pour ce serveur est **@${_.name}**.`
-              )
+                _ => `Le rôle par défaut pour ce serveur est **@${_.name}**.`,
+              ),
             ),
-            Future.chain(_ => discord.sendPrettyMessage(message.author, _))
-          )
+            Future.chain(_ => discord.sendPrettyMessage(message.author, _)),
+          ),
         ])
 
       case 'DefaultRoleSet':
@@ -81,7 +81,7 @@ export const CommandsHandler = (
               () =>
                 discord.sendPrettyMessage(
                   message.author,
-                  `**${command.role}** n'est pas un rôle valide.`
+                  `**${TSnowflake.unwrap(command.role)}** n'est pas un rôle valide.`,
                 ),
               role =>
                 pipe(
@@ -90,16 +90,16 @@ export const CommandsHandler = (
                     success
                       ? discord.sendPrettyMessage(
                           message.channel,
-                          `**@${role.name}** est maintenant le rôle par défaut.`
+                          `**@${role.name}** est maintenant le rôle par défaut.`,
                         )
                       : discord.sendPrettyMessage(
                           message.author,
-                          "Erreur lors de l'exécution de la commande"
-                        )
-                  )
-                )
-            )
-          )
+                          "Erreur lors de l'exécution de la commande",
+                        ),
+                  ),
+                ),
+            ),
+          ),
         )
 
       case 'Say':
@@ -109,19 +109,19 @@ export const CommandsHandler = (
             discord.sendMessage(
               message.channel,
               command.message,
-              command.attachments.map(a => new MessageAttachment(a))
-            )
+              command.attachments.map(a => new MessageAttachment(a)),
+            ),
           ),
           Future.chain(
             Maybe.fold<Message, Future<unknown>>(
               () =>
                 discord.sendPrettyMessage(
                   message.author,
-                  'En fait, je ne peux pas envoyer de messages dans ce salon.'
+                  'En fait, je ne peux pas envoyer de messages dans ce salon.',
                 ),
-              _ => Future.unit
-            )
-          )
+              _ => Future.unit,
+            ),
+          ),
         )
 
       case 'ActivityGet':
@@ -140,12 +140,12 @@ export const CommandsHandler = (
                       `Statut
                       |\`\`\`
                       |${JSON.stringify(_, null, 2)}
-                      |\`\`\``
-                    )
-                )
-              )
-            )
-          )
+                      |\`\`\``,
+                    ),
+                ),
+              ),
+            ),
+          ),
         )
 
       case 'ActivityUnset':
@@ -157,7 +157,7 @@ export const CommandsHandler = (
       case 'ActivityRefresh':
         return pipe(
           deleteMessage(message),
-          Future.chain(_ => activityService.setActivityFromPersistence())
+          Future.chain(_ => activityService.setActivityFromPersistence()),
         )
 
       case 'Kouizine':
@@ -166,19 +166,19 @@ export const CommandsHandler = (
             message.channel,
             "**LA PLACE DE LA FEMME, C'EST À LA**",
             new MessageAttachment(
-              'https://cdn.discordapp.com/attachments/707623354143735868/778966161529241610/KOUIZINE.png'
-            )
+              'https://cdn.discordapp.com/attachments/707623354143735868/778966161529241610/KOUIZINE.png',
+            ),
           ),
           Future.chain(
             Maybe.fold<Message, Future<unknown>>(
               () =>
                 discord.sendPrettyMessage(
                   message.author,
-                  'En fait, je ne peux pas envoyer de messages dans ce salon.'
+                  'En fait, je ne peux pas envoyer de messages dans ce salon.',
                 ),
-              _ => Future.unit
-            )
-          )
+              _ => Future.unit,
+            ),
+          ),
         )
 
       case 'Image':
@@ -196,13 +196,13 @@ export const CommandsHandler = (
                       `Image inconnue.
                       |Images valides: ${Object.keys(images)
                         .map(i => `\`${i}\``)
-                        .join(', ')}`
-                    )
-                  )
-                )
+                        .join(', ')}`,
+                    ),
+                  ),
+                ),
               ),
-            image => discord.sendMessage(message.channel, image)
-          )
+            image => discord.sendMessage(message.channel, image),
+          ),
         )
     }
   }
@@ -217,29 +217,29 @@ export const CommandsHandler = (
               LogUtils.withAuthor(
                 logger,
                 'info',
-                message
-              )('Not enough permissions to delete message')
-            )
-      )
+                message,
+              )('Not enough permissions to delete message'),
+            ),
+      ),
     )
   }
 
   function fetchChannelAndRole(
     guild: Guild,
     channel: TSnowflake,
-    role: TSnowflake
+    role: TSnowflake,
   ): Future<ValidatedNea<string, [TextChannel, Role]>> {
     return pipe(
       sequenceT(Future.taskEitherSeq)(
         pipe(discord.fetchChannel(channel), Future.map(Maybe.filter(ChannelUtils.isText))),
-        discord.fetchRole(guild, role)
+        discord.fetchRole(guild, role),
       ),
       Future.map(([c, r]) =>
         sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
-          fromOption(c, `Channel not found: <#${channel}>`),
-          fromOption(r, `Role not found: <@${role}>`)
-        )
-      )
+          fromOption(c, `Channel not found: <#${TSnowflake.unwrap(channel)}>`),
+          fromOption(r, `Role not found: <@${TSnowflake.unwrap(role)}>`),
+        ),
+      ),
     )
   }
 
@@ -251,8 +251,8 @@ export const CommandsHandler = (
           `Yoho, ${role} !
           |
           |Tu peux t'abonner aux appels sur ce serveur en réagissant avec ${callsEmoji}  !
-          |Ils seront notifiés dans ${channel}.`
-        )
+          |Ils seront notifiés dans ${channel}.`,
+        ),
       ),
       Future.chain(
         Maybe.fold<Message, Future<unknown>>(
@@ -261,7 +261,7 @@ export const CommandsHandler = (
               message.author,
               ChannelUtils.isDm(message.channel)
                 ? `Impossible d'envoyer le message d'abonnement dans ce salon.`
-                : `Impossible d'envoyer le message d'abonnement dans le salon **#${message.channel.name}**.`
+                : `Impossible d'envoyer le message d'abonnement dans le salon **#${message.channel.name}**.`,
             ),
           message =>
             Future.parallel<unknown>([
@@ -271,14 +271,14 @@ export const CommandsHandler = (
                 Future.chain(
                   Maybe.fold(
                     () => Future.unit,
-                    previous => deleteMessage(previous.message)
-                  )
+                    previous => deleteMessage(previous.message),
+                  ),
                 ),
-                Future.chain(_ => guildStateService.setCalls(guild, Calls(message, channel, role)))
-              )
-            ])
-        )
-      )
+                Future.chain(_ => guildStateService.setCalls(guild, Calls(message, channel, role))),
+              ),
+            ]),
+        ),
+      ),
     )
   }
 }
@@ -288,6 +288,6 @@ export type CommandsHandler = ReturnType<typeof CommandsHandler>
 function fromOption<E, A>(ma: Maybe<A>, e: E): ValidatedNea<E, A> {
   return pipe(
     ma,
-    ValidatedNea.fromOption(() => e)
+    ValidatedNea.fromOption(() => e),
   )
 }

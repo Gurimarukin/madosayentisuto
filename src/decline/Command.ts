@@ -22,7 +22,7 @@ export namespace Command {
     flow(parseHelp(args), Either.mapLeft(Help.stringify))
 
   export const mapValidated = <A, B>(f: (a: A) => ValidatedNea<string, B>) => (
-    cmd: Command<A>
+    cmd: Command<A>,
   ): Command<B> =>
     Command({ name: cmd.name, header: cmd.header })(pipe(cmd.opts, Opts.mapValidated(f)))
 
