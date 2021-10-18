@@ -2,7 +2,7 @@
   "extends": "@type-config/strict",
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": ".",
+    "incremental": true,
     "sourceMap": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false

@@ -4,37 +4,43 @@ module.exports = {
     sourceType: 'module',
     project: './tsconfig.json',
   },
+  plugins: ['functional', 'fp-ts'],
   extends: [
     'plugin:@typescript-eslint/recommended', // Uses the recommended rules from the @typescript-eslint/eslint-plugin
+    'plugin:functional/recommended',
+    'plugin:fp-ts/all',
     'prettier/@typescript-eslint', // Uses eslint-config-prettier to disable ESLint rules from @typescript-eslint/eslint-plugin that would conflict with prettier
     'plugin:prettier/recommended', // Enables eslint-plugin-prettier and displays prettier errors as ESLint errors. Make sure this is always the last configuration in the extends array.
   ],
   reportUnusedDisableDirectives: true,
   rules: {
-    '@typescript-eslint/array-type': ['warn', { default: 'array', readonly: 'array' }],
-    '@typescript-eslint/consistent-type-definitions': ['warn', 'interface'],
-    '@typescript-eslint/explicit-function-return-type': 'off',
-    '@typescript-eslint/no-base-to-string': ['error', { ignoredTypeNames: ['TextChannel'] }],
-    '@typescript-eslint/no-empty-function': 'off',
-    '@typescript-eslint/no-explicit-any': 'off',
-    '@typescript-eslint/no-namespace': 'off',
-    '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'warn',
-    '@typescript-eslint/no-unused-vars': [
-      'warn',
-      { varsIgnorePattern: '^_', argsIgnorePattern: '^_' },
-    ],
-    '@typescript-eslint/no-var-requires': 'off',
-    '@typescript-eslint/no-use-before-define': [
+    '@typescript-eslint/array-type': ['warn', { default: 'array', readonly: 'generic' }],
+    '@typescript-eslint/consistent-type-definitions': 'off', // use functional/prefer-type-literal, it's better
+    '@typescript-eslint/explicit-function-return-type': [
       'warn',
       {
-        functions: false,
-        classes: true,
-        variables: true,
-        enums: true,
-        typedefs: false,
+        allowExpressions: true,
+        allowTypedFunctionExpressions: true,
+        allowHigherOrderFunctions: true,
       },
     ],
-    '@typescript-eslint/strict-boolean-expressions': 'warn',
+    '@typescript-eslint/no-base-to-string': ['error', { ignoredTypeNames: ['TextChannel'] }],
+    '@typescript-eslint/no-empty-function': 'off',
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'warn',
+    '@typescript-eslint/no-unnecessary-condition': 'warn',
+    '@typescript-eslint/no-unused-vars': 'warn',
+    '@typescript-eslint/no-use-before-define': 'off',
+    '@typescript-eslint/no-namespace': 'warn',
+    '@typescript-eslint/strict-boolean-expressions': [
+      'warn',
+      {
+        allowString: false,
+        allowNumber: false,
+        allowNullableObject: false,
+      },
+    ],
+    'arrow-parens': ['warn', 'as-needed'],
     'arrow-body-style': ['warn', 'as-needed'],
     'array-callback-return': 'off',
     'comma-dangle': [
@@ -47,9 +53,39 @@ module.exports = {
         functions: 'always-multiline',
       },
     ],
+    'fp-ts/no-module-imports': ['warn', { allowTypes: true }],
+    'functional/functional-parameters': [
+      'error',
+      {
+        allowRestParameter: true,
+        enforceParameterCount: false,
+      },
+    ],
+    'functional/no-conditional-statement': 'off', // switch aren't bad :/
+    'functional/no-expression-statement': [
+      'error',
+      {
+        ignorePattern: [
+          '^afterEach\\(',
+          '^beforeEach\\(',
+          '^console\\.',
+          '^describe(\\.only)?\\(',
+          '^expect(\\.only)?\\(',
+          '^it(\\.only)?\\(',
+        ],
+      },
+    ],
+    'functional/no-mixed-type': 'off',
+    'functional/no-promise-reject': 'error',
     'max-len': [
       'warn',
-      { code: 100, tabWidth: 2, ignoreStrings: true, ignoreTemplateLiterals: true },
+      {
+        code: 100,
+        tabWidth: 2,
+        ignoreStrings: true,
+        ignoreTemplateLiterals: true,
+        ignoreComments: true,
+      },
     ],
     'no-console': 'off',
     'no-empty-function': 'off',
@@ -57,11 +93,25 @@ module.exports = {
     'no-multiple-empty-lines': ['warn', { max: 1 }],
     'no-multi-spaces': 'warn',
     'no-redeclare': 'off',
-    'no-shadow': 'off',
+    'no-shadow': ['warn', { builtinGlobals: true, hoist: 'functions' }],
     'no-undef': 'off',
+    'no-unneeded-ternary': 'warn',
+    'no-use-before-define': 'off',
+    'no-useless-computed-key': 'warn',
+    'no-useless-rename': 'warn',
+    'object-shorthand': 'warn',
     'prettier/prettier': 'off',
     quotes: ['warn', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
-    'sort-imports': 'off',
+    'sort-imports': [
+      'warn',
+      {
+        ignoreCase: false,
+        ignoreDeclarationSort: true,
+        ignoreMemberSort: false,
+        memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
+        allowSeparatedGroups: true,
+      },
+    ],
     'space-in-parens': ['warn', 'never'],
     strict: 'warn',
   },
