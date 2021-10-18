@@ -1,27 +1,27 @@
-import { Alt1 } from 'fp-ts/lib/Alt'
-import { sequenceT, Apply1 } from 'fp-ts/lib/Apply'
-import { eqString } from 'fp-ts/lib/Eq'
-import { Lazy } from 'fp-ts/lib/function'
-import { pipeable } from 'fp-ts/lib/pipeable'
-import { Semigroup } from 'fp-ts/lib/Semigroup'
+import { Alt1 } from 'fp-ts/Alt'
+import { Apply1 } from 'fp-ts/Apply'
+import { Lazy } from 'fp-ts/function'
+import { pipeable } from 'fp-ts/pipeable'
+import { Semigroup } from 'fp-ts/Semigroup'
 
-import { Either, flow, pipe, List, Maybe } from '../utils/fp'
+import { Either, List, Maybe, flow, pipe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
+import { apply, eq } from 'fp-ts'
 
 declare module 'fp-ts/lib/HKT' {
-  interface URItoKind<A> {
+  type URItoKind<A> = {
     readonly Result: Result<A>
-  }
+  };
 }
 
 const URI = 'Result'
 type URI = typeof URI
 
-export interface Result<A> {
-  readonly get: Either<Result.Failure, Lazy<Either<string[], A>>>
-}
+export type Result<A> = {
+  readonly get: Either<Result.Failure, Lazy<Either<ReadonlyArray<string>, A>>>
+};
 
-export function Result<A>(get: Either<Result.Failure, Lazy<Either<string[], A>>>): Result<A> {
+export function Result<A>(get: Either<Result.Failure, Lazy<Either<ReadonlyArray<string>, A>>>): Result<A> {
   return { get }
 }
 
@@ -29,10 +29,10 @@ export namespace Result {
   /**
    * Missing
    */
-  interface Missing {
-    readonly commands: string[]
+  type Missing = {
+    readonly commands: ReadonlyArray<string>
     readonly argument: boolean
-  }
+  };
 
   function Missing({ commands = List.empty, argument = false }: Partial<Missing> = {}): Missing {
     return { commands, argument }
@@ -53,7 +53,7 @@ export namespace Result {
         : Maybe.some(
             pipe(
               missing.commands,
-              List.uniq(eqString),
+              List.uniq(eq.eqString),
               StringUtils.mkString('command (', ' or ', ')'),
             ),
           )
@@ -70,11 +70,11 @@ export namespace Result {
   /**
    * Failure
    */
-  export interface Failure {
-    readonly reversedMissing: Missing[]
-  }
+  export type Failure = {
+    readonly reversedMissing: ReadonlyArray<Missing>
+  };
 
-  export function Failure(reversedMissing: Missing[]): Failure {
+  export function Failure(reversedMissing: ReadonlyArray<Missing>): Failure {
     return { reversedMissing }
   }
 
@@ -84,7 +84,7 @@ export namespace Result {
         Failure(List.concat(y.reversedMissing, x.reversedMissing)),
     }
 
-    export const messages = (failure: Failure): string[] =>
+    export const messages = (failure: Failure): ReadonlyArray<string> =>
       pipe(failure.reversedMissing, List.reverse, List.map(Missing.message))
   }
 
@@ -101,10 +101,10 @@ export namespace Result {
     ap: <A, B>(fab: Result<(a: A) => B>, fa: Result<A>): Result<B> =>
       Result(
         pipe(
-          sequenceT(resultValidation)(fab.get, fa.get),
+          apply.sequenceT(resultValidation)(fab.get, fa.get),
           Either.map(([fab, fa]) => () =>
             pipe(
-              sequenceT(stringsValidation)(fab(), fa()),
+              apply.sequenceT(stringsValidation)(fab(), fa()),
               Either.map(([f, a]) => f(a)),
             ),
           ),
@@ -127,7 +127,7 @@ export namespace Result {
   }
 
   export function mapValidated<A, B>(
-    f: (a: A) => Either<string[], B>,
+    f: (a: A) => Either<ReadonlyArray<string>, B>,
   ): (res: Result<A>) => Result<B> {
     return res =>
       Result(
@@ -145,7 +145,7 @@ export namespace Result {
    */
   export const success = <A>(value: A): Result<A> => Result(Either.right(() => Either.right(value)))
 
-  export function failure(reversedMissing: Missing[]): Result<never> {
+  export function failure(reversedMissing: ReadonlyArray<Missing>): Result<never> {
     return Result(Either.left(Failure(reversedMissing)))
   }
 

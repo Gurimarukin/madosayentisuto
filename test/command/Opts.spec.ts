@@ -1,9 +1,9 @@
-import { sequenceT } from 'fp-ts/lib/Apply'
 
 import { Command } from '../../src/decline/Command'
 import { Opts } from '../../src/decline/Opts'
-import { Either, pipe, Maybe } from '../../src/utils/fp'
+import { Either, Maybe, pipe } from '../../src/utils/fp'
 import { StringUtils } from '../../src/utils/StringUtils'
+import { apply } from 'fp-ts'
 
 const prefix = Command({
   name: 'toto',
@@ -114,7 +114,7 @@ describe('Opts.orEmpty', () => {
 describe('complex cases', () => {
   it('case 1', () => {
     const cmd = prefix(
-      sequenceT(Opts.opts)(Opts.param(Either.right)('arg'), Opts.params(Either.right)('thing')),
+      apply.sequenceT(Opts.opts)(Opts.param(Either.right)('arg'), Opts.params(Either.right)('thing')),
     )
 
     expect(pipe(cmd, Command.parse(['titi', 'thing1', 'thing2']))).toStrictEqual(
@@ -124,7 +124,7 @@ describe('complex cases', () => {
 
   it('case 2', () => {
     const cmd = prefix(
-      sequenceT(Opts.opts)(
+      apply.sequenceT(Opts.opts)(
         Opts.options(Either.right)({
           long: 'attach',
           help: '',

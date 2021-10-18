@@ -6,7 +6,7 @@ import * as _IO from 'fp-ts/IO'
 import * as _IOEither from 'fp-ts/IOEither'
 import * as _NonEmptyArray from 'fp-ts/NonEmptyArray'
 import * as _Option from 'fp-ts/Option'
-import { pipe as _pipe } from 'fp-ts/pipeable'
+import { pipe as _pipe } from 'fp-ts/function'
 import * as _Record from 'fp-ts/Record'
 import * as _Task from 'fp-ts/Task'
 import * as _TaskEither from 'fp-ts/TaskEither'
@@ -19,7 +19,7 @@ import { MsDuration } from '../models/MsDuration'
 export const unknownToError = (e: unknown): Error =>
   e instanceof Error ? e : new Error('unknown error')
 
-export const inspect = (...label: unknown[]) => <A>(a: A): A => {
+export const inspect = (...label: ReadonlyArray<unknown>) => <A>(a: A): A => {
   console.log(...label, a)
   return a
 }
@@ -27,7 +27,7 @@ export const inspect = (...label: unknown[]) => <A>(a: A): A => {
 /**
  * ???
  */
-export const todo = (..._: unknown[]): never => {
+export const todo = (..._: ReadonlyArray<unknown>): never => {
   throw Error('missing implementation')
 }
 
@@ -37,9 +37,9 @@ export const todo = (..._: unknown[]): never => {
 export const List = {
   ..._Array,
 
-  concat: <A>(a: A[], b: A[]): A[] => [...a, ...b],
+  concat: <A>(a: ReadonlyArray<A>, b: ReadonlyArray<A>): ReadonlyArray<A> => [...a, ...b],
 
-  exists: <A>(predicate: Predicate<A>) => (l: A[]): boolean =>
+  exists: <A>(predicate: Predicate<A>) => (l: ReadonlyArray<A>): boolean =>
     _pipe(l, List.findIndex(predicate), _Option.isSome),
 }
 
@@ -55,7 +55,7 @@ function neaDecoder<A>(decoder: D.Decoder<unknown, A>): D.Decoder<unknown, NonEm
   )
 }
 
-function neaEncoder<O, A>(encoder: E.Encoder<O, A>): E.Encoder<O[], NonEmptyArray<A>> {
+function neaEncoder<O, A>(encoder: E.Encoder<O, A>): E.Encoder<ReadonlyArray<O>, NonEmptyArray<A>> {
   return { encode: _ => E.array(encoder).encode(_) }
 }
 
@@ -66,7 +66,7 @@ export const NonEmptyArray = {
 
   encoder: neaEncoder,
 
-  codec: <O, A>(codec: C.Codec<unknown, O, A>): C.Codec<unknown, O[], NonEmptyArray<A>> =>
+  codec: <O, A>(codec: C.Codec<unknown, O, A>): C.Codec<unknown, ReadonlyArray<O>, NonEmptyArray<A>> =>
     C.make(neaDecoder(codec), neaEncoder(codec)),
 }
 
@@ -110,7 +110,7 @@ function optEncoder<O, A>(encoder: E.Encoder<O, A>): E.Encoder<O | null, Maybe<A
 export const Maybe = {
   ..._Option,
 
-  toArray: <A>(opt: Maybe<A>): A[] =>
+  toArray: <A>(opt: Maybe<A>): ReadonlyArray<A> =>
     _pipe(
       opt,
       _Option.fold(
@@ -178,10 +178,10 @@ export const Future = {
 
   unit: _TaskEither.right<Error, void>(undefined),
 
-  parallel: <A>(futures: Future<A>[]): Future<A[]> =>
+  parallel: <A>(futures: ReadonlyArray<Future<A>>): Future<ReadonlyArray<A>> =>
     List.array.sequence(Future.taskEither)(futures),
 
-  sequence: <A>(futures: Future<A>[]): Future<A[]> =>
+  sequence: <A>(futures: ReadonlyArray<Future<A>>): Future<ReadonlyArray<A>> =>
     List.array.sequence(Future.taskEitherSeq)(futures),
 
   recover: <A>(onError: (e: Error) => Future<A>): ((future: Future<A>) => Future<A>) =>

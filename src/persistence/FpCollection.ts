@@ -34,7 +34,7 @@ export function FpCollection<A, O extends { readonly [key: string]: unknown }>(
     collection,
 
     ensureIndexes: (
-      indexSpecs: IndexSpecification<A>[],
+      indexSpecs: ReadonlyArray<IndexSpecification<A>>,
       options?: { readonly session?: ClientSession },
     ): Future<void> =>
       pipe(
@@ -59,7 +59,7 @@ export function FpCollection<A, O extends { readonly [key: string]: unknown }>(
     },
 
     insertMany: (
-      docs: A[],
+      docs: ReadonlyArray<A>,
       options?: CollectionInsertManyOptions,
     ): Future<InsertWriteOpResult<WithId<O>>> => {
       const encoded = docs.map(codec.encode)

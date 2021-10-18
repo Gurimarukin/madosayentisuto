@@ -1,10 +1,10 @@
-import { Functor1 } from 'fp-ts/lib/Functor'
-import { pipeable } from 'fp-ts/lib/pipeable'
+import { Functor1 } from 'fp-ts/Functor'
+import { pipeable } from 'fp-ts/pipeable'
 
 declare module 'fp-ts/lib/HKT' {
-  interface URItoKind<A> {
+  type URItoKind<A> = {
     readonly AddRemove: AddRemove<A>
-  }
+  };
 }
 
 const URI = 'AddRemove'
@@ -23,18 +23,18 @@ export namespace AddRemove {
 
   export const { map } = pipeable(addRemove)
 
-  export interface Add<A> {
-    _tag: 'Add'
-    value: A
-  }
+  export type Add<A> = {
+    readonly _tag: 'Add'
+    readonly value: A
+  };
   export const Add = <A>(value: A): Add<A> => ({ _tag: 'Add', value })
 
   export const isAdd = <A>(fa: AddRemove<A>): fa is Add<A> => fa._tag === 'Add'
 
-  export interface Remove<A> {
-    _tag: 'Remove'
-    value: A
-  }
+  export type Remove<A> = {
+    readonly _tag: 'Remove'
+    readonly value: A
+  };
   export const Remove = <A>(value: A): Remove<A> => ({ _tag: 'Remove', value })
 
   export const isRemove = <A>(fa: AddRemove<A>): fa is Remove<A> => fa._tag === 'Remove'
@@ -43,7 +43,7 @@ export namespace AddRemove {
     isAdd(fa) ? onAdd(fa.value) : onRemove(fa.value)
 }
 
-interface FoldArgs<A, B> {
-  onAdd: (value: A) => B
-  onRemove: (value: A) => B
-}
+type FoldArgs<A, B> = {
+  readonly onAdd: (value: A) => B
+  readonly onRemove: (value: A) => B
+};

@@ -5,9 +5,9 @@ import { MessageEmbed, StringResolvable } from 'discord.js'
 import { DiscordConnector } from './DiscordConnector'
 import { Config } from '../config/Config'
 import { LogLevel, LogLevelOrOff } from '../models/LogLevel'
-import { Do, IO, Future, pipe, Maybe } from '../utils/fp'
+import { Do, Future, IO, Maybe, pipe } from '../utils/fp'
 
-export type Logger = Record<LogLevel, (arg: any, ...args: any[]) => IO<void>>
+export type Logger = Record<LogLevel, (arg: any, ...args: ReadonlyArray<any>) => IO<void>>
 
 export type PartialLogger = (name: string) => Logger
 
@@ -62,10 +62,10 @@ export const PartialLogger = (config: Config, discord: DiscordConnector): Partia
         .return(() => {}),
     )
 
-  const debug = (param: any, ...params: any[]) => log('debug', util.format(param, ...params))
-  const info = (param: any, ...params: any[]) => log('info', util.format(param, ...params))
-  const warn = (param: any, ...params: any[]) => log('warn', util.format(param, ...params))
-  const error = (param: any, ...params: any[]) => log('error', util.format(param, ...params))
+  const debug = (param: any, ...params: ReadonlyArray<any>) => log('debug', util.format(param, ...params))
+  const info = (param: any, ...params: ReadonlyArray<any>) => log('info', util.format(param, ...params))
+  const warn = (param: any, ...params: ReadonlyArray<any>) => log('warn', util.format(param, ...params))
+  const error = (param: any, ...params: ReadonlyArray<any>) => log('error', util.format(param, ...params))
 
   return { debug, info, warn, error }
 }

@@ -1,9 +1,9 @@
 import * as O from 'fp-ts-rxjs/lib/Observable'
 import * as OE from 'fp-ts-rxjs/lib/ObservableEither'
-import { Refinement, Predicate } from 'fp-ts/lib/function'
+import { Predicate, Refinement } from 'fp-ts/function'
 import { Observable, Subscriber } from 'rxjs'
 
-import { Try, Either, Maybe, flow } from '../utils/fp'
+import { Either, Maybe, Try, flow } from '../utils/fp'
 
 export type ObservableE<A> = Observable<Try<A>>
 

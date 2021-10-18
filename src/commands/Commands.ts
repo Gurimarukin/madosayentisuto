@@ -15,74 +15,74 @@ export type Commands =
 
 export namespace Commands {
   // calls
-  export interface CallsInit {
+  export type CallsInit = {
     readonly _tag: 'CallsInit'
     readonly channel: TSnowflake // channel where to notify calls
     readonly role: TSnowflake // role to notify
-  }
+  };
   export function CallsInit(channel: TSnowflake, role: TSnowflake): CallsInit {
     return { _tag: 'CallsInit', channel, role }
   }
 
   // defaultRole
-  export interface DefaultRoleGet {
+  export type DefaultRoleGet = {
     readonly _tag: 'DefaultRoleGet'
-  }
+  };
   export const DefaultRoleGet: DefaultRoleGet = { _tag: 'DefaultRoleGet' }
 
-  export interface DefaultRoleSet {
+  export type DefaultRoleSet = {
     readonly _tag: 'DefaultRoleSet'
     readonly role: TSnowflake
-  }
+  };
   export function DefaultRoleSet(role: TSnowflake): DefaultRoleSet {
     return { _tag: 'DefaultRoleSet', role }
   }
 
   // says
-  export interface Say {
+  export type Say = {
     readonly _tag: 'Say'
-    readonly attachments: string[]
+    readonly attachments: ReadonlyArray<string>
     readonly message: string
-  }
-  export function Say(attachments: string[], message: string): Say {
+  };
+  export function Say(attachments: ReadonlyArray<string>, message: string): Say {
     return { _tag: 'Say', attachments, message }
   }
 
   // activity
-  export interface ActivityGet {
+  export type ActivityGet = {
     readonly _tag: 'ActivityGet'
-  }
+  };
   export const ActivityGet: ActivityGet = { _tag: 'ActivityGet' }
 
-  export interface ActivityUnset {
+  export type ActivityUnset = {
     readonly _tag: 'ActivityUnset'
-  }
+  };
   export const ActivityUnset: ActivityUnset = { _tag: 'ActivityUnset' }
 
-  export interface ActivitySet {
+  export type ActivitySet = {
     readonly _tag: 'ActivitySet'
     readonly activity: Activity
-  }
+  };
   export function ActivitySet(activity: Activity): ActivitySet {
     return { _tag: 'ActivitySet', activity }
   }
 
-  export interface ActivityRefresh {
+  export type ActivityRefresh = {
     readonly _tag: 'ActivityRefresh'
-  }
+  };
   export const ActivityRefresh: ActivityRefresh = { _tag: 'ActivityRefresh' }
 
   // kouizine
-  export interface Kouizine {
+  export type Kouizine = {
     readonly _tag: 'Kouizine'
-  }
+  };
   export const Kouizine: Kouizine = { _tag: 'Kouizine' }
 
   // images
-  export interface Image {
+  export type Image = {
     readonly _tag: 'Image'
     readonly value: string
-  }
+  };
   export function Image(value: string): Image {
     return { _tag: 'Image', value }
   }

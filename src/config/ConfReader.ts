@@ -8,10 +8,10 @@ import { unknownToError } from '../utils/unknownToError'
 
 export type ConfReader = <A>(
   decoder: D.Decoder<unknown, A>
-) => (path: string, ...paths: string[]) => ValidatedNea<string, A>
+) => (path: string, ...paths: ReadonlyArray<string>) => ValidatedNea<string, A>
 
 export namespace ConfReader {
-  export const fromFiles = (path: string, ...paths: string[]): IO<ConfReader> =>
+  export const fromFiles = (path: string, ...paths: ReadonlyArray<string>): IO<ConfReader> =>
     pipe(
       parseJsonFiles(path, ...paths),
       IO.map<NonEmptyArray<unknown>, ConfReader>(jsons =>
@@ -19,10 +19,10 @@ export namespace ConfReader {
       ),
     )
 
-  export function fromJsons(json: unknown, ...jsons: unknown[]): ConfReader {
+  export function fromJsons(json: unknown, ...jsons: ReadonlyArray<unknown>): ConfReader {
     return <A>(decoder: D.Decoder<unknown, A>) => (
       path: string,
-      ...paths: string[]
+      ...paths: ReadonlyArray<string>
     ): ValidatedNea<string, A> => {
       const allPaths: NonEmptyArray<string> = List.cons(path, paths)
 
@@ -51,7 +51,7 @@ export namespace ConfReader {
   }
 }
 
-function parseJsonFiles(path: string, ...paths: string[]): IO<NonEmptyArray<unknown>> {
+function parseJsonFiles(path: string, ...paths: ReadonlyArray<string>): IO<NonEmptyArray<unknown>> {
   return paths.reduce(
     (acc, path) =>
       Do(IO.ioEither)
@@ -69,7 +69,7 @@ function loadConfigFile(path: string): IO<unknown> {
   )
 }
 
-function readPath(paths: string[], val: unknown): Maybe<unknown> {
+function readPath(paths: ReadonlyArray<string>, val: unknown): Maybe<unknown> {
   if (List.isEmpty(paths)) return Maybe.some(val)
 
   const [head, ...tail] = paths

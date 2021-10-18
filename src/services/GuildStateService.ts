@@ -9,7 +9,7 @@ import { GuildState } from '../models/guildState/GuildState'
 import { StaticCalls } from '../models/guildState/StaticCalls'
 import { TSnowflake } from '../models/TSnowflake'
 import { GuildStatePersistence } from '../persistence/GuildStatePersistence'
-import { pipe, Maybe, Future, flow, Do } from '../utils/fp'
+import { Do, Future, Maybe, flow, pipe } from '../utils/fp'
 import { ChannelUtils } from '../utils/ChannelUtils'
 
 export const GuildStateService = (

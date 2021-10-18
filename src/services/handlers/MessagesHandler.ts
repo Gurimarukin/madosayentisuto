@@ -65,7 +65,7 @@ export const MessagesHandler = (
     )
   }
 
-  function handleCommandWithRights(message: Message, args: string[]): Maybe<Future<unknown>> {
+  function handleCommandWithRights(message: Message, args: ReadonlyArray<string>): Maybe<Future<unknown>> {
     if (ChannelUtils.isDm(message.channel)) return Maybe.none
 
     const authorId = TSnowflake.wrap(message.author.id)
@@ -98,7 +98,7 @@ export const MessagesHandler = (
     )
   }
 
-  function parseCommand(message: Message, args: string[], cmd: Command<Commands>): Future<unknown> {
+  function parseCommand(message: Message, args: ReadonlyArray<string>, cmd: Command<Commands>): Future<unknown> {
     return pipe(
       cmd,
       Command.parse(args),
@@ -147,7 +147,7 @@ export const MessagesHandler = (
     return isMentioned && isThanks ? Maybe.some(answerNoNeedToThankMe(message)) : Maybe.none
   }
 
-  function containsMention(message: string[]): boolean {
+  function containsMention(message: ReadonlyArray<string>): boolean {
     return [config.cmdPrefix, ...MENTIONS].some(w => message.includes(w))
   }
 
@@ -168,11 +168,11 @@ export const MessagesHandler = (
   }
 }
 
-function containsThanks(message: string[]): boolean {
+function containsThanks(message: ReadonlyArray<string>): boolean {
   return THANKS.some(w => message.includes(w))
 }
 
-function cleanMessage(message: string): string[] {
+function cleanMessage(message: string): ReadonlyArray<string> {
   return message
     .trim()
     .normalize('NFD')

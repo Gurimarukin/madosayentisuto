@@ -1,31 +1,31 @@
 import util from 'util'
 
-import { sequenceT } from 'fp-ts/lib/Apply'
-import { Eq, fromEquals } from 'fp-ts/lib/Eq'
+import { Eq } from 'fp-ts/Eq'
 
 import { List, Maybe, NonEmptyArray, pipe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 import { Command } from './Command'
 import { Opts } from './Opts'
 import { Usage } from './Usage'
+import { apply, eq } from 'fp-ts'
 
-export interface Help {
-  readonly errors: string[]
+export type Help = {
+  readonly errors: ReadonlyArray<string>
   readonly prefix: NonEmptyArray<string>
-  readonly usage: string[]
-  readonly body: string[]
-}
+  readonly usage: ReadonlyArray<string>
+  readonly body: ReadonlyArray<string>
+};
 
 export namespace Help {
   /**
    * methods
    */
-  export const withErrors = (moreErrors: string[]) => (help: Help): Help => ({
+  export const withErrors = (moreErrors: ReadonlyArray<string>) => (help: Help): Help => ({
     ...help,
     errors: List.concat(help.errors, moreErrors),
   })
 
-  export const withPrefix = (prefix: string[]) => (help: Help): Help => ({
+  export const withPrefix = (prefix: ReadonlyArray<string>) => (help: Help): Help => ({
     ...help,
     prefix: pipe(prefix, List.reduceRight(help.prefix, NonEmptyArray.cons)),
   })
@@ -74,14 +74,14 @@ export namespace Help {
     }
   }
 
-  const optionList = (opts: Opts<unknown>): Maybe<[Opts.Opt<unknown>, boolean][]> => {
+  const optionList = (opts: Opts<unknown>): Maybe<ReadonlyArray<readonly [Opts.Opt<unknown>, boolean]>> => {
     switch (opts._tag) {
       case 'Pure':
         return Maybe.some(List.empty)
 
       case 'App':
         return pipe(
-          sequenceT(Maybe.option)(optionList(opts.f), optionList(opts.a)),
+          apply.sequenceT(Maybe.option)(optionList(opts.f), optionList(opts.a)),
           Maybe.map(([a, b]) => List.concat(a, b)),
         )
 
@@ -115,7 +115,7 @@ export namespace Help {
     }
   }
 
-  function commandList(opts: Opts<unknown>): Command<unknown>[] {
+  function commandList(opts: Opts<unknown>): ReadonlyArray<Command<unknown>> {
     switch (opts._tag) {
       case 'App':
         return List.concat(commandList(opts.f), commandList(opts.a))
@@ -134,14 +134,14 @@ export namespace Help {
     }
   }
 
-  const eqDeepStrict: Eq<[Opts.Opt<unknown>, boolean]> = fromEquals((a, b) =>
+  const eqDeepStrict: Eq<readonly [Opts.Opt<unknown>, boolean]> = eq.fromEquals((a, b) =>
     util.isDeepStrictEqual(a, b),
   )
 
-  function detail(opts: Opts<unknown>): string[] {
+  function detail(opts: Opts<unknown>): ReadonlyArray<string> {
     return pipe(
       optionList(opts),
-      Maybe.getOrElse<[Opts.Opt<unknown>, boolean][]>(() => List.empty),
+      Maybe.getOrElse<ReadonlyArray<readonly [Opts.Opt<unknown>, boolean]>>(() => List.empty),
       List.uniq(eqDeepStrict),
       List.chain(
         ([_opt, _]) =>

@@ -1,16 +1,16 @@
-import { Alt1 } from 'fp-ts/lib/Alt'
-import { Apply1 } from 'fp-ts/lib/Apply'
-import { Lazy } from 'fp-ts/lib/function'
-import { pipeable } from 'fp-ts/lib/pipeable'
+import { Alt1 } from 'fp-ts/Alt'
+import { Apply1 } from 'fp-ts/Apply'
+import { Lazy } from 'fp-ts/function'
+import { pipeable } from 'fp-ts/pipeable'
 
 import { Command } from './Command'
 import { ValidatedNea } from '../models/ValidatedNea'
-import { NonEmptyArray, Either, flow, pipe, List, Maybe } from '../utils/fp'
+import { Either, List, Maybe, NonEmptyArray, flow, pipe } from '../utils/fp'
 
 declare module 'fp-ts/lib/HKT' {
-  interface URItoKind<A> {
+  type URItoKind<A> = {
     readonly Opts: Opts<A>
-  }
+  };
 }
 
 export const URI = 'Opts'
@@ -32,23 +32,23 @@ export namespace Opts {
   export type Opt<A> = Opt.Regular | Opt.Argument
 
   export namespace Opt {
-    export interface Regular {
+    export type Regular = {
       readonly _tag: 'Regular'
-      readonly names: Name[]
+      readonly names: ReadonlyArray<Name>
       readonly metavar: string
       readonly help: string
-    }
-    export const Regular = (names: Name[], metavar: string, help: string): Opt<string> => ({
+    };
+    export const Regular = (names: ReadonlyArray<Name>, metavar: string, help: string): Opt<string> => ({
       _tag: 'Regular',
       names,
       metavar,
       help,
     })
 
-    export interface Argument {
+    export type Argument = {
       readonly _tag: 'Argument'
       readonly metavar: string
-    }
+    };
     export const Argument = (metavar: string): Opt<string> => ({ _tag: 'Argument', metavar })
   }
 
@@ -89,65 +89,65 @@ export namespace Opts {
       withDefault<Maybe<A>>(() => Maybe.none),
     )
 
-  export const orEmpty = <A>(opts: Opts<NonEmptyArray<A>>): Opts<A[]> =>
+  export const orEmpty = <A>(opts: Opts<NonEmptyArray<A>>): Opts<ReadonlyArray<A>> =>
     pipe(
       opts,
-      withDefault<A[]>(() => []),
+      withDefault<ReadonlyArray<A>>(() => []),
     )
 
   /**
    * subtypes
    */
-  export interface Pure<A> {
+  export type Pure<A> = {
     readonly _tag: 'Pure'
     readonly a: A
-  }
+  };
   export const Pure = <A>(a: A): Pure<A> => ({ _tag: 'Pure', a })
 
-  export interface App<A, B> {
+  export type App<A, B> = {
     readonly _tag: 'App'
     readonly f: Opts<(a: A) => B>
     readonly a: Opts<A>
-  }
+  };
   export function App<A, B>(f: Opts<(a: A) => B>, a: Opts<A>): Opts<B> {
     return { _tag: 'App', f, a } as Opts<B>
   }
 
-  export interface OrElse<A> {
+  export type OrElse<A> = {
     readonly _tag: 'OrElse'
     readonly a: Opts<A>
     readonly b: Opts<A>
-  }
+  };
   export function OrElse<A>(a: Opts<A>, b: Opts<A>): Opts<A> {
     return { _tag: 'OrElse', a, b }
   }
 
-  export interface Single<A> {
+  export type Single<A> = {
     readonly _tag: 'Single'
     readonly opt: Opt<A>
-  }
+  };
   export const Single = <A>(opt: Opt<A>): Single<A> => ({ _tag: 'Single', opt })
 
-  export interface Repeated<A> {
+  export type Repeated<A> = {
     readonly _tag: 'Repeated'
     readonly opt: Opt<A>
-  }
+  };
   export const Repeated = <A>(opt: Opt<A>): Opts<NonEmptyArray<A>> => ({ _tag: 'Repeated', opt })
 
-  export interface Subcommand<A> {
+  export type Subcommand<A> = {
     readonly _tag: 'Subcommand'
     readonly command: Command<A>
-  }
+  };
   export const Subcommand = <A>(command: Command<A>): Subcommand<A> => ({
     _tag: 'Subcommand',
     command,
   })
 
-  export interface Validate<A, B> {
+  export type Validate<A, B> = {
     readonly _tag: 'Validate'
     readonly value: Opts<A>
     readonly validate: (a: A) => ValidatedNea<string, B>
-  }
+  };
   export function Validate<A, B>(
     value: Opts<A>,
     validate: (a: A) => ValidatedNea<string, B>,
@@ -212,30 +212,30 @@ export namespace Opts {
   export type Name = Name.LongName | Name.ShortName
 
   export namespace Name {
-    export interface LongName {
+    export type LongName = {
       readonly _tag: 'LongName'
       readonly flag: string
-    }
+    };
     export const LongName = (flag: string): LongName => ({ _tag: 'LongName', flag })
 
-    export interface ShortName {
+    export type ShortName = {
       readonly _tag: 'ShortName'
       readonly flag: string
-    }
+    };
     export const ShortName = (flag: string): ShortName => ({ _tag: 'ShortName', flag })
 
     export const stringify = (name: Name): string =>
       name._tag === 'LongName' ? `--${name.flag}` : `-${name.flag}`
   }
 
-  function namesFor(long: string, short: string): Name[] {
+  function namesFor(long: string, short: string): ReadonlyArray<Name> {
     return List.cons<Name>(Name.LongName(long), short.split('').map(Name.ShortName))
   }
 }
 
-interface OptionArgs {
+type OptionArgs = {
   readonly long: string
   readonly help: string
   readonly short?: string
   readonly metavar: string
-}
+};

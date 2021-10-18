@@ -1,4 +1,3 @@
-import { sequenceT } from 'fp-ts/lib/Apply'
 import * as t from 'io-ts'
 import { failure } from 'io-ts/lib/PathReporter'
 
@@ -12,6 +11,7 @@ import { ValidatedNea } from '../models/ValidatedNea'
 import { Either, NonEmptyArray, pipe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 import { Commands } from './Commands'
+import { apply } from 'fp-ts'
 
 type UserTextChannel = Commands.Kouizine | Commands.Image
 
@@ -37,7 +37,7 @@ const callsInit = Command({
   ),
 })<AdminTextChannel>(
   pipe(
-    sequenceT(Opts.opts)(
+    apply.sequenceT(Opts.opts)(
       Opts.param(decodeTextChannel)('channel'),
       Opts.param(decodeMention)('role'),
     ),
@@ -91,7 +91,7 @@ const say = Command({
   header: 'Jean Plank prend la parole.',
 })(
   pipe(
-    sequenceT(Opts.opts)(attach, Opts.param(Either.right)('message')),
+    apply.sequenceT(Opts.opts)(attach, Opts.param(Either.right)('message')),
     Opts.map(_ => Commands.Say(..._)),
   ),
 )
@@ -133,7 +133,7 @@ const activitySet = Command({
   header: "Jean Plank annonce au monde qu'il est un homme occupé.",
 })(
   pipe(
-    sequenceT(Opts.opts)(
+    apply.sequenceT(Opts.opts)(
       Opts.param(codecToDecode(rawActivityCodec))(
         pipe(
           rawActivityCodec.types.map(_ => _.value),

@@ -20,7 +20,7 @@ export const GuildStatePersistence = (Logger: PartialLogger, mongoCollection: Mo
     find: (id: GuildId): Future<Maybe<GuildState>> =>
       collection.findOne({ id: GuildId.unwrap(id) }),
 
-    findAll: (): Future<GuildId[]> =>
+    findAll: (): Future<ReadonlyArray<GuildId>> =>
       pipe(
         collection.find({}),
         Future.map(_ => () => _.map(Either.map(_ => _.id)).toArray()),

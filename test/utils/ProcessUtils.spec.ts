@@ -1,7 +1,7 @@
-import { Right } from 'fp-ts/lib/Either'
+import { Right } from 'fp-ts/Either'
 
 import { Either, pipe } from '../../src/utils/fp'
-import { ProcessUtils, CmdOutput } from '../../src/utils/ProcessUtils'
+import { CmdOutput, ProcessUtils } from '../../src/utils/ProcessUtils'
 
 describe('ProcessUtils.exec', () => {
   it('should return 0 for ls', () => {

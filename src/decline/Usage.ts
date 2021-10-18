@@ -1,5 +1,5 @@
 import { Opts } from './Opts'
-import { List, flow, pipe, Maybe, not } from '../utils/fp'
+import { List, Maybe, flow, not, pipe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 
 /**
@@ -18,10 +18,10 @@ namespace Many {
   /**
    * Just
    */
-  export interface Just<A> {
+  export type Just<A> = {
     readonly _tag: 'Just'
     readonly value: A
-  }
+  };
 
   export function Just<A>(value: A): Just<A> {
     return { _tag: 'Just', value }
@@ -32,12 +32,12 @@ namespace Many {
   /**
    * Prod
    */
-  export interface Prod<A> {
+  export type Prod<A> = {
     readonly _tag: 'Prod'
-    readonly allOf: Many<A>[]
-  }
+    readonly allOf: ReadonlyArray<Many<A>>
+  };
 
-  export function Prod<A>(...allOf: Many<A>[]): Prod<A> {
+  export function Prod<A>(...allOf: ReadonlyArray<Many<A>>): Prod<A> {
     return { _tag: 'Prod', allOf }
   }
 
@@ -51,12 +51,12 @@ namespace Many {
   /**
    * Sum
    */
-  export interface Sum<A> {
+  export type Sum<A> = {
     readonly _tag: 'Sum'
-    readonly anyOf: Many<A>[]
-  }
+    readonly anyOf: ReadonlyArray<Many<A>>
+  };
 
-  export function Sum<A>(...anyOf: Many<A>[]): Sum<A> {
+  export function Sum<A>(...anyOf: ReadonlyArray<Many<A>>): Sum<A> {
     return { _tag: 'Sum', anyOf }
   }
 
@@ -72,19 +72,19 @@ namespace Many {
 type Options = Options.Required | Options.Repeated
 
 namespace Options {
-  export interface Required {
+  export type Required = {
     readonly _tag: 'Required'
     readonly text: string
-  }
+  };
 
   export const Required = (text: string): Required => ({ _tag: 'Required', text })
 
   export const isRequired = (opts: Options): opts is Required => opts._tag === 'Required'
 
-  export interface Repeated {
+  export type Repeated = {
     readonly _tag: 'Repeated'
     readonly text: string
-  }
+  };
 
   export const Repeated = (text: string): Repeated => ({ _tag: 'Repeated', text })
 
@@ -100,30 +100,30 @@ namespace Args {
   /**
    * Required
    */
-  export interface Required {
+  export type Required = {
     readonly _tag: 'Required'
     readonly metavar: string
-  }
+  };
 
   export const Required = (metavar: string): Required => ({ _tag: 'Required', metavar })
 
   /**
    * Repeated
    */
-  export interface Repeated {
+  export type Repeated = {
     readonly _tag: 'Repeated'
     readonly metavar: string
-  }
+  };
 
   export const Repeated = (metavar: string): Repeated => ({ _tag: 'Repeated', metavar })
 
   /**
    * Command
    */
-  export interface Command {
+  export type Command = {
     readonly _tag: 'Command'
     readonly name: string
-  }
+  };
 
   export const Command = (name: string): Command => ({ _tag: 'Command', name })
 }
@@ -131,10 +131,10 @@ namespace Args {
 /**
  * Usage
  */
-export interface Usage {
+export type Usage = {
   readonly opts: Many<Options>
   readonly args: Many<Args>
-}
+};
 
 export function Usage({ opts = Many.Prod(), args = Many.Prod() }: Partial<Usage> = {}): Usage {
   return { opts, args }
@@ -149,7 +149,7 @@ export namespace Usage {
   /**
    * methods
    */
-  export const show = (usage: Usage): string[] => {
+  export const show = (usage: Usage): ReadonlyArray<string> => {
     const opts = showOptions(usage.opts)
     const args = showArgs(usage.args)
 
@@ -164,7 +164,7 @@ export namespace Usage {
   /**
    * helpers
    */
-  export const fromOpts = (opts: Opts<unknown>): Usage[] => {
+  export const fromOpts = (opts: Opts<unknown>): ReadonlyArray<Usage> => {
     switch (opts._tag) {
       case 'Pure':
         return List.of(Usage())
@@ -218,7 +218,7 @@ export namespace Usage {
     }
   }
 
-  function single(opt: Opts.Opt<unknown>): Usage[] {
+  function single(opt: Opts.Opt<unknown>): ReadonlyArray<Usage> {
     switch (opt._tag) {
       case 'Regular':
         return List.of(
@@ -234,7 +234,7 @@ export namespace Usage {
     }
   }
 
-  function repeated(opt: Opts.Opt<unknown>): Usage[] {
+  function repeated(opt: Opts.Opt<unknown>): ReadonlyArray<Usage> {
     switch (opt._tag) {
       case 'Regular':
         return List.of(
@@ -255,11 +255,11 @@ function isEmptyProd<A>(many: Many<A>): many is Many.Prod<A> {
   return Many.isProd(many) && List.isEmpty(many.allOf)
 }
 
-function concat(all: string[]): string {
+function concat(all: ReadonlyArray<string>): string {
   return pipe(all, List.filter(not(StringUtils.isEmpty)), StringUtils.mkString(' '))
 }
 
-const asOptional = <A>(list: Many<A>[]): Maybe<Many<A>[]> => {
+const asOptional = <A>(list: ReadonlyArray<Many<A>>): Maybe<ReadonlyArray<Many<A>>> => {
   if (List.isEmpty(list)) return Maybe.none
   const [head, ...tail] = list
   return isEmptyProd(head)
@@ -270,7 +270,7 @@ const asOptional = <A>(list: Many<A>[]): Maybe<Many<A>[]> => {
       )
 }
 
-function showOptions(opts: Many<Options>): string[] {
+function showOptions(opts: Many<Options>): ReadonlyArray<string> {
   switch (opts._tag) {
     case 'Sum':
       return pipe(
@@ -299,7 +299,7 @@ function showOptions(opts: Many<Options>): string[] {
   }
 }
 
-function showArgs(args: Many<Args>): string[] {
+function showArgs(args: Many<Args>): ReadonlyArray<string> {
   switch (args._tag) {
     case 'Sum':
       if (List.isEmpty(args.anyOf)) return List.empty

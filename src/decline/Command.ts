@@ -4,21 +4,21 @@ import { Parser } from './Parser'
 import { ValidatedNea } from '../models/ValidatedNea'
 import { Either, flow, pipe } from '../utils/fp'
 
-export interface Command<A> {
+export type Command<A> = {
   readonly name: string
   readonly header: string
   readonly opts: Opts<A>
-}
+};
 
 export function Command({ name, header }: CommandArgs): <A>(opts: Opts<A>) => Command<A> {
   return opts => ({ name, header, opts })
 }
 
 export namespace Command {
-  export const parseHelp = <A>(args: string[]) => (cmd: Command<A>): Either<Help, A> =>
+  export const parseHelp = <A>(args: ReadonlyArray<string>) => (cmd: Command<A>): Either<Help, A> =>
     Parser(cmd)(args)
 
-  export const parse = <A>(args: string[]): ((cmd: Command<A>) => Either<string, A>) =>
+  export const parse = <A>(args: ReadonlyArray<string>): ((cmd: Command<A>) => Either<string, A>) =>
     flow(parseHelp(args), Either.mapLeft(Help.stringify))
 
   export const mapValidated = <A, B>(f: (a: A) => ValidatedNea<string, B>) => (
@@ -30,7 +30,7 @@ export namespace Command {
     mapValidated(flow(f, Either.right))
 }
 
-interface CommandArgs {
+type CommandArgs = {
   readonly name: string
   readonly header: string
-}
+};

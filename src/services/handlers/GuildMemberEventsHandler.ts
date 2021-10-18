@@ -1,6 +1,5 @@
 import { Guild, GuildMember, MessageEmbed, PartialGuildMember, TextChannel } from 'discord.js'
-import * as Ord from 'fp-ts/lib/Ord'
-import { randomInt } from 'fp-ts/lib/Random'
+import * as Ord from 'fp-ts/Ord'
 
 import { AddRemove } from '../../models/AddRemove'
 import { ChannelUtils } from '../../utils/ChannelUtils'
@@ -11,6 +10,7 @@ import { StringUtils } from '../../utils/StringUtils'
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
+import { random } from 'fp-ts'
 
 export const GuildMemberEventsHandler = (
   Logger: PartialLogger,
@@ -122,7 +122,7 @@ function goodbyeChannel(guild: Guild): Maybe<TextChannel> {
   )
 }
 
-const leaveMessages: ((member: string) => string)[] = [
+const leaveMessages: ReadonlyArray<(member: string) => string> = [
   _ => `${_} est parti parce qu'il en avait marre de vous.`,
   _ => `Gibier de potence, ${_} quitte le navire...`,
   _ => `La trahison de ${_} est comme le sel sur une plaie.`,
@@ -134,7 +134,7 @@ const leaveMessages: ((member: string) => string)[] = [
 
 function randomLeaveMessage(member: GuildMember): IO<string> {
   return pipe(
-    randomInt(0, leaveMessages.length - 1),
+    random.randomInt(0, leaveMessages.length - 1),
     IO.rightIO,
     IO.map(_ => leaveMessages[_](`**${member.user.tag}**`)),
   )

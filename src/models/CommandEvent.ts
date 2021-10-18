@@ -1,10 +1,10 @@
-import { Functor2 } from 'fp-ts/lib/Functor'
-import { pipeable } from 'fp-ts/lib/pipeable'
+import { Functor2 } from 'fp-ts/Functor'
+import { pipeable } from 'fp-ts/pipeable'
 
 declare module 'fp-ts/lib/HKT' {
-  interface URItoKind2<E, A> {
+  type URItoKind2<E, A> = {
     readonly CommandEvent: CommandEvent<E, A>
-  }
+  };
 }
 
 const URI = 'CommandEvent'
@@ -21,10 +21,10 @@ export namespace CommandEvent {
 
   export const { map } = pipeable(commandEvent)
 
-  export interface Stdout<A> {
+  export type Stdout<A> = {
     readonly _tag: 'Stdout'
     readonly value: A
-  }
+  };
   export function Stdout<A>(value: A): Stdout<A> {
     return { _tag: 'Stdout', value }
   }
@@ -33,19 +33,19 @@ export namespace CommandEvent {
     return event._tag === 'Stdout'
   }
 
-  export interface Stderr<E> {
+  export type Stderr<E> = {
     readonly _tag: 'Stderr'
     readonly value: E
-  }
+  };
   export const Stderr = <E>(value: E): Stderr<E> => ({ _tag: 'Stderr', value })
 
   export const isStderr = <E, A>(event: CommandEvent<E, A>): event is Stderr<E> =>
     event._tag === 'Stderr'
 
-  export interface Done {
+  export type Done = {
     readonly _tag: 'Done'
     readonly code: number
-  }
+  };
   export const Done = (code: number): Done => ({ _tag: 'Done', code })
 
   export const isDone = <E, A>(event: CommandEvent<E, A>): event is Done => event._tag === 'Done'
@@ -60,8 +60,8 @@ export namespace CommandEvent {
       : onDone(event.code)
 }
 
-interface FoldArgs<E, A, B> {
+type FoldArgs<E, A, B> = {
   readonly onStdout: (value: A) => B
   readonly onStderr: (value: E) => B
   readonly onDone: (code: number) => B
-}
+};

@@ -1,5 +1,4 @@
 import { Guild, Message, MessageAttachment, Role, TextChannel } from 'discord.js'
-import { sequenceT } from 'fp-ts/lib/Apply'
 
 import { Commands } from '../../commands/Commands'
 import { callsEmoji } from '../../global'
@@ -14,6 +13,7 @@ import { ActivityService } from '../ActivityService'
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
+import { apply } from 'fp-ts'
 
 const images: Dict<string> = {
   mefian:
@@ -228,14 +228,14 @@ export const CommandsHandler = (
     guild: Guild,
     channel: TSnowflake,
     role: TSnowflake,
-  ): Future<ValidatedNea<string, [TextChannel, Role]>> {
+  ): Future<ValidatedNea<string, readonly [TextChannel, Role]>> {
     return pipe(
-      sequenceT(Future.taskEitherSeq)(
+      apply.sequenceT(Future.taskEitherSeq)(
         pipe(discord.fetchChannel(channel), Future.map(Maybe.filter(ChannelUtils.isText))),
         discord.fetchRole(guild, role),
       ),
       Future.map(([c, r]) =>
-        sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
+        apply.sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
           fromOption(c, `Channel not found: <#${TSnowflake.unwrap(channel)}>`),
           fromOption(r, `Role not found: <@${TSnowflake.unwrap(role)}>`),
         ),

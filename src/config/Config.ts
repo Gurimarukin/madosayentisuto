@@ -1,4 +1,3 @@
-import { sequenceT } from 'fp-ts/lib/Apply'
 import * as D from 'io-ts/Decoder'
 
 import { LogLevelOrOff } from '../models/LogLevel'
@@ -7,14 +6,15 @@ import { ValidatedNea } from '../models/ValidatedNea'
 import { Either, IO, NonEmptyArray, flow, pipe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 import { ConfReader } from './ConfReader'
+import { apply } from 'fp-ts'
 
-export interface Config {
+export type Config = {
   readonly clientSecret: string
   readonly admins: NonEmptyArray<TSnowflake>
   readonly cmdPrefix: string
   readonly logger: LoggerConfig
   readonly db: DbConfig
-}
+};
 export function Config(
   clientSecret: string,
   admins: NonEmptyArray<TSnowflake>,
@@ -44,7 +44,7 @@ export namespace Config {
 
 function readConfig(reader: ConfReader): ValidatedNea<string, Config> {
   return pipe(
-    sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
+    apply.sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(D.string)('clientSecret'),
       reader(NonEmptyArray.decoder(TSnowflake.codec))('admins'),
       reader(D.string)('cmdPrefix'),
@@ -58,13 +58,13 @@ function readConfig(reader: ConfReader): ValidatedNea<string, Config> {
 /**
  * LoggerConfig
  */
-export interface LoggerConfig {
+export type LoggerConfig = {
   readonly consoleLevel: LogLevelOrOff
   readonly discordDM: {
     readonly level: LogLevelOrOff
     readonly compact: boolean
   }
-}
+};
 
 export function LoggerConfig(
   consoleLevel: LogLevelOrOff,
@@ -79,7 +79,7 @@ export function LoggerConfig(
 
 function readLoggerConfig(reader: ConfReader): ValidatedNea<string, LoggerConfig> {
   return pipe(
-    sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
+    apply.sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(LogLevelOrOff.codec)('logger', 'consoleLevel'),
       reader(LogLevelOrOff.codec)('logger', 'discordDM', 'level'),
       reader(D.boolean)('logger', 'discordDM', 'compact'),
@@ -91,12 +91,12 @@ function readLoggerConfig(reader: ConfReader): ValidatedNea<string, LoggerConfig
 /**
  * DbConfig
  */
-interface DbConfig {
-  host: string
-  dbName: string
-  user: string
-  password: string
-}
+type DbConfig = {
+  readonly host: string
+  readonly dbName: string
+  readonly user: string
+  readonly password: string
+};
 
 function DbConfig(host: string, dbName: string, user: string, password: string): DbConfig {
   return { host, dbName, user, password }
@@ -104,7 +104,7 @@ function DbConfig(host: string, dbName: string, user: string, password: string):
 
 function readDbConfig(reader: ConfReader): ValidatedNea<string, DbConfig> {
   return pipe(
-    sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
+    apply.sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(D.string)('db', 'host'),
       reader(D.string)('db', 'dbName'),
       reader(D.string)('db', 'user'),

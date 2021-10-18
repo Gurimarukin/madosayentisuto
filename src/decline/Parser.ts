@@ -1,34 +1,34 @@
-import { eqString } from 'fp-ts/lib/Eq'
 
 import { Accumulator, ArgOut } from './Accumulator'
 import { Command } from './Command'
 import { Help } from './Help'
 import { Opts } from './Opts'
 import { Result } from './Result'
-import { Either, pipe, NonEmptyArray, Maybe, List, flow } from '../utils/fp'
+import { Either, List, Maybe, NonEmptyArray, flow, pipe } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
+import { eq } from 'fp-ts'
 
 export const longOpt: (str: string) => Maybe<string> = StringUtils.matcher1(/--(.+)/)
-export const longOptWithEquals: (str: string) => Maybe<[string, string]> = StringUtils.matcher2(
+export const longOptWithEquals: (str: string) => Maybe<readonly [string, string]> = StringUtils.matcher2(
   /--(.+?)=(.+)/,
 )
-export const shortOpt: (str: string) => Maybe<[string, string]> = flow(
+export const shortOpt: (str: string) => Maybe<readonly [string, string]> = flow(
   StringUtils.matcher1(/-(.+)/),
   Maybe.chain(nonEmptyString),
 )
 
-function nonEmptyString(str: string): Maybe<[string, string]> {
+function nonEmptyString(str: string): Maybe<readonly [string, string]> {
   return StringUtils.isEmpty(str) ? Maybe.none : Maybe.some([str[0], str.substring(1)])
 }
 
-export type Parser<A> = (args: string[]) => Either<Help, A>
+export type Parser<A> = (args: ReadonlyArray<string>) => Either<Help, A>
 
 export const Parser = <A>(command: Command<A>): Parser<A> => {
   const help = Help.fromCommand(command)
 
   return args => consumeAll(args, Accumulator.fromOpts(command.opts))
 
-  function failure<A>(...reasons: string[]): Either<Help, A> {
+  function failure<A>(...reasons: ReadonlyArray<string>): Either<Help, A> {
     return Either.left(pipe(help, Help.withErrors(reasons)))
   }
 
@@ -36,13 +36,13 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
     return pipe(
       out.get,
       Either.fold(
-        failed => failure(...pipe(failed, Result.Failure.messages, List.uniq(eqString))),
+        failed => failure(...pipe(failed, Result.Failure.messages, List.uniq(eq.eqString))),
         // NB: if any of the user-provided functions have side-effects, they will happen here!
         fn =>
           pipe(
             fn(),
             Either.fold(
-              messages => failure(...pipe(messages, List.uniq(eqString))),
+              messages => failure(...pipe(messages, List.uniq(eq.eqString))),
               result => Either.right(result),
             ),
           ),
@@ -59,7 +59,7 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
     )
   }
 
-  function consumeAll(args: string[], accumulator: Accumulator<A>): Either<Help, A> {
+  function consumeAll(args: ReadonlyArray<string>, accumulator: Accumulator<A>): Either<Help, A> {
     if (List.isEmpty(args)) return evalResult(accumulator.result)
 
     const [arg, ...tail] = args
@@ -74,9 +74,9 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
   }
 
   function consumeLongOptWithEquals(
-    tail: string[],
+    tail: ReadonlyArray<string>,
     accumulator: Accumulator<A>,
-  ): (match: [string, string]) => Either<Help, A> {
+  ): (match: readonly [string, string]) => Either<Help, A> {
     return ([option, value]) =>
       pipe(
         accumulator.parseOption(Opts.Name.LongName(option)),
@@ -92,7 +92,7 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
   }
 
   function consumeLongOpt(
-    rest: string[],
+    rest: ReadonlyArray<string>,
     accumulator: Accumulator<A>,
   ): (match: string) => Either<Help, A> {
     return option =>
@@ -112,7 +112,7 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
       )
   }
 
-  function consumeArgs(args: string[], accumulator: Accumulator<A>): Either<Help, A> {
+  function consumeArgs(args: ReadonlyArray<string>, accumulator: Accumulator<A>): Either<Help, A> {
     if (List.isEmpty(args)) return evalResult(accumulator.result)
 
     const [arg, ...tail] = args
@@ -126,9 +126,9 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
   }
 
   function consumeShortOpt(
-    rest: string[],
+    rest: ReadonlyArray<string>,
     accumulator: Accumulator<A>,
-  ): (match: [string, string]) => Either<Help, A> {
+  ): (match: readonly [string, string]) => Either<Help, A> {
     return ([flag, tail]) => {
       return pipe(
         consumeShort(flag, tail, accumulator),
@@ -139,7 +139,7 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
         char: string,
         tail: string,
         accumulator: Accumulator<A>,
-      ): Either<Help, [string[], Accumulator<A>]> {
+      ): Either<Help, readonly [ReadonlyArray<string>, Accumulator<A>]> {
         return pipe(
           accumulator.parseOption(Opts.Name.ShortName(char)),
           Maybe.fold(
@@ -149,7 +149,7 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
                 pipe(
                   nonEmptyString(tail),
                   Maybe.fold(
-                    () => Either.right([rest, next] as [string[], Accumulator<A>]),
+                    () => Either.right([rest, next] as readonly [ReadonlyArray<string>, Accumulator<A>]),
                     ([nextFlag, nextTail]) => consumeShort(nextFlag, nextTail, next),
                   ),
                 ),
@@ -159,10 +159,10 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
                       NonEmptyArray.fromArray(rest),
                       Maybe.fold(
                         () => failure(`Missing value for option: -${char}`),
-                        ([v, ...r]) => Either.right([r, next(v)] as [string[], Accumulator<A>]),
+                        ([v, ...r]) => Either.right([r, next(v)] as readonly [ReadonlyArray<string>, Accumulator<A>]),
                       ),
                     )
-                  : Either.right([rest, next(tail)] as [string[], Accumulator<A>]),
+                  : Either.right([rest, next(tail)] as readonly [ReadonlyArray<string>, Accumulator<A>]),
               onAmbiguous: () => failure(`Ambiguous option/flag: -${char}`),
             }),
           ),
@@ -173,7 +173,7 @@ export const Parser = <A>(command: Command<A>): Parser<A> => {
 
   function consumeDefault(
     arg: string,
-    tail: string[],
+    tail: ReadonlyArray<string>,
     accumulator: Accumulator<A>,
   ): Either<Help, A> {
     return pipe(

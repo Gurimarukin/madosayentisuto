@@ -76,9 +76,9 @@ export function DiscordConnector(client: Client) {
         ObservableE.rightObservable,
       ),
 
-    messageReactions: (): ObservableE<AddRemove<[MessageReaction, User | PartialUser]>> =>
+    messageReactions: (): ObservableE<AddRemove<readonly [MessageReaction, User | PartialUser]>> =>
       pipe(
-        fromEventPattern<AddRemove<[MessageReaction, User | PartialUser]>>(handler => {
+        fromEventPattern<AddRemove<readonly [MessageReaction, User | PartialUser]>>(handler => {
           client.on('messageReactionAdd', (reaction, user) =>
             handler(AddRemove.Add([reaction, user])),
           )
@@ -95,7 +95,7 @@ export function DiscordConnector(client: Client) {
     resolveGuild: (guildId: GuildId): Maybe<Guild> =>
       Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId))),
 
-    fetchPartial: <A extends { partial: boolean; fetch(): Promise<A> }, K extends string>(
+    fetchPartial: <A extends { readonly partial: boolean; fetch(): Promise<A> }, K extends string>(
       partial: A | Partialize<A, K>,
     ) => (partial.partial ? Future.apply(() => partial.fetch()) : Future.right(partial)),
 
@@ -125,7 +125,7 @@ export function DiscordConnector(client: Client) {
 
     fetchMemberForUser: (
       guild: Guild,
-      user: UserResolvable | FetchMemberOptions | (FetchMembersOptions & { user: UserResolvable }),
+      user: UserResolvable | FetchMemberOptions | (FetchMembersOptions & { readonly user: UserResolvable }),
     ): Future<Maybe<GuildMember>> =>
       pipe(
         Future.apply(() => guild.members.fetch(user)),
@@ -184,7 +184,7 @@ export function DiscordConnector(client: Client) {
 
     addRole: (
       member: GuildMember,
-      roleOrRoles: RoleResolvable | RoleResolvable[],
+      roleOrRoles: RoleResolvable | ReadonlyArray<RoleResolvable>,
       reason?: string,
     ): Future<Maybe<void>> =>
       pipe(
@@ -198,7 +198,7 @@ export function DiscordConnector(client: Client) {
 
     removeRole: (
       member: GuildMember,
-      roleOrRoles: RoleResolvable | RoleResolvable[],
+      roleOrRoles: RoleResolvable | ReadonlyArray<RoleResolvable>,
       reason?: string,
     ): Future<Maybe<void>> =>
       pipe(
@@ -233,7 +233,7 @@ export function DiscordConnector(client: Client) {
       IO.apply(() => connection.play(input)),
   }
 
-  function fetchMessageRec(message: string): (channels: TextChannel[]) => Future<Maybe<Message>> {
+  function fetchMessageRec(message: string): (channels: ReadonlyArray<TextChannel>) => Future<Maybe<Message>> {
     return channels => {
       if (List.isEmpty(channels)) return Future.right(Maybe.none)
 

@@ -1,10 +1,10 @@
-import { GuildMember, VoiceChannel, Guild } from 'discord.js'
+import { Guild, GuildMember, VoiceChannel } from 'discord.js'
 
 import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
 import { GuildStateService } from '../GuildStateService'
 import { VoiceStateUpdate } from '../../models/VoiceStateUpdate'
-import { Future, Maybe, pipe, List } from '../../utils/fp'
+import { Future, List, Maybe, pipe } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 
@@ -174,7 +174,7 @@ function getMember(voiceStateUpdate: VoiceStateUpdate): Maybe<GuildMember> {
   )
 }
 
-function peopleInPublicVocalChans(guild: Guild): GuildMember[] {
+function peopleInPublicVocalChans(guild: Guild): ReadonlyArray<GuildMember> {
   return pipe(
     guild.channels.cache.array(),
     List.filter(_ => ChannelUtils.isPublic(_) && ChannelUtils.isVoice(_)),

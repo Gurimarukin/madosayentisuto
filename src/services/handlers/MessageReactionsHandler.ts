@@ -21,7 +21,7 @@ export const MessageReactionsHandler = (
   Logger: PartialLogger,
   guildStateService: GuildStateService,
   discord: DiscordConnector,
-): ((event: AddRemove<[MessageReaction, User | PartialUser]>) => Future<unknown>) => {
+): ((event: AddRemove<readonly [MessageReaction, User | PartialUser]>) => Future<unknown>) => {
   const logger = Logger('MessageReactionsHandler')
 
   return event => {

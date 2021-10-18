@@ -2,8 +2,8 @@ import { MsDuration } from '../models/MsDuration'
 import { Either, Future, IO, Task, pipe } from './fp'
 
 type OnComplete<A> = Readonly<{
-  onFailure: (e: Error) => IO<void>
-  onSuccess: (a: A) => IO<void>
+  readonly onFailure: (e: Error) => IO<void>
+  readonly onSuccess: (a: A) => IO<void>
 }>
 
 export namespace FutureUtils {

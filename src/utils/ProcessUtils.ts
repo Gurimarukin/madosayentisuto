@@ -1,25 +1,25 @@
 import { spawn } from 'child_process'
 import { Observable } from 'rxjs'
 
-import { Future, Dict, Try, Either, pipe, flow, NonEmptyArray, Maybe } from './fp'
+import { Dict, Either, Future, Maybe, NonEmptyArray, Try, flow, pipe } from './fp'
 import { CommandEvent } from '../models/CommandEvent'
 import { ObservableE } from '../models/ObservableE'
 
-export interface CmdOutput {
+export type CmdOutput = {
   readonly code: number
   readonly stdout: string
   readonly stderr: string
-}
+};
 
-export interface ShortOptions {
+export type ShortOptions = {
   readonly cwd?: string
   readonly env?: Dict<string>
-}
+};
 
 export namespace ProcessUtils {
   export const execAsync = (
     command: string,
-    args: string[] = [],
+    args: ReadonlyArray<string> = [],
     options: ShortOptions = {},
   ): Future<CmdOutput> =>
     Future.apply(
@@ -47,7 +47,7 @@ export namespace ProcessUtils {
   // emits a CommandEvent for each outputed line (which rawObservable doesn't)
   export const execObservable = (
     command: string,
-    args: string[] = [],
+    args: ReadonlyArray<string> = [],
     options: ShortOptions = {},
   ): ObservableE<CommandEvent<any, any>> =>
     new Observable<Try<CommandEvent<any, any>>>(subscriber => {
@@ -103,7 +103,7 @@ export namespace ProcessUtils {
 
 function rawObservable(
   command: string,
-  args: string[] = [],
+  args: ReadonlyArray<string> = [],
   options: ShortOptions = {},
 ): ObservableE<CommandEvent<any, any>> {
   return new Observable<Try<CommandEvent<any, any>>>(subscriber => {
