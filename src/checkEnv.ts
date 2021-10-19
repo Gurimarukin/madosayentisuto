@@ -1,10 +1,14 @@
+import { pipe } from 'fp-ts/function'
+
 import { Config } from './config/Config'
-import { Do, Future } from './utils/fp'
+import { Future } from './utils/fp'
 
-const main = (): Future<unknown> =>
-  Do(Future.taskEitherSeq)
-    // check config
-    .do(Future.fromIOEither(Config.load()))
-    .done()
+const main: Future<void> = pipe(
+  // check config
+  Config.load(),
+  Future.fromIOEither,
+  Future.map(() => {}),
+)
 
-Future.runUnsafe(main())
+// eslint-disable-next-line functional/no-expression-statement
+Future.runUnsafe(main)

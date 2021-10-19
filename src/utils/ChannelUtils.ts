@@ -1,24 +1,23 @@
-import {
-  Channel,
-  DMChannel,
-  GuildChannel,
-  PartialTextBasedChannelFields,
-  TextChannel,
-  VoiceChannel,
-} from 'discord.js'
+// import {
+//   Channel,
+//   DMChannel,
+//   GuildChannel,
+//   PartialTextBasedChannelFields,
+//   TextChannel,
+//   VoiceChannel,
+// } from 'discord.js'
+// import { predicate } from 'fp-ts'
 
-import { not } from './fp'
+// export type SendableChannel = Channel & PartialTextBasedChannelFields
 
-export type SendableChannel = Channel & PartialTextBasedChannelFields
+// const isDm = (channel: Channel): channel is DMChannel => channel.type === 'dm'
+// const isText = (channel: Channel): channel is TextChannel => channel.type === 'text'
+// const isVoice = (channel: Channel): channel is VoiceChannel => channel.type === 'voice'
 
-export namespace ChannelUtils {
-  export const isDm = (channel: Channel): channel is DMChannel => channel.type === 'dm'
-  export const isText = (channel: Channel): channel is TextChannel => channel.type === 'text'
-  export const isVoice = (channel: Channel): channel is VoiceChannel => channel.type === 'voice'
+// const isSendable = (c: Channel): c is SendableChannel =>
+//   c.type === 'dm' || c.type == 'news' || c.type === 'text'
 
-  export const isSendable = (c: Channel): c is SendableChannel =>
-    c.type === 'dm' || c.type == 'news' || c.type === 'text'
+// const isPublic = (c: GuildChannel): boolean => c.permissionOverwrites.size === 0
+// const isPrivate = predicate.not(isPublic)
 
-  export const isPublic = (c: GuildChannel): boolean => c.permissionOverwrites.size === 0
-  export const isPrivate = not(isPublic)
-}
+// export const ChannelUtils = { isDm, isText, isVoice, isSendable, isPublic, isPrivate }

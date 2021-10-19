@@ -4,4 +4,4 @@ import { Future } from '../utils/fp'
 
 export type MongoCollection = (
   collName: string,
-) => <A>(f: (coll: Collection) => Promise<A>) => Future<A>
+) => <O, A>(f: (coll: Collection<O>) => Promise<A>) => Future<A>

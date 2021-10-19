@@ -1,24 +1,26 @@
-import { Either, Maybe, NonEmptyArray, flow } from '../utils/fp'
+import { flow } from 'fp-ts/function'
+
+import { Either, List, Maybe, NonEmptyArray } from '../utils/fp'
+
+const fromEither: <E, A>(either: Either<E, A>) => ValidatedNea<E, A> = Either.mapLeft(
+  NonEmptyArray.of,
+)
+
+const fromOption = <E, A>(onNone: () => E): ((ma: Maybe<A>) => ValidatedNea<E, A>) =>
+  flow(Either.fromOption(onNone), fromEither)
+
+const fromEmptyE = <E, A>(e: E): ((either: Either<List<E>, A>) => ValidatedNea<E, A>) =>
+  Either.mapLeft(
+    flow(
+      NonEmptyArray.fromReadonlyArray,
+      Maybe.getOrElse(() => NonEmptyArray.of(e)),
+    ),
+  )
+
+const fromEmptyErrors: <A>(either: Either<List<string>, A>) => ValidatedNea<string, A> = fromEmptyE(
+  'Got empty Errors from codec',
+)
 
 export type ValidatedNea<E, A> = Either<NonEmptyArray<E>, A>
 
-export namespace ValidatedNea {
-  export const fromEither: <E, A>(either: Either<E, A>) => ValidatedNea<E, A> = Either.mapLeft(
-    NonEmptyArray.of,
-  )
-
-  export const fromOption = <E, A>(onNone: () => E): ((ma: Maybe<A>) => ValidatedNea<E, A>) =>
-    flow(Either.fromOption(onNone), fromEither)
-
-  export const fromEmptyE = <E, A>(e: E): ((either: Either<ReadonlyArray<E>, A>) => ValidatedNea<E, A>) =>
-    Either.mapLeft(
-      flow(
-        NonEmptyArray.fromArray,
-        Maybe.getOrElse(() => NonEmptyArray.of(e)),
-      ),
-    )
-
-  export const fromEmptyErrors: <A>(
-    either: Either<ReadonlyArray<string>, A>
-  ) => ValidatedNea<string, A> = fromEmptyE('Got empty Errors from codec')
-}
+export const ValidatedNea = { fromEither, fromOption, fromEmptyE, fromEmptyErrors }

@@ -2,15 +2,13 @@ import * as C from 'io-ts/Codec'
 
 import { ActivityTypeBot } from './ActivityTypeBot'
 
-export function Activity(type: ActivityTypeBot, name: string): Activity {
-  return { type, name }
-}
+const of = (type: ActivityTypeBot, name: string): Activity => ({ type, name })
 
-export namespace Activity {
-  export const codec = C.type({
-    type: ActivityTypeBot.codec,
-    name: C.string,
-  })
-}
+const codec = C.struct({
+  type: ActivityTypeBot.codec,
+  name: C.string,
+})
 
-export type Activity = C.TypeOf<typeof Activity.codec>
+export type Activity = C.TypeOf<typeof codec>
+
+export const Activity = { of, codec }

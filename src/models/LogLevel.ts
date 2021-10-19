@@ -1,42 +1,44 @@
+import { ColorResolvable } from 'discord.js'
 import * as D from 'io-ts/Decoder'
 
 import { Colors } from '../utils/Colors'
+import { Dict } from '../utils/fp'
 
-export namespace LogLevel {
-  export const decoder = D.union(
-    D.literal('debug'),
-    D.literal('info'),
-    D.literal('warn'),
-    D.literal('error'),
-  )
+const decoder = D.union(
+  D.literal('debug'),
+  D.literal('info'),
+  D.literal('warn'),
+  D.literal('error'),
+)
 
-  export const shellColor: Record<LogLevel, string> = {
-    debug: '90',
-    info: '36',
-    warn: '33',
-    error: '31;1',
-  }
-
-  export const hexColor: Record<LogLevel, string> = {
-    debug: Colors.dimgray,
-    info: Colors.lightseagreen,
-    warn: Colors.goldenrod,
-    error: Colors.tomato,
-  }
+const shellColor: Dict<LogLevel, string> = {
+  debug: '90',
+  info: '36',
+  warn: '33',
+  error: '31;1',
 }
 
-export type LogLevel = D.TypeOf<typeof LogLevel.decoder>
-
-export namespace LogLevelOrOff {
-  export const codec = D.union(LogLevel.decoder, D.literal('off'))
-
-  export const value: Record<LogLevelOrOff, number> = {
-    debug: 4,
-    info: 3,
-    warn: 2,
-    error: 1,
-    off: 0,
-  }
+const hexColor: Dict<LogLevel, ColorResolvable> = {
+  debug: Colors.dimgray,
+  info: Colors.lightseagreen,
+  warn: Colors.goldenrod,
+  error: Colors.tomato,
 }
 
-export type LogLevelOrOff = D.TypeOf<typeof LogLevelOrOff.codec>
+export type LogLevel = D.TypeOf<typeof decoder>
+
+export const LogLevel = { decoder, shellColor, hexColor }
+
+const codec = D.union(LogLevel.decoder, D.literal('off'))
+
+const value: Dict<LogLevelOrOff, number> = {
+  debug: 4,
+  info: 3,
+  warn: 2,
+  error: 1,
+  off: 0,
+}
+
+export type LogLevelOrOff = D.TypeOf<typeof codec>
+
+export const LogLevelOrOff = { codec, value }

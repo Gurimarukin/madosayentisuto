@@ -1,9 +1,11 @@
 import * as O from 'fp-ts-rxjs/lib/Observable'
 import * as OE from 'fp-ts-rxjs/lib/ObservableEither'
-import { Predicate, Refinement } from 'fp-ts/function'
+import { flow } from 'fp-ts/function'
+import { Predicate } from 'fp-ts/Predicate'
+import { Refinement } from 'fp-ts/Refinement'
 import { Observable, Subscriber } from 'rxjs'
 
-import { Either, Maybe, Try, flow } from '../utils/fp'
+import { Either, Maybe, Try } from '../utils/fp'
 
 export type ObservableE<A> = Observable<Try<A>>
 
@@ -14,7 +16,7 @@ export const ObservableE = {
 }
 
 function filter<A, B extends A>(
-  refinement: Refinement<A, B>
+  refinement: Refinement<A, B>,
 ): (obs: ObservableE<A>) => ObservableE<B>
 function filter<A>(predicate: Predicate<A>): (obs: ObservableE<A>) => ObservableE<A>
 function filter<A>(predicate: Predicate<A>): (obs: ObservableE<A>) => ObservableE<A> {

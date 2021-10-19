@@ -1,16 +1,20 @@
+import { task } from 'fp-ts'
+import { pipe } from 'fp-ts/function'
+
 import { GuildId } from '../models/GuildId'
-import { GuildState } from '../models/guildState/GuildState'
+import { GuildState, GuildStateOutput } from '../models/guildState/GuildState'
 import { MongoCollection } from '../models/MongoCollection'
 import { PartialLogger } from '../services/Logger'
-import { Either, Future, List, Maybe, Task, pipe } from '../utils/fp'
+import { Either, Future, List, Maybe } from '../utils/fp'
 import { FpCollection } from './FpCollection'
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const GuildStatePersistence = (Logger: PartialLogger, mongoCollection: MongoCollection) => {
   const logger = Logger('GuildStatePersistence')
-  const collection = FpCollection<GuildState, GuildState.Output>(
+  const collection = FpCollection<GuildState, GuildStateOutput>(
     logger,
     mongoCollection('guildState'),
-    GuildState.codec,
+    [GuildState.codec, 'GuildState'],
   )
 
   return {
@@ -20,11 +24,11 @@ export const GuildStatePersistence = (Logger: PartialLogger, mongoCollection: Mo
     find: (id: GuildId): Future<Maybe<GuildState>> =>
       collection.findOne({ id: GuildId.unwrap(id) }),
 
-    findAll: (): Future<ReadonlyArray<GuildId>> =>
+    findAll: (): Future<List<GuildId>> =>
       pipe(
         collection.find({}),
-        Future.map(_ => () => _.map(Either.map(_ => _.id)).toArray()),
-        Future.chain(Task.map(List.array.sequence(Either.either))),
+        Future.map(u => () => u.map(Either.map(_ => _.id)).toArray()),
+        Future.chain(task.map(List.sequence(Either.either))),
       ),
 
     upsert: (id: GuildId, state: GuildState): Future<boolean> =>

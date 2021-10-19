@@ -2,7 +2,6 @@ import fs from 'fs'
 
 import { IO } from './fp'
 
-export namespace FileUtils {
-  export const readFileSync = (path: string): IO<string> =>
-    IO.apply(() => fs.readFileSync(path, 'utf8'))
-}
+const readFileSync = (path: string): IO<string> => IO.tryCatch(() => fs.readFileSync(path, 'utf8'))
+
+export const FileUtils = { readFileSync }

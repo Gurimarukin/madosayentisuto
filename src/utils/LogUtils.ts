@@ -1,17 +1,18 @@
 import { Guild, Message } from 'discord.js'
+import { pipe } from 'fp-ts/function'
 
-import { IO, Maybe, pipe } from './fp'
 import { LogLevel } from '../models/LogLevel'
 import { Logger } from '../services/Logger'
+import { IO, List, Maybe } from './fp'
 
-export namespace LogUtils {
-  export const withGuild = (logger: Logger, level: LogLevel, guild: Guild) => (
-    ...args: ReadonlyArray<any>
-  ): IO<void> => logger[level](`[${guild.name}]`, ...args)
+const withGuild =
+  (logger: Logger, level: LogLevel, guild: Guild) =>
+  (...args: List<unknown>): IO<void> =>
+    logger[level](`[${guild.name}]`, ...args)
 
-  export const withAuthor = (logger: Logger, level: LogLevel, message: Message) => (
-    ...args: ReadonlyArray<any>
-  ): IO<void> => {
+const withAuthor =
+  (logger: Logger, level: LogLevel, message: Message) =>
+  (...args: List<unknown>): IO<void> => {
     // [guild#channel] user: ...args
     // [guild] user: ...args
     // user: ...args
@@ -20,11 +21,14 @@ export namespace LogUtils {
       Maybe.fold(
         () => '',
         guild => {
-          const chanName = message.channel.type === 'text' ? `#${message.channel.name}` : ''
+          // TODO: correct eslint-disable?
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
+          const chanName = `#${message.channel.toString()}`
           return `[${guild.name}${chanName}] `
         },
       ),
     )
     return logger[level](`${prefix}${message.author.tag}:`, ...args)
   }
-}
+
+export const LogUtils = { withGuild, withAuthor }

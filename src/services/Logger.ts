@@ -1,99 +1,117 @@
 import util from 'util'
-import fmt from 'dateformat'
-import { MessageEmbed, StringResolvable } from 'discord.js'
 
-import { DiscordConnector } from './DiscordConnector'
+import { pipe } from 'fp-ts/function'
+
 import { Config } from '../config/Config'
 import { LogLevel, LogLevelOrOff } from '../models/LogLevel'
-import { Do, Future, IO, Maybe, pipe } from '../utils/fp'
+import { Future, IO, List } from '../utils/fp'
 
-export type Logger = Record<LogLevel, (arg: any, ...args: ReadonlyArray<any>) => IO<void>>
+export type Logger = Record<LogLevel, (arg: unknown, ...args: List<unknown>) => IO<void>>
 
 export type PartialLogger = (name: string) => Logger
 
-export const PartialLogger = (config: Config, discord: DiscordConnector): PartialLogger => name => {
-  const consoleLog = (level: LogLevel, msg: string): Future<void> =>
-    shouldLog(config.logger.consoleLevel, level)
-      ? Future.apply(
-          () =>
-            new Promise<void>(resolve => {
-              resolve(console.log(formatConsole(name, level, msg)))
-            }),
-        )
-      : Future.unit
+export const PartialLogger =
+  (config: Config): PartialLogger =>
+  name => {
+    const consoleLog = (level: LogLevel, msg: string): Future<void> =>
+      shouldLog(config.logger.consoleLevel, level)
+        ? Future.tryCatch(
+            () =>
+              new Promise<void>(resolve => {
+                // eslint-disable-next-line functional/no-expression-statement
+                resolve(console.log(formatConsole(name, level, msg)))
+              }),
+          )
+        : Future.unit
 
-  const discordDMLog = (level: LogLevel, rawMsg: string): Future<void> => {
-    if (shouldLog(config.logger.discordDM.level, level)) {
-      const msg: StringResolvable = config.logger.discordDM.compact
-        ? formatDMCompact(name, level, rawMsg)
-        : formatDMEmbed(name, level, rawMsg)
+    const discordDMLog = (): Future<void> =>
+      // if (shouldLog(config.logger.discordDM.level, level)) {
+      //   const msg: string | MessageOptions = config.logger.discordDM.compact
+      //     ? formatDMCompact(name, level, rawMsg)
+      //     : formatDMEmbed(name, level, rawMsg)
 
-      const futures = config.admins.map(userId =>
+      //   const futures = config.admins.map(userId =>
+      //     pipe(
+      //       discord.fetchUser(userId),
+      //       Future.chain(
+      //         Maybe.fold(
+      //           () => Future.unit,
+      //           user =>
+      //             pipe(
+      //               Future.tryCatch(() => user.createDM()),
+      //               Future.chain(chan => Future.tryCatch(() => chan.send(msg))),
+      //               Future.map(() => {}),
+      //             ),
+      //         ),
+      //       ),
+      //     ),
+      //   )
+
+      //   return pipe(
+      //     Future.sequenceArray(futures),
+      //     Future.map(() => {}),
+      //   )
+      // } else {
+      Future.unit
+    // }
+
+    const log = (level: LogLevel, msg: string): IO<void> =>
+      IO.runFuture(
         pipe(
-          discord.fetchUser(userId),
-          Future.chain(
-            Maybe.fold(
-              () => Future.unit,
-              user =>
-                pipe(
-                  Future.apply(() => user.createDM()),
-                  Future.chain(_ => Future.apply(() => _.send(msg))),
-                  Future.map(_ => {}),
-                ),
-            ),
-          ),
+          consoleLog(level, msg),
+          Future.chain(() => discordDMLog()),
         ),
       )
 
-      return pipe(
-        Future.parallel(futures),
-        Future.map(_ => {}),
-      )
-    } else {
-      return Future.unit
-    }
+    const debug = (param: unknown, ...params: List<unknown>): IO<void> =>
+      log('debug', util.format(param, ...params))
+    const info = (param: unknown, ...params: List<unknown>): IO<void> =>
+      log('info', util.format(param, ...params))
+    const warn = (param: unknown, ...params: List<unknown>): IO<void> =>
+      log('warn', util.format(param, ...params))
+    const error = (param: unknown, ...params: List<unknown>): IO<void> =>
+      log('error', util.format(param, ...params))
+
+    return { debug, info, warn, error }
   }
 
-  const log = (level: LogLevel, msg: string): IO<void> =>
-    IO.runFuture(
-      Do(Future.taskEither)
-        .do(consoleLog(level, msg))
-        .do(discordDMLog(level, msg))
-        .return(() => {}),
-    )
+const shouldLog = (setLevel: LogLevelOrOff, level: LogLevel): boolean =>
+  LogLevelOrOff.value[setLevel] >= LogLevelOrOff.value[level]
 
-  const debug = (param: any, ...params: ReadonlyArray<any>) => log('debug', util.format(param, ...params))
-  const info = (param: any, ...params: ReadonlyArray<any>) => log('info', util.format(param, ...params))
-  const warn = (param: any, ...params: ReadonlyArray<any>) => log('warn', util.format(param, ...params))
-  const error = (param: any, ...params: ReadonlyArray<any>) => log('error', util.format(param, ...params))
-
-  return { debug, info, warn, error }
-}
-
-function shouldLog(setLevel: LogLevelOrOff, level: LogLevel): boolean {
-  return LogLevelOrOff.value[setLevel] >= LogLevelOrOff.value[level]
-}
-
-function formatConsole(name: string, level: LogLevel, msg: string): string {
+const formatConsole = (name: string, level: LogLevel, msg: string): string => {
   const withName = `${name} - ${msg}`
-  const withTimestamp = `${color(fmt('yyyy/mm/dd HH:MM:ss'), '30;1')} ${withName}`
+  const withTimestamp = `${color(formatDate(new Date()), '30;1')} ${withName}` // fp-ts date.now
   const c = LogLevel.shellColor[level]
   return level === 'info' || level === 'warn'
     ? `[${color(level.toUpperCase(), c)}]  ${withTimestamp}`
     : `[${color(level.toUpperCase(), c)}] ${withTimestamp}`
 }
 
-function formatDMCompact(name: string, level: LogLevel, msg: string): string {
-  const withName = `${name} - ${msg}`
-  return level === 'info' || level === 'warn'
-    ? `\`[${level.toUpperCase()}]  ${withName}\``
-    : `\`[${level.toUpperCase()}] ${withName}\``
+// function formatDMCompact(name: string, level: LogLevel, msg: string): string {
+//   const withName = `${name} - ${msg}`
+//   return level === 'info' || level === 'warn'
+//     ? `\`[${level.toUpperCase()}]  ${withName}\``
+//     : `\`[${level.toUpperCase()}] ${withName}\``
+// }
+
+// function formatDMEmbed(name: string, level: LogLevel, msg: string): MessageOptions {
+//   return {
+//     embeds: [
+//       new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`),
+//     ],
+//   }
+// }
+
+const formatDate = (d: Date): string => {
+  const year = d.getFullYear()
+  const month = pad10(d.getMonth() + 1)
+  const day = pad10(d.getDate())
+  const hours = pad10(d.getHours())
+  const minutes = pad10(d.getMinutes())
+  const seconds = pad10(d.getSeconds())
+  return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`
 }
 
-function formatDMEmbed(name: string, level: LogLevel, msg: string): MessageEmbed {
-  return new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`)
-}
+const pad10 = (n: number): string => (n < 10 ? `0${n}` : n.toString())
 
-function color(s: string, c: string): string {
-  return process.stdout.isTTY ? `\x1B[${c}m${s}\x1B[0m` : s
-}
+const color = (s: string, c: string): string => (process.stdout.isTTY ? `\x1B[${c}m${s}\x1B[0m` : s)

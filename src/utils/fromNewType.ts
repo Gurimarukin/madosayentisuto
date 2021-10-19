@@ -1,7 +1,8 @@
+import { flow } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 import { AnyNewtype, CarrierOf, iso } from 'newtype-ts'
 
-import { Either, flow } from './fp'
+import { Either } from './fp'
 
 export function fromNewtype<N extends AnyNewtype = never>(
   codec: C.Codec<unknown, CarrierOf<N>, CarrierOf<N>>,

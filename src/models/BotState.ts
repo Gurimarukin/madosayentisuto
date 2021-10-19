@@ -4,22 +4,20 @@ import { Lens as MonocleLens } from 'monocle-ts'
 import { Maybe } from '../utils/fp'
 import { Activity } from './Activity'
 
-export type BotState = C.TypeOf<typeof BotState.codec>
+const codec = C.struct({
+  activity: Maybe.codec(Activity.codec),
+})
 
-export function BotState(activity: Maybe<Activity>): BotState {
-  return { activity }
-}
+const of = (activity: Maybe<Activity>): BotState => ({ activity })
 
-export namespace BotState {
-  export const codec = C.type({
-    activity: Maybe.codec(Activity.codec),
-  })
+const empty: BotState = of(Maybe.none)
 
-  export type Output = C.OutputOf<typeof codec>
+export type BotState = C.TypeOf<typeof codec>
+export type BotStateOutput = C.OutputOf<typeof codec>
 
-  export const empty: BotState = BotState(Maybe.none)
-
-  export namespace Lens {
-    export const activity = MonocleLens.fromPath<BotState>()(['activity'])
-  }
+export const BotState = {
+  codec,
+  of,
+  empty,
+  activity: MonocleLens.fromPath<BotState>()(['activity']),
 }

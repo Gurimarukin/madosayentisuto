@@ -6,29 +6,26 @@ import { GuildId } from '../GuildId'
 import { TSnowflake } from '../TSnowflake'
 import { StaticCalls } from './StaticCalls'
 
-export type GuildState = C.TypeOf<typeof GuildState.codec>
-
-export function GuildState(
+const of = (
   id: GuildId,
   calls: Maybe<StaticCalls>,
   defaultRole: Maybe<TSnowflake>,
-): GuildState {
-  return { id, calls, defaultRole }
+): GuildState => ({ id, calls, defaultRole })
+
+const codec = C.struct({
+  id: GuildId.codec,
+  calls: Maybe.codec(StaticCalls.codec),
+  defaultRole: Maybe.codec(TSnowflake.codec),
+})
+
+const empty = (id: GuildId): GuildState => of(id, Maybe.none, Maybe.none)
+
+const Lens = {
+  calls: MonocleLens.fromPath<GuildState>()(['calls']),
+  defaultRole: MonocleLens.fromPath<GuildState>()(['defaultRole']),
 }
 
-export namespace GuildState {
-  export const codec = C.type({
-    id: GuildId.codec,
-    calls: Maybe.codec(StaticCalls.codec),
-    defaultRole: Maybe.codec(TSnowflake.codec),
-  })
+export type GuildState = C.TypeOf<typeof codec>
+export type GuildStateOutput = C.OutputOf<typeof codec>
 
-  export type Output = C.OutputOf<typeof codec>
-
-  export const empty = (id: GuildId): GuildState => GuildState(id, Maybe.none, Maybe.none)
-
-  export namespace Lens {
-    export const calls = MonocleLens.fromPath<GuildState>()(['calls'])
-    export const defaultRole = MonocleLens.fromPath<GuildState>()(['defaultRole'])
-  }
-}
+export const GuildState = { of, codec, empty, Lens }

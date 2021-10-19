@@ -1,12 +1,35 @@
+import { apply } from 'fp-ts'
+import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { LogLevelOrOff } from '../models/LogLevel'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
-import { Either, IO, NonEmptyArray, flow, pipe } from '../utils/fp'
+import { Either, IO, NonEmptyArray } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 import { ConfReader } from './ConfReader'
-import { apply } from 'fp-ts'
+
+const of = (
+  clientSecret: string,
+  admins: NonEmptyArray<TSnowflake>,
+  cmdPrefix: string,
+  logger: LoggerConfig,
+  db: DbConfig,
+): Config => ({ clientSecret, admins, cmdPrefix, logger, db })
+
+const load = (): IO<Config> =>
+  pipe(
+    ConfReader.fromFiles('./conf/local.conf.json', './conf/application.conf.json'),
+    IO.chain(reader =>
+      pipe(
+        readConfig(reader),
+        Either.mapLeft(
+          flow(StringUtils.mkString('Errors while reading config:\n', '\n', ''), Error),
+        ),
+        IO.fromEither,
+      ),
+    ),
+  )
 
 export type Config = {
   readonly clientSecret: string
@@ -14,44 +37,19 @@ export type Config = {
   readonly cmdPrefix: string
   readonly logger: LoggerConfig
   readonly db: DbConfig
-};
-export function Config(
-  clientSecret: string,
-  admins: NonEmptyArray<TSnowflake>,
-  cmdPrefix: string,
-  logger: LoggerConfig,
-  db: DbConfig,
-): Config {
-  return { clientSecret, admins, cmdPrefix, logger, db }
 }
-
-export namespace Config {
-  export function load(): IO<Config> {
-    return pipe(
-      ConfReader.fromFiles('./conf/local.conf.json', './conf/application.conf.json'),
-      IO.chain(reader =>
-        pipe(
-          readConfig(reader),
-          Either.mapLeft(
-            flow(StringUtils.mkString('Errors while reading config:\n', '\n', ''), Error),
-          ),
-          IO.fromEither,
-        ),
-      ),
-    )
-  }
-}
+export const Config = { of, load }
 
 function readConfig(reader: ConfReader): ValidatedNea<string, Config> {
   return pipe(
-    apply.sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
+    apply.sequenceT(Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(D.string)('clientSecret'),
       reader(NonEmptyArray.decoder(TSnowflake.codec))('admins'),
       reader(D.string)('cmdPrefix'),
       readLoggerConfig(reader),
       readDbConfig(reader),
     ),
-    Either.map(_ => Config(..._)),
+    Either.map(args => Config.of(...args)),
   )
 }
 
@@ -64,7 +62,7 @@ export type LoggerConfig = {
     readonly level: LogLevelOrOff
     readonly compact: boolean
   }
-};
+}
 
 export function LoggerConfig(
   consoleLevel: LogLevelOrOff,
@@ -79,7 +77,7 @@ export function LoggerConfig(
 
 function readLoggerConfig(reader: ConfReader): ValidatedNea<string, LoggerConfig> {
   return pipe(
-    apply.sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
+    apply.sequenceT(Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(LogLevelOrOff.codec)('logger', 'consoleLevel'),
       reader(LogLevelOrOff.codec)('logger', 'discordDM', 'level'),
       reader(D.boolean)('logger', 'discordDM', 'compact'),
@@ -96,7 +94,7 @@ type DbConfig = {
   readonly dbName: string
   readonly user: string
   readonly password: string
-};
+}
 
 function DbConfig(host: string, dbName: string, user: string, password: string): DbConfig {
   return { host, dbName, user, password }

@@ -1,16 +1,21 @@
+import { pipe } from 'fp-ts/function'
+
 import { Application } from './Application'
 import { Config } from './config/Config'
 import { DiscordConnector } from './services/DiscordConnector'
 import { PartialLogger } from './services/Logger'
-import { Do, Future, pipe } from './utils/fp'
+import { Future } from './utils/fp'
 
-pipe(
-  Do(Future.taskEither)
-    .bind('config', Future.fromIOEither(Config.load()))
-    .bindL('client', ({ config }) => DiscordConnector.futureClient(config))
-    .letL('discord', ({ client }) => DiscordConnector(client))
-    .letL('Logger', ({ config, discord }) => PartialLogger(config, discord))
-    .doL(({ Logger, config, discord }) => Application(Logger, config, discord))
-    .return(() => {}),
-  Future.runUnsafe,
+const main: Future<void> = pipe(
+  Future.Do,
+  Future.bind('config', () => Future.fromIOEither(Config.load())),
+  Future.bind('client', ({ config }) => DiscordConnector.futureClient(config)),
+  Future.chain(({ config, client }) => {
+    const discord = DiscordConnector.of(client)
+    const Logger = PartialLogger(config)
+    return Application(Logger, config, discord)
+  }),
 )
+
+// eslint-disable-next-line functional/no-expression-statement
+Future.runUnsafe(main)

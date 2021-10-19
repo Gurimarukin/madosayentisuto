@@ -5,10 +5,8 @@ import { fromNewtype } from '../utils/fromNewType'
 
 export type TSnowflake = Newtype<{ readonly TSnowflake: unique symbol }, string>
 
-const isoTSnowflake = iso<TSnowflake>()
+const { wrap, unwrap } = iso<TSnowflake>()
 
-export namespace TSnowflake {
-  export const wrap = isoTSnowflake.wrap
-  export const unwrap = isoTSnowflake.unwrap
-  export const codec = fromNewtype<TSnowflake>(C.string)
-}
+const codec = fromNewtype<TSnowflake>(C.string)
+
+export const TSnowflake = { codec, wrap, unwrap }
