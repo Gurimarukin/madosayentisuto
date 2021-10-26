@@ -7,6 +7,7 @@ const decoder = D.union(
   C.literal('STREAMING'),
   C.literal('LISTENING'),
   C.literal('WATCHING'),
+  C.literal('COMPETING'),
 )
 
 const encoder = E.id<ActivityTypeBot>()

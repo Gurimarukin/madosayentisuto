@@ -5,7 +5,9 @@ import { Collection, MongoClient } from 'mongodb'
 import { Config } from './config/Config'
 import { MadEvent } from './models/MadEvent'
 import { MongoCollection } from './models/MongoCollection'
+import { ActivityStatusObserver } from './observers/ActivityStatusObserver'
 import { IndexesEnsureObserver } from './observers/IndexesEnsureObserver'
+import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { DiscordConnector } from './services/DiscordConnector'
 import { PartialLogger } from './services/Logger'
@@ -41,19 +43,20 @@ export const Application = (
         ),
       )
 
-  console.log('discord =', discord)
-
-  // const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
+  const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
 
   return pipe(
     PubSub<MadEvent>(Logger),
     IO.chain(pubSub => {
+      const activityStatusObserver = ActivityStatusObserver(botStatePersistence, discord)
       const indexesEnsureObserver = IndexesEnsureObserver(Logger, pubSub, [
         guildStatePersistence.ensureIndexes,
       ])
+
       return pipe(
         IO.Do,
+        IO.chain(() => pubSub.subscribe(activityStatusObserver)),
         IO.chain(() => pubSub.subscribe(indexesEnsureObserver)),
         IO.chain(() => pubSub.publish(MadEvent.AppStarted)),
         IO.chain(() => logger.info('Started')),

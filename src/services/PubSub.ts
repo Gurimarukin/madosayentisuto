@@ -2,7 +2,7 @@ import { io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import { PartialObserver, Subject, Subscription } from 'rxjs'
 
-import { ObserverE } from '../models/ObserverE'
+import { Subscriber } from '../models/Subscriber'
 import { Either, IO } from '../utils/fp'
 import { PartialLogger } from './Logger'
 
@@ -13,7 +13,7 @@ type StrongSubject<A> = Omit<Subject<A>, 'next'> & {
 
 export type PubSub<A> = {
   readonly publish: (a: A) => IO<void>
-  readonly subscribe: (observer: ObserverE<A>) => IO<Subscription>
+  readonly subscribe: (subscriber: Subscriber<A>) => IO<Subscription>
 }
 
 export const PubSub = <A>(Logger: PartialLogger): IO<PubSub<A>> => {
@@ -24,12 +24,12 @@ export const PubSub = <A>(Logger: PartialLogger): IO<PubSub<A>> => {
   const publish: PubSub<A>['publish'] = a => IO.tryCatch(() => subject.next(a))
 
   const subscribe: PubSub<A>['subscribe'] = ({ next, error, complete }) => {
-    const observer: PartialObserver<A> = {
+    const subscriber: PartialObserver<A> = {
       ...(next !== undefined ? { next: a => runUnsafe(next(a)) } : {}),
       ...(error !== undefined ? { error: (u: unknown) => runUnsafe(error(u)) } : {}),
       ...(complete !== undefined ? { complete: () => runUnsafe(complete()) } : {}),
     } as PartialObserver<A>
-    return IO.tryCatch(() => subject.subscribe(observer))
+    return IO.tryCatch(() => subject.subscribe(subscriber))
   }
 
   return pipe(

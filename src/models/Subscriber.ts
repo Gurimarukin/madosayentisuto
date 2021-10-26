@@ -1,6 +1,6 @@
 import { IO } from '../utils/fp'
 
-export type ObserverE<A> =
+export type Subscriber<A> =
   | {
       readonly next: (value: A) => IO<void>
       readonly error?: (err: unknown) => IO<void>

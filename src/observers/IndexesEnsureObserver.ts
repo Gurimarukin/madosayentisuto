@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/function'
 
 import { globalConfig } from '../globalConfig'
 import { MadEvent } from '../models/MadEvent'
-import { ObserverE } from '../models/ObserverE'
+import { Subscriber } from '../models/Subscriber'
 import { PartialLogger } from '../services/Logger'
 import { PubSub } from '../services/PubSub'
 import { Future, IO, List } from '../utils/fp'
@@ -12,7 +12,7 @@ export const IndexesEnsureObserver = (
   Logger: PartialLogger,
   pubSub: PubSub<MadEvent>,
   ensureIndexes: List<() => Future<void>>,
-): ObserverE<MadEvent> => {
+): Subscriber<MadEvent> => {
   const logger = Logger('IndexesEnsureObserver')
   return {
     next: event => {

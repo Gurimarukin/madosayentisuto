@@ -1,19 +1,30 @@
-import { Client, Intents } from 'discord.js'
+import { Client, ClientPresence, Intents } from 'discord.js'
+import { pipe } from 'fp-ts/function'
 
 import { Config } from '../config/Config'
-import { Future } from '../utils/fp'
+import { Activity } from '../models/Activity'
+import { Future, IO, Maybe } from '../utils/fp'
 
 export type DiscordConnector = ReturnType<typeof of>
 
-// type FetchPartial<A> = {
-//   readonly partial: boolean
-//   readonly fetch: () => Promise<A>
-// }
-
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function of(client: Client<true>) {
-  console.log(client)
-  return {}
+  return {
+    /**
+     * Write
+     */
+
+    setActivity: (activity: Maybe<Activity>): IO<ClientPresence> =>
+      IO.tryCatch(() =>
+        pipe(
+          activity,
+          Maybe.fold(
+            () => client.user.setActivity(),
+            ({ name, type }) => client.user.setActivity(name, { type }),
+          ),
+        ),
+      ),
+  }
   // return {
   //   clientUser: Maybe.fromNullable(client.user),
 
@@ -125,19 +136,6 @@ function of(client: Client<true>) {
   //   /**
   //    * Write
   //    */
-  //   setActivity: (activity: Maybe<Activity>): Future<ClientPresence> =>
-  //     pipe(
-  //       IO.tryCatch(() =>
-  //         pipe(
-  //           activity,
-  //           Maybe.fold(
-  //             () => client.user.setActivity(),
-  //             ({ type, name }) => client.user.setActivity(name, { type }),
-  //           ),
-  //         ),
-  //       ),
-  //       Future.fromIOEither,
-  //     ),
 
   //   sendMessage,
 
