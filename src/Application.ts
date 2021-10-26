@@ -3,19 +3,20 @@ import { pipe } from 'fp-ts/function'
 import { Collection, MongoClient } from 'mongodb'
 
 import { Config } from './config/Config'
+import { MadEvent } from './models/MadEvent'
 import { MongoCollection } from './models/MongoCollection'
-import { MsDuration } from './models/MsDuration'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { DiscordConnector } from './services/DiscordConnector'
+import { IndexesEnsureObserver } from './services/IndexesEnsureObserver'
 import { PartialLogger } from './services/Logger'
-import { Future } from './utils/fp'
-import { FutureUtils } from './utils/FutureUtils'
+import { PubSub } from './services/PubSub'
+import { Future, IO } from './utils/fp'
 
 export const Application = (
   Logger: PartialLogger,
   config: Config,
   discord: DiscordConnector,
-): Future<void> => {
+): IO<void> => {
   const logger = Logger('Application')
 
   const url = `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`
@@ -45,68 +46,18 @@ export const Application = (
   // const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
 
-  const ensureIndexes = (): Future<void> =>
-    pipe(
-      Future.fromIOEither(logger.info('Ensuring indexes')),
-      Future.chain(() =>
-        pipe(
-          [guildStatePersistence.ensureIndexes()],
-          Future.sequenceArray,
-          Future.map(() => {}),
-        ),
-      ),
-      FutureUtils.retryIfFailed(MsDuration.minutes(5), {
-        onFailure: e => logger.error('Failed to ensure indexes:\n', e),
-        onSuccess: () => logger.info('Ensured indexes'),
-      }),
-    )
-
-  // const activityService = ActivityService(Logger, botStatePersistence, discord)
-  // const guildStateService = GuildStateService(guildStatePersistence, discord)
-
-  // const cli = Cli(config.cmdPrefix)
-
-  // const commandsHandler = CommandsHandler(Logger, discord, activityService, guildStateService)
-  // const messagesHandler = MessagesHandler(Logger, config, cli, discord, commandsHandler)
-  // const voiceStateUpdatesHandler = VoiceStateUpdatesHandler(Logger, guildStateService, discord)
-  // const guildMemberEventsHandler = GuildMemberEventsHandler(Logger, guildStateService, discord)
-  // const messageReactionsHandler = MessageReactionsHandler(Logger, guildStateService, discord)
-
   return pipe(
-    ensureIndexes(),
-    // Future.chain(() => activityService.setActivityFromPersistence()),
-    Future.chain(
-      () =>
-        // pipe(
-        // activityService.scheduleRefreshActivity(),
-        // IO.chain(() => subscribe(messagesHandler, discord.messages())),
-        // IO.chain(() => subscribe(voiceStateUpdatesHandler, discord.voiceStateUpdates())),
-        // IO.chain(() => subscribe(guildMemberEventsHandler, discord.guildMemberEvents())),
-        // IO.chain(() => subscribe(messageReactionsHandler, discord.messageReactions())),
-        Future.fromIOEither(logger.info('Started')),
-      // ),
-    ),
+    PubSub<MadEvent>(Logger),
+    IO.chain(pubSub => {
+      const indexesEnsureObserver = IndexesEnsureObserver(Logger, pubSub, [
+        guildStatePersistence.ensureIndexes,
+      ])
+      return pipe(
+        IO.Do,
+        IO.chain(() => pubSub.subscribe(indexesEnsureObserver)),
+        IO.chain(() => pubSub.publish(MadEvent.AppStarted)),
+        IO.chain(() => logger.info('Started')),
+      )
+    }),
   )
-
-  // function subscribe<A>(f: (a: A) => Future<unknown>, oa: ObservableE<A>): IO<Subscription> {
-  //   const obs = pipe(
-  //     oa,
-  //     ObservableE.chain(a =>
-  //       pipe(
-  //         Try.tryCatch(() => f(a)),
-  //         Future.fromEither,
-  //         Future.chain(f_ => Future.tryCatch(() => Future.runUnsafe(f_))),
-  //         ObservableE.fromTaskEither,
-  //       ),
-  //     ),
-  //   )
-  //   return IO.tryCatch(() =>
-  //     obs.subscribe(
-  //       Either.fold<Error, unknown, void>(
-  //         e => pipe(logger.error(e.stack), IO.runUnsafe),
-  //         () => {},
-  //       ),
-  //     ),
-  //   )
-  // }
 }

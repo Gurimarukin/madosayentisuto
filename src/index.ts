@@ -13,7 +13,7 @@ const main: Future<void> = pipe(
   Future.chain(({ config, client }) => {
     const discord = DiscordConnector.of(client)
     const Logger = PartialLogger(config)
-    return Application(Logger, config, discord)
+    return Future.fromIOEither(Application(Logger, config, discord))
   }),
 )
 

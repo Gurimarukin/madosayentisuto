@@ -3,7 +3,7 @@ import * as OE from 'fp-ts-rxjs/lib/ObservableEither'
 import { flow } from 'fp-ts/function'
 import { Predicate } from 'fp-ts/Predicate'
 import { Refinement } from 'fp-ts/Refinement'
-import { Observable, Subscriber } from 'rxjs'
+import { Observable } from 'rxjs'
 
 import { Either, Maybe, Try } from '../utils/fp'
 
@@ -31,5 +31,3 @@ function filterMap<A, B>(f: (a: A) => Maybe<B>): (fa: ObservableE<A>) => Observa
     ),
   )
 }
-
-export type SubscriberE<A> = Subscriber<Try<A>>
