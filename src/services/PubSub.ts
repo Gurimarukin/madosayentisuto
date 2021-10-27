@@ -1,9 +1,12 @@
+import util from 'util'
+
 import { io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import { PartialObserver, Subject, Subscription } from 'rxjs'
 
 import { Subscriber } from '../models/Subscriber'
-import { Either, IO } from '../utils/fp'
+import { Either, IO, List } from '../utils/fp'
+import { StringUtils } from '../utils/StringUtils'
 import { PartialLogger } from './Logger'
 
 type StrongSubject<A> = Omit<Subject<A>, 'next'> & {
@@ -33,7 +36,13 @@ export const PubSub = <A>(Logger: PartialLogger): IO<PubSub<A>> => {
   }
 
   return pipe(
-    subscribe({ next: a => logger.debug('✉️ ', a) }),
+    subscribe({
+      next: a =>
+        logger.debug(
+          '✉️ ',
+          pipe(util.format(a).split('\n'), List.takeLeft(15), StringUtils.mkString('\n')),
+        ),
+    }),
     IO.map((): PubSub<A> => ({ publish, subscribe })),
   )
 

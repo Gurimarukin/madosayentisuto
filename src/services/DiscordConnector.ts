@@ -10,6 +10,8 @@ export type DiscordConnector = ReturnType<typeof of>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function of(client: Client<true>) {
   return {
+    client,
+
     /**
      * Write
      */
@@ -254,7 +256,9 @@ export const DiscordConnector = {
     Future.tryCatch(
       () =>
         new Promise<Client>(resolve => {
-          const client = new Client({ intents: [Intents.FLAGS.GUILDS] })
+          const client = new Client({
+            intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.GUILD_BANS],
+          })
           /* eslint-disable functional/no-expression-statement */
           client.on('ready', () => resolve(client))
           client.login(config.clientSecret)

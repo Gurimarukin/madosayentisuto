@@ -12,20 +12,21 @@ export const ActivityStatusSubscriber = (
   discord: DiscordConnector,
 ): Subscriber<MadEvent> => ({
   next: event => {
-    switch (event.type) {
-      case 'AppStarted':
-        return pipe(
-          discord.setActivity(Maybe.some(Activity.of('PLAYING', 'hisser les voiles...'))),
-          IO.map(() => {}),
-        )
-
-      case 'DbReady':
-      case 'CronJob':
-        return pipe(
-          botStatePersistence.find(),
-          Future.chain(({ activity }) => Future.fromIOEither(discord.setActivity(activity))),
-          IO.runFuture,
-        )
+    if (event.type === 'AppStarted') {
+      return pipe(
+        discord.setActivity(Maybe.some(Activity.of('PLAYING', 'hisser les voiles...'))),
+        IO.map(() => {}),
+      )
     }
+
+    if (event.type === 'DbReady' || event.type === 'CronJob') {
+      return pipe(
+        botStatePersistence.find(),
+        Future.chain(({ activity }) => Future.fromIOEither(discord.setActivity(activity))),
+        IO.runFuture,
+      )
+    }
+
+    return IO.unit
   },
 })

@@ -9,6 +9,7 @@ import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { DiscordConnector } from './services/DiscordConnector'
 import { PartialLogger } from './services/Logger'
+import { publishDiscordEvents } from './services/publishers/publishDiscordEvents'
 import { scheduleCronJob } from './services/publishers/scheduleCronJob'
 import { PubSub } from './services/PubSub'
 import { ActivityStatusSubscriber } from './services/subscribers/ActivityStatusSubscriber'
@@ -51,6 +52,7 @@ export const Application = (
     IO.Do,
     IO.bind('pubSub', () => PubSub<MadEvent>(Logger)),
     IO.chainFirst(({ pubSub }) => scheduleCronJob(Logger, pubSub)),
+    IO.chainFirst(({ pubSub }) => publishDiscordEvents(pubSub, discord)),
     IO.chain(({ pubSub }) => {
       const activityStatusSubscriber = ActivityStatusSubscriber(botStatePersistence, discord)
       const indexesEnsureSubscriber = IndexesEnsureSubscriber(Logger, pubSub, [
