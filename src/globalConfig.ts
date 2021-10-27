@@ -1,7 +1,12 @@
 import { MsDuration } from './models/MsDuration'
 
-const callsEmoji = '🔔' // :bell:
+export const globalConfig = {
+  callsEmoji: '🔔', // :bell:
 
-const retryEnsuringIndexes = MsDuration.minutes(5)
+  retryEnsuringIndexes: MsDuration.minutes(5),
 
-export const globalConfig = { callsEmoji, retryEnsuringIndexes }
+  cronJob: {
+    hour: 8, // 8 am
+    interval: MsDuration.days(1),
+  },
+}
