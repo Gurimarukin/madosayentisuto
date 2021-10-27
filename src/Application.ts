@@ -9,9 +9,9 @@ import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { DiscordConnector } from './services/DiscordConnector'
 import { PartialLogger } from './services/Logger'
-import { ActivityStatusObserver } from './services/observers/ActivityStatusObserver'
-import { IndexesEnsureObserver } from './services/observers/IndexesEnsureObserver'
 import { PubSub } from './services/PubSub'
+import { ActivityStatusSubscriber } from './services/subscribers/ActivityStatusSubscriber'
+import { IndexesEnsureSubscriber } from './services/subscribers/IndexesEnsureSubscriber'
 import { Future, IO } from './utils/fp'
 
 export const Application = (
@@ -49,15 +49,15 @@ export const Application = (
   return pipe(
     PubSub<MadEvent>(Logger),
     IO.chain(pubSub => {
-      const activityStatusObserver = ActivityStatusObserver(botStatePersistence, discord)
-      const indexesEnsureObserver = IndexesEnsureObserver(Logger, pubSub, [
+      const activityStatusSubscriber = ActivityStatusSubscriber(botStatePersistence, discord)
+      const indexesEnsureSubscriber = IndexesEnsureSubscriber(Logger, pubSub, [
         guildStatePersistence.ensureIndexes,
       ])
 
       return pipe(
         IO.Do,
-        IO.chain(() => pubSub.subscribe(activityStatusObserver)),
-        IO.chain(() => pubSub.subscribe(indexesEnsureObserver)),
+        IO.chain(() => pubSub.subscribe(activityStatusSubscriber)),
+        IO.chain(() => pubSub.subscribe(indexesEnsureSubscriber)),
         IO.chain(() => pubSub.publish(MadEvent.AppStarted)),
         IO.chain(() => logger.info('Started')),
       )

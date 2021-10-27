@@ -8,7 +8,7 @@ import { FutureUtils } from '../../utils/FutureUtils'
 import { PartialLogger } from '../Logger'
 import { PubSub } from '../PubSub'
 
-export const IndexesEnsureObserver = (
+export const IndexesEnsureSubscriber = (
   Logger: PartialLogger,
   pubSub: PubSub<MadEvent>,
   ensureIndexes: List<() => Future<void>>,

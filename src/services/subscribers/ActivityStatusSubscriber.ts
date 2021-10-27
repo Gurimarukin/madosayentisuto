@@ -7,7 +7,7 @@ import { BotStatePersistence } from '../../persistence/BotStatePersistence'
 import { Future, IO, Maybe } from '../../utils/fp'
 import { DiscordConnector } from '../DiscordConnector'
 
-export const ActivityStatusObserver = (
+export const ActivityStatusSubscriber = (
   botStatePersistence: BotStatePersistence,
   discord: DiscordConnector,
 ): Subscriber<MadEvent> => ({
