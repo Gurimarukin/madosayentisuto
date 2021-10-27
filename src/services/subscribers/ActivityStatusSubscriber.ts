@@ -10,30 +10,22 @@ import { DiscordConnector } from '../DiscordConnector'
 export const ActivityStatusSubscriber = (
   botStatePersistence: BotStatePersistence,
   discord: DiscordConnector,
-): Subscriber<MadEvent> => {
-  return {
-    next: event => {
-      switch (event.type) {
-        case 'AppStarted':
-          return pipe(
-            discord.setActivity(Maybe.some(Activity.of('PLAYING', 'hisser les voiles...'))),
-            IO.map(() => {}),
-          )
+): Subscriber<MadEvent> => ({
+  next: event => {
+    switch (event.type) {
+      case 'AppStarted':
+        return pipe(
+          discord.setActivity(Maybe.some(Activity.of('PLAYING', 'hisser les voiles...'))),
+          IO.map(() => {}),
+        )
 
-        case 'DbReady':
-          return setActivityFromPersistence()
-
-        case 'CronJob':
-          return setActivityFromPersistence()
-      }
-    },
-  }
-
-  function setActivityFromPersistence(): IO<void> {
-    return pipe(
-      botStatePersistence.find(),
-      Future.chain(({ activity }) => Future.fromIOEither(discord.setActivity(activity))),
-      IO.runFuture,
-    )
-  }
-}
+      case 'DbReady':
+      case 'CronJob':
+        return pipe(
+          botStatePersistence.find(),
+          Future.chain(({ activity }) => Future.fromIOEither(discord.setActivity(activity))),
+          IO.runFuture,
+        )
+    }
+  },
+})
