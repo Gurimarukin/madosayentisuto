@@ -1,8 +1,9 @@
-import { Client, ClientPresence, Intents } from 'discord.js'
+import { Client, ClientPresence, Intents, User } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { Config } from '../config/Config'
 import { Activity } from '../models/Activity'
+import { TSnowflake } from '../models/TSnowflake'
 import { Future, IO, Maybe } from '../utils/fp'
 
 export type DiscordConnector = ReturnType<typeof of>
@@ -11,6 +12,17 @@ export type DiscordConnector = ReturnType<typeof of>
 function of(client: Client<true>) {
   return {
     client,
+
+    /**
+     * Read
+     */
+
+    fetchUser: (userId: TSnowflake): Future<Maybe<User>> =>
+      pipe(
+        Future.tryCatch(() => client.users.fetch(TSnowflake.unwrap(userId))),
+        Future.map(Maybe.some),
+        debugLeft('fetchUser'),
+      ),
 
     /**
      * Write
@@ -75,9 +87,6 @@ function of(client: Client<true>) {
   //       ObservableE.rightObservable,
   //     ),
 
-  //   /**
-  //    * Read
-  //    */
   //   resolveGuild: (guildId: GuildId): Maybe<Guild> =>
   //     Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId))),
 
@@ -90,18 +99,6 @@ function of(client: Client<true>) {
   //       Future.map(Maybe.fromNullable),
   //       // Future.recover<Maybe<Channel>>(_ => Future.right(Maybe.none)),
   //       debugLeft('fetchChannel'),
-  //       //   [
-  //       //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
-  //       //   Maybe.none
-  //       // ]
-  //     ),
-
-  //   fetchUser: (user: TSnowflake): Future<Maybe<User>> =>
-  //     pipe(
-  //       Future.tryCatch(() => client.users.fetch(TSnowflake.unwrap(user))),
-  //       Future.map(Maybe.some),
-  //       Future.recover<Maybe<User>>(() => Future.right(Maybe.none)),
-  //       debugLeft('fetchUser'),
   //       //   [
   //       //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
   //       //   Maybe.none
@@ -243,11 +240,11 @@ function of(client: Client<true>) {
   //   )
   // }
 
-  // function debugLeft<A>(functionName: string): (f: Future<A>) => Future<A> {
-  //   return Future.mapLeft(e =>
-  //     Error(`${functionName}:\n${Object.getPrototypeOf(e).contructor.name}\n${e.message}`),
-  //   )
-  // }
+  function debugLeft<A>(functionName: string): (f: Future<A>) => Future<A> {
+    return Future.mapLeft(e =>
+      Error(`${functionName}:\n${Object.getPrototypeOf(e).contructor.name}\n${e.message}`),
+    )
+  }
 }
 
 export const DiscordConnector = {
@@ -257,7 +254,13 @@ export const DiscordConnector = {
       () =>
         new Promise<Client>(resolve => {
           const client = new Client({
-            intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.GUILD_BANS],
+            intents: [
+              Intents.FLAGS.GUILDS,
+              Intents.FLAGS.GUILD_MEMBERS,
+              Intents.FLAGS.GUILD_BANS,
+              // Intents.FLAGS.DIRECT_MESSAGES,
+            ],
+            partials: ['USER'],
           })
           /* eslint-disable functional/no-expression-statement */
           client.on('ready', () => resolve(client))

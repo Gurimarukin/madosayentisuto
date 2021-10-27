@@ -1,17 +1,20 @@
-1. Statut - StatusService
-2. Détection arrivée/départ - JoinLeaveService
-3. Message de bienvenue/rôle par défaut
-4. Détection appels - DiscordEventTransformer, CallNotificationService
-5. (Détection réactions)
-6. Ping/pong, merci capitaine - ThankYouCaptainService
-7. Abonnement appels
-8. Stream de musique : https://github.com/JamesKyburz/youtube-audio-stream
-9. Watch together
-10. Commandes pour toute cette merde - CommandsRegisterer
+1. Message de bienvenue/rôle par défaut
+2. Détection appels - DiscordEventTransformer, CallNotificationService
+3. (Détection réactions)
+4. Ping/pong, merci capitaine - ThankYouCaptainService
+5. Abonnement appels
+6. Stream de musique : https://github.com/JamesKyburz/youtube-audio-stream
+7. Watch together
+8.  Commandes pour toute cette merde - CommandsRegisterer
    1. Abonnements
    2. Image
    3. Say
    4. Statut
+
+---
+
+1. Statut - StatusService
+2. Détection arrivée/départ - JoinLeaveService
 
 
 - moderators/owner

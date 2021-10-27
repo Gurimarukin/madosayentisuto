@@ -1,17 +1,19 @@
 import util from 'util'
 
+import { MessageEmbed, MessageOptions } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { Config } from '../config/Config'
 import { LogLevel, LogLevelOrOff } from '../models/LogLevel'
-import { Future, IO, List } from '../utils/fp'
+import { Future, IO, List, Maybe } from '../utils/fp'
+import { DiscordConnector } from './DiscordConnector'
 
 export type Logger = Record<LogLevel, (arg: unknown, ...args: List<unknown>) => IO<void>>
 
 export type PartialLogger = (name: string) => Logger
 
 export const PartialLogger =
-  (config: Config): PartialLogger =>
+  (config: Config, discord: DiscordConnector): PartialLogger =>
   name => {
     const consoleLog = (level: LogLevel, msg: string): Future<void> =>
       shouldLog(config.logger.consoleLevel, level)
@@ -24,42 +26,42 @@ export const PartialLogger =
           )
         : Future.unit
 
-    const discordDMLog = (): Future<void> =>
-      // if (shouldLog(config.logger.discordDM.level, level)) {
-      //   const msg: string | MessageOptions = config.logger.discordDM.compact
-      //     ? formatDMCompact(name, level, rawMsg)
-      //     : formatDMEmbed(name, level, rawMsg)
+    const discordDMLog = (level: LogLevel, rawMsg: string): Future<void> => {
+      if (shouldLog(config.logger.discordDM.level, level)) {
+        const msg: string | MessageOptions = config.logger.discordDM.compact
+          ? formatDMCompact(name, level, rawMsg)
+          : formatDMEmbed(name, level, rawMsg)
 
-      //   const futures = config.admins.map(userId =>
-      //     pipe(
-      //       discord.fetchUser(userId),
-      //       Future.chain(
-      //         Maybe.fold(
-      //           () => Future.unit,
-      //           user =>
-      //             pipe(
-      //               Future.tryCatch(() => user.createDM()),
-      //               Future.chain(chan => Future.tryCatch(() => chan.send(msg))),
-      //               Future.map(() => {}),
-      //             ),
-      //         ),
-      //       ),
-      //     ),
-      //   )
+        const futures = config.admins.map(userId =>
+          pipe(
+            discord.fetchUser(userId),
+            Future.chain(
+              Maybe.fold(
+                () => Future.unit,
+                user =>
+                  pipe(
+                    Future.tryCatch(() => user.send(msg)),
+                    Future.map(() => {}),
+                  ),
+              ),
+            ),
+          ),
+        )
 
-      //   return pipe(
-      //     Future.sequenceArray(futures),
-      //     Future.map(() => {}),
-      //   )
-      // } else {
-      Future.unit
-    // }
+        return pipe(
+          Future.sequenceArray(futures),
+          Future.map(() => {}),
+        )
+      } else {
+        return Future.unit
+      }
+    }
 
     const log = (level: LogLevel, msg: string): IO<void> =>
       IO.runFuture(
         pipe(
           consoleLog(level, msg),
-          Future.chain(() => discordDMLog()),
+          Future.chain(() => discordDMLog(level, msg)),
         ),
       )
 
@@ -87,20 +89,20 @@ const formatConsole = (name: string, level: LogLevel, msg: string): string => {
     : `[${color(level.toUpperCase(), c)}] ${withTimestamp}`
 }
 
-// function formatDMCompact(name: string, level: LogLevel, msg: string): string {
-//   const withName = `${name} - ${msg}`
-//   return level === 'info' || level === 'warn'
-//     ? `\`[${level.toUpperCase()}]  ${withName}\``
-//     : `\`[${level.toUpperCase()}] ${withName}\``
-// }
+function formatDMCompact(name: string, level: LogLevel, msg: string): string {
+  const withName = `${name} - ${msg}`
+  return level === 'info' || level === 'warn'
+    ? `\`[${level.toUpperCase()}]  ${withName}\``
+    : `\`[${level.toUpperCase()}] ${withName}\``
+}
 
-// function formatDMEmbed(name: string, level: LogLevel, msg: string): MessageOptions {
-//   return {
-//     embeds: [
-//       new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`),
-//     ],
-//   }
-// }
+function formatDMEmbed(name: string, level: LogLevel, msg: string): MessageOptions {
+  return {
+    embeds: [
+      new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`),
+    ],
+  }
+}
 
 const formatDate = (d: Date): string => {
   const year = d.getFullYear()
