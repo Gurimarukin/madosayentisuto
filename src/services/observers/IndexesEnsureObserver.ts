@@ -1,12 +1,12 @@
 import { pipe } from 'fp-ts/function'
 
-import { globalConfig } from '../globalConfig'
-import { MadEvent } from '../models/MadEvent'
-import { Subscriber } from '../models/Subscriber'
-import { PartialLogger } from '../services/Logger'
-import { PubSub } from '../services/PubSub'
-import { Future, IO, List } from '../utils/fp'
-import { FutureUtils } from '../utils/FutureUtils'
+import { globalConfig } from '../../globalConfig'
+import { MadEvent } from '../../models/MadEvent'
+import { Subscriber } from '../../models/Subscriber'
+import { Future, IO, List } from '../../utils/fp'
+import { FutureUtils } from '../../utils/FutureUtils'
+import { PartialLogger } from '../Logger'
+import { PubSub } from '../PubSub'
 
 export const IndexesEnsureObserver = (
   Logger: PartialLogger,

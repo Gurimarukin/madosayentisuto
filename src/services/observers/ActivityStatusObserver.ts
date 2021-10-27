@@ -1,11 +1,11 @@
 import { pipe } from 'fp-ts/function'
 
-import { Activity } from '../models/Activity'
-import { MadEvent } from '../models/MadEvent'
-import { Subscriber } from '../models/Subscriber'
-import { BotStatePersistence } from '../persistence/BotStatePersistence'
-import { DiscordConnector } from '../services/DiscordConnector'
-import { Future, IO, Maybe } from '../utils/fp'
+import { Activity } from '../../models/Activity'
+import { MadEvent } from '../../models/MadEvent'
+import { Subscriber } from '../../models/Subscriber'
+import { BotStatePersistence } from '../../persistence/BotStatePersistence'
+import { Future, IO, Maybe } from '../../utils/fp'
+import { DiscordConnector } from '../DiscordConnector'
 
 export const ActivityStatusObserver = (
   botStatePersistence: BotStatePersistence,
