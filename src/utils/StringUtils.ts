@@ -36,6 +36,8 @@ function mkString(startOrSep: string, sep?: string, end?: string): (list: List<s
 
 const pad10 = (n: number): string => (n < 10 ? `0${n}` : `${n}`)
 
+const pad100 = (n: number): string => (n < 10 ? `00${n}` : n < 100 ? `0${n}` : `${n}`)
+
 export const StringUtils = {
   ellipse,
   isEmpty,
@@ -44,5 +46,6 @@ export const StringUtils = {
   matcher2,
   mkString,
   pad10,
+  pad100,
   stripMargins,
 }

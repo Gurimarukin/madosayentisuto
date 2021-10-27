@@ -18,3 +18,5 @@
 - polls
 - generalize bot
 - cache state?
+
+What if 'CronJob' arrives before 'DbReady' (for activity status)? There should be a way to check that 'DbReady' was sent, when 'CronJob' arrives.

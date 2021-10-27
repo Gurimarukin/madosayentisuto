@@ -1,9 +1,6 @@
 import { MsDuration } from '../models/MsDuration'
 
 type MsFormat = {
-  readonly year: number
-  readonly month: number
-  readonly day: number
   readonly hours: number
   readonly minutes: number
   readonly seconds: number
@@ -13,11 +10,10 @@ type MsFormat = {
 const msFormat = (ms: MsDuration): MsFormat => {
   const date = new Date(Date.UTC(0, 0, 0, 0, 0, 0, MsDuration.unwrap(ms)))
 
+  const hours = Math.floor(MsDuration.unwrap(ms) / (1000 * 60 * 60))
+
   return {
-    year: date.getUTCFullYear(),
-    month: date.getUTCMonth(),
-    day: date.getUTCDay(),
-    hours: date.getUTCHours(),
+    hours,
     minutes: date.getUTCMinutes(),
     seconds: date.getUTCSeconds(),
     milliseconds: date.getUTCMilliseconds(),

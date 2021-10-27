@@ -9,16 +9,18 @@ import { StringUtils } from '../../utils/StringUtils'
 import { PartialLogger } from '../Logger'
 import { PubSub } from '../PubSub'
 
+const { pad10, pad100 } = StringUtils
+
 export const scheduleCronJob = (Logger: PartialLogger, pubSub: PubSub<MadEvent>): IO<void> => {
   const logger = Logger('scheduleCronJob')
 
-  const { hours, minutes, seconds } = DateUtils.msFormat(globalConfig.cronJobInterval)
+  const { hours, minutes, seconds, milliseconds } = DateUtils.msFormat(globalConfig.cronJobInterval)
 
   return pipe(
     logger.info(
-      `Scheduling cron job - interval: ${StringUtils.pad10(hours)}:${StringUtils.pad10(
-        minutes,
-      )}'${StringUtils.pad10(seconds)}"`,
+      `Scheduling cron job - interval: ${pad10(hours)}:${pad10(minutes)}:${pad10(seconds)}.${pad100(
+        milliseconds,
+      )}`,
     ),
     IO.chain(() =>
       IO.tryCatch(() =>
