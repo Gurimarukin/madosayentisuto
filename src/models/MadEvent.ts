@@ -1,12 +1,12 @@
-export type MadEvent = AppStarted | IndexesEnsured
+export type MadEvent = AppStarted | DbReady
 
 type AppStarted = { readonly type: 'AppStarted' }
 const AppStarted: AppStarted = { type: 'AppStarted' }
 
-type IndexesEnsured = { readonly type: 'IndexesEnsured' }
-const IndexesEnsured: IndexesEnsured = { type: 'IndexesEnsured' }
+type DbReady = { readonly type: 'DbReady' }
+const DbReady: DbReady = { type: 'DbReady' }
 
 export const MadEvent = {
   AppStarted,
-  IndexesEnsured,
+  DbReady,
 }

@@ -30,7 +30,7 @@ export const IndexesEnsureSubscriber = (
             onFailure: e => logger.error('Failed to ensure indexes:\n', e),
             onSuccess: () => logger.info('Ensured indexes'),
           }),
-          Future.chain(() => Future.fromIOEither(pubSub.publish(MadEvent.IndexesEnsured))),
+          Future.chain(() => Future.fromIOEither(pubSub.publish(MadEvent.DbReady))),
           IO.runFuture,
         )
       }

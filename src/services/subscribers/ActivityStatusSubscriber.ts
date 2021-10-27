@@ -19,7 +19,7 @@ export const ActivityStatusSubscriber = (
           IO.map(() => {}),
         )
 
-      case 'IndexesEnsured':
+      case 'DbReady':
         return pipe(
           botStatePersistence.find(),
           Future.chain(({ activity }) => Future.fromIOEither(discord.setActivity(activity))),
