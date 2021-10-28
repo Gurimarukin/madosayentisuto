@@ -29,6 +29,7 @@
   },
   "homepage": "https://github.com/Gurimarukin/madosayentisuto#readme",
   "devDependencies": {
+    "@discordjs/builders": "^0.7.0",
     "@type-config/strict": "^1.1.1",
     "@types/jest": "^27.0.2",
     "@types/node": "^16.11.1",
