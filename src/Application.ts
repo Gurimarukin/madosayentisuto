@@ -53,9 +53,13 @@ export const Application = (
     IO.Do,
     IO.bind('pubSub', () => PubSub<MadEvent>(Logger)),
     IO.chainFirst(({ pubSub }) => scheduleCronJob(Logger, pubSub)),
-    IO.chainFirst(({ pubSub }) => publishDiscordEvents(pubSub, discord)),
+    IO.chainFirst(({ pubSub }) => publishDiscordEvents(discord, pubSub)),
     IO.chain(({ pubSub }) => {
-      const activityStatusSubscriber = ActivityStatusSubscriber(botStatePersistence, discord)
+      const activityStatusSubscriber = ActivityStatusSubscriber(
+        Logger,
+        discord,
+        botStatePersistence,
+      )
       const indexesEnsureSubscriber = IndexesEnsureSubscriber(Logger, pubSub, [
         guildStatePersistence.ensureIndexes,
       ])

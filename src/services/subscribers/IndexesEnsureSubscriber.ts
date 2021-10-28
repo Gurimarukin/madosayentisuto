@@ -14,6 +14,7 @@ export const IndexesEnsureSubscriber = (
   ensureIndexes: List<() => Future<void>>,
 ): Subscriber<MadEvent> => {
   const logger = Logger('IndexesEnsureObserver')
+
   return {
     next: event => {
       if (event.type === 'AppStarted') {

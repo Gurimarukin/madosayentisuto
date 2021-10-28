@@ -7,8 +7,8 @@ import { DiscordConnector } from '../DiscordConnector'
 import { PubSub } from '../PubSub'
 
 export const publishDiscordEvents = (
-  pubSub: PubSub<MadEvent>,
   discord: DiscordConnector,
+  pubSub: PubSub<MadEvent>,
 ): IO<void> => {
   return pipe(
     IO.sequenceArray([
