@@ -14,6 +14,7 @@ import { scheduleCronJob } from './services/publishers/scheduleCronJob'
 import { PubSub } from './services/PubSub'
 import { ActivityStatusSubscriber } from './services/subscribers/ActivityStatusSubscriber'
 import { IndexesEnsureSubscriber } from './services/subscribers/IndexesEnsureSubscriber'
+import { SendGreetingDMSubscriber } from './services/subscribers/SendGreetingDMSubscriber'
 import { Future, IO } from './utils/fp'
 
 export const Application = (
@@ -58,11 +59,13 @@ export const Application = (
       const indexesEnsureSubscriber = IndexesEnsureSubscriber(Logger, pubSub, [
         guildStatePersistence.ensureIndexes,
       ])
+      const sendGreetingDMSubscriber = SendGreetingDMSubscriber(discord)
 
       return pipe(
         IO.Do,
         IO.chain(() => pubSub.subscribe(activityStatusSubscriber)),
         IO.chain(() => pubSub.subscribe(indexesEnsureSubscriber)),
+        IO.chain(() => pubSub.subscribe(sendGreetingDMSubscriber)),
         IO.chain(() => pubSub.publish(MadEvent.AppStarted)),
         IO.chain(() => logger.info('Started')),
       )

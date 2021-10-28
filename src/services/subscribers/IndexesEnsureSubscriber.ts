@@ -34,6 +34,7 @@ export const IndexesEnsureSubscriber = (
           IO.runFuture,
         )
       }
+
       return IO.unit
     },
   }
