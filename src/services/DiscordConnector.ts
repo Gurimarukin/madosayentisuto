@@ -1,5 +1,5 @@
 import { Client, ClientPresence, Intents, User } from 'discord.js'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 
 import { Config } from '../config/Config'
 import { Activity } from '../models/Activity'
@@ -19,8 +19,19 @@ function of(client: Client<true>) {
 
     fetchUser: (userId: TSnowflake): Future<Maybe<User>> =>
       pipe(
-        Future.tryCatch(() => client.users.fetch(TSnowflake.unwrap(userId))),
-        Future.map(Maybe.some),
+        IO.tryCatch(() => client.users.cache.get(TSnowflake.unwrap(userId))),
+        IO.map(Maybe.fromNullable),
+        Future.fromIOEither,
+        Future.chain(
+          Maybe.fold(
+            () =>
+              pipe(
+                Future.tryCatch(() => client.users.fetch(TSnowflake.unwrap(userId))),
+                Future.map(Maybe.some),
+              ),
+            flow(Maybe.some, Future.right),
+          ),
+        ),
         debugLeft('fetchUser'),
       ),
 
