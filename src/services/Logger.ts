@@ -40,8 +40,13 @@ export const PartialLogger =
                 () => Future.unit,
                 user =>
                   pipe(
-                    Future.tryCatch(() => user.send(msg)),
-                    Future.map(() => {}),
+                    discord.sendMessage(user, msg),
+                    Future.map(
+                      Maybe.fold(
+                        () => {}, // TODO: what to do if message wasn't sent?
+                        () => {},
+                      ),
+                    ),
                   ),
               ),
             ),

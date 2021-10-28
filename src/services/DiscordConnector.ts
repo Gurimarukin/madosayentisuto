@@ -1,4 +1,13 @@
-import { Client, ClientPresence, Intents, User } from 'discord.js'
+import {
+  Client,
+  ClientPresence,
+  Intents,
+  Message,
+  MessageOptions,
+  MessagePayload,
+  PartialTextBasedChannelFields,
+  User,
+} from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
 import { Config } from '../config/Config'
@@ -49,7 +58,10 @@ function of(client: Client<true>) {
           ),
         ),
       ),
+
+    sendMessage,
   }
+
   // return {
   //   clientUser: Maybe.fromNullable(client.user),
 
@@ -147,8 +159,6 @@ function of(client: Client<true>) {
   //    * Write
   //    */
 
-  //   sendMessage,
-
   //   sendPrettyMessage: (
   //     channel: PartialTextBasedChannelFields,
   //     content: string,
@@ -236,20 +246,20 @@ function of(client: Client<true>) {
   //   }
   // }
 
-  // function sendMessage(
-  //   channel: PartialTextBasedChannelFields,
-  //   options: string | MessagePayload | MessageOptions,
-  // ): Future<Maybe<Message>> {
-  //   return pipe(
-  //     Future.tryCatch(() => channel.send(options)),
-  //     Future.map(Maybe.some),
-  //     Future.recover<Maybe<Message>>(e =>
-  //       e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user'
-  //         ? Future.right(Maybe.none)
-  //         : Future.left(e),
-  //     ),
-  //   )
-  // }
+  function sendMessage(
+    channel: PartialTextBasedChannelFields,
+    options: string | MessagePayload | MessageOptions,
+  ): Future<Maybe<Message>> {
+    return pipe(
+      Future.tryCatch(() => channel.send(options)),
+      Future.map(Maybe.some),
+      // Future.recover<Maybe<Message>>(e =>
+      //   e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user'
+      //     ? Future.right(Maybe.none)
+      //     : Future.left(e),
+      // ),
+    )
+  }
 
   function debugLeft<A>(functionName: string): (f: Future<A>) => Future<A> {
     return Future.mapLeft(e =>
