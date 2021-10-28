@@ -1,8 +1,12 @@
 import {
   Client,
   ClientPresence,
+  Guild,
+  GuildAuditLogsEntry,
+  GuildAuditLogsFetchOptions,
   Intents,
   Message,
+  MessageEmbed,
   MessageOptions,
   MessagePayload,
   PartialTextBasedChannelFields,
@@ -13,7 +17,18 @@ import { flow, pipe } from 'fp-ts/function'
 import { Config } from '../config/Config'
 import { Activity } from '../models/Activity'
 import { TSnowflake } from '../models/TSnowflake'
+import { Colors } from '../utils/Colors'
 import { Future, IO, Maybe } from '../utils/fp'
+
+type NotPartial = {
+  readonly partial: false
+}
+type MyPartial<A extends NotPartial> =
+  | {
+      readonly partial: true
+      readonly fetch: () => Promise<A>
+    }
+  | A
 
 export type DiscordConnector = ReturnType<typeof of>
 
@@ -25,6 +40,15 @@ function of(client: Client<true>) {
     /**
      * Read
      */
+
+    fetchLastAuditLogs: (
+      guild: Guild,
+      options: Omit<GuildAuditLogsFetchOptions, 'limit'> = {},
+    ): Future<Maybe<GuildAuditLogsEntry>> =>
+      pipe(
+        Future.tryCatch(() => guild.fetchAuditLogs({ ...options, limit: 1 })),
+        Future.map(logs => Maybe.fromNullable(logs.entries.first())),
+      ),
 
     fetchUser: (userId: TSnowflake): Future<Maybe<User>> =>
       pipe(
@@ -44,9 +68,22 @@ function of(client: Client<true>) {
         debugLeft('fetchUser'),
       ),
 
+    fetchPartial: <A extends NotPartial>(partial: MyPartial<A>): Future<A> =>
+      partial.partial ? Future.tryCatch(() => partial.fetch()) : Future.right(partial),
+
     /**
      * Write
      */
+
+    sendMessage,
+
+    sendPrettyMessage: (
+      channel: PartialTextBasedChannelFields,
+      message: string,
+    ): Future<Maybe<Message>> =>
+      sendMessage(channel, {
+        embeds: [new MessageEmbed().setColor(Colors.darkred).setDescription(message)],
+      }),
 
     setActivity: (activity: Maybe<Activity>): IO<ClientPresence> =>
       IO.tryCatch(() =>
@@ -58,8 +95,6 @@ function of(client: Client<true>) {
           ),
         ),
       ),
-
-    sendMessage,
   }
 
   // return {
@@ -113,9 +148,6 @@ function of(client: Client<true>) {
   //   resolveGuild: (guildId: GuildId): Maybe<Guild> =>
   //     Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId))),
 
-  //   // fetchPartial: <A extends FetchPartial<A>, K extends string>(partial: A | Partialize<A, K>) =>
-  //   //   partial.partial ? Future.tryCatch(() => partial.fetch()) : Future.right(partial),
-
   //   fetchChannel: (channel: TSnowflake): Future<Maybe<Channel>> =>
   //     pipe(
   //       Future.tryCatch(() => client.channels.fetch(TSnowflake.unwrap(channel))),
@@ -158,14 +190,6 @@ function of(client: Client<true>) {
   //   /**
   //    * Write
   //    */
-
-  //   sendPrettyMessage: (
-  //     channel: PartialTextBasedChannelFields,
-  //     content: string,
-  //   ): Future<Maybe<Message>> =>
-  //     sendMessage(channel, {
-  //       embeds: [new MessageEmbed().setColor(Colors.darkred).setDescription(content)],
-  //     }),
 
   //   reactMessage: (message: Message, emoji: EmojiIdentifierResolvable): Future<MessageReaction> =>
   //     Future.tryCatch(() => message.react(emoji)),
@@ -281,7 +305,7 @@ export const DiscordConnector = {
               Intents.FLAGS.GUILD_BANS,
               // Intents.FLAGS.DIRECT_MESSAGES,
             ],
-            partials: ['USER'],
+            partials: ['USER', 'CHANNEL', 'GUILD_MEMBER', 'MESSAGE', 'REACTION'],
           })
           /* eslint-disable functional/no-expression-statement */
           client.on('ready', () => resolve(client))

@@ -14,6 +14,7 @@ import { scheduleCronJob } from './services/publishers/scheduleCronJob'
 import { PubSub } from './services/PubSub'
 import { ActivityStatusSubscriber } from './services/subscribers/ActivityStatusSubscriber'
 import { IndexesEnsureSubscriber } from './services/subscribers/IndexesEnsureSubscriber'
+import { NotifyGuildLeaveSubscriber } from './services/subscribers/NotifyGuildLeaveSubscriber'
 import { SendGreetingDMSubscriber } from './services/subscribers/SendGreetingDMSubscriber'
 import { Future, IO } from './utils/fp'
 
@@ -54,25 +55,18 @@ export const Application = (
     IO.bind('pubSub', () => PubSub<MadEvent>(Logger)),
     IO.chainFirst(({ pubSub }) => scheduleCronJob(Logger, pubSub)),
     IO.chainFirst(({ pubSub }) => publishDiscordEvents(discord, pubSub)),
-    IO.chain(({ pubSub }) => {
-      const activityStatusSubscriber = ActivityStatusSubscriber(
-        Logger,
-        discord,
-        botStatePersistence,
-      )
-      const indexesEnsureSubscriber = IndexesEnsureSubscriber(Logger, pubSub, [
-        guildStatePersistence.ensureIndexes,
-      ])
-      const sendGreetingDMSubscriber = SendGreetingDMSubscriber(Logger, discord)
-
-      return pipe(
-        IO.Do,
-        IO.chain(() => pubSub.subscribe(activityStatusSubscriber)),
-        IO.chain(() => pubSub.subscribe(indexesEnsureSubscriber)),
-        IO.chain(() => pubSub.subscribe(sendGreetingDMSubscriber)),
+    IO.chain(({ pubSub }) =>
+      pipe(
+        [
+          ActivityStatusSubscriber(Logger, discord, botStatePersistence),
+          IndexesEnsureSubscriber(Logger, pubSub, [guildStatePersistence.ensureIndexes]),
+          SendGreetingDMSubscriber(Logger, discord),
+          NotifyGuildLeaveSubscriber(Logger, discord),
+        ],
+        IO.traverseArray(pubSub.subscribe),
         IO.chain(() => pubSub.publish(MadEvent.AppStarted)),
         IO.chain(() => logger.info('Started')),
-      )
-    }),
+      ),
+    ),
   )
 }
