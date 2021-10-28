@@ -59,7 +59,7 @@ export const Application = (
       const indexesEnsureSubscriber = IndexesEnsureSubscriber(Logger, pubSub, [
         guildStatePersistence.ensureIndexes,
       ])
-      const sendGreetingDMSubscriber = SendGreetingDMSubscriber(discord)
+      const sendGreetingDMSubscriber = SendGreetingDMSubscriber(Logger, discord)
 
       return pipe(
         IO.Do,
