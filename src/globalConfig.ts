@@ -7,6 +7,9 @@ export const globalConfig = {
 
   cronJobInterval: MsDuration.days(1),
 
+  fetchLogsLimit: 30,
+  networkTolerance: MsDuration.seconds(6),
+
   emojiCharacters: {
     a: '🇦',
     b: '🇧',

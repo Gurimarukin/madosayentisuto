@@ -1,11 +1,13 @@
-import { bold } from '@discordjs/builders'
-import { Guild, GuildAuditLogsEntry, TextChannel, User } from 'discord.js'
-import { apply, io, number, ord, random } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
+import { bold, userMention } from '@discordjs/builders'
+import { Guild, GuildAuditLogsEntry, GuildMember, TextChannel, User } from 'discord.js'
+import { date, io, number, ord, random, semigroup, string } from 'fp-ts'
+import { flow, pipe } from 'fp-ts/function'
+import { Ord } from 'fp-ts/Ord'
 
+import { globalConfig } from '../../globalConfig'
 import { MadEvent } from '../../models/MadEvent'
+import { MsDuration } from '../../models/MsDuration'
 import { Subscriber } from '../../models/Subscriber'
-import { TSnowflake } from '../../models/TSnowflake'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { Either, Future, IO, List, Maybe, NonEmptyArray } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
@@ -22,74 +24,53 @@ export const NotifyGuildLeaveSubscriber = (
     next: event => {
       if (event.type === 'GuildMemberRemove') {
         return pipe(
-          apply.sequenceS(Future.ApplyPar)({
-            kickLog: discord.fetchLastAuditLogs(event.member.guild, { type: 'MEMBER_KICK' }),
-            member: discord.fetchPartial(event.member),
-          }),
-          Future.chain(({ kickLog, member }) => {
+          date.now,
+          io.map(n => ({ now: new Date(n) })),
+          Future.fromIO,
+          Future.bind('member', () => discord.fetchPartial(event.member)),
+          Future.bind('log', ({ now, member }) => getLastLog(now, member)),
+          Future.chain(({ log, member }) => {
             const logWithGuild = LogUtils.withGuild(logger, 'info', member.guild)
             const boldMember = bold(member.user.tag)
             return pipe(
-              kickLog,
-              Maybe.chain(validateLog(TSnowflake.wrap(member.id))),
+              log,
               Maybe.fold(
                 () =>
                   pipe(
                     logWithGuild(`${member.user.tag} left the server`),
                     IO.chain(() => randomMessage(leaveMessages)(boldMember)),
                   ),
-                ({ executor }) =>
+                ({ action, executor }) =>
                   pipe(
-                    logWithGuild(
-                      `${member.user.tag} got kicked from the server by ${executor.tag}`,
+                    logWithGuild(logMessage(member.user.tag, executor.tag, action)),
+                    IO.chain(() =>
+                      randomMessage(kickOrBanMessages(action))(
+                        boldMember,
+                        userMention(executor.id),
+                      ),
                     ),
-                    IO.chain(() => randomMessage(kickMessages)(boldMember, bold(executor.tag))),
                   ),
               ),
               Future.fromIOEither,
             )
           }),
           sendMessage(event.member.guild),
+          IO.runFuture,
         )
       }
-
-      // if (event.type === 'GuildBanAdd') {
-      //   const ban = event.ban
-      //   return pipe(
-      //     discord.fetchLastAuditLogs(ban.guild, { type: 'MEMBER_BAN_ADD' }),
-      //     Future.map(Maybe.chain(validateLog(TSnowflake.wrap(ban.user.id)))),
-      //     Future.chain(maybeLog =>
-      //       pipe(
-      //         LogUtils.withGuild(
-      //           logger,
-      //           'info',
-      //           ban.guild,
-      //         )(
-      //           `${ban.user.tag} got banned${
-      //             Maybe.isSome(maybeLog) ? ` by ${maybeLog.value.executor.tag}` : ''
-      //           }`,
-      //         ),
-      //         IO.chain(() =>
-      //           randomMessage(banMessages)(
-      //             bold(ban.user.tag),
-      //             pipe(
-      //               maybeLog,
-      //               Maybe.map(({ executor }) => bold(executor.tag)),
-      //             ),
-      //           ),
-      //         ),
-      //         Future.fromIOEither,
-      //       ),
-      //     ),
-      //     sendMessage(ban.guild),
-      //   )
-      // }
 
       return IO.unit
     },
   }
 
-  function sendMessage(guild: Guild): (futureMessage: Future<string>) => IO<void> {
+  function getLastLog(now: Date, member: GuildMember): Future<Maybe<ValidLogsEntry>> {
+    return pipe(
+      discord.fetchAuditLogs(member.guild),
+      Future.map(logs => Maybe.fromNullable(logs.find(isValidLog(now)))),
+    )
+  }
+
+  function sendMessage(guild: Guild): (futureMessage: Future<string>) => Future<void> {
     return futureMessage =>
       pipe(
         goodbyeChannel(guild),
@@ -107,29 +88,41 @@ export const NotifyGuildLeaveSubscriber = (
               ),
             ),
         ),
-        IO.runFuture,
       )
   }
 }
 
-type ValidatedLog = {
+const validActions: List<ValidKeys['action']> = ['MEMBER_KICK', 'MEMBER_BAN_ADD']
+const isValidLog =
+  (now: Date) =>
+  (entry: GuildAuditLogsEntry): entry is ValidLogsEntry => {
+    const nowMinusNetworkTolerance = new Date(
+      now.getTime() - MsDuration.unwrap(globalConfig.networkTolerance),
+    )
+    return (
+      ord.leq(date.Ord)(nowMinusNetworkTolerance, entry.createdAt) &&
+      List.elem(string.Eq)(entry.action, validActions) &&
+      entry.target !== null &&
+      entry.target instanceof User &&
+      entry.executor !== null &&
+      entry.executor instanceof User
+    )
+  }
+
+type ValidKeys = {
+  readonly createdAt: Date
+  readonly action: 'MEMBER_KICK' | 'MEMBER_BAN_ADD'
   readonly target: User
   readonly executor: User
 }
+type ValidLogsEntry = Omit<GuildAuditLogsEntry, keyof ValidKeys> & ValidKeys
 
-const validateLog =
-  (memberId: TSnowflake) =>
-  (log: GuildAuditLogsEntry): Maybe<ValidatedLog> =>
-    pipe(
-      Maybe.Do,
-      Maybe.bind('target', () => pipe(Maybe.fromNullable(log.target), Maybe.filter(isUser))),
-      Maybe.bind('executor', () => Maybe.fromNullable(log.executor)),
-      Maybe.filter(({ target }) => TSnowflake.wrap(target.id) === memberId),
-    )
+const minimum: <A>(ord_: Ord<A>) => (nea: NonEmptyArray<A>) => A = flow(
+  semigroup.min,
+  NonEmptyArray.concatAll,
+)
 
-const isUser = (t: NonNullable<GuildAuditLogsEntry['target']>): t is User => t instanceof User
-
-const ordChannel = ord.contramap((c: TextChannel) => c.position)(number.Ord)
+const channelPositionOrd = ord.contramap((c: TextChannel) => c.position)(number.Ord)
 
 function goodbyeChannel(guild: Guild): Maybe<TextChannel> {
   return pipe(
@@ -138,11 +131,33 @@ function goodbyeChannel(guild: Guild): Maybe<TextChannel> {
       pipe(
         guild.channels.cache.toJSON(),
         List.filter(ChannelUtils.isTextChannel),
-        List.sort(ordChannel),
-        List.head,
+        NonEmptyArray.fromReadonlyArray,
+        Maybe.map(minimum(channelPositionOrd)),
       ),
     ),
   )
+}
+
+const logMessage = (
+  targetTag: string,
+  executorTag: string,
+  action: ValidKeys['action'],
+): string => {
+  switch (action) {
+    case 'MEMBER_KICK':
+      return `${targetTag} got kicked by ${executorTag}`
+    case 'MEMBER_BAN_ADD':
+      return `${targetTag} got banned by ${executorTag}`
+  }
+}
+
+const kickOrBanMessages = (action: ValidKeys['action']): KickOrBanMessageGetters => {
+  switch (action) {
+    case 'MEMBER_KICK':
+      return kickMessages
+    case 'MEMBER_BAN_ADD':
+      return banMessages
+  }
 }
 
 type MessageGetter<A extends readonly [...args: ReadonlyArray<unknown>]> = (...args: A) => string
@@ -165,26 +180,16 @@ const leaveMessages: NonEmptyArray<MessageGetter<readonly [member: string]>> = [
   m => `Je vais emmener ${m} aux quais-abattoirs...`,
 ]
 
-const kickMessages: NonEmptyArray<MessageGetter<readonly [member: string, admin: string]>> = [
+type KickOrBanMessageGetters = NonEmptyArray<
+  MessageGetter<readonly [member: string, admin: string]>
+>
+
+const kickMessages: KickOrBanMessageGetters = [
   // (m, a) => `${m} left the guild; kicked by ${a}.`,
   (m, a) => `${m} s'en est allé, mis à la porte par ${a}.`,
 ]
 
-// const banMessages: NonEmptyArray<MessageGetter<readonly [member: string, admin: Maybe<string>]>> = [
-//   // (m, a) =>
-//   //   `${m} got hit with the swift hammer of justice${
-//   //     Maybe.isSome(a) ? `, wielded by the mighty ${a.value}` : ''
-//   //   }.`,
-//   (m, a) =>
-//     `Le prompt marteau de la justice ${
-//       Maybe.isSome(a) ? `, brandi par l'impitoyable' ${a.value},` : ''
-//     } a frappé ${m}.`,
-//   (m, a) =>
-//     `Le prompt marteau de la justice ${
-//       Maybe.isSome(a) ? `, brandi par l'énergique ${a.value},` : ''
-//     } a frappé ${m}.`,
-//   (m, a) =>
-//     `Le prompt marteau de la justice ${
-//       Maybe.isSome(a) ? `, brandi par l'efficace ${a.value},` : ''
-//     } a frappé ${m}.`,
-// ]
+const banMessages: KickOrBanMessageGetters = [
+  // (m, a) => `${m} got hit with the swift hammer of justice, wielded by the mighty ${a}.`,
+  (m, a) => `Le marteau de la justice, brandi par ${a}, a frappé ${m}.`,
+]

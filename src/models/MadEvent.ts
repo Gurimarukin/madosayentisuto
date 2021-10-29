@@ -1,12 +1,6 @@
-import { GuildBan, GuildMember, PartialGuildMember } from 'discord.js'
+import { GuildMember, PartialGuildMember } from 'discord.js'
 
-export type MadEvent =
-  | AppStarted
-  | DbReady
-  | CronJob
-  | GuildMemberAdd
-  | GuildMemberRemove
-  | GuildBanAdd
+export type MadEvent = AppStarted | DbReady | CronJob | GuildMemberAdd | GuildMemberRemove
 
 type AppStarted = { readonly type: 'AppStarted' }
 const AppStarted: AppStarted = { type: 'AppStarted' }
@@ -35,20 +29,10 @@ const GuildMemberRemove = (member: GuildMember | PartialGuildMember): GuildMembe
   member,
 })
 
-type GuildBanAdd = {
-  readonly type: 'GuildBanAdd'
-  readonly ban: GuildBan
-}
-const GuildBanAdd = (ban: GuildBan): GuildBanAdd => ({
-  type: 'GuildBanAdd',
-  ban,
-})
-
 export const MadEvent = {
   AppStarted,
   DbReady,
   CronJob,
   GuildMemberAdd,
   GuildMemberRemove,
-  GuildBanAdd,
 }

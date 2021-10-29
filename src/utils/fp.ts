@@ -111,6 +111,7 @@ export const Future = {
   ...taskEither,
   right: futureRight,
   left: <A = never>(e: Error): Future<A> => taskEither.left(e),
+  fromIO: <A>(fa: io.IO<A>): Future<A> => taskEither.fromIO(fa),
   tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, unknownAsError),
   unit: futureRight<void>(undefined),
   recover: <A>(onError: (e: Error) => Future<A>): ((future: Future<A>) => Future<A>) =>

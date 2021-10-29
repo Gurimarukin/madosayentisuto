@@ -1,9 +1,9 @@
 import {
   Client,
   ClientPresence,
+  Collection,
   Guild,
   GuildAuditLogsEntry,
-  GuildAuditLogsFetchOptions,
   Intents,
   Message,
   MessageEmbed,
@@ -15,6 +15,7 @@ import {
 import { flow, pipe } from 'fp-ts/function'
 
 import { Config } from '../config/Config'
+import { globalConfig } from '../globalConfig'
 import { Activity } from '../models/Activity'
 import { TSnowflake } from '../models/TSnowflake'
 import { Colors } from '../utils/Colors'
@@ -41,13 +42,10 @@ function of(client: Client<true>) {
      * Read
      */
 
-    fetchLastAuditLogs: (
-      guild: Guild,
-      options: Omit<GuildAuditLogsFetchOptions, 'limit'> = {},
-    ): Future<Maybe<GuildAuditLogsEntry>> =>
+    fetchAuditLogs: (guild: Guild): Future<Collection<string, GuildAuditLogsEntry>> =>
       pipe(
-        Future.tryCatch(() => guild.fetchAuditLogs({ ...options, limit: 1 })),
-        Future.map(logs => Maybe.fromNullable(logs.entries.first())),
+        Future.tryCatch(() => guild.fetchAuditLogs({ limit: globalConfig.fetchLogsLimit })),
+        Future.map(logs => logs.entries),
       ),
 
     fetchUser: (userId: TSnowflake): Future<Maybe<User>> =>
