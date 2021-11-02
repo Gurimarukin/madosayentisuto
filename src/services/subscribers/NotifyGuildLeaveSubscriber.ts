@@ -1,5 +1,5 @@
 import { bold, userMention } from '@discordjs/builders'
-import { Guild, GuildAuditLogsEntry, GuildMember, TextChannel, User } from 'discord.js'
+import { Guild, GuildAuditLogsEntry, TextChannel, User } from 'discord.js'
 import { date, io, number, ord, random, semigroup, string } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import { Ord } from 'fp-ts/Ord'
@@ -8,6 +8,7 @@ import { globalConfig } from '../../globalConfig'
 import { MadEvent } from '../../models/MadEvent'
 import { MsDuration } from '../../models/MsDuration'
 import { Subscriber } from '../../models/Subscriber'
+import { TSnowflake } from '../../models/TSnowflake'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { Either, Future, IO, List, Maybe, NonEmptyArray } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
@@ -23,26 +24,27 @@ export const NotifyGuildLeaveSubscriber = (
   return {
     next: event => {
       if (event.type === 'GuildMemberRemove') {
+        const guild = event.member.guild
+        const user = event.member.user
         return pipe(
           date.now,
-          io.map(n => ({ now: new Date(n) })),
+          io.map(n => new Date(n)),
           Future.fromIO,
-          Future.bind('member', () => discord.fetchPartial(event.member)),
-          Future.bind('log', ({ now, member }) => getLastLog(now, member)),
-          Future.chain(({ log, member }) => {
-            const logWithGuild = LogUtils.withGuild(logger, 'info', member.guild)
-            const boldMember = bold(member.user.tag)
+          Future.chain(now => getLastLog(now, guild, TSnowflake.wrap(user.id))),
+          Future.chain(log => {
+            const logWithGuild = LogUtils.withGuild(logger, 'info', guild)
+            const boldMember = bold(user.tag)
             return pipe(
               log,
               Maybe.fold(
                 () =>
                   pipe(
-                    logWithGuild(`${member.user.tag} left the server`),
+                    logWithGuild(`${user.tag} left the server`),
                     IO.chain(() => randomMessage(leaveMessages)(boldMember)),
                   ),
                 ({ action, executor }) =>
                   pipe(
-                    logWithGuild(logMessage(member.user.tag, executor.tag, action)),
+                    logWithGuild(logMessage(user.tag, executor.tag, action)),
                     IO.chain(() =>
                       randomMessage(kickOrBanMessages(action))(
                         boldMember,
@@ -63,10 +65,10 @@ export const NotifyGuildLeaveSubscriber = (
     },
   }
 
-  function getLastLog(now: Date, member: GuildMember): Future<Maybe<ValidLogsEntry>> {
+  function getLastLog(now: Date, guild: Guild, userId: TSnowflake): Future<Maybe<ValidLogsEntry>> {
     return pipe(
-      discord.fetchAuditLogs(member.guild),
-      Future.map(logs => Maybe.fromNullable(logs.find(isValidLog(now)))),
+      discord.fetchAuditLogs(guild),
+      Future.map(logs => Maybe.fromNullable(logs.find(isValidLog(now, userId)))),
     )
   }
 
@@ -94,7 +96,7 @@ export const NotifyGuildLeaveSubscriber = (
 
 const validActions: List<ValidKeys['action']> = ['MEMBER_KICK', 'MEMBER_BAN_ADD']
 const isValidLog =
-  (now: Date) =>
+  (now: Date, userId: TSnowflake) =>
   (entry: GuildAuditLogsEntry): entry is ValidLogsEntry => {
     const nowMinusNetworkTolerance = new Date(
       now.getTime() - MsDuration.unwrap(globalConfig.networkTolerance),
@@ -104,6 +106,7 @@ const isValidLog =
       List.elem(string.Eq)(entry.action, validActions) &&
       entry.target !== null &&
       entry.target instanceof User &&
+      entry.target.id === TSnowflake.unwrap(userId) &&
       entry.executor !== null &&
       entry.executor instanceof User
     )

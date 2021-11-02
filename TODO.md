@@ -5,7 +5,7 @@
 5. Abonnement appels
 6. Stream de musique : https://github.com/JamesKyburz/youtube-audio-stream
 7. Watch together
-8.  Commandes pour toute cette merde - CommandsRegisterer
+8. Commandes pour toute cette merde - CommandsRegisterer
    1. Abonnements
    2. Image
    3. Say
