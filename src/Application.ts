@@ -1,3 +1,5 @@
+import util from 'util'
+
 import { task } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import { Collection, MongoClient } from 'mongodb'
@@ -16,7 +18,7 @@ import { ActivityStatusSubscriber } from './services/subscribers/ActivityStatusS
 import { IndexesEnsureSubscriber } from './services/subscribers/IndexesEnsureSubscriber'
 import { NotifyGuildLeaveSubscriber } from './services/subscribers/NotifyGuildLeaveSubscriber'
 import { SendGreetingDMSubscriber } from './services/subscribers/SendGreetingDMSubscriber'
-import { Future, IO } from './utils/fp'
+import { Future, IO, Maybe } from './utils/fp'
 
 export const Application = (
   Logger: PartialLogger,
@@ -52,7 +54,15 @@ export const Application = (
 
   return pipe(
     IO.Do,
-    IO.bind('pubSub', () => PubSub<MadEvent>(Logger)),
+    IO.bind('pubSub', () =>
+      PubSub<MadEvent>(
+        Logger,
+        Maybe.some(({ type, ...rest }) => [
+          type,
+          util.formatWithOptions({ breakLength: Infinity }, rest),
+        ]),
+      ),
+    ),
     IO.chainFirst(({ pubSub }) => scheduleCronJob(Logger, pubSub)),
     IO.chainFirst(({ pubSub }) => publishDiscordEvents(discord, pubSub)),
     IO.chain(({ pubSub }) =>

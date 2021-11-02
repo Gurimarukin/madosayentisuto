@@ -1,12 +1,9 @@
-import util from 'util'
-
 import { io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import { PartialObserver, Subject, Subscription } from 'rxjs'
 
 import { Subscriber } from '../models/Subscriber'
-import { Either, IO, List } from '../utils/fp'
-import { StringUtils } from '../utils/StringUtils'
+import { Either, IO, Maybe, NonEmptyArray } from '../utils/fp'
 import { PartialLogger } from './Logger'
 
 type StrongSubject<A> = Omit<Subject<A>, 'next'> & {
@@ -19,7 +16,10 @@ export type PubSub<A> = {
   readonly subscribe: (subscriber: Subscriber<A>) => IO<Subscription>
 }
 
-export const PubSub = <A>(Logger: PartialLogger): IO<PubSub<A>> => {
+export const PubSub = <A>(
+  Logger: PartialLogger,
+  debugMessage: Maybe<(a: A) => NonEmptyArray<unknown>> = Maybe.none,
+): IO<PubSub<A>> => {
   const logger = Logger('PubSub')
 
   const subject: StrongSubject<A> = new Subject()
@@ -36,13 +36,17 @@ export const PubSub = <A>(Logger: PartialLogger): IO<PubSub<A>> => {
   }
 
   return pipe(
-    subscribe({
-      next: a =>
-        logger.debug(
-          '✉️ ',
-          pipe(util.format(a).split('\n'), List.takeLeft(15), StringUtils.mkString('\n')),
+    debugMessage,
+    Maybe.fold(
+      () => IO.unit,
+      log =>
+        pipe(
+          subscribe({
+            next: a => logger.debug('✉️ ', ...log(a)),
+          }),
+          IO.map(() => {}),
         ),
-    }),
+    ),
     IO.map((): PubSub<A> => ({ publish, subscribe })),
   )
 
