@@ -42,9 +42,9 @@ export const NotifyGuildLeaveSubscriber = (
                     logWithGuild(`${user.tag} left the server`),
                     IO.chain(() => randomMessage(leaveMessages)(boldMember)),
                   ),
-                ({ action, executor }) =>
+                ({ action, executor, reason }) =>
                   pipe(
-                    logWithGuild(logMessage(user.tag, executor.tag, action)),
+                    logWithGuild(logMessage(user.tag, executor.tag, action, reason)),
                     IO.chain(() =>
                       randomMessage(kickOrBanMessages(action))(
                         boldMember,
@@ -145,12 +145,14 @@ const logMessage = (
   targetTag: string,
   executorTag: string,
   action: ValidKeys['action'],
+  reason: string | null,
 ): string => {
+  const reasonStr = reason !== null ? ` - ${JSON.stringify(reason)}` : ''
   switch (action) {
     case 'MEMBER_KICK':
-      return `${targetTag} got kicked by ${executorTag}`
+      return `${targetTag} got kicked by ${executorTag}${reasonStr}`
     case 'MEMBER_BAN_ADD':
-      return `${targetTag} got banned by ${executorTag}`
+      return `${targetTag} got banned by ${executorTag}${reasonStr}`
   }
 }
 
