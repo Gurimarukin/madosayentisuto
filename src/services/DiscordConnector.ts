@@ -4,12 +4,15 @@ import {
   Collection,
   Guild,
   GuildAuditLogsEntry,
+  GuildMember,
   Intents,
   Message,
   MessageEmbed,
   MessageOptions,
   MessagePayload,
   PartialTextBasedChannelFields,
+  Role,
+  RoleResolvable,
   User,
 } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
@@ -19,7 +22,7 @@ import { globalConfig } from '../globalConfig'
 import { Activity } from '../models/Activity'
 import { TSnowflake } from '../models/TSnowflake'
 import { Colors } from '../utils/Colors'
-import { Future, IO, Maybe } from '../utils/fp'
+import { Future, IO, List, Maybe } from '../utils/fp'
 
 type NotPartial = {
   readonly partial: false
@@ -69,9 +72,29 @@ function of(client: Client<true>) {
     fetchPartial: <A extends NotPartial>(partial: MyPartial<A>): Future<A> =>
       partial.partial ? Future.tryCatch(() => partial.fetch()) : Future.right(partial),
 
+    fetchRole: (guild: Guild, role: TSnowflake): Future<Maybe<Role>> =>
+      pipe(
+        Future.tryCatch(() => guild.roles.fetch(TSnowflake.unwrap(role))),
+        Future.map(Maybe.fromNullable),
+      ),
+
     /**
      * Write
      */
+
+    addRole: (
+      member: GuildMember,
+      roleOrRoles: RoleResolvable | List<RoleResolvable>,
+      reason?: string,
+    ): Future<Maybe<void>> =>
+      pipe(
+        Future.tryCatch(() => member.roles.add(roleOrRoles, reason)),
+        Future.map(() => Maybe.some(undefined)),
+        debugLeft('addRole'),
+        // [e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
+        // Maybe.none]
+        // Future.map(_ => {}),
+      ),
 
     sendMessage,
 
@@ -127,12 +150,6 @@ function of(client: Client<true>) {
   //       debugLeft('fetchMemberForUser'),
   //     ),
 
-  //   fetchRole: (guild: Guild, role: TSnowflake): Future<Maybe<Role>> =>
-  //     pipe(
-  //       Future.tryCatch(() => guild.roles.fetch(TSnowflake.unwrap(role))),
-  //       Future.map(Maybe.fromNullable),
-  //     ),
-
   //   fetchMessage: (guild: Guild, message: TSnowflake): Future<Maybe<Message>> =>
   //     pipe(
   //       guild.channels.cache.toJSON(),
@@ -146,20 +163,6 @@ function of(client: Client<true>) {
 
   //   reactMessage: (message: Message, emoji: EmojiIdentifierResolvable): Future<MessageReaction> =>
   //     Future.tryCatch(() => message.react(emoji)),
-
-  //   addRole: (
-  //     member: GuildMember,
-  //     roleOrRoles: RoleResolvable | List<RoleResolvable>,
-  //     reason?: string,
-  //   ): Future<Maybe<void>> =>
-  //     pipe(
-  //       Future.tryCatch(() => member.roles.add(roleOrRoles, reason)),
-  //       Future.map(() => Maybe.some(undefined)),
-  //       debugLeft('addRole'),
-  //       // [e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
-  //       // Maybe.none]
-  //       // Future.map(_ => {}),
-  //     ),
 
   //   removeRole: (
   //     member: GuildMember,

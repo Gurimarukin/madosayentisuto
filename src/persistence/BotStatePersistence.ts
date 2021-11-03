@@ -6,6 +6,8 @@ import { PartialLogger } from '../services/Logger'
 import { Future, Maybe } from '../utils/fp'
 import { FpCollection } from './FpCollection'
 
+export type BotStatePersistence = ReturnType<typeof BotStatePersistence>
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const BotStatePersistence = (Logger: PartialLogger, mongoCollection: MongoCollection) => {
   const logger = Logger('BotStatePersistence')
@@ -25,5 +27,3 @@ export const BotStatePersistence = (Logger: PartialLogger, mongoCollection: Mong
       ),
   }
 }
-
-export type BotStatePersistence = ReturnType<typeof BotStatePersistence>

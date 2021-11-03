@@ -14,7 +14,7 @@ export const SendGreetingDMObserver = (
   Logger: PartialLogger,
   discord: DiscordConnector,
 ): TObserver<GuildMemberAdd> => {
-  const logger = Logger('SendGreetingDMSubscriber')
+  const logger = Logger('SendGreetingDMObserver')
 
   return {
     next: event => {

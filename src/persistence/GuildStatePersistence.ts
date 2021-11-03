@@ -8,6 +8,8 @@ import { PartialLogger } from '../services/Logger'
 import { Either, Future, List, Maybe } from '../utils/fp'
 import { FpCollection } from './FpCollection'
 
+export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const GuildStatePersistence = (Logger: PartialLogger, mongoCollection: MongoCollection) => {
   const logger = Logger('GuildStatePersistence')
@@ -38,5 +40,3 @@ export const GuildStatePersistence = (Logger: PartialLogger, mongoCollection: Mo
       ),
   }
 }
-
-export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>

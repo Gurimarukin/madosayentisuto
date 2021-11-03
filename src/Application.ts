@@ -15,11 +15,13 @@ import { TObserver } from './models/TObserver'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { DiscordConnector } from './services/DiscordConnector'
+import { GuildStateService } from './services/GuildStateService'
 import { PartialLogger } from './services/Logger'
 import { ActivityStatusObserver } from './services/observers/ActivityStatusObserver'
 import { IndexesEnsureObserver } from './services/observers/IndexesEnsureObserver'
 import { NotifyGuildLeaveObserver } from './services/observers/NotifyGuildLeaveObserver'
 import { SendGreetingDMObserver } from './services/observers/SendGreetingDMObserver'
+import { SetDefaultRoleObserver } from './services/observers/SetDefaultRoleObserver'
 import { publishDiscordEvents } from './services/publishers/publishDiscordEvents'
 import { scheduleCronJob } from './services/publishers/scheduleCronJob'
 import { PubSub } from './services/PubSub'
@@ -57,6 +59,8 @@ export const Application = (
   const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
 
+  const guildStateService = GuildStateService(guildStatePersistence, discord)
+
   return pipe(
     IO.Do,
     IO.bind('pubSub', () =>
@@ -85,6 +89,7 @@ export const Application = (
             MadEvent.isAppStarted,
           ),
           s(SendGreetingDMObserver(Logger, discord), MadEvent.isGuildMemberAdd),
+          s(SetDefaultRoleObserver(Logger, discord, guildStateService), MadEvent.isGuildMemberAdd),
           s(NotifyGuildLeaveObserver(Logger, discord), MadEvent.isGuildMemberRemove),
         ),
         IO.chain(() => pubSub.subject.next(MadEvent.AppStarted)),

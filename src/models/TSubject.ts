@@ -1,5 +1,5 @@
 import { IO } from '../utils/fp'
 
-export type TSubject<A> = /* Omit<Subject<A>, 'next'> & */ {
+export type TSubject<A> = {
   readonly next: (value: A) => IO<void>
 }

@@ -13,7 +13,7 @@ export const ActivityStatusObserver = (
   discord: DiscordConnector,
   botStatePersistence: BotStatePersistence,
 ): TObserver<AppStarted | DbReady | CronJob> => {
-  const logger = Logger('ActivityStatusSubscriber')
+  const logger = Logger('ActivityStatusObserver')
 
   return {
     next: event => {
