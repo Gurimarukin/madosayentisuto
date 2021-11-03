@@ -21,7 +21,14 @@ export const SetDefaultRoleObserver = (
         guildStateService.getDefaultRole(member.guild),
         Future.chain(
           Maybe.fold(
-            () => Future.unit,
+            () =>
+              Future.fromIOEither(
+                LogUtils.withGuild(
+                  logger,
+                  'warn',
+                  member.guild,
+                )(`No role stored - couldn't add ${member.user.tag}`),
+              ),
             role =>
               pipe(
                 discord.addRole(member, role),
