@@ -2,13 +2,13 @@ import { ClientEvents } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { MadEvent } from '../../models/MadEvent'
+import { TSubject } from '../../models/TSubject'
 import { IO } from '../../utils/fp'
 import { DiscordConnector } from '../DiscordConnector'
-import { PubSub } from '../PubSub'
 
 export const publishDiscordEvents = (
   discord: DiscordConnector,
-  pubSub: PubSub<MadEvent>,
+  subject: TSubject<MadEvent>,
 ): IO<void> => {
   return pipe(
     IO.sequenceArray([
@@ -28,7 +28,7 @@ export const publishDiscordEvents = (
   ): IO<void> {
     return pipe(
       IO.tryCatch(() =>
-        discord.client.on(event, (...args) => pipe(pubSub.publish(getMad(...args)), IO.runUnsafe)),
+        discord.client.on(event, (...args) => pipe(subject.next(getMad(...args)), IO.runUnsafe)),
       ),
       IO.map(() => {}),
     )

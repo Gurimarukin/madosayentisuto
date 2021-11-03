@@ -5,9 +5,9 @@ import { flow, pipe } from 'fp-ts/function'
 import { Ord } from 'fp-ts/Ord'
 
 import { globalConfig } from '../../globalConfig'
-import { MadEvent } from '../../models/MadEvent'
+import { GuildMemberRemove } from '../../models/MadEvent'
 import { MsDuration } from '../../models/MsDuration'
-import { Subscriber } from '../../models/Subscriber'
+import { TObserver } from '../../models/TObserver'
 import { TSnowflake } from '../../models/TSnowflake'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { Either, Future, IO, List, Maybe, NonEmptyArray } from '../../utils/fp'
@@ -15,53 +15,46 @@ import { LogUtils } from '../../utils/LogUtils'
 import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
 
-export const NotifyGuildLeaveSubscriber = (
+export const NotifyGuildLeaveObserver = (
   Logger: PartialLogger,
   discord: DiscordConnector,
-): Subscriber<MadEvent> => {
+): TObserver<GuildMemberRemove> => {
   const logger = Logger('NotifyGuildLeave')
 
   return {
     next: event => {
-      if (event.type === 'GuildMemberRemove') {
-        const guild = event.member.guild
-        const user = event.member.user
-        return pipe(
-          date.now,
-          io.map(n => new Date(n)),
-          Future.fromIO,
-          Future.chain(now => getLastLog(now, guild, TSnowflake.wrap(user.id))),
-          Future.chain(log => {
-            const logWithGuild = LogUtils.withGuild(logger, 'info', guild)
-            const boldMember = bold(user.tag)
-            return pipe(
-              log,
-              Maybe.fold(
-                () =>
-                  pipe(
-                    logWithGuild(`${user.tag} left the server`),
-                    IO.chain(() => randomMessage(leaveMessages)(boldMember)),
+      const guild = event.member.guild
+      const user = event.member.user
+      return pipe(
+        date.now,
+        io.map(n => new Date(n)),
+        Future.fromIO,
+        Future.chain(now => getLastLog(now, guild, TSnowflake.wrap(user.id))),
+        Future.chain(log => {
+          const logWithGuild = LogUtils.withGuild(logger, 'info', guild)
+          const boldMember = bold(user.tag)
+          return pipe(
+            log,
+            Maybe.fold(
+              () =>
+                pipe(
+                  logWithGuild(`${user.tag} left the server`),
+                  IO.chain(() => randomMessage(leaveMessages)(boldMember)),
+                ),
+              ({ action, executor, reason }) =>
+                pipe(
+                  logWithGuild(logMessage(user.tag, executor.tag, action, reason)),
+                  IO.chain(() =>
+                    randomMessage(kickOrBanMessages(action))(boldMember, userMention(executor.id)),
                   ),
-                ({ action, executor, reason }) =>
-                  pipe(
-                    logWithGuild(logMessage(user.tag, executor.tag, action, reason)),
-                    IO.chain(() =>
-                      randomMessage(kickOrBanMessages(action))(
-                        boldMember,
-                        userMention(executor.id),
-                      ),
-                    ),
-                  ),
-              ),
-              Future.fromIOEither,
-            )
-          }),
-          sendMessage(event.member.guild),
-          IO.runFuture,
-        )
-      }
-
-      return IO.unit
+                ),
+            ),
+            Future.fromIOEither,
+          )
+        }),
+        sendMessage(event.member.guild),
+        IO.runFuture,
+      )
     },
   }
 

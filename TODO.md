@@ -11,6 +11,8 @@
    3. Say
    4. Statut
 
+- ensure indexes: unsubscribe when done
+
 ---
 
 1. Statut - StatusService

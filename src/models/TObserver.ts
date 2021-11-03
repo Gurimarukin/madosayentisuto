@@ -1,6 +1,6 @@
 import { IO } from '../utils/fp'
 
-export type Subscriber<A> =
+export type TObserver<A> =
   | {
       readonly next: (value: A) => IO<void>
       readonly error?: (err: unknown) => IO<void>

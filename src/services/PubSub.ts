@@ -1,9 +1,9 @@
-import { io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
-import { PartialObserver, Subject, Subscription } from 'rxjs'
+import { Subject } from 'rxjs'
 
-import { Subscriber } from '../models/Subscriber'
-import { Either, IO, Maybe, NonEmptyArray } from '../utils/fp'
+import { TObservable } from '../models/TObservable'
+import { TSubject } from '../models/TSubject'
+import { IO, Maybe, NonEmptyArray } from '../utils/fp'
 import { PartialLogger } from './Logger'
 
 type StrongSubject<A> = Omit<Subject<A>, 'next'> & {
@@ -12,8 +12,8 @@ type StrongSubject<A> = Omit<Subject<A>, 'next'> & {
 }
 
 export type PubSub<A> = {
-  readonly publish: (a: A) => IO<void>
-  readonly subscribe: (subscriber: Subscriber<A>) => IO<Subscription>
+  readonly subject: TSubject<A>
+  readonly observable: TObservable<A>
 }
 
 export const PubSub = <A>(
@@ -24,16 +24,8 @@ export const PubSub = <A>(
 
   const subject: StrongSubject<A> = new Subject()
 
-  const publish: PubSub<A>['publish'] = a => IO.tryCatch(() => subject.next(a))
-
-  const subscribe: PubSub<A>['subscribe'] = ({ next, error, complete }) => {
-    const subscriber: PartialObserver<A> = {
-      ...(next !== undefined ? { next: a => runUnsafe(next(a)) } : {}),
-      ...(error !== undefined ? { error: (u: unknown) => runUnsafe(error(u)) } : {}),
-      ...(complete !== undefined ? { complete: () => runUnsafe(complete()) } : {}),
-    } as PartialObserver<A>
-    return IO.tryCatch(() => subject.subscribe(subscriber))
-  }
+  const next: TSubject<A>['next'] = a => IO.tryCatch(() => subject.next(a))
+  const observable: PubSub<A>['observable'] = subject.asObservable()
 
   return pipe(
     debugMessage,
@@ -41,26 +33,13 @@ export const PubSub = <A>(
       () => IO.unit,
       log =>
         pipe(
-          subscribe({
+          observable,
+          TObservable.subscribe({
             next: a => logger.debug('✉️ ', ...log(a)),
           }),
           IO.map(() => {}),
         ),
     ),
-    IO.map((): PubSub<A> => ({ publish, subscribe })),
+    IO.map((): PubSub<A> => ({ subject: { next }, observable })),
   )
-
-  // eslint-disable-next-line functional/no-return-void
-  function runUnsafe(fa: IO<void>): void {
-    return pipe(
-      fa,
-      io.chain(
-        Either.fold(
-          e => logger.error(e.stack),
-          a => IO.of(a),
-        ),
-      ),
-      IO.runUnsafe,
-    )
-  }
 }
