@@ -1,9 +1,10 @@
-import { GuildMember, PartialGuildMember, VoiceState } from 'discord.js'
+import { GuildMember, Interaction, PartialGuildMember, VoiceState } from 'discord.js'
 
 export type MadEvent =
   | AppStarted
   | DbReady
   | CronJob
+  | InteractionCreate
   | GuildMemberAdd
   | GuildMemberRemove
   | VoiceStateUpdate
@@ -11,6 +12,7 @@ export type MadEvent =
 const isAppStarted = (e: MadEvent): e is AppStarted => e.type === 'AppStarted'
 const isDbReady = (e: MadEvent): e is DbReady => e.type === 'DbReady'
 const isCronJob = (e: MadEvent): e is CronJob => e.type === 'CronJob'
+const isInteractionCreate = (e: MadEvent): e is InteractionCreate => e.type === 'InteractionCreate'
 const isGuildMemberAdd = (e: MadEvent): e is GuildMemberAdd => e.type === 'GuildMemberAdd'
 const isGuildMemberRemove = (e: MadEvent): e is GuildMemberRemove => e.type === 'GuildMemberRemove'
 const isVoiceStateUpdate = (e: MadEvent): e is VoiceStateUpdate => e.type === 'VoiceStateUpdate'
@@ -23,6 +25,15 @@ const DbReady: DbReady = { type: 'DbReady' }
 
 export type CronJob = { readonly type: 'CronJob' }
 const CronJob: CronJob = { type: 'CronJob' }
+
+export type InteractionCreate = {
+  readonly type: 'InteractionCreate'
+  readonly interaction: Interaction
+}
+const InteractionCreate = (interaction: Interaction): InteractionCreate => ({
+  type: 'InteractionCreate',
+  interaction,
+})
 
 export type GuildMemberAdd = {
   readonly type: 'GuildMemberAdd'
@@ -57,6 +68,7 @@ export const MadEvent = {
   isAppStarted,
   isDbReady,
   isCronJob,
+  isInteractionCreate,
   isGuildMemberAdd,
   isGuildMemberRemove,
   isVoiceStateUpdate,
@@ -64,6 +76,7 @@ export const MadEvent = {
   AppStarted,
   DbReady,
   CronJob,
+  InteractionCreate,
   GuildMemberAdd,
   GuildMemberRemove,
   VoiceStateUpdate,

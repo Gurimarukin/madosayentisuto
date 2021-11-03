@@ -22,6 +22,7 @@ import { DeployCommandsObserver } from './services/observers/DeployCommandsObser
 import { IndexesEnsureObserver } from './services/observers/IndexesEnsureObserver'
 import { NotifyGuildLeaveObserver } from './services/observers/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './services/observers/NotifyVoiceCallObserver'
+import { PingObserver } from './services/observers/PingObserver'
 import { SendGreetingDMObserver } from './services/observers/SendGreetingDMObserver'
 import { SetDefaultRoleObserver } from './services/observers/SetDefaultRoleObserver'
 import { publishDiscordEvents } from './services/publishers/publishDiscordEvents'
@@ -95,6 +96,7 @@ export const Application = (
           s(SetDefaultRoleObserver(Logger, guildStateService), MadEvent.isGuildMemberAdd),
           s(NotifyGuildLeaveObserver(Logger), MadEvent.isGuildMemberRemove),
           s(NotifyVoiceCallObserver(Logger, guildStateService), MadEvent.isVoiceStateUpdate),
+          s(PingObserver(), MadEvent.isInteractionCreate),
         ),
         IO.chain(() => pubSub.subject.next(MadEvent.AppStarted)),
       )

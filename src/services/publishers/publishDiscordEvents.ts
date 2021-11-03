@@ -15,6 +15,7 @@ export const publishDiscordEvents = (
       publishOn('guildMemberAdd', MadEvent.GuildMemberAdd),
       publishOn('guildMemberRemove', MadEvent.GuildMemberRemove),
       publishOn('voiceStateUpdate', MadEvent.VoiceStateUpdate),
+      publishOn('interactionCreate', MadEvent.InteractionCreate),
       // publishOn('message', MadEvent.Message),
       // publishOn('messageReactionAdd', MadEvent.MessageReactionAdd),
       // publishOn('messageReactionRemove', MadEvent.MessageReactionRemove),
