@@ -1,12 +1,14 @@
-import { Either, Future, pipe } from '../../src/utils/fp'
+import { pipe } from 'fp-ts/function'
+
+import { Either, Future } from '../../src/utils/fp'
 
 describe('Future.recover', () => {
   it("should return f if it isn't failed", () => {
     const res = pipe(
       Future.right<string>('toto'),
-      Future.recover(_ => Future.right('titi')),
+      Future.recover(() => Future.right('titi')),
     )()
-    return res.then(_ => expect(_).toStrictEqual(Either.right('toto')))
+    return res.then(r => expect(r).toStrictEqual(Either.right('toto')))
   })
 
   it('should return first matching recovery', () => {
@@ -22,7 +24,7 @@ describe('Future.recover', () => {
           : Future.left(e),
       ),
     )()
-    return res.then(_ => expect(_).toStrictEqual(Either.right('syntax error')))
+    return res.then(r => expect(r).toStrictEqual(Either.right('syntax error')))
   })
 
   it('should return f if no matching error', () => {
@@ -36,6 +38,6 @@ describe('Future.recover', () => {
           : Future.left(e),
       ),
     )()
-    return res.then(_ => expect(_).toStrictEqual(Either.left(SyntaxError('this is an error'))))
+    return res.then(r => expect(r).toStrictEqual(Either.left(SyntaxError('this is an error'))))
   })
 })
