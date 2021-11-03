@@ -1,6 +1,12 @@
-import { GuildMember, PartialGuildMember } from 'discord.js'
+import { GuildMember, PartialGuildMember, VoiceState } from 'discord.js'
 
-export type MadEvent = AppStarted | DbReady | CronJob | GuildMemberAdd | GuildMemberRemove
+export type MadEvent =
+  | AppStarted
+  | DbReady
+  | CronJob
+  | GuildMemberAdd
+  | GuildMemberRemove
+  | VoiceStateUpdate
 
 type AppStarted = { readonly type: 'AppStarted' }
 const AppStarted: AppStarted = { type: 'AppStarted' }
@@ -29,10 +35,22 @@ const GuildMemberRemove = (member: GuildMember | PartialGuildMember): GuildMembe
   member,
 })
 
+type VoiceStateUpdate = {
+  readonly type: 'VoiceStateUpdate'
+  readonly oldState: VoiceState
+  readonly newState: VoiceState
+}
+const VoiceStateUpdate = (oldState: VoiceState, newState: VoiceState): VoiceStateUpdate => ({
+  type: 'VoiceStateUpdate',
+  oldState,
+  newState,
+})
+
 export const MadEvent = {
   AppStarted,
   DbReady,
   CronJob,
   GuildMemberAdd,
   GuildMemberRemove,
+  VoiceStateUpdate,
 }

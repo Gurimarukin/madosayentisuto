@@ -98,51 +98,6 @@ function of(client: Client<true>) {
   // return {
   //   clientUser: Maybe.fromNullable(client.user),
 
-  //   /**
-  //    * Observables
-  //    */
-  //   messages: (): ObservableE<Message> =>
-  //     pipe(
-  //       fromEventPattern<Message>(handler => client.on('message', handler)),
-  //       ObservableE.rightObservable,
-  //     ),
-
-  //   voiceStateUpdates: (): ObservableE<VoiceStateUpdate> =>
-  //     pipe(
-  //       fromEventPattern<VoiceStateUpdate>(handler =>
-  //         client.on('voiceStateUpdate', (oldState, newState) =>
-  //           handler(VoiceStateUpdate(oldState, newState)),
-  //         ),
-  //       ),
-  //       ObservableE.rightObservable,
-  //     ),
-
-  //   guildMemberEvents: (): ObservableE<AddRemove<GuildMember | PartialGuildMember>> =>
-  //     pipe(
-  //       fromEventPattern<AddRemove<GuildMember | PartialGuildMember>>(handler => {
-  //         /* eslint-disable functional/no-expression-statement */
-  //         client.on('guildMemberAdd', member => handler(AddRemove.Add(member)))
-  //         client.on('guildMemberRemove', member => handler(AddRemove.Remove(member)))
-  //         /* eslint-enable functional/no-expression-statement */
-  //       }),
-  //       ObservableE.rightObservable,
-  //     ),
-
-  //   messageReactions: (): ObservableE<AddRemove<Tuple<MessageReaction, User | PartialUser>>> =>
-  //     pipe(
-  //       fromEventPattern<AddRemove<Tuple<MessageReaction, User | PartialUser>>>(handler => {
-  //         /* eslint-disable functional/no-expression-statement */
-  //         client.on('messageReactionAdd', (reaction, user) =>
-  //           handler(AddRemove.Add([reaction, user])),
-  //         )
-  //         client.on('messageReactionRemove', (reaction, user) =>
-  //           handler(AddRemove.Remove([reaction, user])),
-  //         )
-  //         /* eslint-enable functional/no-expression-statement */
-  //       }),
-  //       ObservableE.rightObservable,
-  //     ),
-
   //   resolveGuild: (guildId: GuildId): Maybe<Guild> =>
   //     Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId))),
 

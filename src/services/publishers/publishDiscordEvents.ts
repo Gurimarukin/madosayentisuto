@@ -14,6 +14,10 @@ export const publishDiscordEvents = (
     IO.sequenceArray([
       publishOn('guildMemberAdd', MadEvent.GuildMemberAdd),
       publishOn('guildMemberRemove', MadEvent.GuildMemberRemove),
+      publishOn('voiceStateUpdate', MadEvent.VoiceStateUpdate),
+      // publishOn('message', MadEvent.Message),
+      // publishOn('messageReactionAdd', MadEvent.MessageReactionAdd),
+      // publishOn('messageReactionRemove', MadEvent.MessageReactionRemove),
     ]),
     IO.map(() => {}),
   )
