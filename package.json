@@ -5,18 +5,23 @@
   "main": "src/index.ts",
   "scripts": {
     "clean": "rm -fr dist/*",
-    "prebuild": "npm run clean",
-    "build": "tsc",
+    "prebuild": "yarn run checkEnv && yarn run clean",
+    "build": "tsc -p ./tsconfig.build.json",
     "checkEnv": "ts-node src/checkEnv.ts",
-    "compile": "tsc --noEmit",
-    "~compile": "tsc --noEmit -w",
     "run": "ts-node src/index.ts",
-    "~run": "nodemon -e js,ts,json -x \"npm run --silent run\"",
-    "test": "jest",
-    "~test": "jest --watchAll",
-    "lint": "eslint --cache --fix --max-warnings 0 --ext .ts src/ test/",
-    "dc:graph": "depcruise --include-only '^src' --exclude 'fp\\.ts' --output-type dot . | dot -T svg > dependencygraph.svg",
-    "dc:osage": "depcruise --include-only '^src' --exclude 'fp\\.ts' --output-type dot . | osage -Gpack=16 -Gsplines=ortho -GpackMode=array2 -T svg > dependencygraph.svg"
+    "~run": "nodemon -e js,ts,json -x \"yarn run run\"",
+    "prettier": "prettier --check \"./{src,test}/**/*.ts\"",
+    "prettierFix": "prettier --write \"./{src,test}/**/*.ts\"",
+    "importSort": "import-sort --list-different \"./{src,test}/**/*.ts\"",
+    "importSortFix": "import-sort --write \"./{src,test}/**/*.ts\"",
+    "lint": "eslint --cache --max-warnings 0 --ext .ts src test",
+    "lintFix": "eslint --fix --cache --max-warnings 0 --ext .ts src test",
+    "jest": "jest",
+    "jestCoverage": "jest --ci --coverage",
+    "style": "yarn run prettier && yarn run importSort && yarn run lint",
+    "test": "yarn run style && yarn run jest",
+    "dcGraph": "depcruise --include-only '^src' --exclude 'fp\\.ts' --output-type dot . | dot -T svg > dependencygraph.svg",
+    "dcOsage": "depcruise --include-only '^src' --exclude 'fp\\.ts' --output-type dot . | osage -Gpack=16 -Gsplines=ortho -GpackMode=array2 -T svg > dependencygraph.svg"
   },
   "repository": {
     "type": "git",
@@ -63,5 +68,11 @@
     "ts-node": "^10.3.0",
     "tslib": "^2.3.1",
     "typescript": "^4.4.4"
+  },
+  "importSort": {
+    ".js, .ts": {
+      "style": "module",
+      "parser": "typescript"
+    }
   }
 }
