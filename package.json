@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "rm -fr dist/*",
     "prebuild": "yarn run checkEnv && yarn run clean",
-    "build": "tsc -p ./tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json",
     "checkEnv": "ts-node src/checkEnv.ts",
     "run": "ts-node src/index.ts",
     "~run": "nodemon -e js,ts,json -x \"yarn run run\"",
