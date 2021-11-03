@@ -50,7 +50,6 @@ export const NotifyGuildLeaveObserver = (Logger: PartialLogger): TObserver<Guild
           )
         }),
         sendMessage(event.member.guild),
-        IO.runFuture,
       )
     },
   }

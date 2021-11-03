@@ -4,7 +4,7 @@ import { pipe } from 'fp-ts/function'
 import { GuildMemberAdd } from '../../models/MadEvent'
 import { TObserver } from '../../models/TObserver'
 import { Colors } from '../../utils/Colors'
-import { Future, IO, Maybe } from '../../utils/fp'
+import { Future, Maybe } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
 import { StringUtils } from '../../utils/StringUtils'
 import { DiscordConnector } from '../DiscordConnector'
@@ -42,13 +42,19 @@ export const SendGreetingDMObserver = (Logger: PartialLogger): TObserver<GuildMe
             ],
           }),
         ),
-        Future.map(
+        Future.chain(
           Maybe.fold(
-            () => {}, // TODO: what to do if message wasn't sent?
-            () => {},
+            () =>
+              Future.fromIOEither(
+                LogUtils.withGuild(
+                  logger,
+                  'warn',
+                  member.guild,
+                )(`Couldn't send greeting DM to ${member.user.tag}`),
+              ),
+            () => Future.unit,
           ),
         ),
-        IO.runFuture,
       )
     },
   }

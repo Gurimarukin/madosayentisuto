@@ -25,14 +25,13 @@ export const ActivityStatusObserver = (
         case 'CronJob':
           return pipe(
             botStatePersistence.find(),
-            Future.chain(({ activity }) => Future.fromIOEither(discordSetActivity(activity))),
-            IO.runFuture,
+            Future.chain(({ activity }) => discordSetActivity(activity)),
           )
       }
     },
   }
 
-  function discordSetActivity(maybeActivity: Maybe<Activity>): IO<void> {
+  function discordSetActivity(maybeActivity: Maybe<Activity>): Future<void> {
     return pipe(
       maybeActivity,
       Maybe.fold(
@@ -41,6 +40,7 @@ export const ActivityStatusObserver = (
       ),
       IO.chain(() => discord.setActivity(maybeActivity)),
       IO.map(() => {}),
+      Future.fromIOEither,
     )
   }
 }

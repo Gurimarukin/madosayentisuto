@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/function'
 
 import { GuildMemberAdd } from '../../models/MadEvent'
 import { TObserver } from '../../models/TObserver'
-import { Future, IO, Maybe } from '../../utils/fp'
+import { Future, Maybe } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
@@ -55,7 +55,6 @@ export const SetDefaultRoleObserver = (
               ),
           ),
         ),
-        IO.runFuture,
       )
     },
   }

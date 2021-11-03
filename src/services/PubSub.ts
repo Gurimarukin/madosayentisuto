@@ -3,7 +3,7 @@ import { Subject } from 'rxjs'
 
 import { TObservable } from '../models/TObservable'
 import { TSubject } from '../models/TSubject'
-import { IO, Maybe, NonEmptyArray } from '../utils/fp'
+import { Future, IO, Maybe, NonEmptyArray } from '../utils/fp'
 import { PartialLogger } from './Logger'
 
 type StrongSubject<A> = Omit<Subject<A>, 'next'> & {
@@ -35,7 +35,8 @@ export const PubSub = <A>(
         pipe(
           observable,
           TObservable.subscribe({
-            next: a => logger.debug('✉️ ', ...log(a)),
+            next: a => Future.fromIOEither(logger.debug('✉️ ', ...log(a))),
+            error: e => Future.fromIOEither(logger.error(e)),
           }),
           IO.map(() => {}),
         ),

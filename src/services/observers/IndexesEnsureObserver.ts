@@ -4,7 +4,7 @@ import { globalConfig } from '../../globalConfig'
 import { AppStarted, DbReady, MadEvent } from '../../models/MadEvent'
 import { TObserver } from '../../models/TObserver'
 import { TSubject } from '../../models/TSubject'
-import { Future, IO, List } from '../../utils/fp'
+import { Future, List } from '../../utils/fp'
 import { FutureUtils } from '../../utils/FutureUtils'
 import { PartialLogger } from '../Logger'
 
@@ -31,7 +31,6 @@ export const IndexesEnsureObserver = (
           onSuccess: () => logger.info('Ensured indexes'),
         }),
         Future.chain(() => Future.fromIOEither(subject.next(MadEvent.DbReady))),
-        IO.runFuture,
       ),
   }
 }

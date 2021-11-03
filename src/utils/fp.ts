@@ -129,10 +129,12 @@ export const IO = {
   ...ioEither,
   tryCatch: ioTryCatch,
   unit: ioEither.right<never, void>(undefined),
-  runFuture: <A>(f: Future<A>): IO<void> =>
-    ioTryCatch(() => {
+  runFuture:
+    <A>(f: Future<A>): IO<void> =>
+    () => {
       // eslint-disable-next-line functional/no-expression-statement
       Future.runUnsafe(f)
-    }),
+      return Try.right(undefined)
+    },
   runUnsafe: <A>(ioA: IO<A>): A => Try.get(ioA()),
 }

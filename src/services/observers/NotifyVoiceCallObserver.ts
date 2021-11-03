@@ -4,7 +4,7 @@ import { pipe } from 'fp-ts/function'
 import { VoiceStateUpdate } from '../../models/MadEvent'
 import { TObserver } from '../../models/TObserver'
 import { ChannelUtils } from '../../utils/ChannelUtils'
-import { Future, IO, List, Maybe } from '../../utils/fp'
+import { Future, List, Maybe } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
 import { DiscordConnector } from '../DiscordConnector'
 import { GuildStateService } from '../GuildStateService'
@@ -45,7 +45,6 @@ export const NotifyVoiceCallObserver = (
             return Future.unit
           },
         ),
-        IO.runFuture,
       ),
   }
 

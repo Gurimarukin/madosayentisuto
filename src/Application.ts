@@ -16,7 +16,7 @@ import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { DiscordConnector } from './services/DiscordConnector'
 import { GuildStateService } from './services/GuildStateService'
-import { PartialLogger } from './services/Logger'
+import { Logger as LoggerType, PartialLogger } from './services/Logger'
 import { ActivityStatusObserver } from './services/observers/ActivityStatusObserver'
 import { IndexesEnsureObserver } from './services/observers/IndexesEnsureObserver'
 import { NotifyGuildLeaveObserver } from './services/observers/NotifyGuildLeaveObserver'
@@ -26,7 +26,7 @@ import { SetDefaultRoleObserver } from './services/observers/SetDefaultRoleObser
 import { publishDiscordEvents } from './services/publishers/publishDiscordEvents'
 import { scheduleCronJob } from './services/publishers/scheduleCronJob'
 import { PubSub } from './services/PubSub'
-import { Future, IO, List, Maybe, NonEmptyArray } from './utils/fp'
+import { Future, IO, List, Maybe, NonEmptyArray, Try } from './utils/fp'
 
 export const Application = (
   Logger: PartialLogger,
@@ -76,7 +76,7 @@ export const Application = (
     IO.chainFirst(({ pubSub }) => scheduleCronJob(Logger, pubSub.subject)),
     IO.chainFirst(({ pubSub }) => publishDiscordEvents(discord, pubSub.subject)),
     IO.chain(({ pubSub }) => {
-      const s = subscribe(pubSub.observable)
+      const s = subscribe(logger, pubSub.observable)
       return pipe(
         apply.sequenceT(IO.ApplicativePar)(
           s(
@@ -102,7 +102,7 @@ export const Application = (
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function subscribe<A>(observable_: TObservable<A>) {
+function subscribe<A>(logger: LoggerType, observable_: TObservable<A>) {
   return res
 
   function res(o: TObserver<A>): IO<Subscription>
@@ -118,7 +118,16 @@ function subscribe<A>(observable_: TObservable<A>) {
     c: Refinement<A, C>,
     d: Refinement<A, D>,
   ): IO<Subscription>
-  function res(observer: TObserver<A>, ...refinements: List<Refinement<A, A>>): IO<Subscription> {
+  function res(
+    { next, error, complete }: TObserver<A>,
+    ...refinements: List<Refinement<A, A>>
+  ): IO<Subscription> {
+    const observer: TObserver<A> = {
+      ...(next !== undefined ? { next: recover(next) } : {}),
+      ...(error !== undefined ? { error: recover(error) } : {}),
+      ...(complete !== undefined ? { complete: recover(complete) } : {}),
+    } as TObserver<A>
+
     return pipe(
       NonEmptyArray.fromReadonlyArray(refinements),
       Maybe.fold(
@@ -129,5 +138,15 @@ function subscribe<A>(observable_: TObservable<A>) {
       ),
       TObservable.subscribe(observer),
     )
+  }
+
+  function recover<B extends List<unknown>>(
+    f: (...args: B) => Future<void>,
+  ): (...args: B) => Future<void> {
+    return (...args) =>
+      pipe(
+        f(...args),
+        task.chain(Try.fold(e => Future.fromIOEither(logger.error(e.stack)), Future.right)),
+      )
   }
 }
