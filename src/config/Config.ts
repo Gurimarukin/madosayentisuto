@@ -9,49 +9,39 @@ import { Either, IO, NonEmptyArray } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 import { ConfReader } from './ConfReader'
 
-const of = (
-  clientSecret: string,
-  admins: NonEmptyArray<TSnowflake>,
-  cmdPrefix: string,
-  logger: LoggerConfig,
-  db: DbConfig,
-): Config => ({ clientSecret, admins, cmdPrefix, logger, db })
-
-const load = (): IO<Config> =>
-  pipe(
-    ConfReader.fromFiles('./conf/local.conf.json', './conf/application.conf.json'),
-    IO.chain(reader =>
-      pipe(
-        readConfig(reader),
-        Either.mapLeft(
-          flow(StringUtils.mkString('Errors while reading config:\n', '\n', ''), Error),
-        ),
-        IO.fromEither,
-      ),
-    ),
-  )
-
 export type Config = {
+  readonly clientId: string
   readonly clientSecret: string
   readonly admins: NonEmptyArray<TSnowflake>
   readonly cmdPrefix: string
   readonly logger: LoggerConfig
   readonly db: DbConfig
 }
-export const Config = { of, load }
-
-function readConfig(reader: ConfReader): ValidatedNea<string, Config> {
-  return pipe(
-    apply.sequenceT(Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>()))(
-      reader(D.string)('clientSecret'),
-      reader(NonEmptyArray.decoder(TSnowflake.codec))('admins'),
-      reader(D.string)('cmdPrefix'),
-      readLoggerConfig(reader),
-      readDbConfig(reader),
+export const Config = {
+  load: (): IO<Config> =>
+    pipe(
+      ConfReader.fromFiles('./conf/local.conf.json', './conf/application.conf.json'),
+      IO.chain(reader =>
+        pipe(
+          readConfig(reader),
+          Either.mapLeft(
+            flow(StringUtils.mkString('Errors while reading config:\n', '\n', ''), Error),
+          ),
+          IO.fromEither,
+        ),
+      ),
     ),
-    Either.map(args => Config.of(...args)),
-  )
 }
+
+const readConfig = (reader: ConfReader): ValidatedNea<string, Config> =>
+  apply.sequenceS(Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>()))({
+    clientId: reader(D.string)('clientId'),
+    clientSecret: reader(D.string)('clientSecret'),
+    admins: reader(NonEmptyArray.decoder(TSnowflake.codec))('admins'),
+    cmdPrefix: reader(D.string)('cmdPrefix'),
+    logger: readLoggerConfig(reader),
+    db: readDbConfig(reader),
+  })
 
 /**
  * LoggerConfig
@@ -64,27 +54,26 @@ export type LoggerConfig = {
   }
 }
 
-export function LoggerConfig(
-  consoleLevel: LogLevelOrOff,
-  discordDMlevel: LogLevelOrOff,
-  discordDMCompact: boolean,
-): LoggerConfig {
-  return {
+export const LoggerConfig = {
+  of: (
+    consoleLevel: LogLevelOrOff,
+    discordDMlevel: LogLevelOrOff,
+    discordDMCompact: boolean,
+  ): LoggerConfig => ({
     consoleLevel,
     discordDM: { level: discordDMlevel, compact: discordDMCompact },
-  }
+  }),
 }
 
-function readLoggerConfig(reader: ConfReader): ValidatedNea<string, LoggerConfig> {
-  return pipe(
+const readLoggerConfig = (reader: ConfReader): ValidatedNea<string, LoggerConfig> =>
+  pipe(
     apply.sequenceT(Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>()))(
       reader(LogLevelOrOff.codec)('logger', 'consoleLevel'),
       reader(LogLevelOrOff.codec)('logger', 'discordDM', 'level'),
       reader(D.boolean)('logger', 'discordDM', 'compact'),
     ),
-    Either.map(_ => LoggerConfig(..._)),
+    Either.map(args => LoggerConfig.of(...args)),
   )
-}
 
 /**
  * DbConfig
@@ -96,18 +85,10 @@ type DbConfig = {
   readonly password: string
 }
 
-function DbConfig(host: string, dbName: string, user: string, password: string): DbConfig {
-  return { host, dbName, user, password }
-}
-
-function readDbConfig(reader: ConfReader): ValidatedNea<string, DbConfig> {
-  return pipe(
-    apply.sequenceT(Either.getValidation(NonEmptyArray.getSemigroup<string>()))(
-      reader(D.string)('db', 'host'),
-      reader(D.string)('db', 'dbName'),
-      reader(D.string)('db', 'user'),
-      reader(D.string)('db', 'password'),
-    ),
-    Either.map(_ => DbConfig(..._)),
-  )
-}
+const readDbConfig = (reader: ConfReader): ValidatedNea<string, DbConfig> =>
+  apply.sequenceS(Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>()))({
+    host: reader(D.string)('db', 'host'),
+    dbName: reader(D.string)('db', 'dbName'),
+    user: reader(D.string)('db', 'user'),
+    password: reader(D.string)('db', 'password'),
+  })

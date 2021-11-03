@@ -35,7 +35,7 @@ export const NotifyGuildLeaveObserver = (Logger: PartialLogger): TObserver<Guild
             Maybe.fold(
               () =>
                 pipe(
-                  logWithGuild(`${user.tag} left the server`),
+                  logWithGuild(`${user.tag} left the guild`),
                   IO.chain(() => randomMessage(leaveMessages)(boldMember)),
                 ),
               ({ action, executor, reason }) =>
@@ -116,8 +116,8 @@ const minimum: <A>(ord_: Ord<A>) => (nea: NonEmptyArray<A>) => A = flow(
 
 const channelPositionOrd = ord.contramap((c: TextChannel) => c.position)(number.Ord)
 
-function goodbyeChannel(guild: Guild): Maybe<TextChannel> {
-  return pipe(
+const goodbyeChannel = (guild: Guild): Maybe<TextChannel> =>
+  pipe(
     Maybe.fromNullable(guild.systemChannel),
     Maybe.alt(() =>
       pipe(
@@ -128,7 +128,6 @@ function goodbyeChannel(guild: Guild): Maybe<TextChannel> {
       ),
     ),
   )
-}
 
 const logMessage = (
   targetTag: string,

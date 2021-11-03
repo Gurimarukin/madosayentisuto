@@ -18,6 +18,7 @@ import { DiscordConnector } from './services/DiscordConnector'
 import { GuildStateService } from './services/GuildStateService'
 import { Logger as LoggerType, PartialLogger } from './services/Logger'
 import { ActivityStatusObserver } from './services/observers/ActivityStatusObserver'
+import { DeployCommandsObserver } from './services/observers/DeployCommandsObserver'
 import { IndexesEnsureObserver } from './services/observers/IndexesEnsureObserver'
 import { NotifyGuildLeaveObserver } from './services/observers/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './services/observers/NotifyVoiceCallObserver'
@@ -89,6 +90,7 @@ export const Application = (
             IndexesEnsureObserver(Logger, pubSub.subject, [guildStatePersistence.ensureIndexes]),
             MadEvent.isAppStarted,
           ),
+          s(DeployCommandsObserver(config, Logger, guildStateService), MadEvent.isDbReady),
           s(SendGreetingDMObserver(Logger), MadEvent.isGuildMemberAdd),
           s(SetDefaultRoleObserver(Logger, guildStateService), MadEvent.isGuildMemberAdd),
           s(NotifyGuildLeaveObserver(Logger), MadEvent.isGuildMemberRemove),

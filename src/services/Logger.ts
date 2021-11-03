@@ -94,20 +94,18 @@ const formatConsole = (name: string, level: LogLevel, msg: string): string => {
     : `[${color(level.toUpperCase(), c)}] ${withTimestamp}`
 }
 
-function formatDMCompact(name: string, level: LogLevel, msg: string): string {
+const formatDMCompact = (name: string, level: LogLevel, msg: string): string => {
   const withName = `${name} - ${msg}`
   return level === 'info' || level === 'warn'
     ? `\`[${level.toUpperCase()}]  ${withName}\``
     : `\`[${level.toUpperCase()}] ${withName}\``
 }
 
-function formatDMEmbed(name: string, level: LogLevel, msg: string): MessageOptions {
-  return {
-    embeds: [
-      new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`),
-    ],
-  }
-}
+const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageOptions => ({
+  embeds: [
+    new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`),
+  ],
+})
 
 const formatDate = (d: Date): string => {
   const year = d.getFullYear()

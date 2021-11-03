@@ -1,2 +1,6 @@
 export const unknownToError = (e: unknown): Error =>
-  e instanceof Error ? e : new Error('unknown error')
+  e instanceof Error
+    ? e
+    : new Error(`unknown error: ${util.formatWithOptions({ breakLength: Infinity }, e)}`)
+
+import util from 'util'

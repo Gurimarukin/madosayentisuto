@@ -198,8 +198,8 @@ export const NotifyVoiceCallObserver = (
 }
 
 // ensures that we have the same id
-function getMember({ oldState, newState }: VoiceStateUpdate): Maybe<GuildMember> {
-  return pipe(
+const getMember = ({ oldState, newState }: VoiceStateUpdate): Maybe<GuildMember> =>
+  pipe(
     Maybe.fromNullable(oldState.member),
     Maybe.chain(memberOld =>
       pipe(
@@ -208,10 +208,9 @@ function getMember({ oldState, newState }: VoiceStateUpdate): Maybe<GuildMember>
       ),
     ),
   )
-}
 
-function peopleInPublicVocalChans(guild: Guild): List<GuildMember> {
-  return pipe(
+const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
+  pipe(
     guild.channels.cache.toJSON(),
     List.filter(
       (c): c is GuildChannel =>
@@ -221,4 +220,3 @@ function peopleInPublicVocalChans(guild: Guild): List<GuildMember> {
     ),
     List.chain(c => c.members.toJSON()),
   )
-}

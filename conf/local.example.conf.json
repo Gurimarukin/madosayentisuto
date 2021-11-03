@@ -1,4 +1,5 @@
 {
+  "clientId": "xxxxxxxxxxxxxxxxxx",
   "clientSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "admins": ["xxxxxxxxxxxxxxxxxx"],
   "logger": {

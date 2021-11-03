@@ -16,6 +16,8 @@ export const GuildStateService = (
   discord: DiscordConnector,
 ) => {
   return {
+    findAll: guildStatePersistence.findAll,
+
     // setCalls: (guild: Guild, calls: Calls): Future<boolean> =>
     //   set(guild, GuildState.Lens.calls, Maybe.some(StaticCalls.fromCalls(calls))),
 

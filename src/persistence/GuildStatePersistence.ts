@@ -1,11 +1,10 @@
-import { task } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 
 import { GuildId } from '../models/GuildId'
-import { GuildState, GuildStateOutput } from '../models/guildState/GuildState'
+import { GuildState, GuildStateOnlyId, GuildStateOutput } from '../models/guildState/GuildState'
 import { MongoCollection } from '../models/MongoCollection'
 import { PartialLogger } from '../services/Logger'
-import { Either, Future, List, Maybe } from '../utils/fp'
+import { Future, List, Maybe } from '../utils/fp'
 import { FpCollection } from './FpCollection'
 
 export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>
@@ -28,15 +27,22 @@ export const GuildStatePersistence = (Logger: PartialLogger, mongoCollection: Mo
 
     findAll: (): Future<List<GuildId>> =>
       pipe(
-        collection.find({}),
-        Future.map(u => () => u.map(Either.map(_ => _.id)).toArray()),
-        Future.chain(task.map(List.sequence(Either.either))),
+        collection.collection(coll => pipe(coll.find({}, { projection: { id: 1 } })).toArray()),
+        Future.map(
+          List.filterMap(
+            flow(
+              GuildStateOnlyId.codec.decode,
+              Maybe.fromEither,
+              Maybe.map(({ id }) => id),
+            ),
+          ),
+        ),
       ),
 
     upsert: (id: GuildId, state: GuildState): Future<boolean> =>
       pipe(
         collection.updateOne({ id: GuildId.unwrap(id) }, state, { upsert: true }),
-        Future.map(_ => _.modifiedCount + _.upsertedCount === 1),
+        Future.map(r => r.modifiedCount + r.upsertedCount === 1),
       ),
   }
 }

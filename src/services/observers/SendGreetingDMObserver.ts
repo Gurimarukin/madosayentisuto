@@ -17,7 +17,7 @@ export const SendGreetingDMObserver = (Logger: PartialLogger): TObserver<GuildMe
     next: event => {
       const { member } = event
       return pipe(
-        LogUtils.withGuild(logger, 'info', member.guild)(`${member.user.tag} joined the server`),
+        LogUtils.withGuild(logger, 'info', member.guild)(`${member.user.tag} joined the guild`),
         Future.fromIOEither,
         Future.chain(() =>
           DiscordConnector.sendMessage(member, {
