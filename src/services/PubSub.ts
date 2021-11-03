@@ -34,10 +34,7 @@ export const PubSub = <A>(
       log =>
         pipe(
           observable,
-          TObservable.subscribe({
-            next: a => Future.fromIOEither(logger.debug('✉️ ', ...log(a))),
-            error: e => Future.fromIOEither(logger.error(e)),
-          }),
+          TObservable.subscribe({ next: a => Future.fromIOEither(logger.debug('✉️ ', ...log(a))) }),
           IO.map(() => {}),
         ),
     ),

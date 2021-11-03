@@ -118,15 +118,8 @@ function subscribe<A>(logger: LoggerType, observable_: TObservable<A>) {
     c: Refinement<A, C>,
     d: Refinement<A, D>,
   ): IO<Subscription>
-  function res(
-    { next, error, complete }: TObserver<A>,
-    ...refinements: List<Refinement<A, A>>
-  ): IO<Subscription> {
-    const observer: TObserver<A> = {
-      ...(next !== undefined ? { next: recover(next) } : {}),
-      ...(error !== undefined ? { error: recover(error) } : {}),
-      ...(complete !== undefined ? { complete: recover(complete) } : {}),
-    } as TObserver<A>
+  function res({ next }: TObserver<A>, ...refinements: List<Refinement<A, A>>): IO<Subscription> {
+    const observer: TObserver<A> = { next: recover(next) }
 
     return pipe(
       NonEmptyArray.fromReadonlyArray(refinements),

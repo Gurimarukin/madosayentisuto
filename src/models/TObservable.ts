@@ -7,13 +7,9 @@ export type TObservable<A> = Observable<A>
 
 export const TObservable = {
   subscribe:
-    <A>({ next, error, complete }: TObserver<A>) =>
+    <A>({ next }: TObserver<A>) =>
     (fa: TObservable<A>): IO<Subscription> => {
-      const subscriber: PartialObserver<A> = {
-        ...(next !== undefined ? { next: a => Future.runUnsafe(next(a)) } : {}),
-        ...(error !== undefined ? { error: (u: unknown) => Future.runUnsafe(error(u)) } : {}),
-        ...(complete !== undefined ? { complete: () => Future.runUnsafe(complete()) } : {}),
-      } as PartialObserver<A>
+      const subscriber: PartialObserver<A> = { next: a => Future.runUnsafe(next(a)) }
       return IO.tryCatch(() => fa.subscribe(subscriber))
     },
 }
