@@ -20,6 +20,7 @@ import { PartialLogger } from './services/Logger'
 import { ActivityStatusObserver } from './services/observers/ActivityStatusObserver'
 import { IndexesEnsureObserver } from './services/observers/IndexesEnsureObserver'
 import { NotifyGuildLeaveObserver } from './services/observers/NotifyGuildLeaveObserver'
+import { NotifyVoiceCallObserver } from './services/observers/NotifyVoiceCallObserver'
 import { SendGreetingDMObserver } from './services/observers/SendGreetingDMObserver'
 import { SetDefaultRoleObserver } from './services/observers/SetDefaultRoleObserver'
 import { publishDiscordEvents } from './services/publishers/publishDiscordEvents'
@@ -88,9 +89,10 @@ export const Application = (
             IndexesEnsureObserver(Logger, pubSub.subject, [guildStatePersistence.ensureIndexes]),
             MadEvent.isAppStarted,
           ),
-          s(SendGreetingDMObserver(Logger, discord), MadEvent.isGuildMemberAdd),
-          s(SetDefaultRoleObserver(Logger, discord, guildStateService), MadEvent.isGuildMemberAdd),
-          s(NotifyGuildLeaveObserver(Logger, discord), MadEvent.isGuildMemberRemove),
+          s(SendGreetingDMObserver(Logger), MadEvent.isGuildMemberAdd),
+          s(SetDefaultRoleObserver(Logger, guildStateService), MadEvent.isGuildMemberAdd),
+          s(NotifyGuildLeaveObserver(Logger), MadEvent.isGuildMemberRemove),
+          s(NotifyVoiceCallObserver(Logger, guildStateService), MadEvent.isVoiceStateUpdate),
         ),
         IO.chain(() => pubSub.subject.next(MadEvent.AppStarted)),
       )

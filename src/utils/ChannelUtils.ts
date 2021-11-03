@@ -1,18 +1,24 @@
-import { GuildChannel, TextChannel, ThreadChannel } from 'discord.js'
+import { Channel, GuildChannel, TextChannel, VoiceChannel } from 'discord.js'
+import { predicate } from 'fp-ts'
 
 // export type SendableChannel = Channel & PartialTextBasedChannelFields
 
 // const isDm = (channel: GuildChannel | ThreadChannel): channel is DMChannel => channel.type === 'dm'
-// const isText = (channel: GuildChannel | ThreadChannel): channel is TextChannel => channel.type === 'text'
-// const isVoice = (channel: GuildChannel | ThreadChannel): channel is VoiceChannel => channel.type === 'voice'
 
 // const isSendable = (c: Channel): c is SendableChannel =>
 //   c.type === 'dm' || c.type == 'news' || c.type === 'text'
 
-// const isPublic = (c: GuildChannel): boolean => c.permissionOverwrites.size === 0
-// const isPrivate = predicate.not(isPublic)
+const isGuildChannel = (channel: Channel): channel is GuildChannel =>
+  channel instanceof GuildChannel
 
-const isTextChannel = (channel: GuildChannel | ThreadChannel): channel is TextChannel =>
-  channel instanceof TextChannel
+const isTextChannel = (channel: Channel): channel is TextChannel => channel instanceof TextChannel
 
-export const ChannelUtils = { isTextChannel }
+const isVoiceChannel = (channel: Channel): channel is VoiceChannel =>
+  channel instanceof VoiceChannel
+
+const isPublic = (channel: GuildChannel): boolean =>
+  channel.permissionOverwrites.valueOf().size === 0
+
+const isPrivate = predicate.not(isPublic)
+
+export const ChannelUtils = { isGuildChannel, isTextChannel, isVoiceChannel, isPublic, isPrivate }

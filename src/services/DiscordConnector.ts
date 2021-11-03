@@ -1,7 +1,9 @@
 import {
+  Channel,
   Client,
   ClientPresence,
   Collection,
+  DiscordAPIError,
   Guild,
   GuildAuditLogsEntry,
   GuildMember,
@@ -13,6 +15,7 @@ import {
   PartialTextBasedChannelFields,
   Role,
   RoleResolvable,
+  TextChannel,
   User,
 } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
@@ -21,6 +24,7 @@ import { Config } from '../config/Config'
 import { globalConfig } from '../globalConfig'
 import { Activity } from '../models/Activity'
 import { TSnowflake } from '../models/TSnowflake'
+import { ChannelUtils } from '../utils/ChannelUtils'
 import { Colors } from '../utils/Colors'
 import { Future, IO, List, Maybe } from '../utils/fp'
 
@@ -37,219 +41,205 @@ type MyPartial<A extends NotPartial> =
 export type DiscordConnector = ReturnType<typeof of>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function of(client: Client<true>) {
-  return {
-    client,
+const of = (client: Client<true>) => ({
+  client,
 
-    /**
-     * Read
-     */
+  /**
+   * Read
+   */
 
-    fetchAuditLogs: (guild: Guild): Future<Collection<string, GuildAuditLogsEntry>> =>
-      pipe(
-        Future.tryCatch(() => guild.fetchAuditLogs({ limit: globalConfig.fetchLogsLimit })),
-        Future.map(logs => logs.entries),
-      ),
+  fetchChannel: (channelId: TSnowflake): Future<Maybe<Channel>> =>
+    pipe(
+      Future.tryCatch(() => client.channels.fetch(TSnowflake.unwrap(channelId))),
+      Future.map(Maybe.fromNullable),
+      // Future.recover<Maybe<Channel>>(_ => Future.right(Maybe.none)),
+      debugLeft('fetchChannel'),
+      //   [
+      //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
+      //   Maybe.none
+      // ]
+    ),
 
-    fetchUser: (userId: TSnowflake): Future<Maybe<User>> =>
-      pipe(
-        IO.tryCatch(() => client.users.cache.get(TSnowflake.unwrap(userId))),
-        IO.map(Maybe.fromNullable),
-        Future.fromIOEither,
-        Future.chain(
-          Maybe.fold(
-            () =>
-              pipe(
-                Future.tryCatch(() => client.users.fetch(TSnowflake.unwrap(userId))),
-                Future.map(Maybe.some),
-              ),
-            flow(Maybe.some, Future.right),
-          ),
-        ),
-        debugLeft('fetchUser'),
-      ),
-
-    fetchPartial: <A extends NotPartial>(partial: MyPartial<A>): Future<A> =>
-      partial.partial ? Future.tryCatch(() => partial.fetch()) : Future.right(partial),
-
-    fetchRole: (guild: Guild, role: TSnowflake): Future<Maybe<Role>> =>
-      pipe(
-        Future.tryCatch(() => guild.roles.fetch(TSnowflake.unwrap(role))),
-        Future.map(Maybe.fromNullable),
-      ),
-
-    /**
-     * Write
-     */
-
-    addRole: (
-      member: GuildMember,
-      roleOrRoles: RoleResolvable | List<RoleResolvable>,
-      reason?: string,
-    ): Future<Maybe<void>> =>
-      pipe(
-        Future.tryCatch(() => member.roles.add(roleOrRoles, reason)),
-        Future.map(() => Maybe.some(undefined)),
-        debugLeft('addRole'),
-        // [e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
-        // Maybe.none]
-        // Future.map(_ => {}),
-      ),
-
-    sendMessage,
-
-    sendPrettyMessage: (
-      channel: PartialTextBasedChannelFields,
-      message: string,
-    ): Future<Maybe<Message>> =>
-      sendMessage(channel, {
-        embeds: [new MessageEmbed().setColor(Colors.darkred).setDescription(message)],
-      }),
-
-    setActivity: (activity: Maybe<Activity>): IO<ClientPresence> =>
-      IO.tryCatch(() =>
-        pipe(
-          activity,
-          Maybe.fold(
-            () => client.user.setActivity(),
-            ({ name, type }) => client.user.setActivity(name, { type }),
-          ),
+  fetchUser: (userId: TSnowflake): Future<Maybe<User>> =>
+    pipe(
+      IO.tryCatch(() => client.users.cache.get(TSnowflake.unwrap(userId))),
+      IO.map(Maybe.fromNullable),
+      Future.fromIOEither,
+      Future.chain(
+        Maybe.fold(
+          () =>
+            pipe(
+              Future.tryCatch(() => client.users.fetch(TSnowflake.unwrap(userId))),
+              Future.map(Maybe.some),
+            ),
+          flow(Maybe.some, Future.right),
         ),
       ),
-  }
+      debugLeft('fetchUser'),
+    ),
 
-  // return {
-  //   clientUser: Maybe.fromNullable(client.user),
+  /**
+   * Write
+   */
 
-  //   resolveGuild: (guildId: GuildId): Maybe<Guild> =>
-  //     Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId))),
+  setActivity: (activity: Maybe<Activity>): IO<ClientPresence> =>
+    IO.tryCatch(() =>
+      pipe(
+        activity,
+        Maybe.fold(
+          () => client.user.setActivity(),
+          ({ name, type }) => client.user.setActivity(name, { type }),
+        ),
+      ),
+    ),
+})
 
-  //   fetchChannel: (channel: TSnowflake): Future<Maybe<Channel>> =>
-  //     pipe(
-  //       Future.tryCatch(() => client.channels.fetch(TSnowflake.unwrap(channel))),
-  //       Future.map(Maybe.fromNullable),
-  //       // Future.recover<Maybe<Channel>>(_ => Future.right(Maybe.none)),
-  //       debugLeft('fetchChannel'),
-  //       //   [
-  //       //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
-  //       //   Maybe.none
-  //       // ]
-  //     ),
+// return {
+//   clientUser: Maybe.fromNullable(client.user),
 
-  //   fetchMemberForUser: (
-  //     guild: Guild,
-  //     user:
-  //       | UserResolvable
-  //       | FetchMemberOptions
-  //       | (FetchMembersOptions & { readonly user: UserResolvable }),
-  //   ): Future<Maybe<GuildMember>> =>
-  //     pipe(
-  //       Future.tryCatch(() => guild.members.fetch(user)),
-  //       Future.map(Maybe.some),
-  //       Future.recover<Maybe<GuildMember>>(() => Future.right(Maybe.none)),
-  //       debugLeft('fetchMemberForUser'),
-  //     ),
+//   resolveGuild: (guildId: GuildId): Maybe<Guild> =>
+//     Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId))),
 
-  //   fetchMessage: (guild: Guild, message: TSnowflake): Future<Maybe<Message>> =>
-  //     pipe(
-  //       guild.channels.cache.toJSON(),
-  //       List.filter(ChannelUtils.isText),
-  //       fetchMessageRec(TSnowflake.unwrap(message)),
-  //     ),
+//   fetchMemberForUser: (
+//     guild: Guild,
+//     user:
+//       | UserResolvable
+//       | FetchMemberOptions
+//       | (FetchMembersOptions & { readonly user: UserResolvable }),
+//   ): Future<Maybe<GuildMember>> =>
+//     pipe(
+//       Future.tryCatch(() => guild.members.fetch(user)),
+//       Future.map(Maybe.some),
+//       Future.recover<Maybe<GuildMember>>(() => Future.right(Maybe.none)),
+//       debugLeft('fetchMemberForUser'),
+//     ),
 
-  //   /**
-  //    * Write
-  //    */
+//   /**
+//    * Write
+//    */
 
-  //   reactMessage: (message: Message, emoji: EmojiIdentifierResolvable): Future<MessageReaction> =>
-  //     Future.tryCatch(() => message.react(emoji)),
+//   reactMessage: (message: Message, emoji: EmojiIdentifierResolvable): Future<MessageReaction> =>
+//     Future.tryCatch(() => message.react(emoji)),
 
-  //   removeRole: (
-  //     member: GuildMember,
-  //     roleOrRoles: RoleResolvable | List<RoleResolvable>,
-  //     reason?: string,
-  //   ): Future<Maybe<void>> =>
-  //     pipe(
-  //       Future.tryCatch(() => member.roles.remove(roleOrRoles, reason)),
-  //       Future.map(() => Maybe.some(undefined)),
-  //       debugLeft('removeRole'),
-  //       //[ e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
-  //       // Maybe.none]
-  //     ),
+//   removeRole: (
+//     member: GuildMember,
+//     roleOrRoles: RoleResolvable | List<RoleResolvable>,
+//     reason?: string,
+//   ): Future<Maybe<void>> =>
+//     pipe(
+//       Future.tryCatch(() => member.roles.remove(roleOrRoles, reason)),
+//       Future.map(() => Maybe.some(undefined)),
+//       debugLeft('removeRole'),
+//       //[ e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
+//       // Maybe.none]
+//     ),
 
-  //   createInvite: (
-  //     channel: BaseGuildTextChannel | BaseGuildVoiceChannel | StoreChannel,
-  //     options?: CreateInviteOptions,
-  //   ): Future<Invite> => Future.tryCatch(() => channel.createInvite(options)),
+//   createInvite: (
+//     channel: BaseGuildTextChannel | BaseGuildVoiceChannel | StoreChannel,
+//     options?: CreateInviteOptions,
+//   ): Future<Invite> => Future.tryCatch(() => channel.createInvite(options)),
 
-  //   deleteMessage: (message: Message): Future<boolean> =>
-  //     pipe(
-  //       Future.tryCatch(() => message.delete()),
-  //       Future.map(() => true),
-  //       Future.recover(e =>
-  //         e instanceof DiscordAPIError && e.message === 'Missing Permissions'
-  //           ? Future.right(false)
-  //           : Future.left(e),
-  //       ),
-  //     ),
+//   deleteMessage: (message: Message): Future<boolean> =>
+//     pipe(
+//       Future.tryCatch(() => message.delete()),
+//       Future.map(() => true),
+//       Future.recover(e =>
+//         e instanceof DiscordAPIError && e.message === 'Missing Permissions'
+//           ? Future.right(false)
+//           : Future.left(e),
+//       ),
+//     ),
 
-  //   // joinVoiceChannel: (voiceChannel: VoiceChannel): Future<VoiceConnection> =>
-  //   //   pipe(
-  //   //     Future.tryCatch(() => voiceChannel.join()),
-  //   //     debugLeft('joinVoiceChannel'),
-  //   //   ),
+//   // joinVoiceChannel: (voiceChannel: VoiceChannel): Future<VoiceConnection> =>
+//   //   pipe(
+//   //     Future.tryCatch(() => voiceChannel.join()),
+//   //     debugLeft('joinVoiceChannel'),
+//   //   ),
 
-  //   // connectionPlay: (connection: VoiceConnection, input: string): IO<StreamDispatcher> =>
-  //   //   IO.tryCatch(() => connection.play(input)),
-  // }
+//   // connectionPlay: (connection: VoiceConnection, input: string): IO<StreamDispatcher> =>
+//   //   IO.tryCatch(() => connection.play(input)),
+// }
 
-  // function fetchMessageRec(
-  //   message: string,
-  // ): (channels: List<TextChannel>) => Future<Maybe<Message>> {
-  //   return channels => {
-  //     if (List.isNonEmpty(channels)) {
-  //       const [head, ...tail] = channels
-  //       return pipe(
-  //         Future.tryCatch(() => head.messages.fetch(message)),
-  //         Future.map(Maybe.some),
-  //         Future.recover<Maybe<Message>>(e =>
-  //           e instanceof DiscordAPIError && e.message === 'Unknown Message'
-  //             ? Future.right(Maybe.none)
-  //             : Future.left(e),
-  //         ),
-  //         Future.chain(
-  //           Maybe.fold(() => fetchMessageRec(message)(tail), flow(Maybe.some, Future.right)),
-  //         ),
-  //       )
-  //     }
-  //     return Future.right(Maybe.none)
-  //   }
-  // }
+/**
+ * Read
+ */
 
-  function sendMessage(
-    channel: PartialTextBasedChannelFields,
-    options: string | MessagePayload | MessageOptions,
-  ): Future<Maybe<Message>> {
-    return pipe(
-      Future.tryCatch(() => channel.send(options)),
-      Future.map(Maybe.some),
-      // Future.recover<Maybe<Message>>(e =>
-      //   e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user'
-      //     ? Future.right(Maybe.none)
-      //     : Future.left(e),
-      // ),
-    )
-  }
+const fetchAuditLogs = (guild: Guild): Future<Collection<string, GuildAuditLogsEntry>> =>
+  pipe(
+    Future.tryCatch(() => guild.fetchAuditLogs({ limit: globalConfig.fetchLogsLimit })),
+    Future.map(logs => logs.entries),
+  )
 
-  function debugLeft<A>(functionName: string): (f: Future<A>) => Future<A> {
-    return Future.mapLeft(e =>
-      Error(`${functionName}:\n${Object.getPrototypeOf(e).contructor.name}\n${e.message}`),
-    )
-  }
-}
+const fetchMessage = (guild: Guild, messageId: TSnowflake): Future<Maybe<Message>> =>
+  pipe(
+    guild.channels.cache.toJSON(),
+    List.filter(ChannelUtils.isTextChannel),
+    fetchMessageRec(TSnowflake.unwrap(messageId)),
+  )
+
+const fetchPartial = <A extends NotPartial>(partial: MyPartial<A>): Future<A> =>
+  partial.partial ? Future.tryCatch(() => partial.fetch()) : Future.right(partial)
+
+const fetchRole = (guild: Guild, roleId: TSnowflake): Future<Maybe<Role>> =>
+  pipe(
+    Future.tryCatch(() => guild.roles.fetch(TSnowflake.unwrap(roleId))),
+    Future.map(Maybe.fromNullable),
+  )
+
+/**
+ * Write
+ */
+
+const addRole = (
+  member: GuildMember,
+  roleOrRoles: RoleResolvable | List<RoleResolvable>,
+  reason?: string,
+): Future<Maybe<void>> =>
+  pipe(
+    Future.tryCatch(() => member.roles.add(roleOrRoles, reason)),
+    Future.map(() => Maybe.some(undefined)),
+    debugLeft('addRole'),
+    // [e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
+    // Maybe.none]
+    // Future.map(_ => {}),
+  )
+
+const sendMessage = (
+  channel: PartialTextBasedChannelFields,
+  options: string | MessagePayload | MessageOptions,
+): Future<Maybe<Message>> =>
+  pipe(
+    Future.tryCatch(() => channel.send(options)),
+    Future.map(Maybe.some),
+    // Future.recover<Maybe<Message>>(e =>
+    //   e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user'
+    //     ? Future.right(Maybe.none)
+    //     : Future.left(e),
+    // ),
+  )
+
+const sendPrettyMessage = (
+  channel: PartialTextBasedChannelFields,
+  message: string,
+): Future<Maybe<Message>> =>
+  sendMessage(channel, {
+    embeds: [new MessageEmbed().setColor(Colors.darkred).setDescription(message)],
+  })
+
+/**
+ * DiscordConnector
+ */
 
 export const DiscordConnector = {
   of,
+  fetchAuditLogs,
+  fetchMessage,
+  fetchPartial,
+  fetchRole,
+  addRole,
+  sendMessage,
+  sendPrettyMessage,
+
   futureClient: (config: Config): Future<Client> =>
     Future.tryCatch(
       () =>
@@ -257,8 +247,9 @@ export const DiscordConnector = {
           const client = new Client({
             intents: [
               Intents.FLAGS.GUILDS,
-              Intents.FLAGS.GUILD_MEMBERS,
               Intents.FLAGS.GUILD_BANS,
+              Intents.FLAGS.GUILD_MEMBERS,
+              Intents.FLAGS.GUILD_VOICE_STATES,
               // Intents.FLAGS.DIRECT_MESSAGES,
             ],
             partials: ['USER', 'CHANNEL', 'GUILD_MEMBER', 'MESSAGE', 'REACTION'],
@@ -270,3 +261,33 @@ export const DiscordConnector = {
         }),
     ),
 }
+
+/**
+ * Helpers
+ */
+
+const debugLeft = <A>(functionName: string): ((f: Future<A>) => Future<A>) =>
+  Future.mapLeft(e =>
+    Error(`${functionName}:\n${Object.getPrototypeOf(e).contructor.name}\n${e.message}`),
+  )
+
+const fetchMessageRec =
+  (message: string) =>
+  (channels: List<TextChannel>): Future<Maybe<Message>> => {
+    if (List.isNonEmpty(channels)) {
+      const [head, ...tail] = channels
+      return pipe(
+        Future.tryCatch(() => head.messages.fetch(message)),
+        Future.map(Maybe.some),
+        Future.recover<Maybe<Message>>(e =>
+          e instanceof DiscordAPIError && e.message === 'Unknown Message'
+            ? Future.right(Maybe.none)
+            : Future.left(e),
+        ),
+        Future.chain(
+          Maybe.fold(() => fetchMessageRec(message)(tail), flow(Maybe.some, Future.right)),
+        ),
+      )
+    }
+    return Future.right(Maybe.none)
+  }

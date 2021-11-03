@@ -15,10 +15,7 @@ import { LogUtils } from '../../utils/LogUtils'
 import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
 
-export const NotifyGuildLeaveObserver = (
-  Logger: PartialLogger,
-  discord: DiscordConnector,
-): TObserver<GuildMemberRemove> => {
+export const NotifyGuildLeaveObserver = (Logger: PartialLogger): TObserver<GuildMemberRemove> => {
   const logger = Logger('NotifyGuildLeave')
 
   return {
@@ -60,7 +57,7 @@ export const NotifyGuildLeaveObserver = (
 
   function getLastLog(now: Date, guild: Guild, userId: TSnowflake): Future<Maybe<ValidLogsEntry>> {
     return pipe(
-      discord.fetchAuditLogs(guild),
+      DiscordConnector.fetchAuditLogs(guild),
       Future.map(logs => Maybe.fromNullable(logs.find(isValidLog(now, userId)))),
     )
   }
@@ -74,7 +71,7 @@ export const NotifyGuildLeaveObserver = (
           channel =>
             pipe(
               futureMessage,
-              Future.chain(message => discord.sendPrettyMessage(channel, message)),
+              Future.chain(message => DiscordConnector.sendPrettyMessage(channel, message)),
               Future.map(
                 Maybe.fold(
                   () => {}, // TODO: what is message wasn't sent?

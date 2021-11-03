@@ -76,7 +76,7 @@ export const NonEmptyArray = {
 export type List<A> = ReadonlyArray<A>
 export const List = {
   ...readonlyArray,
-  isEmpty: <A>(l: List<A>): l is readonly [] => List.isEmpty(l),
+  isEmpty: <A>(l: List<A>): l is readonly [] => readonlyArray.isEmpty(l),
   hasLength1: <A>(l: List<A>): l is NonEmptyArray<A> => l.length === 1,
   concat: <A>(a: List<A>, b: List<A>): List<A> => [...a, ...b],
 }

@@ -10,7 +10,6 @@ import { PartialLogger } from '../Logger'
 
 export const SetDefaultRoleObserver = (
   Logger: PartialLogger,
-  discord: DiscordConnector,
   guildStateService: GuildStateService,
 ): TObserver<GuildMemberAdd> => {
   const logger = Logger('SetDefaultRoleObserver')
@@ -32,7 +31,7 @@ export const SetDefaultRoleObserver = (
               ),
             role =>
               pipe(
-                discord.addRole(member, role),
+                DiscordConnector.addRole(member, role),
                 Future.chain(v =>
                   pipe(
                     v,

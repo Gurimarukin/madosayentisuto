@@ -6,6 +6,6 @@ export type Calls = {
   readonly role: Role
 }
 
-export function Calls(message: Message, channel: TextChannel, role: Role): Calls {
-  return { message, channel, role }
+export const Calls = {
+  of: (message: Message, channel: TextChannel, role: Role): Calls => ({ message, channel, role }),
 }

@@ -10,10 +10,7 @@ import { StringUtils } from '../../utils/StringUtils'
 import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
 
-export const SendGreetingDMObserver = (
-  Logger: PartialLogger,
-  discord: DiscordConnector,
-): TObserver<GuildMemberAdd> => {
+export const SendGreetingDMObserver = (Logger: PartialLogger): TObserver<GuildMemberAdd> => {
   const logger = Logger('SendGreetingDMObserver')
 
   return {
@@ -23,7 +20,7 @@ export const SendGreetingDMObserver = (
         LogUtils.withGuild(logger, 'info', member.guild)(`${member.user.tag} joined the server`),
         Future.fromIOEither,
         Future.chain(() =>
-          discord.sendMessage(member, {
+          DiscordConnector.sendMessage(member, {
             content: StringUtils.stripMargins(
               `Ha ha !
               |Tu as rejoint le serveur **${member.guild.name}**, quelle erreur !
