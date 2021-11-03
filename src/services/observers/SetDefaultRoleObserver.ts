@@ -14,6 +14,7 @@ export const SetDefaultRoleObserver = (
   guildStateService: GuildStateService,
 ): TObserver<GuildMemberAdd> => {
   const logger = Logger('SetDefaultRoleObserver')
+
   return {
     next: event => {
       const member = event.member
