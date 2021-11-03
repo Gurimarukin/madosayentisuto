@@ -26,9 +26,9 @@ export const SendGreetingDMObserver = (
           discord.sendMessage(member, {
             content: StringUtils.stripMargins(
               `Ha ha !
-                |Tu as rejoint le serveur **${member.guild.name}**, quelle erreur !
-                |En guise de cadeau de bienvenue, découvre immédiatement l'histoire du véritable capitaine en cliquant sur ce lien plein de malice !
-                |(C'est comme OSS 117 mais en moins bien.)`,
+              |Tu as rejoint le serveur **${member.guild.name}**, quelle erreur !
+              |En guise de cadeau de bienvenue, découvre immédiatement l'histoire du véritable capitaine en cliquant sur ce lien plein de malice !
+              |C'est comme OSS 117 mais en moins bien.`,
             ),
             embeds: [
               new MessageEmbed()
