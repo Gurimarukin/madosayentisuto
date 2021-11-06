@@ -81,6 +81,7 @@ export const Application = (
       const s = subscribe(logger, pubSub.observable)
       return pipe(
         apply.sequenceT(IO.ApplicativePar)(
+          // startup
           s(
             ActivityStatusObserver(Logger, discord, botStatePersistence),
             MadEvent.isAppStarted,
@@ -91,11 +92,17 @@ export const Application = (
             IndexesEnsureObserver(Logger, pubSub.subject, [guildStatePersistence.ensureIndexes]),
             MadEvent.isAppStarted,
           ),
-          s(DeployCommandsObserver(config, Logger, guildStateService), MadEvent.isDbReady),
+          s(DeployCommandsObserver(config.client, Logger, guildStateService), MadEvent.isDbReady),
+
+          // leave/join
           s(SendGreetingDMObserver(Logger), MadEvent.isGuildMemberAdd),
           s(SetDefaultRoleObserver(Logger, guildStateService), MadEvent.isGuildMemberAdd),
           s(NotifyGuildLeaveObserver(Logger), MadEvent.isGuildMemberRemove),
+
+          // calls
           s(NotifyVoiceCallObserver(Logger, guildStateService), MadEvent.isVoiceStateUpdate),
+
+          // commands
           s(PingObserver(), MadEvent.isInteractionCreate),
         ),
         IO.chain(() => pubSub.subject.next(MadEvent.AppStarted)),

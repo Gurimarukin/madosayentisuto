@@ -3,7 +3,7 @@ import { REST } from '@discordjs/rest'
 import { Routes } from 'discord-api-types/v9'
 import { pipe } from 'fp-ts/function'
 
-import { Config } from '../../config/Config'
+import { ClientConfig } from '../../config/Config'
 import { GuildId } from '../../models/GuildId'
 import { DbReady } from '../../models/MadEvent'
 import { TObserver } from '../../models/TObserver'
@@ -12,7 +12,7 @@ import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
 
 export const DeployCommandsObserver = (
-  config: Config,
+  config: ClientConfig,
   Logger: PartialLogger,
   guildStateService: GuildStateService,
 ): TObserver<DbReady> => {
@@ -25,7 +25,7 @@ export const DeployCommandsObserver = (
         List.map(command => command.toJSON()),
       )
 
-      const rest = new REST({ version: '9' }).setToken(config.clientSecret)
+      const rest = new REST({ version: '9' }).setToken(config.secret)
 
       return pipe(
         guildStateService.findAll(),
@@ -33,12 +33,9 @@ export const DeployCommandsObserver = (
           Future.traverseArray(guildId =>
             pipe(
               Future.tryCatch(() =>
-                rest.put(
-                  Routes.applicationGuildCommands(config.clientId, GuildId.unwrap(guildId)),
-                  {
-                    body: commands,
-                  },
-                ),
+                rest.put(Routes.applicationGuildCommands(config.id, GuildId.unwrap(guildId)), {
+                  body: commands,
+                }),
               ),
               Future.map(() => {}),
               Future.recover(e =>

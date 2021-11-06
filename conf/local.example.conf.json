@@ -1,6 +1,8 @@
 {
-  "clientId": "xxxxxxxxxxxxxxxxxx",
-  "clientSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "client": {
+    "id": "xxxxxxxxxxxxxxxxxx",
+    "secret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
   "admins": ["xxxxxxxxxxxxxxxxxx"],
   "logger": {
     "consoleLevel": "info",

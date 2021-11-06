@@ -255,8 +255,8 @@ export const DiscordConnector = {
             partials: ['USER', 'CHANNEL', 'GUILD_MEMBER', 'MESSAGE', 'REACTION'],
           })
           /* eslint-disable functional/no-expression-statement */
-          client.on('ready', () => resolve(client))
-          client.login(config.clientSecret)
+          client.once('ready', () => resolve(client))
+          client.login(config.client.secret)
           /* eslint-enable functional/no-expression-statement */
         }),
     ),

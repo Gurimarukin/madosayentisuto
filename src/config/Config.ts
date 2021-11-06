@@ -12,8 +12,7 @@ import { ConfReader } from './ConfReader'
 const seqS = apply.sequenceS(Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>()))
 
 export type Config = {
-  readonly clientId: string
-  readonly clientSecret: string
+  readonly client: ClientConfig
   readonly admins: NonEmptyArray<TSnowflake>
   readonly logger: {
     readonly consoleLevel: LogLevelOrOff
@@ -47,8 +46,7 @@ export const Config = {
 
 const readConfig = (r: ConfReader): ValidatedNea<string, Config> =>
   seqS({
-    clientId: r(D.string)('clientId'),
-    clientSecret: r(D.string)('clientSecret'),
+    client: readClientConfig(r),
     admins: r(NonEmptyArray.decoder(TSnowflake.codec))('admins'),
     logger: seqS({
       consoleLevel: r(LogLevelOrOff.codec)('logger', 'consoleLevel'),
@@ -63,4 +61,18 @@ const readConfig = (r: ConfReader): ValidatedNea<string, Config> =>
       user: r(D.string)('db', 'user'),
       password: r(D.string)('db', 'password'),
     }),
+  })
+
+/**
+ * ClientConfig
+ */
+export type ClientConfig = {
+  readonly id: string
+  readonly secret: string
+}
+
+const readClientConfig = (r: ConfReader): ValidatedNea<string, ClientConfig> =>
+  seqS({
+    id: r(D.string)('client', 'id'),
+    secret: r(D.string)('client', 'secret'),
   })
