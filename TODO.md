@@ -1,8 +1,7 @@
-1. Détection appels - DiscordEventTransformer, CallNotificationService
-2. (Détection réactions)
-3. Abonnement appels
-4. Stream de musique : https://github.com/JamesKyburz/youtube-audio-stream
-5. Commandes pour toute cette merde - CommandsRegisterer
+1. (Détection réactions)
+2. Abonnement appels
+3. Stream de musique : https://github.com/JamesKyburz/youtube-audio-stream
+4. Commandes pour toute cette merde - CommandsRegisterer
    1. Abonnements
    2. Image
    3. Say
