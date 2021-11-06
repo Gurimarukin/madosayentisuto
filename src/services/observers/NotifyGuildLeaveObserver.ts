@@ -73,7 +73,7 @@ export const NotifyGuildLeaveObserver = (Logger: PartialLogger): TObserver<Guild
               Future.chain(message => DiscordConnector.sendPrettyMessage(channel, message)),
               Future.map(
                 Maybe.fold(
-                  () => {}, // TODO: what is message wasn't sent?
+                  () => {}, // TODO: what if message wasn't sent?
                   () => {},
                 ),
               ),
