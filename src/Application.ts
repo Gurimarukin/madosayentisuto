@@ -29,9 +29,7 @@ import { ThanksCaptainObserver } from './services/observers/ThanksCaptainObserve
 import { publishDiscordEvents } from './services/publishers/publishDiscordEvents'
 import { scheduleCronJob } from './services/publishers/scheduleCronJob'
 import { PubSub } from './services/PubSub'
-import { Future, IO, Maybe, Try } from './utils/fp'
-
-const { and, not } = refinement
+import { Future, IO, List, Maybe, NonEmptyArray, Try } from './utils/fp'
 
 export const Application = (
   Logger: PartialLogger,
@@ -81,47 +79,43 @@ export const Application = (
     IO.chainFirst(({ pubSub }) => scheduleCronJob(Logger, pubSub.subject)),
     IO.chainFirst(({ pubSub }) => publishDiscordEvents(discord, pubSub.subject)),
     IO.chain(({ pubSub }) => {
-      const s = subscribe(logger, pubSub.observable)
+      const sub = subscribe(logger, pubSub.observable)
       return pipe(
         apply.sequenceT(IO.ApplicativePar)(
           // startup
-          s(
+          sub(
             ActivityStatusObserver(Logger, discord, botStatePersistence),
-            pipe(
-              not(MadEvent.isAppStarted),
-              and(not(MadEvent.isDbReady)),
-              and(not(MadEvent.isCronJob)),
-            ),
+            or(MadEvent.isAppStarted, MadEvent.isDbReady, MadEvent.isCronJob),
           ),
-          s(
+          sub(
             IndexesEnsureObserver(Logger, pubSub.subject, [guildStatePersistence.ensureIndexes]),
-            not(MadEvent.isAppStarted),
+            or(MadEvent.isAppStarted),
           ),
-          s(
+          sub(
             DeployCommandsObserver(config.client, Logger, guildStateService),
-            not(MadEvent.isDbReady),
+            or(MadEvent.isDbReady),
           ),
 
           // leave/join
-          s(SendGreetingDMObserver(Logger), not(MadEvent.isGuildMemberAdd)),
-          s(SetDefaultRoleObserver(Logger, guildStateService), not(MadEvent.isGuildMemberAdd)),
-          s(NotifyGuildLeaveObserver(Logger), not(MadEvent.isGuildMemberRemove)),
+          sub(SendGreetingDMObserver(Logger), or(MadEvent.isGuildMemberAdd)),
+          sub(SetDefaultRoleObserver(Logger, guildStateService), or(MadEvent.isGuildMemberAdd)),
+          sub(NotifyGuildLeaveObserver(Logger), or(MadEvent.isGuildMemberRemove)),
 
           // calls
-          s(
+          sub(
             NotifyVoiceCallObserver(Logger, guildStateService, pubSub.subject),
-            pipe(
-              not(MadEvent.isVoiceStateUpdate),
-              and(not(MadEvent.isPublicCallStarted)),
-              and(not(MadEvent.isPublicCallEnded)),
+            or(
+              MadEvent.isVoiceStateUpdate,
+              MadEvent.isPublicCallStarted,
+              MadEvent.isPublicCallEnded,
             ),
           ),
 
           // messages
-          s(ThanksCaptainObserver(config.captain, Logger, discord), not(MadEvent.isMessageCreate)),
+          sub(ThanksCaptainObserver(config.captain, Logger, discord), or(MadEvent.isMessageCreate)),
 
           // commands
-          s(PingObserver(), not(MadEvent.isInteractionCreate)),
+          sub(PingObserver(), or(MadEvent.isInteractionCreate)),
         ),
         IO.chain(() => pubSub.subject.next(MadEvent.AppStarted)),
       )
@@ -148,3 +142,28 @@ const subscribe =
           ),
       }),
     )
+
+/**
+ * Syntatic sugar.
+ * It isn't really a `or` operator, as it returns `not(b) [and not(c) [and not(d) ...]]`,
+ * but `subscribe` (above) does a final `not`, so it ends up being a `or`.
+ * And it makes `subscribe` typesafe.
+ */
+function or<A, B extends A>(b: Refinement<A, B>): Refinement<A, Exclude<A, B>>
+function or<A, B extends A, C extends A>(
+  b: Refinement<A, B>,
+  c: Refinement<A, C>,
+): Refinement<A, Exclude<A, B> & Exclude<A, C>>
+function or<A, B extends A, C extends A, D extends A>(
+  b: Refinement<A, B>,
+  c: Refinement<A, C>,
+  d: Refinement<A, D>,
+): Refinement<A, Exclude<A, B> & Exclude<A, C> & Exclude<A, D>>
+function or<A, R extends NonEmptyArray<Refinement<A, A>>>(...refinements_: R): Refinement<A, A> {
+  return pipe(refinements_, NonEmptyArray.unprepend, ([head, tail]) =>
+    pipe(
+      tail,
+      List.reduce(refinement.not(head), (acc, r) => pipe(acc, refinement.and(refinement.not(r)))),
+    ),
+  )
+}
