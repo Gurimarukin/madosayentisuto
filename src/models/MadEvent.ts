@@ -1,4 +1,4 @@
-import { GuildMember, Interaction, PartialGuildMember, VoiceState } from 'discord.js'
+import { GuildMember, Interaction, Message, PartialGuildMember, VoiceState } from 'discord.js'
 
 export type MadEvent =
   | AppStarted
@@ -8,6 +8,7 @@ export type MadEvent =
   | GuildMemberAdd
   | GuildMemberRemove
   | VoiceStateUpdate
+  | MessageCreate
 
 const isAppStarted = (e: MadEvent): e is AppStarted => e.type === 'AppStarted'
 const isDbReady = (e: MadEvent): e is DbReady => e.type === 'DbReady'
@@ -16,6 +17,7 @@ const isInteractionCreate = (e: MadEvent): e is InteractionCreate => e.type === 
 const isGuildMemberAdd = (e: MadEvent): e is GuildMemberAdd => e.type === 'GuildMemberAdd'
 const isGuildMemberRemove = (e: MadEvent): e is GuildMemberRemove => e.type === 'GuildMemberRemove'
 const isVoiceStateUpdate = (e: MadEvent): e is VoiceStateUpdate => e.type === 'VoiceStateUpdate'
+const isMessageCreate = (e: MadEvent): e is MessageCreate => e.type === 'MessageCreate'
 
 export type AppStarted = { readonly type: 'AppStarted' }
 const AppStarted: AppStarted = { type: 'AppStarted' }
@@ -64,6 +66,15 @@ const VoiceStateUpdate = (oldState: VoiceState, newState: VoiceState): VoiceStat
   newState,
 })
 
+export type MessageCreate = {
+  readonly type: 'MessageCreate'
+  readonly message: Message
+}
+const MessageCreate = (message: Message): MessageCreate => ({
+  type: 'MessageCreate',
+  message,
+})
+
 export const MadEvent = {
   isAppStarted,
   isDbReady,
@@ -72,6 +83,7 @@ export const MadEvent = {
   isGuildMemberAdd,
   isGuildMemberRemove,
   isVoiceStateUpdate,
+  isMessageCreate,
 
   AppStarted,
   DbReady,
@@ -80,4 +92,5 @@ export const MadEvent = {
   GuildMemberAdd,
   GuildMemberRemove,
   VoiceStateUpdate,
+  MessageCreate,
 }

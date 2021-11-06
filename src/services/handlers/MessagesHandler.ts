@@ -14,9 +14,6 @@
 // import { PartialLogger } from '../Logger'
 // import { CommandsHandler } from './CommandsHandler'
 
-// const MENTIONS = ['jean', 'plank', 'capitaine']
-// const THANKS = ['merci', 'mercis', 'remercie', 'remercier', 'remerciement', 'remerciements']
-
 // export const MessagesHandler = (
 //   Logger: PartialLogger,
 //   config: Config,
@@ -134,53 +131,3 @@
 //         Maybe.fold<Guild, Future<unknown>>(() => Future.unit, commandsHandler(message, cmd)),
 //       )
 //   }
-
-//   function reactToMention(message: Message): Maybe<Future<unknown>> {
-//     const cleanedWords = cleanMessage(message.content)
-//     const isMentioned =
-//       pipe(
-//         discord.clientUser,
-//         Maybe.exists(
-//           u =>
-//             message.mentions.roles.some(r => r.members.has(u.id)) ||
-//             message.mentions.users.has(u.id),
-//         ),
-//       ) || containsMention(cleanedWords)
-//     const isThanks = containsThanks(cleanedWords)
-
-//     return isMentioned && isThanks ? Maybe.some(answerNoNeedToThankMe(message)) : Maybe.none
-//   }
-
-//   function containsMention(message: List<string>): boolean {
-//     return [config.cmdPrefix, ...MENTIONS].some(w => message.includes(w))
-//   }
-
-//   function answerNoNeedToThankMe(message: Message): Future<unknown> {
-//     return pipe(
-//       discord.sendMessage(message.channel, 'Haha ! Inutile de me remercier...'),
-//       Future.chain(
-//         Maybe.fold<Message, Future<unknown>>(
-//           () =>
-//             discord.sendPrettyMessage(
-//               message.author,
-//               'En fait, je ne peux pas envoyer de messages dans ce salon.',
-//             ),
-//           _ => Future.unit,
-//         ),
-//       ),
-//     )
-//   }
-// }
-
-// function containsThanks(message: List<string>): boolean {
-//   return THANKS.some(w => message.includes(w))
-// }
-
-// function cleanMessage(message: string): List<string> {
-//   return message
-//     .trim()
-//     .normalize('NFD')
-//     .replace(/[\u0300-\u036f]/g, '')
-//     .toLowerCase()
-//     .split(/[^a-z0-9_]/)
-// }

@@ -25,6 +25,7 @@ import { NotifyVoiceCallObserver } from './services/observers/NotifyVoiceCallObs
 import { PingObserver } from './services/observers/PingObserver'
 import { SendGreetingDMObserver } from './services/observers/SendGreetingDMObserver'
 import { SetDefaultRoleObserver } from './services/observers/SetDefaultRoleObserver'
+import { ThanksCaptainObserver } from './services/observers/ThanksCaptainObserver'
 import { publishDiscordEvents } from './services/publishers/publishDiscordEvents'
 import { scheduleCronJob } from './services/publishers/scheduleCronJob'
 import { PubSub } from './services/PubSub'
@@ -101,6 +102,9 @@ export const Application = (
 
           // calls
           s(NotifyVoiceCallObserver(Logger, guildStateService), MadEvent.isVoiceStateUpdate),
+
+          // messages
+          s(ThanksCaptainObserver(Logger, discord), MadEvent.isMessageCreate),
 
           // commands
           s(PingObserver(), MadEvent.isInteractionCreate),
