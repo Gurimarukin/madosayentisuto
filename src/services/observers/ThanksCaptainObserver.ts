@@ -1,6 +1,7 @@
 import { Message } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
+import { CaptainConfig } from '../../config/Config'
 import { MessageCreate } from '../../models/MadEvent'
 import { TObserver } from '../../models/TObserver'
 import { Future, List, Maybe } from '../../utils/fp'
@@ -9,6 +10,7 @@ import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
 
 export const ThanksCaptainObserver = (
+  config: CaptainConfig,
   Logger: PartialLogger,
   discord: DiscordConnector,
 ): TObserver<MessageCreate> => {
@@ -48,6 +50,14 @@ export const ThanksCaptainObserver = (
 
     return isMentioned && isThanks ? Maybe.some(answerNoNeedToThankMe(message)) : Maybe.none
   }
+
+  function containsMention(message: List<string>): boolean {
+    return config.mentions.some(w => message.includes(w))
+  }
+
+  function containsThanks(message: List<string>): boolean {
+    return config.thanks.some(w => message.includes(w))
+  }
 }
 
 const answerNoNeedToThankMe = (message: Message): Future<void> =>
@@ -68,14 +78,3 @@ const cleanMessage = (message: string): List<string> =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .split(/[^a-z0-9_]/)
-
-const containsMention = (message: List<string>): boolean =>
-  captain.mentions.some(w => message.includes(w))
-
-const containsThanks = (message: List<string>): boolean =>
-  captain.thanks.some(w => message.includes(w))
-
-const captain = {
-  mentions: ['jp', 'jean', 'plank', 'capitaine'],
-  thanks: ['merci', 'mercis', 'remercie', 'remercier', 'remerciement', 'remerciements'],
-}

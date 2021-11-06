@@ -5,7 +5,7 @@ import * as D from 'io-ts/Decoder'
 import { LogLevelOrOff } from '../models/LogLevel'
 import { TSnowflake } from '../models/TSnowflake'
 import { ValidatedNea } from '../models/ValidatedNea'
-import { Either, IO, NonEmptyArray } from '../utils/fp'
+import { Either, IO, List, NonEmptyArray } from '../utils/fp'
 import { StringUtils } from '../utils/StringUtils'
 import { ConfReader } from './ConfReader'
 
@@ -27,7 +27,9 @@ export type Config = {
     readonly user: string
     readonly password: string
   }
+  readonly captain: CaptainConfig
 }
+
 export const Config = {
   load: (): IO<Config> =>
     pipe(
@@ -61,6 +63,7 @@ const readConfig = (r: ConfReader): ValidatedNea<string, Config> =>
       user: r(D.string)('db', 'user'),
       password: r(D.string)('db', 'password'),
     }),
+    captain: readCaptainConfig(r),
   })
 
 /**
@@ -75,4 +78,18 @@ const readClientConfig = (r: ConfReader): ValidatedNea<string, ClientConfig> =>
   seqS({
     id: r(D.string)('client', 'id'),
     secret: r(D.string)('client', 'secret'),
+  })
+
+/**
+ * CaptainConfig
+ */
+export type CaptainConfig = {
+  readonly mentions: List<string>
+  readonly thanks: List<string>
+}
+
+const readCaptainConfig = (r: ConfReader): ValidatedNea<string, CaptainConfig> =>
+  seqS({
+    mentions: r(D.array(D.string))('captain', 'mentions'),
+    thanks: r(D.array(D.string))('captain', 'thanks'),
   })

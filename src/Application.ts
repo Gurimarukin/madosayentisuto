@@ -104,7 +104,7 @@ export const Application = (
           s(NotifyVoiceCallObserver(Logger, guildStateService), MadEvent.isVoiceStateUpdate),
 
           // messages
-          s(ThanksCaptainObserver(Logger, discord), MadEvent.isMessageCreate),
+          s(ThanksCaptainObserver(config.captain, Logger, discord), MadEvent.isMessageCreate),
 
           // commands
           s(PingObserver(), MadEvent.isInteractionCreate),
