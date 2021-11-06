@@ -20,6 +20,7 @@ import { Logger as LoggerType, PartialLogger } from './services/Logger'
 import { ActivityStatusObserver } from './services/observers/ActivityStatusObserver'
 import { DeployCommandsObserver } from './services/observers/DeployCommandsObserver'
 import { IndexesEnsureObserver } from './services/observers/IndexesEnsureObserver'
+import { MusicObserver } from './services/observers/MusicObserver'
 import { NotifyGuildLeaveObserver } from './services/observers/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './services/observers/NotifyVoiceCallObserver'
 import { PingObserver } from './services/observers/PingObserver'
@@ -72,7 +73,7 @@ export const Application = (
         Logger,
         Maybe.some(({ type, ...rest }) => [
           type,
-          util.formatWithOptions({ breakLength: Infinity }, rest),
+          util.formatWithOptions({ breakLength: Infinity, depth: 1 }, rest),
         ]),
       ),
     ),
@@ -116,6 +117,7 @@ export const Application = (
 
           // commands
           sub(PingObserver(), or(MadEvent.isInteractionCreate)),
+          sub(MusicObserver(Logger), or(MadEvent.isDbReady, MadEvent.isPublicCallStarted)),
         ),
         IO.chain(() => pubSub.subject.next(MadEvent.AppStarted)),
       )
