@@ -9,7 +9,7 @@ import { Future } from './utils/fp'
 const main: Future<void> = pipe(
   Future.Do,
   Future.bind('config', () => Future.fromIOEither(Config.load())),
-  Future.bind('client', ({ config }) => DiscordConnector.futureClient(config)),
+  Future.bind('client', ({ config }) => DiscordConnector.futureClient(config.client)),
   Future.chain(({ config, client }) => {
     const discord = DiscordConnector.of(client)
     const Logger = PartialLogger(config, discord)

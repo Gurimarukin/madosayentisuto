@@ -20,7 +20,7 @@ import {
 } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
-import { Config } from '../config/Config'
+import { ClientConfig } from '../config/Config'
 import { globalConfig } from '../globalConfig'
 import { Activity } from '../models/Activity'
 import { TSnowflake } from '../models/TSnowflake'
@@ -240,7 +240,7 @@ export const DiscordConnector = {
   sendMessage,
   sendPrettyMessage,
 
-  futureClient: (config: Config): Future<Client> =>
+  futureClient: (config: ClientConfig): Future<Client> =>
     Future.tryCatch(
       () =>
         new Promise<Client>(resolve => {
@@ -256,7 +256,7 @@ export const DiscordConnector = {
           })
           /* eslint-disable functional/no-expression-statement */
           client.once('ready', () => resolve(client))
-          client.login(config.client.secret)
+          client.login(config.secret)
           /* eslint-enable functional/no-expression-statement */
         }),
     ),
