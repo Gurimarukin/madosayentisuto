@@ -1,6 +1,5 @@
 {
   "admins": [],
-  "cmdPrefix": "okb",
   "logger": {
     "consoleLevel": "info",
     "discordDM": {

@@ -13,7 +13,6 @@ export type Config = {
   readonly clientId: string
   readonly clientSecret: string
   readonly admins: NonEmptyArray<TSnowflake>
-  readonly cmdPrefix: string
   readonly logger: LoggerConfig
   readonly db: DbConfig
 }
@@ -38,7 +37,6 @@ const readConfig = (reader: ConfReader): ValidatedNea<string, Config> =>
     clientId: reader(D.string)('clientId'),
     clientSecret: reader(D.string)('clientSecret'),
     admins: reader(NonEmptyArray.decoder(TSnowflake.codec))('admins'),
-    cmdPrefix: reader(D.string)('cmdPrefix'),
     logger: readLoggerConfig(reader),
     db: readDbConfig(reader),
   })
