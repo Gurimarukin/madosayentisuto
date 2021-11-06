@@ -90,15 +90,15 @@ const formatConsole = (name: string, level: LogLevel, msg: string): string => {
   const withTimestamp = `${color(formatDate(new Date()), '30;1')} ${withName}` // fp-ts date.now
   const c = LogLevel.shellColor[level]
   return level === 'info' || level === 'warn'
-    ? `[${color(level.toUpperCase(), c)}]  ${withTimestamp}`
-    : `[${color(level.toUpperCase(), c)}] ${withTimestamp}`
+    ? `${color(level.toUpperCase(), c)}  ${withTimestamp}`
+    : `${color(level.toUpperCase(), c)} ${withTimestamp}`
 }
 
 const formatDMCompact = (name: string, level: LogLevel, msg: string): string => {
   const withName = `${name} - ${msg}`
   return level === 'info' || level === 'warn'
-    ? `\`[${level.toUpperCase()}]  ${withName}\``
-    : `\`[${level.toUpperCase()}] ${withName}\``
+    ? `\`${level.toUpperCase()}  ${withName}\``
+    : `\`${level.toUpperCase()} ${withName}\``
 }
 
 const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageOptions => ({
