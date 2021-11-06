@@ -1,15 +1,15 @@
 1. Détection appels - DiscordEventTransformer, CallNotificationService
 2. (Détection réactions)
-3. Ping/pong, merci capitaine - ThankYouCaptainService
-4. Abonnement appels
-5. Stream de musique : https://github.com/JamesKyburz/youtube-audio-stream
-6. Commandes pour toute cette merde - CommandsRegisterer
+3. Abonnement appels
+4. Stream de musique : https://github.com/JamesKyburz/youtube-audio-stream
+5. Commandes pour toute cette merde - CommandsRegisterer
    1. Abonnements
    2. Image
    3. Say
    4. Statut
 
-- ensure indexes: unsubscribe when done
+- ensure indexes: unsubscribe when done?
+- commands register: unsubscribe when done?
 
 1. Watch together -> c mor
 
