@@ -13,7 +13,6 @@ import { pipe } from 'fp-ts/function'
 
 import { DbReady, PublicCallStarted } from '../../models/MadEvent'
 import { TObserver } from '../../models/TObserver'
-import { createDiscordAdapter } from '../../utils/createDiscordAdapter'
 import { Future, IO } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
 import { PartialLogger } from '../Logger'
@@ -61,7 +60,7 @@ export const MusicObserver = (Logger: PartialLogger): TObserver<DbReady | Public
     const connection = joinVoiceChannel({
       channelId: channel.id,
       guildId: channel.guild.id,
-      adapterCreator: createDiscordAdapter(channel),
+      adapterCreator: channel.guild.voiceAdapterCreator,
     })
 
     return pipe(
