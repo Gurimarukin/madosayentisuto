@@ -1,7 +1,11 @@
 import { flow, pipe } from 'fp-ts/function'
 
 import { GuildId } from '../models/GuildId'
-import { GuildState, GuildStateOnlyId, GuildStateOutput } from '../models/guildState/GuildState'
+import {
+  GuildStateDb,
+  GuildStateDbOnlyId,
+  GuildStateDbOutput,
+} from '../models/guildState/GuildStateDb'
 import { MongoCollection } from '../models/MongoCollection'
 import { PartialLogger } from '../services/Logger'
 import { Future, List, Maybe } from '../utils/fp'
@@ -12,17 +16,17 @@ export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const GuildStatePersistence = (Logger: PartialLogger, mongoCollection: MongoCollection) => {
   const logger = Logger('GuildStatePersistence')
-  const collection = FpCollection<GuildState, GuildStateOutput>(
+  const collection = FpCollection<GuildStateDb, GuildStateDbOutput>(
     logger,
     mongoCollection('guildState'),
-    [GuildState.codec, 'GuildState'],
+    [GuildStateDb.codec, 'GuildStateDb'],
   )
 
   return {
     ensureIndexes: (): Future<void> =>
       collection.ensureIndexes([{ key: { id: -1 }, unique: true }]),
 
-    find: (id: GuildId): Future<Maybe<GuildState>> =>
+    find: (id: GuildId): Future<Maybe<GuildStateDb>> =>
       collection.findOne({ id: GuildId.unwrap(id) }),
 
     findAll: (): Future<List<GuildId>> =>
@@ -31,7 +35,7 @@ export const GuildStatePersistence = (Logger: PartialLogger, mongoCollection: Mo
         Future.map(
           List.filterMap(
             flow(
-              GuildStateOnlyId.codec.decode,
+              GuildStateDbOnlyId.codec.decode,
               Maybe.fromEither,
               Maybe.map(({ id }) => id),
             ),
@@ -39,7 +43,7 @@ export const GuildStatePersistence = (Logger: PartialLogger, mongoCollection: Mo
         ),
       ),
 
-    upsert: (id: GuildId, state: GuildState): Future<boolean> =>
+    upsert: (id: GuildId, state: GuildStateDb): Future<boolean> =>
       pipe(
         collection.updateOne({ id: GuildId.unwrap(id) }, state, { upsert: true }),
         Future.map(r => r.modifiedCount + r.upsertedCount === 1),

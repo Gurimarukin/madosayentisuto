@@ -1,3 +1,5 @@
+import { eq, string } from 'fp-ts'
+import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 import { Newtype, iso } from 'newtype-ts'
 
@@ -9,4 +11,6 @@ const { wrap, unwrap } = iso<GuildId>()
 
 const codec = fromNewtype<GuildId>(C.string)
 
-export const GuildId = { codec, wrap, unwrap }
+const Eq: eq.Eq<GuildId> = pipe(string.Eq, eq.contramap(unwrap))
+
+export const GuildId = { codec, wrap, Eq, unwrap }
