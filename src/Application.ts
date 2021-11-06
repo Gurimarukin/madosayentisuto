@@ -134,6 +134,7 @@ const subscribe =
   <A>(logger: LoggerType, observable_: TObservable<A>) =>
   <B extends A>(
     { next }: TObserver<B>,
+    // we invert it, so we are sure our Refinement is exhaustive
     refinement_: Refinement<A, Exclude<A, B>>,
   ): IO<Subscription> =>
     pipe(
