@@ -1,4 +1,12 @@
-import { GuildMember, Interaction, Message, PartialGuildMember, VoiceState } from 'discord.js'
+import {
+  GuildMember,
+  Interaction,
+  Message,
+  PartialGuildMember,
+  StageChannel,
+  VoiceChannel,
+  VoiceState,
+} from 'discord.js'
 
 export type MadEvent =
   | AppStarted
@@ -8,6 +16,8 @@ export type MadEvent =
   | GuildMemberAdd
   | GuildMemberRemove
   | VoiceStateUpdate
+  | PublicCallStarted
+  | PublicCallEnded
   | MessageCreate
 
 const isAppStarted = (e: MadEvent): e is AppStarted => e.type === 'AppStarted'
@@ -17,6 +27,8 @@ const isInteractionCreate = (e: MadEvent): e is InteractionCreate => e.type === 
 const isGuildMemberAdd = (e: MadEvent): e is GuildMemberAdd => e.type === 'GuildMemberAdd'
 const isGuildMemberRemove = (e: MadEvent): e is GuildMemberRemove => e.type === 'GuildMemberRemove'
 const isVoiceStateUpdate = (e: MadEvent): e is VoiceStateUpdate => e.type === 'VoiceStateUpdate'
+const isPublicCallStarted = (e: MadEvent): e is PublicCallStarted => e.type === 'PublicCallStarted'
+const isPublicCallEnded = (e: MadEvent): e is PublicCallEnded => e.type === 'PublicCallEnded'
 const isMessageCreate = (e: MadEvent): e is MessageCreate => e.type === 'MessageCreate'
 
 export type AppStarted = { readonly type: 'AppStarted' }
@@ -66,6 +78,34 @@ const VoiceStateUpdate = (oldState: VoiceState, newState: VoiceState): VoiceStat
   newState,
 })
 
+export type PublicCallStarted = {
+  readonly type: 'PublicCallStarted'
+  readonly member: GuildMember
+  readonly channel: VoiceChannel | StageChannel
+}
+const PublicCallStarted = (
+  member: GuildMember,
+  channel: VoiceChannel | StageChannel,
+): PublicCallStarted => ({
+  type: 'PublicCallStarted',
+  member,
+  channel,
+})
+
+export type PublicCallEnded = {
+  readonly type: 'PublicCallEnded'
+  readonly member: GuildMember
+  readonly channel: VoiceChannel | StageChannel
+}
+const PublicCallEnded = (
+  member: GuildMember,
+  channel: VoiceChannel | StageChannel,
+): PublicCallEnded => ({
+  type: 'PublicCallEnded',
+  member,
+  channel,
+})
+
 export type MessageCreate = {
   readonly type: 'MessageCreate'
   readonly message: Message
@@ -84,6 +124,8 @@ export const MadEvent = {
   isGuildMemberRemove,
   isVoiceStateUpdate,
   isMessageCreate,
+  isPublicCallStarted,
+  isPublicCallEnded,
 
   AppStarted,
   DbReady,
@@ -92,5 +134,7 @@ export const MadEvent = {
   GuildMemberAdd,
   GuildMemberRemove,
   VoiceStateUpdate,
+  PublicCallStarted,
+  PublicCallEnded,
   MessageCreate,
 }
