@@ -2,7 +2,7 @@ import util from 'util'
 
 import { apply, refinement, task } from 'fp-ts'
 import { observable } from 'fp-ts-rxjs'
-import { flow, pipe } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 import { Refinement } from 'fp-ts/Refinement'
 import { Collection, MongoClient } from 'mongodb'
 import { Subscription } from 'rxjs'
@@ -29,7 +29,9 @@ import { ThanksCaptainObserver } from './services/observers/ThanksCaptainObserve
 import { publishDiscordEvents } from './services/publishers/publishDiscordEvents'
 import { scheduleCronJob } from './services/publishers/scheduleCronJob'
 import { PubSub } from './services/PubSub'
-import { Future, IO, List, Maybe, NonEmptyArray, Try } from './utils/fp'
+import { Future, IO, Maybe, Try } from './utils/fp'
+
+const { and, not } = refinement
 
 export const Application = (
   Logger: PartialLogger,
@@ -85,29 +87,41 @@ export const Application = (
           // startup
           s(
             ActivityStatusObserver(Logger, discord, botStatePersistence),
-            MadEvent.isAppStarted,
-            MadEvent.isDbReady,
-            MadEvent.isCronJob,
+            pipe(
+              not(MadEvent.isAppStarted),
+              and(not(MadEvent.isDbReady)),
+              and(not(MadEvent.isCronJob)),
+            ),
           ),
           s(
             IndexesEnsureObserver(Logger, pubSub.subject, [guildStatePersistence.ensureIndexes]),
-            MadEvent.isAppStarted,
+            not(MadEvent.isAppStarted),
           ),
-          s(DeployCommandsObserver(config.client, Logger, guildStateService), MadEvent.isDbReady),
+          s(
+            DeployCommandsObserver(config.client, Logger, guildStateService),
+            not(MadEvent.isDbReady),
+          ),
 
           // leave/join
-          s(SendGreetingDMObserver(Logger), MadEvent.isGuildMemberAdd),
-          s(SetDefaultRoleObserver(Logger, guildStateService), MadEvent.isGuildMemberAdd),
-          s(NotifyGuildLeaveObserver(Logger), MadEvent.isGuildMemberRemove),
+          s(SendGreetingDMObserver(Logger), not(MadEvent.isGuildMemberAdd)),
+          s(SetDefaultRoleObserver(Logger, guildStateService), not(MadEvent.isGuildMemberAdd)),
+          s(NotifyGuildLeaveObserver(Logger), not(MadEvent.isGuildMemberRemove)),
 
           // calls
-          s(NotifyVoiceCallObserver(Logger, guildStateService), MadEvent.isVoiceStateUpdate),
+          s(
+            NotifyVoiceCallObserver(Logger, guildStateService, pubSub.subject),
+            pipe(
+              not(MadEvent.isVoiceStateUpdate),
+              and(not(MadEvent.isPublicCallStarted)),
+              and(not(MadEvent.isPublicCallEnded)),
+            ),
+          ),
 
           // messages
-          s(ThanksCaptainObserver(config.captain, Logger, discord), MadEvent.isMessageCreate),
+          s(ThanksCaptainObserver(config.captain, Logger, discord), not(MadEvent.isMessageCreate)),
 
           // commands
-          s(PingObserver(), MadEvent.isInteractionCreate),
+          s(PingObserver(), not(MadEvent.isInteractionCreate)),
         ),
         IO.chain(() => pubSub.subject.next(MadEvent.AppStarted)),
       )
@@ -116,45 +130,20 @@ export const Application = (
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function subscribe<A>(logger: LoggerType, observable_: TObservable<A>) {
-  return res
-
-  function res(o: TObserver<A>): IO<Subscription>
-  function res<B extends A>(o: TObserver<B>, b: Refinement<A, B>): IO<Subscription>
-  function res<B extends A, C extends A>(
-    o: TObserver<B | C>,
-    b: Refinement<A, B>,
-    c: Refinement<A, C>,
-  ): IO<Subscription>
-  function res<B extends A, C extends A, D extends A>(
-    o: TObserver<B | C | D>,
-    b: Refinement<A, B>,
-    c: Refinement<A, C>,
-    d: Refinement<A, D>,
-  ): IO<Subscription>
-  function res({ next }: TObserver<A>, ...refinements: List<Refinement<A, A>>): IO<Subscription> {
-    const observer: TObserver<A> = { next: recover(next) }
-
-    return pipe(
-      NonEmptyArray.fromReadonlyArray(refinements),
-      Maybe.fold(
-        () => observable_,
-        flow(NonEmptyArray.concatAll({ concat: (a, b) => pipe(a, refinement.or(b)) }), r =>
-          pipe(observable_, observable.filter(r)),
-        ),
-      ),
-      TObservable.subscribe(observer),
+const subscribe =
+  <A>(logger: LoggerType, observable_: TObservable<A>) =>
+  <B extends A>(
+    { next }: TObserver<B>,
+    refinement_: Refinement<A, Exclude<A, B>>,
+  ): IO<Subscription> =>
+    pipe(
+      observable_,
+      observable.filter(refinement.not(refinement_) as unknown as Refinement<A, B>),
+      TObservable.subscribe({
+        next: b =>
+          pipe(
+            next(b),
+            task.chain(Try.fold(e => Future.fromIOEither(logger.error(e.stack)), Future.right)),
+          ),
+      }),
     )
-  }
-
-  function recover<B extends List<unknown>>(
-    f: (...args: B) => Future<void>,
-  ): (...args: B) => Future<void> {
-    return (...args) =>
-      pipe(
-        f(...args),
-        task.chain(Try.fold(e => Future.fromIOEither(logger.error(e.stack)), Future.right)),
-      )
-  }
-}
