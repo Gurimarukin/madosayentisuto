@@ -53,6 +53,7 @@ module.exports = {
         functions: 'always-multiline',
       },
     ],
+    eqeqeq: ['error', 'always'],
     'fp-ts/no-module-imports': ['warn', { allowTypes: true }],
     'functional/functional-parameters': [
       'error',
