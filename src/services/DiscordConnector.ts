@@ -12,6 +12,7 @@ import {
   CommandInteraction,
   DiscordAPIError,
   Guild,
+  GuildApplicationCommandPermissionData,
   GuildAuditLogsEntry,
   GuildMember,
   Intents,
@@ -233,6 +234,17 @@ const commandPermissionsSet = (
 const deferReply = (interaction: CommandInteraction): Future<void> =>
   Future.tryCatch(() => interaction.deferReply())
 
+const guildCommandsPermissionsSet = (
+  guild: Guild,
+  fullPermissions: List<GuildApplicationCommandPermissionData>,
+): Future<Collection<string, List<ApplicationCommandPermissions>>> =>
+  Future.tryCatch(() =>
+    guild.commands.permissions.set({
+      // eslint-disable-next-line functional/prefer-readonly-type
+      fullPermissions: fullPermissions as GuildApplicationCommandPermissionData[],
+    }),
+  )
+
 const restPutApplicationGuildCommands = (
   rest: REST,
   clientId: string,
@@ -295,6 +307,7 @@ export const DiscordConnector = {
   addRole,
   commandPermissionsSet,
   deferReply,
+  guildCommandsPermissionsSet,
   restPutApplicationGuildCommands,
   sendMessage,
   sendPrettyMessage,

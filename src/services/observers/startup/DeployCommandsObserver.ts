@@ -1,10 +1,15 @@
 import { REST } from '@discordjs/rest'
-import { ApplicationCommandPermissionData, ApplicationCommandPermissions, Guild } from 'discord.js'
+import {
+  ApplicationCommandPermissionData,
+  Guild,
+  GuildApplicationCommandPermissionData,
+} from 'discord.js'
 import { ApplicationCommandPermissionTypes } from 'discord.js/typings/enums'
 import { pipe } from 'fp-ts/function'
 import { Separated } from 'fp-ts/Separated'
 
 import { Config } from '../../../config/Config'
+import { CommandId } from '../../../models/CommandId'
 import { GuildId } from '../../../models/GuildId'
 import { DbReady } from '../../../models/MadEvent'
 import { PutCommandResult } from '../../../models/PutCommandResult'
@@ -85,27 +90,34 @@ export const DeployCommandsObserver = (
     return results =>
       pipe(
         discord.getGuild(guildId),
-        Maybe.fold(
-          () => Future.unit,
-          guild =>
-            pipe(
-              results,
-              List.filter(isAdminCommand),
-              Future.traverseArray(fetchCommandAndSetPermissions(guild)),
-              Future.map(() => {}),
-            ),
-        ),
+        Maybe.fold(() => Future.unit, guildCommandsPermissionsSet(results)),
       )
   }
 
-  function fetchCommandAndSetPermissions(
-    guild: Guild,
-  ): (cmd: PutCommandResult) => Future<List<ApplicationCommandPermissions>> {
-    return cmd =>
+  function guildCommandsPermissionsSet(
+    results: List<PutCommandResult>,
+  ): (guild: Guild) => Future<void> {
+    return guild =>
       pipe(
-        DiscordConnector.fetchCommand(guild, cmd.id),
-        Future.chain(command => DiscordConnector.commandPermissionsSet(command, adminsPermissions)),
+        DiscordConnector.guildCommandsPermissionsSet(guild, getFullPermission(results)),
+        Future.map(() => {}),
       )
+  }
+
+  function getFullPermission(
+    results: List<PutCommandResult>,
+  ): List<GuildApplicationCommandPermissionData> {
+    return pipe(
+      results,
+      List.filter(isAdminCommand),
+      List.map(
+        (cmd): GuildApplicationCommandPermissionData => ({
+          id: CommandId.unwrap(cmd.id),
+          // eslint-disable-next-line functional/prefer-readonly-type
+          permissions: adminsPermissions as unknown as ApplicationCommandPermissionData[],
+        }),
+      ),
+    )
   }
 }
 
