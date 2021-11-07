@@ -5,7 +5,7 @@ import {
   GuildStateDb,
   GuildStateDbOnlyId,
   GuildStateDbOutput,
-} from '../models/guildState/GuildStateDb'
+} from '../models/guildState/db/GuildStateDb'
 import { MongoCollection } from '../models/MongoCollection'
 import { PartialLogger } from '../services/Logger'
 import { Future, List, Maybe } from '../utils/fp'

@@ -5,9 +5,9 @@ import { Lens as MonocleLens } from 'monocle-ts'
 
 import { GuildId } from '../models/GuildId'
 import { Calls } from '../models/guildState/Calls'
+import { CallsDb } from '../models/guildState/db/CallsDb'
+import { GuildStateDb } from '../models/guildState/db/GuildStateDb'
 import { GuildState } from '../models/guildState/GuildState'
-import { GuildStateDb } from '../models/guildState/GuildStateDb'
-import { StaticCalls } from '../models/guildState/StaticCalls'
 import { TSnowflake } from '../models/TSnowflake'
 import { GuildStatePersistence } from '../persistence/GuildStatePersistence'
 import { ChannelUtils } from '../utils/ChannelUtils'
@@ -183,7 +183,7 @@ export const GuildStateService = (
       })
   }
 
-  function fetchCalls(guild: Guild): (calls: StaticCalls) => Future<Maybe<Calls>> {
+  function fetchCalls(guild: Guild): (calls: CallsDb) => Future<Maybe<Calls>> {
     return ({ message, channel, role }) =>
       pipe(
         apply.sequenceS(Future.ApplyPar)({
