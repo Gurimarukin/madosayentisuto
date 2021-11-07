@@ -1,6 +1,7 @@
 import { Guild, Role } from 'discord.js'
 import { apply, readonlyMap } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
+import { Lens as MonocleLens } from 'monocle-ts'
 
 import { GuildId } from '../models/GuildId'
 import { Calls } from '../models/guildState/Calls'
@@ -14,6 +15,9 @@ import { Future, IO, List, Maybe } from '../utils/fp'
 import { LogUtils } from '../utils/LogUtils'
 import { DiscordConnector } from './DiscordConnector'
 import { PartialLogger } from './Logger'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LensInner<A extends MonocleLens<any, any>> = A extends MonocleLens<any, infer B> ? B : never
 
 export type GuildStateService = ReturnType<typeof GuildStateService>
 
@@ -31,29 +35,47 @@ export const GuildStateService = (
     findAll: guildStatePersistence.findAll,
 
     setCalls: (guild: Guild, calls: Calls): IO<GuildState> =>
-      cacheUpdateAtAndUpsertDb(guild, GuildState.Lens.calls.set(Maybe.some(calls))),
+      setLens(guild, 'calls', Maybe.some(calls)),
 
     getCalls: (guild: Guild): Future<Maybe<Calls>> =>
       pipe(get(guild), Future.map(GuildState.Lens.calls.get)),
 
     setDefaultRole: (guild: Guild, role: Role): IO<GuildState> =>
-      cacheUpdateAtAndUpsertDb(guild, GuildState.Lens.defaultRole.set(Maybe.some(role))),
+      setLens(guild, 'defaultRole', Maybe.some(role)),
 
     getDefaultRole: (guild: Guild): Future<Maybe<Role>> =>
       pipe(get(guild), Future.map(GuildState.Lens.defaultRole.get)),
 
-    getSubscriptions: (guild: Guild): Future<ReadonlyMap<TSnowflake, unknown>> =>
-      pipe(get(guild), Future.map(GuildState.Lens.subscriptions.get)),
-
     setSubscriptions: (
       guild: Guild,
       subscriptions: ReadonlyMap<TSnowflake, unknown>,
-    ): IO<GuildState> =>
-      cacheUpdateAt(GuildId.wrap(guild.id), GuildState.Lens.subscriptions.set(subscriptions)),
+    ): IO<GuildState> => setLens(guild, 'subscriptions', subscriptions),
+
+    getSubscriptions: (guild: Guild): Future<ReadonlyMap<TSnowflake, unknown>> =>
+      pipe(get(guild), Future.map(GuildState.Lens.subscriptions.get)),
   }
 
   function cacheSet(guildId: GuildId, state: GuildState): IO<ReadonlyMap<GuildId, GuildState>> {
     return IO.fromIO(() => cache.set(guildId, state))
+  }
+
+  type GuildStateLens = typeof GuildState.Lens
+
+  function setLens<K extends Exclude<keyof GuildState, 'id'>>(
+    guild: Guild,
+    lensKey: K,
+    a: LensInner<GuildStateLens[K]>,
+  ): IO<GuildState> {
+    // check if we are updating a key that exists in GuildStateDb
+    const shouldUpsert = pipe(
+      GuildStateDb.keys,
+      List.exists(k => k === lensKey),
+    )
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const update = GuildState.Lens[lensKey].set(a as any) // I know what I'm doing
+    return shouldUpsert
+      ? cacheUpdateAtAndUpsertDb(guild, update)
+      : cacheUpdateAt(GuildId.wrap(guild.id), update)
   }
 
   function cacheUpdateAtAndUpsertDb(
@@ -66,7 +88,11 @@ export const GuildStateService = (
       IO.chain(state => {
         // upsert new state, but don't wait until it's done; immediatly return state from cache
         return pipe(
-          guildStatePersistence.upsert(guildId, GuildStateDb.fromGuildState(state)),
+          LogUtils.withGuild(logger, 'debug', guild)('Upserting state'),
+          Future.fromIOEither,
+          Future.chain(() =>
+            guildStatePersistence.upsert(guildId, GuildStateDb.fromGuildState(state)),
+          ),
           Future.chain(success => (success ? Future.unit : error())),
           Future.recover(e => error('-', e)),
           IO.runFuture,
@@ -101,7 +127,19 @@ export const GuildStateService = (
     return pipe(
       cache,
       readonlyMap.lookup(GuildId.Eq)(GuildId.wrap(guild.id)),
-      Maybe.fold(() => pipe(addGuildToCacheFromDb(guild)), Future.right),
+      Maybe.fold(
+        () =>
+          pipe(
+            LogUtils.withGuild(
+              logger,
+              'debug',
+              guild,
+            )("State wasn't found in cache, loading it from db"),
+            Future.fromIOEither,
+            Future.chain(() => addGuildToCacheFromDb(guild)),
+          ),
+        Future.right,
+      ),
     )
   }
 

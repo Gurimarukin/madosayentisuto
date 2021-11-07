@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
-import { Maybe } from '../../utils/fp'
+import { Dict, Maybe } from '../../utils/fp'
 import { GuildId } from '../GuildId'
 import { TSnowflake } from '../TSnowflake'
 import { GuildState } from './GuildState'
@@ -14,15 +14,14 @@ const guildStateDbOnlyIdCodec = C.struct({
 export type GuildStateDbOnlyId = C.TypeOf<typeof guildStateDbOnlyIdCodec>
 export const GuildStateDbOnlyId = { codec: guildStateDbOnlyIdCodec }
 
-const codec = pipe(
-  guildStateDbOnlyIdCodec,
-  C.intersect(
-    C.struct({
-      calls: Maybe.codec(StaticCalls.codec),
-      defaultRole: Maybe.codec(TSnowflake.codec),
-    }),
-  ),
-)
+const properties = {
+  calls: Maybe.codec(StaticCalls.codec),
+  defaultRole: Maybe.codec(TSnowflake.codec),
+}
+
+const keys = Dict.keys(properties)
+
+const codec = pipe(guildStateDbOnlyIdCodec, C.intersect(C.struct(properties)))
 
 const empty = (id: GuildId): GuildStateDb => ({ id, calls: Maybe.none, defaultRole: Maybe.none })
 
@@ -38,4 +37,4 @@ const fromGuildState = ({ id, calls, defaultRole }: GuildState): GuildStateDb =>
 export type GuildStateDb = C.TypeOf<typeof codec>
 export type GuildStateDbOutput = C.OutputOf<typeof codec>
 
-export const GuildStateDb = { codec, empty, fromGuildState }
+export const GuildStateDb = { codec, keys, empty, fromGuildState }
