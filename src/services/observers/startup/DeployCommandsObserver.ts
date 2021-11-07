@@ -1,7 +1,8 @@
 import { REST } from '@discordjs/rest'
-import { ApplicationCommandPermissionData } from 'discord.js'
+import { ApplicationCommandPermissionData, ApplicationCommandPermissions, Guild } from 'discord.js'
 import { ApplicationCommandPermissionTypes } from 'discord.js/typings/enums'
 import { pipe } from 'fp-ts/function'
+import { Separated } from 'fp-ts/Separated'
 
 import { Config } from '../../../config/Config'
 import { GuildId } from '../../../models/GuildId'
@@ -25,7 +26,14 @@ export const DeployCommandsObserver = (
 ): TObserver<DbReady> => {
   const logger = Logger('DeployCommandsObserver')
 
-  const permissions: NonEmptyArray<ApplicationCommandPermissionData> = pipe(
+  const rest = new REST({ version: '9' }).setToken(config.client.secret)
+
+  const commands = pipe(
+    [...adminCommands, pingObserverCommand, musicObserverCommand],
+    List.map(command => command.toJSON()),
+  )
+
+  const adminsPermissions: NonEmptyArray<ApplicationCommandPermissionData> = pipe(
     config.admins,
     NonEmptyArray.map(
       (id): ApplicationCommandPermissionData => ({
@@ -37,68 +45,67 @@ export const DeployCommandsObserver = (
   )
 
   return {
-    next: () => {
-      const commands = pipe(
-        [...adminCommands, pingObserverCommand, musicObserverCommand],
-        List.map(command => command.toJSON()),
-      )
-      const rest = new REST({ version: '9' }).setToken(config.client.secret)
-
-      return pipe(
+    next: () =>
+      pipe(
         guildStateService.findAll(),
-        Future.chain(
-          Future.traverseArray(guildId =>
-            pipe(
-              DiscordConnector.restPutApplicationGuildCommands(
-                rest,
-                config.client.id,
-                guildId,
-                commands,
-              ),
-              Future.chain(({ left, right }) =>
-                pipe(
-                  left,
-                  IO.traverseSeqArray(logger.warn),
-                  Future.fromIOEither,
-                  Future.map(() => right),
-                ),
-              ),
-              Future.chain(results =>
-                pipe(
-                  discord.getGuild(guildId),
-                  Maybe.fold(
-                    () => Future.unit,
-                    guild =>
-                      pipe(
-                        results,
-                        List.filter(isAdminCommand),
-                        Future.traverseArray(cmd =>
-                          pipe(
-                            DiscordConnector.fetchCommand(guild, cmd.id),
-                            Future.chain(command =>
-                              DiscordConnector.commandPermissionsSet(command, permissions),
-                            ),
-                          ),
-                        ),
-                        Future.map(() => {}),
-                      ),
-                  ),
-                ),
-              ),
-              Future.recover(e =>
-                pipe(
-                  logger.warn(
-                    `Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${e.stack}`,
-                  ),
-                  Future.fromIOEither,
-                ),
-              ),
-            ),
-          ),
-        ),
+        Future.chain(Future.traverseArray(putCommandsForGuild)),
         Future.chain(() => Future.fromIOEither(logger.info('Ensured commands'))),
+      ),
+  }
+
+  function putCommandsForGuild(guildId: GuildId): Future<void> {
+    return pipe(
+      DiscordConnector.restPutApplicationGuildCommands(rest, config.client.id, guildId, commands),
+      Future.chain(logDecodeErrors),
+      Future.chain(setCommandsPermissions(guildId)),
+      Future.recover(e =>
+        pipe(
+          logger.warn(`Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${e.stack}`),
+          Future.fromIOEither,
+        ),
+      ),
+    )
+  }
+
+  function logDecodeErrors({
+    left,
+    right,
+  }: Separated<List<Error>, List<PutCommandResult>>): Future<List<PutCommandResult>> {
+    return pipe(
+      left,
+      IO.traverseSeqArray(logger.warn),
+      Future.fromIOEither,
+      Future.map(() => right),
+    )
+  }
+
+  function setCommandsPermissions(
+    guildId: GuildId,
+  ): (results: List<PutCommandResult>) => Future<void> {
+    return results =>
+      pipe(
+        discord.getGuild(guildId),
+        Maybe.fold(
+          () => Future.unit,
+          guild =>
+            pipe(
+              results,
+              List.filter(isAdminCommand),
+              Future.traverseArray(fetchCommandAndSetPermissions(guild)),
+              Future.map(() => {}),
+            ),
+        ),
       )
-    },
+  }
+
+  function fetchCommandAndSetPermissions(
+    guild: Guild,
+  ): (cmd: PutCommandResult) => Future<List<ApplicationCommandPermissions>> {
+    return cmd =>
+      pipe(
+        DiscordConnector.fetchCommand(guild, cmd.id),
+        Future.chain(command => DiscordConnector.commandPermissionsSet(command, adminsPermissions)),
+      )
   }
 }
 
