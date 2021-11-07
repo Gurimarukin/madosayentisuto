@@ -115,8 +115,8 @@ export const Future = {
   fromIO: futureFromIO,
   tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, unknownAsError),
   unit: futureRight<void>(undefined),
-  recover: <A>(onError: (e: Error) => Future<A>): ((future: Future<A>) => Future<A>) =>
-    task.chain(either.fold(onError, futureRight)),
+  recover: <A, B>(onError: (e: Error) => Future<B>): ((future: Future<A>) => Future<A | B>) =>
+    task.chain(either.fold<Error, A, Future<A | B>>(onError, futureRight)),
   runUnsafe: <A>(fa: Future<A>): Promise<A> => pipe(fa, task.map(Try.get))(),
   delay:
     <A>(ms: MsDuration) =>

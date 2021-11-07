@@ -30,12 +30,7 @@ const format = (
   author: User | null = null,
 ): string => {
   const chanName =
-    channel !== null &&
-    (ChannelUtils.isGuildChannel(channel) ||
-      ChannelUtils.isThreadChannel(channel) ||
-      ChannelUtils.isStageChannel(channel))
-      ? `#${channel.name}`
-      : ''
+    channel !== null && ChannelUtils.isNamedChannel(channel) ? `#${channel.name}` : ''
   const guildAndChan = guild === null ? chanName : `[${guild.name}${chanName}]`
   const authorStr = author !== null ? `${guildAndChan !== '' ? ' ' : ''}${author.tag}:` : ''
   return `${guildAndChan}${authorStr}`

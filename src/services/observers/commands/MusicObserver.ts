@@ -48,7 +48,8 @@ export const MusicObserver = (
       //   Future.chain()
       // )
 
-      return todo(guildStateService, logger, interaction, playSong, connectToChannel)
+      return Future.unit
+      // return todo(guildStateService, logger, interaction, playSong, connectToChannel)
     },
   }
 

@@ -15,6 +15,7 @@ import {
   GuildAuditLogsEntry,
   GuildMember,
   Intents,
+  InteractionReplyOptions,
   Message,
   MessageEmbed,
   MessageOptions,
@@ -153,17 +154,6 @@ const of = (client: Client<true>) => ({
 //     options?: CreateInviteOptions,
 //   ): Future<Invite> => Future.tryCatch(() => channel.createInvite(options)),
 
-//   deleteMessage: (message: Message): Future<boolean> =>
-//     pipe(
-//       Future.tryCatch(() => message.delete()),
-//       Future.map(() => true),
-//       Future.recover(e =>
-//         e instanceof DiscordAPIError && e.message === 'Missing Permissions'
-//           ? Future.right(false)
-//           : Future.left(e),
-//       ),
-//     ),
-
 //   // joinVoiceChannel: (voiceChannel: VoiceChannel): Future<VoiceConnection> =>
 //   //   pipe(
 //   //     Future.tryCatch(() => voiceChannel.join()),
@@ -215,14 +205,19 @@ const addRole = (
   pipe(
     Future.tryCatch(() => member.roles.add(roleOrRoles, reason)),
     Future.map(() => Maybe.some(undefined)),
+    Future.recover(e => (isMissingPermissionsError(e) ? Future.right(Maybe.none) : Future.left(e))),
     debugLeft('addRole'),
-    // [e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
-    // Maybe.none]
-    // Future.map(_ => {}),
   )
 
 const deferReply = (interaction: CommandInteraction): Future<void> =>
   Future.tryCatch(() => interaction.deferReply())
+
+const deleteMessage = (message: Message): Future<boolean> =>
+  pipe(
+    Future.tryCatch(() => message.delete()),
+    Future.map(() => true),
+    Future.recover(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
+  )
 
 const guildCommandsPermissionsSet = (
   guild: Guild,
@@ -234,6 +229,14 @@ const guildCommandsPermissionsSet = (
       fullPermissions: fullPermissions as GuildApplicationCommandPermissionData[],
     }),
   )
+
+const interactionDeleteReply = (interaction: CommandInteraction): Future<void> =>
+  Future.tryCatch(() => interaction.deleteReply())
+
+const interactionReply = (
+  interaction: CommandInteraction,
+  options: string | MessagePayload | InteractionReplyOptions,
+): Future<void> => Future.tryCatch(() => interaction.reply(options))
 
 const restPutApplicationGuildCommands = (
   rest: REST,
@@ -278,9 +281,14 @@ const sendMessage = (
 const sendPrettyMessage = (
   channel: PartialTextBasedChannelFields,
   message: string,
+  options: MessageOptions = {},
 ): Future<Maybe<Message>> =>
   sendMessage(channel, {
-    embeds: [new MessageEmbed().setColor(Colors.darkred).setDescription(message)],
+    ...options,
+    embeds: [
+      new MessageEmbed().setColor(Colors.darkred).setDescription(message),
+      ...(options.embeds ?? []),
+    ],
   })
 
 /**
@@ -289,14 +297,19 @@ const sendPrettyMessage = (
 
 export const DiscordConnector = {
   of,
+
   fetchAuditLogs,
   fetchCommand,
   fetchMessage,
   fetchPartial,
   fetchRole,
+
   addRole,
   deferReply,
+  deleteMessage,
   guildCommandsPermissionsSet,
+  interactionDeleteReply,
+  interactionReply,
   restPutApplicationGuildCommands,
   sendMessage,
   sendPrettyMessage,
@@ -328,10 +341,17 @@ export const DiscordConnector = {
  * Helpers
  */
 
+const isMissingPermissionsError = (e: Error): e is DiscordAPIError =>
+  e instanceof DiscordAPIError && e.message === 'Missing Permissions'
+
 const debugLeft = <A>(functionName: string): ((f: Future<A>) => Future<A>) =>
-  Future.mapLeft(e =>
-    Error(`${functionName}:\n${Object.getPrototypeOf(e).contructor.name}\n${e.message}`),
-  )
+  Future.mapLeft(e => {
+    const constr = Object.getPrototypeOf(e).contructor
+    return Error(
+      `"${functionName}"\n${nl(constr?.name)}${e.stack !== undefined ? e.stack : e.message}`,
+    )
+  })
+const nl = (str: string | undefined): string => (str !== undefined ? `${str}\n` : '')
 
 const fetchMessageRec =
   (message: string) =>
@@ -341,9 +361,9 @@ const fetchMessageRec =
       return pipe(
         Future.tryCatch(() => head.messages.fetch(message)),
         Future.map(Maybe.some),
-        Future.recover<Maybe<Message>>(e =>
+        Future.recover(e =>
           e instanceof DiscordAPIError && e.message === 'Unknown Message'
-            ? Future.right(Maybe.none)
+            ? Future.right<Maybe<Message>>(Maybe.none)
             : Future.left(e),
         ),
         Future.chain(

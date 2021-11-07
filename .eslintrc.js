@@ -26,7 +26,16 @@ module.exports = {
     ],
     '@typescript-eslint/no-base-to-string': [
       'error',
-      { ignoredTypeNames: ['Interaction<CacheType>'] },
+      {
+        ignoredTypeNames: [
+          'APIInteractionDataResolvedChannel',
+          'APIRole',
+          'GuildChannel',
+          'Interaction<CacheType>',
+          'Role',
+          'ThreadChannel',
+        ],
+      },
     ],
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-explicit-any': 'error',

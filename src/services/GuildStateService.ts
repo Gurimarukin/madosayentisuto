@@ -67,6 +67,7 @@ export const GuildStateService = (
 
     type Setter = (a_: LensInner<GuildStateLens[K]>) => (s: GuildState) => GuildState
     const update = (GuildState.Lens[key].set as Setter)(a)
+
     return shouldUpsert
       ? cacheUpdateAtAndUpsertDb(guild, update)
       : cacheUpdateAt(GuildId.wrap(guild.id), update)
@@ -111,9 +112,10 @@ export const GuildStateService = (
       readonlyMap.lookup(GuildId.Eq)(guildId),
       Maybe.getOrElse(() => GuildState.empty(guildId)),
     )
+    const updated = update(state)
     return pipe(
-      cacheSet(guildId, update(state)),
-      IO.map(() => state),
+      cacheSet(guildId, updated),
+      IO.map(() => updated),
     )
   }
 

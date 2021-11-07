@@ -113,7 +113,7 @@ export const Application = (
       sub(ThanksCaptainObserver(config.captain, discord), or(MadEvent.isMessageCreate)),
 
       // commands
-      sub(AdminCommandsObserver(), or(MadEvent.isInteractionCreate)),
+      sub(AdminCommandsObserver(discord, guildStateService), or(MadEvent.isInteractionCreate)),
       sub(PingObserver(), or(MadEvent.isInteractionCreate)),
       sub(MusicObserver(Logger, guildStateService), or(MadEvent.isInteractionCreate)),
 
