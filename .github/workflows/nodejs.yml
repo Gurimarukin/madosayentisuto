@@ -16,7 +16,8 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x]
+        node-version: [16.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
     - uses: actions/checkout@v2
@@ -24,12 +25,9 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - name: npm/yarn/pnpm install
-      uses: Jaid/action-npm-install@v1.2.4
-      with: 
-        packageManager: yarn 
-    - run: cp conf/local.example.conf.json conf/local.conf.json && npm run build --if-present
-    - run: npm run lint
-    - run: npm run test
-      env:
-        CI: true
+    - name: install
+      run: yarn install --frozen-lockfile
+    - name: test
+      run: yarn run test
+    - name: build
+      run: cp conf/local.example.conf.json conf/local.conf.json && yarn run build
