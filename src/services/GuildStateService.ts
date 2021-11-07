@@ -49,7 +49,7 @@ export const GuildStateService = (
       guild: Guild,
       subscriptions: ReadonlyMap<TSnowflake, unknown>,
     ): IO<GuildState> =>
-      cacheUpdateAtAndUpsertDb(guild, GuildState.Lens.subscriptions.set(subscriptions)),
+      cacheUpdateAt(GuildId.wrap(guild.id), GuildState.Lens.subscriptions.set(subscriptions)),
   }
 
   function cacheSet(guildId: GuildId, state: GuildState): IO<ReadonlyMap<GuildId, GuildState>> {
@@ -64,6 +64,7 @@ export const GuildStateService = (
     return pipe(
       cacheUpdateAt(guildId, update),
       IO.chain(state => {
+        // upsert new state, but don't wait until it's done; immediatly return state from cache
         return pipe(
           guildStatePersistence.upsert(guildId, GuildStateDb.fromGuildState(state)),
           Future.chain(success => (success ? Future.unit : error())),
