@@ -2,14 +2,14 @@ import { REST } from '@discordjs/rest'
 import { Routes } from 'discord-api-types/v9'
 import { pipe } from 'fp-ts/function'
 
-import { ClientConfig } from '../../config/Config'
-import { GuildId } from '../../models/GuildId'
-import { DbReady } from '../../models/MadEvent'
-import { TObserver } from '../../models/TObserver'
-import { Future, List } from '../../utils/fp'
-import { GuildStateService } from '../GuildStateService'
-import { PartialLogger } from '../Logger'
-import { pingObserverCommand } from './PingObserver'
+import { ClientConfig } from '../../../config/Config'
+import { GuildId } from '../../../models/GuildId'
+import { DbReady } from '../../../models/MadEvent'
+import { TObserver } from '../../../models/TObserver'
+import { Future, List } from '../../../utils/fp'
+import { GuildStateService } from '../../GuildStateService'
+import { PartialLogger } from '../../Logger'
+import { pingObserverCommand } from '../commands/PingObserver'
 
 export const DeployCommandsObserver = (
   config: ClientConfig,

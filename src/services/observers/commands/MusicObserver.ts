@@ -11,11 +11,11 @@ import {
 import { StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { DbReady, PublicCallStarted } from '../../models/MadEvent'
-import { TObserver } from '../../models/TObserver'
-import { Future, IO } from '../../utils/fp'
-import { LogUtils } from '../../utils/LogUtils'
-import { PartialLogger } from '../Logger'
+import { DbReady, PublicCallStarted } from '../../../models/MadEvent'
+import { TObserver } from '../../../models/TObserver'
+import { Future, IO } from '../../../utils/fp'
+import { LogUtils } from '../../../utils/LogUtils'
+import { PartialLogger } from '../../Logger'
 
 export const MusicObserver = (Logger: PartialLogger): TObserver<DbReady | PublicCallStarted> => {
   const logger = Logger('MusicObserver')

@@ -1,4 +1,3 @@
-import { StageChannel, VoiceChannel } from 'discord.js'
 import { apply, refinement, task } from 'fp-ts'
 import { observable } from 'fp-ts-rxjs'
 import { pipe } from 'fp-ts/function'
@@ -17,21 +16,21 @@ import { DiscordConnector } from './services/DiscordConnector'
 import { GuildStateService } from './services/GuildStateService'
 import { Logger as LoggerType, PartialLogger } from './services/Logger'
 import { ActivityStatusObserver } from './services/observers/ActivityStatusObserver'
-import { DeployCommandsObserver } from './services/observers/DeployCommandsObserver'
-import { IndexesEnsureObserver } from './services/observers/IndexesEnsureObserver'
-import { MusicObserver } from './services/observers/MusicObserver'
+import { MusicObserver } from './services/observers/commands/MusicObserver'
+import { PingObserver } from './services/observers/commands/PingObserver'
+import { MadEventsObserver } from './services/observers/MadEventObserver'
 import { NotifyGuildLeaveObserver } from './services/observers/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './services/observers/NotifyVoiceCallObserver'
-import { PingObserver } from './services/observers/PingObserver'
 import { SendGreetingDMObserver } from './services/observers/SendGreetingDMObserver'
 import { SetDefaultRoleObserver } from './services/observers/SetDefaultRoleObserver'
+import { DeployCommandsObserver } from './services/observers/startup/DeployCommandsObserver'
+import { IndexesEnsureObserver } from './services/observers/startup/IndexesEnsureObserver'
 import { ThanksCaptainObserver } from './services/observers/ThanksCaptainObserver'
-import { VoiceStateUpdateTransformer } from './services/observers/VoiceStateUpdateTransformer'
+import { VoiceStateUpdateTransformer } from './services/observers/transformers/VoiceStateUpdateTransformer'
 import { publishDiscordEvents } from './services/publishers/publishDiscordEvents'
 import { scheduleCronJob } from './services/publishers/scheduleCronJob'
 import { PubSub } from './services/PubSub'
 import { Future, IO, List, NonEmptyArray, Try } from './utils/fp'
-import { LogUtils } from './utils/LogUtils'
 
 export const Application = (
   Logger: PartialLogger,
@@ -83,12 +82,13 @@ export const Application = (
       sub(VoiceStateUpdateTransformer(Logger, pubSub.subject), or(MadEvent.isVoiceStateUpdate)),
 
       // startup
-      sub(MadEventsObserver(logger), or(refinement.id())),
       sub(
         IndexesEnsureObserver(Logger, pubSub.subject, [guildStatePersistence.ensureIndexes]),
         or(MadEvent.isAppStarted),
       ),
       sub(DeployCommandsObserver(config.client, Logger, guildStateService), or(MadEvent.isDbReady)),
+
+      // activity status
       sub(
         ActivityStatusObserver(Logger, discord, botStatePersistence),
         or(MadEvent.isAppStarted, MadEvent.isDbReady, MadEvent.isCronJob),
@@ -111,6 +111,8 @@ export const Application = (
       // commands
       sub(PingObserver(), or(MadEvent.isInteractionCreate)),
       sub(MusicObserver(Logger), or(MadEvent.isDbReady, MadEvent.isPublicCallStarted)),
+
+      sub(MadEventsObserver(logger), or(refinement.id())),
     ),
     IO.chain(() => pubSub.subject.next(MadEvent.AppStarted)),
     IO.chain(() => logger.info('Started')),
@@ -160,49 +162,3 @@ function or<A, R extends NonEmptyArray<Refinement<A, A>>>(...refinements_: R): R
     ),
   )
 }
-
-const { format } = LogUtils
-
-const MadEventsObserver = (logger: LoggerType): TObserver<MadEvent> => ({
-  next: event => {
-    const message = ((): string => {
-      switch (event.type) {
-        case 'AppStarted':
-        case 'DbReady':
-        case 'CronJob':
-          return ''
-
-        case 'InteractionCreate':
-          return `${format(
-            event.interaction.guild,
-            event.interaction.channel,
-            event.interaction.user,
-          )} ${event.interaction}`
-
-        case 'GuildMemberAdd':
-        case 'GuildMemberRemove':
-          return `${format(event.member.guild)} ${event.member.user.tag}`
-
-        case 'VoiceStateUpdate':
-          return `${format(
-            event.oldState.guild,
-            null,
-            event.oldState.member?.user ?? event.newState.member?.user,
-          )} ${maybeChannel(event.oldState.channel)} > ${maybeChannel(event.newState.channel)}`
-
-        case 'PublicCallStarted':
-        case 'PublicCallEnded':
-          return `${format(event.channel.guild, event.channel)} ${event.member.user.tag}`
-
-        case 'MessageCreate':
-          return `${format(event.message.guild, event.message.channel, event.message.author)} ${
-            event.message.content
-          }`
-      }
-    })()
-    return Future.fromIOEither(logger.debug('✉️ ', event.type, message))
-  },
-})
-
-const maybeChannel = (channel: VoiceChannel | StageChannel | null): string =>
-  channel === null ? 'null' : `#${channel.name}`

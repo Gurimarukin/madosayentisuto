@@ -1,12 +1,12 @@
 import { pipe } from 'fp-ts/function'
 
-import { globalConfig } from '../../globalConfig'
-import { AppStarted, DbReady, MadEvent } from '../../models/MadEvent'
-import { TObserver } from '../../models/TObserver'
-import { TSubject } from '../../models/TSubject'
-import { Future, List } from '../../utils/fp'
-import { FutureUtils } from '../../utils/FutureUtils'
-import { PartialLogger } from '../Logger'
+import { globalConfig } from '../../../globalConfig'
+import { AppStarted, DbReady, MadEvent } from '../../../models/MadEvent'
+import { TObserver } from '../../../models/TObserver'
+import { TSubject } from '../../../models/TSubject'
+import { Future, List } from '../../../utils/fp'
+import { FutureUtils } from '../../../utils/FutureUtils'
+import { PartialLogger } from '../../Logger'
 
 export const IndexesEnsureObserver = (
   Logger: PartialLogger,
