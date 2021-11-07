@@ -2,7 +2,6 @@ import { REST } from '@discordjs/rest'
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from 'discord-api-types/v9'
 import {
   ApplicationCommand,
-  ApplicationCommandPermissionData,
   ApplicationCommandPermissions,
   Channel,
   Client,
@@ -222,15 +221,6 @@ const addRole = (
     // Future.map(_ => {}),
   )
 
-const commandPermissionsSet = (
-  command: ApplicationCommand,
-  permissions: List<ApplicationCommandPermissionData>,
-): Future<List<ApplicationCommandPermissions>> =>
-  Future.tryCatch(() =>
-    // eslint-disable-next-line functional/prefer-readonly-type
-    command.permissions.set({ permissions: permissions as ApplicationCommandPermissionData[] }),
-  )
-
 const deferReply = (interaction: CommandInteraction): Future<void> =>
   Future.tryCatch(() => interaction.deferReply())
 
@@ -305,7 +295,6 @@ export const DiscordConnector = {
   fetchPartial,
   fetchRole,
   addRole,
-  commandPermissionsSet,
   deferReply,
   guildCommandsPermissionsSet,
   restPutApplicationGuildCommands,
