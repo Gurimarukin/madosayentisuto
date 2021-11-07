@@ -1,4 +1,12 @@
-import { Channel, GuildChannel, TextChannel, VoiceChannel } from 'discord.js'
+import {
+  Channel,
+  GuildChannel,
+  PartialDMChannel,
+  StageChannel,
+  TextChannel,
+  ThreadChannel,
+  VoiceChannel,
+} from 'discord.js'
 import { predicate } from 'fp-ts'
 
 // export type SendableChannel = Channel & PartialTextBasedChannelFields
@@ -8,8 +16,14 @@ import { predicate } from 'fp-ts'
 // const isSendable = (c: Channel): c is SendableChannel =>
 //   c.type === 'dm' || c.type == 'news' || c.type === 'text'
 
-const isGuildChannel = (channel: Channel): channel is GuildChannel =>
+const isGuildChannel = (channel: Channel | PartialDMChannel): channel is GuildChannel =>
   channel instanceof GuildChannel
+
+const isThreadChannel = (channel: Channel | PartialDMChannel): channel is ThreadChannel =>
+  channel instanceof ThreadChannel
+
+const isStageChannel = (channel: Channel | PartialDMChannel): channel is StageChannel =>
+  channel instanceof StageChannel
 
 const isTextChannel = (channel: Channel): channel is TextChannel => channel instanceof TextChannel
 
@@ -21,4 +35,12 @@ const isPublic = (channel: GuildChannel): boolean =>
 
 const isPrivate = predicate.not(isPublic)
 
-export const ChannelUtils = { isGuildChannel, isTextChannel, isVoiceChannel, isPublic, isPrivate }
+export const ChannelUtils = {
+  isGuildChannel,
+  isThreadChannel,
+  isStageChannel,
+  isTextChannel,
+  isVoiceChannel,
+  isPublic,
+  isPrivate,
+}

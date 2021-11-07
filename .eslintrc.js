@@ -24,7 +24,10 @@ module.exports = {
         allowHigherOrderFunctions: true,
       },
     ],
-    '@typescript-eslint/no-base-to-string': ['error', { ignoredTypeNames: ['TextChannel'] }],
+    '@typescript-eslint/no-base-to-string': [
+      'error',
+      { ignoredTypeNames: ['Interaction<CacheType>'] },
+    ],
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'warn',

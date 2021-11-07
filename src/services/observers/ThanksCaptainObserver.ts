@@ -5,17 +5,12 @@ import { CaptainConfig } from '../../config/Config'
 import { MessageCreate } from '../../models/MadEvent'
 import { TObserver } from '../../models/TObserver'
 import { Future, List, Maybe } from '../../utils/fp'
-import { LogUtils } from '../../utils/LogUtils'
 import { DiscordConnector } from '../DiscordConnector'
-import { PartialLogger } from '../Logger'
 
 export const ThanksCaptainObserver = (
   config: CaptainConfig,
-  Logger: PartialLogger,
   discord: DiscordConnector,
 ): TObserver<MessageCreate> => {
-  const logger = Logger('ThanksCaptainObserver')
-
   return {
     next: event => {
       const message = event.message
@@ -23,18 +18,10 @@ export const ThanksCaptainObserver = (
       if (message.author.id === discord.client.user.id) return Future.unit
 
       return pipe(
-        LogUtils.withAuthor(logger, 'debug', message)(message.content),
-        Future.fromIOEither,
-        Future.chain(() => handleMessage(message)),
+        reactToMention(message),
+        Maybe.getOrElseW(() => Future.unit),
       )
     },
-  }
-
-  function handleMessage(message: Message): Future<void> {
-    return pipe(
-      reactToMention(message),
-      Maybe.getOrElseW(() => Future.unit),
-    )
   }
 
   function reactToMention(message: Message): Maybe<Future<void>> {
