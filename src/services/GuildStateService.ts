@@ -18,6 +18,8 @@ import { PartialLogger } from './Logger'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type LensInner<A extends MonocleLens<any, any>> = A extends MonocleLens<any, infer B> ? B : never
+type GuildStateLens = typeof GuildState.Lens
+type WithouId<A> = Exclude<A, 'id'>
 
 export type GuildStateService = ReturnType<typeof GuildStateService>
 
@@ -37,40 +39,34 @@ export const GuildStateService = (
     setCalls: (guild: Guild, calls: Calls): IO<GuildState> =>
       setLens(guild, 'calls', Maybe.some(calls)),
 
-    getCalls: (guild: Guild): Future<Maybe<Calls>> =>
-      pipe(get(guild), Future.map(GuildState.Lens.calls.get)),
+    getCalls: (guild: Guild): Future<Maybe<Calls>> => get(guild, 'calls'),
 
     setDefaultRole: (guild: Guild, role: Role): IO<GuildState> =>
       setLens(guild, 'defaultRole', Maybe.some(role)),
 
-    getDefaultRole: (guild: Guild): Future<Maybe<Role>> =>
-      pipe(get(guild), Future.map(GuildState.Lens.defaultRole.get)),
+    getDefaultRole: (guild: Guild): Future<Maybe<Role>> => get(guild, 'defaultRole'),
 
     setSubscription: (guild: Guild, subscription: Maybe<MusicSubscription>): IO<GuildState> =>
       setLens(guild, 'subscription', subscription),
 
-    getSubscription: (guild: Guild): Future<Maybe<MusicSubscription>> =>
-      pipe(get(guild), Future.map(GuildState.Lens.subscription.get)),
+    getSubscription: (guild: Guild): IO<Maybe<MusicSubscription>> =>
+      pipe(get(guild, 'subscription'), IO.map(Maybe.flatten)),
   }
 
   function cacheSet(guildId: GuildId, state: GuildState): IO<ReadonlyMap<GuildId, GuildState>> {
     return IO.fromIO(() => cache.set(guildId, state))
   }
 
-  type GuildStateLens = typeof GuildState.Lens
-
   function setLens<K extends Exclude<keyof GuildState, 'id'>>(
     guild: Guild,
-    lensKey: K,
+    key: K,
     a: LensInner<GuildStateLens[K]>,
   ): IO<GuildState> {
     // check if we are updating a key that exists in GuildStateDb
-    const shouldUpsert = pipe(
-      GuildStateDb.keys,
-      List.exists(k => k === lensKey),
-    )
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const update = GuildState.Lens[lensKey].set(a as any) // I know what I'm doing
+    const shouldUpsert = isDbKey(key)
+
+    type Setter = (a_: LensInner<GuildStateLens[K]>) => (s: GuildState) => GuildState
+    const update = (GuildState.Lens[key].set as Setter)(a)
     return shouldUpsert
       ? cacheUpdateAtAndUpsertDb(guild, update)
       : cacheUpdateAt(GuildId.wrap(guild.id), update)
@@ -121,24 +117,48 @@ export const GuildStateService = (
     )
   }
 
-  function get(guild: Guild): Future<GuildState> {
-    return pipe(
-      cache,
-      readonlyMap.lookup(GuildId.Eq)(GuildId.wrap(guild.id)),
-      Maybe.fold(
-        () =>
-          pipe(
-            LogUtils.withGuild(
-              logger,
-              'debug',
-              guild,
-            )("State wasn't found in cache, loading it from db"),
-            Future.fromIOEither,
-            Future.chain(() => addGuildToCacheFromDb(guild)),
-          ),
-        Future.right,
-      ),
+  function get<K extends Exclude<keyof GuildState, 'id'>>(
+    guild: Guild,
+    key: K,
+  ): K extends WithouId<keyof GuildStateDb>
+    ? Future<LensInner<GuildStateLens[K]>>
+    : IO<Maybe<LensInner<GuildStateLens[K]>>> {
+    const getter = GuildState.Lens[key].get as (s: GuildState) => LensInner<GuildStateLens[K]>
+
+    // check if we are getting a key that exists in GuildStateDb
+    const shouldLoadFromDb = isDbKey(key)
+    const fromCache = pipe(
+      IO.fromIO(() => readonlyMap.lookup(GuildId.Eq)(GuildId.wrap(guild.id), cache)),
     )
+
+    if (shouldLoadFromDb) {
+      const res: Future<LensInner<GuildStateLens[K]>> = pipe(
+        fromCache,
+        Future.fromIOEither,
+        Future.chain(
+          Maybe.fold(
+            () =>
+              pipe(
+                LogUtils.withGuild(
+                  logger,
+                  'debug',
+                  guild,
+                )("State wasn't found in cache, loading it from db"),
+                Future.fromIOEither,
+                Future.chain(() => addGuildToCacheFromDb(guild)),
+              ),
+            Future.right,
+          ),
+        ),
+        Future.map(getter),
+      )
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return res as any // I know what I'm doing
+    }
+
+    const res: IO<Maybe<LensInner<GuildStateLens[K]>>> = pipe(fromCache, IO.map(Maybe.map(getter)))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return res as any // I know what I'm doing
   }
 
   function addGuildToCacheFromDb(guild: Guild): Future<GuildState> {
@@ -196,6 +216,12 @@ export const GuildStateService = (
       )
   }
 }
+
+const isDbKey = (key: WithouId<keyof GuildState>): key is WithouId<keyof GuildStateDb> =>
+  pipe(
+    GuildStateDb.keys,
+    List.exists(k => k === key),
+  )
 
 const chainFutureT = <A, B>(fa: Maybe<A>, f: (a: A) => Future<Maybe<B>>): Future<Maybe<B>> =>
   pipe(
