@@ -115,7 +115,7 @@ export const Application = (
       // commands
       sub(AdminCommandsObserver(discord, guildStateService), or(MadEvent.isInteractionCreate)),
       sub(PingObserver(), or(MadEvent.isInteractionCreate)),
-      sub(MusicObserver(Logger, guildStateService), or(MadEvent.isInteractionCreate)),
+      sub(MusicObserver(), or(MadEvent.isInteractionCreate)),
 
       sub(MadEventsObserver(logger), or(refinement.id())),
     ),
