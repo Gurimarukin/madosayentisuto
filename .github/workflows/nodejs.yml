@@ -27,8 +27,8 @@ jobs:
     - name: npm/yarn/pnpm install
       uses: Jaid/action-npm-install@v1.2.4
       with: 
-        packageManager: pnpm 
-    - run: npm run build --if-present
+        packageManager: yarn 
+    - run: cp conf/local.example.conf.json conf/local.conf.json && npm run build --if-present
     - run: npm run lint
     - run: npm run test
       env:
