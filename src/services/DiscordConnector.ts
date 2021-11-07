@@ -1,6 +1,12 @@
+import { REST } from '@discordjs/rest'
+import { RESTPostAPIApplicationCommandsJSONBody, Routes } from 'discord-api-types/v9'
 import {
+  ApplicationCommand,
+  ApplicationCommandPermissionData,
+  ApplicationCommandPermissions,
   Channel,
   Client,
+  ClientApplication,
   ClientPresence,
   Collection,
   CommandInteraction,
@@ -20,14 +26,20 @@ import {
   User,
 } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
+import { Separated } from 'fp-ts/Separated'
+import * as D from 'io-ts/Decoder'
 
 import { ClientConfig } from '../config/Config'
 import { globalConfig } from '../globalConfig'
 import { Activity } from '../models/Activity'
+import { CommandId } from '../models/CommandId'
+import { GuildId } from '../models/GuildId'
+import { PutCommandResult } from '../models/PutCommandResult'
 import { TSnowflake } from '../models/TSnowflake'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { Colors } from '../utils/Colors'
-import { Future, IO, List, Maybe } from '../utils/fp'
+import { decodeError } from '../utils/decodeError'
+import { Either, Future, IO, List, Maybe } from '../utils/fp'
 
 type NotPartial = {
   readonly partial: false
@@ -48,6 +60,9 @@ const of = (client: Client<true>) => ({
   /**
    * Read
    */
+
+  fetchApplication: (): Future<ClientApplication> =>
+    Future.tryCatch(() => client.application.fetch()),
 
   fetchChannel: (channelId: TSnowflake): Future<Maybe<Channel>> =>
     pipe(
@@ -79,6 +94,9 @@ const of = (client: Client<true>) => ({
       debugLeft('fetchUser'),
     ),
 
+  getGuild: (guildId: GuildId): Maybe<Guild> =>
+    Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId))),
+
   /**
    * Write
    */
@@ -96,11 +114,6 @@ const of = (client: Client<true>) => ({
 })
 
 // return {
-//   clientUser: Maybe.fromNullable(client.user),
-
-//   resolveGuild: (guildId: GuildId): Maybe<Guild> =>
-//     Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId))),
-
 //   fetchMemberForUser: (
 //     guild: Guild,
 //     user:
@@ -171,6 +184,9 @@ const fetchAuditLogs = (guild: Guild): Future<Collection<string, GuildAuditLogsE
     Future.map(logs => logs.entries),
   )
 
+const fetchCommand = (guild: Guild, commandId: CommandId): Future<ApplicationCommand> =>
+  Future.tryCatch(() => guild.commands.fetch(CommandId.unwrap(commandId)))
+
 const fetchMessage = (guild: Guild, messageId: TSnowflake): Future<Maybe<Message>> =>
   pipe(
     guild.channels.cache.toJSON(),
@@ -205,8 +221,43 @@ const addRole = (
     // Future.map(_ => {}),
   )
 
+const commandPermissionsSet = (
+  command: ApplicationCommand,
+  permissions: List<ApplicationCommandPermissionData>,
+): Future<List<ApplicationCommandPermissions>> =>
+  Future.tryCatch(() =>
+    // eslint-disable-next-line functional/prefer-readonly-type
+    command.permissions.set({ permissions: permissions as ApplicationCommandPermissionData[] }),
+  )
+
 const deferReply = (interaction: CommandInteraction): Future<void> =>
   Future.tryCatch(() => interaction.deferReply())
+
+const restPutApplicationGuildCommands = (
+  rest: REST,
+  clientId: string,
+  guildId: GuildId,
+  commands: List<RESTPostAPIApplicationCommandsJSONBody>,
+): Future<Separated<ReadonlyArray<Error>, List<PutCommandResult>>> =>
+  pipe(
+    Future.tryCatch(() =>
+      rest.put(Routes.applicationGuildCommands(clientId, GuildId.unwrap(guildId)), {
+        body: commands,
+      }),
+    ),
+    Future.chain(u =>
+      pipe(
+        D.UnknownArray.decode(u),
+        Either.mapLeft(decodeError('UnknownArray')(u)),
+        Future.fromEither,
+      ),
+    ),
+    Future.map(
+      List.partitionMap(u =>
+        pipe(PutCommandResult.codec.decode(u), Either.mapLeft(decodeError('PutCommandResult')(u))),
+      ),
+    ),
+  )
 
 const sendMessage = (
   channel: PartialTextBasedChannelFields,
@@ -237,11 +288,14 @@ const sendPrettyMessage = (
 export const DiscordConnector = {
   of,
   fetchAuditLogs,
+  fetchCommand,
   fetchMessage,
   fetchPartial,
   fetchRole,
   addRole,
+  commandPermissionsSet,
   deferReply,
+  restPutApplicationGuildCommands,
   sendMessage,
   sendPrettyMessage,
 

@@ -87,7 +87,10 @@ export const Application = (
         IndexesEnsureObserver(Logger, pubSub.subject, [guildStatePersistence.ensureIndexes]),
         or(MadEvent.isAppStarted),
       ),
-      sub(DeployCommandsObserver(config.client, Logger, guildStateService), or(MadEvent.isDbReady)),
+      sub(
+        DeployCommandsObserver(Logger, config, discord, guildStateService),
+        or(MadEvent.isDbReady),
+      ),
 
       // activity status
       sub(
