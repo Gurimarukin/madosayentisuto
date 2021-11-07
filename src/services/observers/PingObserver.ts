@@ -1,6 +1,12 @@
+import { SlashCommandBuilder } from '@discordjs/builders'
+
 import { InteractionCreate } from '../../models/MadEvent'
 import { TObserver } from '../../models/TObserver'
 import { Future } from '../../utils/fp'
+
+export const pingObserverCommand = new SlashCommandBuilder()
+  .setName('ping')
+  .setDescription('Replies with pong!')
 
 export const PingObserver = (): TObserver<InteractionCreate> => ({
   next: event => {
@@ -8,7 +14,7 @@ export const PingObserver = (): TObserver<InteractionCreate> => ({
 
     if (!interaction.isCommand()) return Future.unit
 
-    if (interaction.commandName === 'ping') {
+    if (interaction.commandName === pingObserverCommand.name) {
       return Future.tryCatch(() => interaction.reply({ content: 'pong', ephemeral: true }))
     }
 

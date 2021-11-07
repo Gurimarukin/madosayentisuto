@@ -1,4 +1,3 @@
-import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from '@discordjs/rest'
 import { Routes } from 'discord-api-types/v9'
 import { pipe } from 'fp-ts/function'
@@ -10,6 +9,7 @@ import { TObserver } from '../../models/TObserver'
 import { Future, List } from '../../utils/fp'
 import { GuildStateService } from '../GuildStateService'
 import { PartialLogger } from '../Logger'
+import { pingObserverCommand } from './PingObserver'
 
 export const DeployCommandsObserver = (
   config: ClientConfig,
@@ -21,7 +21,7 @@ export const DeployCommandsObserver = (
   return {
     next: () => {
       const commands = pipe(
-        [new SlashCommandBuilder().setName('ping').setDescription('Replies with pong!')],
+        [pingObserverCommand],
         List.map(command => command.toJSON()),
       )
 
