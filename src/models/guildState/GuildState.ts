@@ -1,6 +1,5 @@
 import { Role } from 'discord.js'
 import { readonlyMap } from 'fp-ts'
-import { Lens as MonocleLens } from 'monocle-ts'
 
 import { Maybe } from '../../utils/fp'
 import { GuildId } from '../GuildId'
@@ -21,10 +20,4 @@ const empty = (id: GuildId): GuildState => ({
   subscriptions: readonlyMap.empty,
 })
 
-const Lens = {
-  calls: MonocleLens.fromPath<GuildState>()(['calls']),
-  defaultRole: MonocleLens.fromPath<GuildState>()(['defaultRole']),
-  subscriptions: MonocleLens.fromPath<GuildState>()(['subscriptions']),
-}
-
-export const GuildState = { empty, Lens }
+export const GuildState = { empty }
