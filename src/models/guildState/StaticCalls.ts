@@ -3,12 +3,6 @@ import * as C from 'io-ts/Codec'
 import { TSnowflake } from '../TSnowflake'
 import { Calls } from './Calls'
 
-const of = (message: TSnowflake, channel: TSnowflake, role: TSnowflake): StaticCalls => ({
-  message,
-  channel,
-  role,
-})
-
 const codec = C.struct({
   message: TSnowflake.codec, // listen reactions to this message
   channel: TSnowflake.codec, // notify in this channel
@@ -22,4 +16,4 @@ const fromCalls = ({ message, channel, role }: Calls): StaticCalls => ({
 })
 
 export type StaticCalls = C.TypeOf<typeof codec>
-export const StaticCalls = { of, codec, fromCalls }
+export const StaticCalls = { codec, fromCalls }
