@@ -10,7 +10,7 @@ import { MsDuration } from '../../models/MsDuration'
 import { TObserver } from '../../models/TObserver'
 import { TSnowflake } from '../../models/TSnowflake'
 import { ChannelUtils } from '../../utils/ChannelUtils'
-import { Either, Future, IO, List, Maybe, NonEmptyArray } from '../../utils/fp'
+import { Future, IO, List, Maybe, NonEmptyArray } from '../../utils/fp'
 import { LogUtils } from '../../utils/LogUtils'
 import { DiscordConnector } from '../DiscordConnector'
 import { PartialLogger } from '../Logger'
@@ -160,7 +160,8 @@ const randomMessage =
   (...args: A): IO<string> =>
     pipe(
       random.randomElem(nea),
-      io.map(msg => Either.right(msg(...args))),
+      IO.fromIO,
+      IO.map(msg => msg(...args)),
     )
 
 const leaveMessages: NonEmptyArray<MessageGetter<readonly [member: string]>> = [

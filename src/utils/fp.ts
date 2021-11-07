@@ -106,12 +106,13 @@ export const Try = {
 }
 
 const futureRight = <A>(a: A): Future<A> => taskEither.right(a)
+const futureFromIO: <A>(fa: io.IO<A>) => Future<A> = taskEither.fromIO
 export type Future<A> = task.Task<Try<A>>
 export const Future = {
   ...taskEither,
   right: futureRight,
   left: <A = never>(e: Error): Future<A> => taskEither.left(e),
-  fromIO: <A>(fa: io.IO<A>): Future<A> => taskEither.fromIO(fa),
+  fromIO: futureFromIO,
   tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, unknownAsError),
   unit: futureRight<void>(undefined),
   recover: <A>(onError: (e: Error) => Future<A>): ((future: Future<A>) => Future<A>) =>
@@ -124,10 +125,12 @@ export const Future = {
 }
 
 const ioTryCatch = <A>(a: Lazy<A>): IO<A> => ioEither.tryCatch(a, unknownAsError)
+const ioFromIO: <A>(fa: io.IO<A>) => IO<A> = ioEither.fromIO
 export type IO<A> = io.IO<Try<A>>
 export const IO = {
   ...ioEither,
   tryCatch: ioTryCatch,
+  fromIO: ioFromIO,
   unit: ioEither.right<never, void>(undefined),
   runFuture:
     <A>(f: Future<A>): IO<void> =>
