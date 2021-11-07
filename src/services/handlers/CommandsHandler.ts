@@ -254,7 +254,7 @@
 //           `Yoho, ${role} !
 //           |
 //           |Tu peux t'abonner aux appels sur ce serveur en réagissant avec ${callsEmoji}  !
-//           |Ils seront notifiés dans ${channel}.`,
+//           |Ils seront notifiés dans le salon ${channel} (que tu devrais rendre muet).`,
 //         ),
 //       ),
 //       Future.chain(
