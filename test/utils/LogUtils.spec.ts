@@ -1,17 +1,15 @@
 import { Guild, TextChannel, User } from 'discord.js'
 
+import { ChannelUtils } from '../../src/utils/ChannelUtils'
 import { LogUtils } from '../../src/utils/LogUtils'
 
-const { format } = LogUtils
+const { __testableFormat } = LogUtils
+const format = __testableFormat((() => true) as unknown as typeof ChannelUtils.isNamedChannel)
 
 describe('LogUtils.format', () => {
   it('should format', () => {
     const guild = { name: 'My Guild' } as Guild
-    const channel = {
-      toString() {
-        return 'my-channel'
-      },
-    } as TextChannel
+    const channel = { name: 'my-channel' } as TextChannel
     const author = { tag: 'User#12345' } as User
 
     expect(format(null, null, null)).toStrictEqual('')

@@ -16,25 +16,28 @@ import { Logger } from '../services/Logger'
 import { ChannelUtils } from './ChannelUtils'
 import { IO, List } from './fp'
 
-const format = (
-  guild: Guild | null = null,
-  channel:
-    | PartialDMChannel
-    | DMChannel
-    | TextChannel
-    | NewsChannel
-    | ThreadChannel
-    | VoiceChannel
-    | StageChannel
-    | null = null,
-  author: User | null = null,
-): string => {
-  const chanName =
-    channel !== null && ChannelUtils.isNamedChannel(channel) ? `#${channel.name}` : ''
-  const guildAndChan = guild === null ? chanName : `[${guild.name}${chanName}]`
-  const authorStr = author !== null ? `${guildAndChan !== '' ? ' ' : ''}${author.tag}:` : ''
-  return `${guildAndChan}${authorStr}`
-}
+type Chan =
+  | PartialDMChannel
+  | DMChannel
+  | TextChannel
+  | NewsChannel
+  | ThreadChannel
+  | VoiceChannel
+  | StageChannel
+
+/**
+ * @deprecated
+ */
+const __testableFormat =
+  (refinement: typeof ChannelUtils.isNamedChannel) =>
+  (guild: Guild | null = null, channel: Chan | null = null, author: User | null = null): string => {
+    const chanName = channel !== null && refinement(channel) ? `#${channel.name}` : ''
+    const guildAndChan = guild === null ? chanName : `[${guild.name}${chanName}]`
+    const authorStr = author !== null ? `${guildAndChan !== '' ? ' ' : ''}${author.tag}:` : ''
+    return `${guildAndChan}${authorStr}`
+  }
+
+const format = __testableFormat(ChannelUtils.isNamedChannel)
 
 const withGuild =
   (logger: Logger, level: LogLevel, guild: Guild) =>
@@ -46,4 +49,4 @@ const withAuthor =
   (...args: List<unknown>): IO<void> =>
     logger[level](format(message.guild, message.channel, message.author), ...args)
 
-export const LogUtils = { format, withGuild, withAuthor }
+export const LogUtils = { __testableFormat, format, withGuild, withAuthor }
