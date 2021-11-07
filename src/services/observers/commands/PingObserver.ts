@@ -6,7 +6,7 @@ import { Future } from '../../../utils/fp'
 
 export const pingObserverCommand = new SlashCommandBuilder()
   .setName('ping')
-  .setDescription('Replies with pong!')
+  .setDescription('Jean Plank répond pong.')
 
 export const PingObserver = (): TObserver<InteractionCreate> => ({
   next: event => {

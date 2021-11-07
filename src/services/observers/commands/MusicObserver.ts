@@ -20,7 +20,7 @@ import { PartialLogger } from '../../Logger'
 
 export const musicObserverCommand = new SlashCommandBuilder()
   .setName('play')
-  .setDescription('Plays music')
+  .setDescription('Jean Plank joue un petit air.')
 
 export const MusicObserver = (
   Logger: PartialLogger,
