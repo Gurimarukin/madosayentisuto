@@ -64,7 +64,7 @@ export const Application = (
   const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
 
-  const guildStateService = GuildStateService(guildStatePersistence, discord)
+  const guildStateService = GuildStateService(Logger, discord, guildStatePersistence)
 
   return pipe(
     IO.Do,

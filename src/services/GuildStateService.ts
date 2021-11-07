@@ -7,53 +7,100 @@ import { Calls } from '../models/guildState/Calls'
 import { GuildState } from '../models/guildState/GuildState'
 import { GuildStateDb } from '../models/guildState/GuildStateDb'
 import { StaticCalls } from '../models/guildState/StaticCalls'
+import { TSnowflake } from '../models/TSnowflake'
 import { GuildStatePersistence } from '../persistence/GuildStatePersistence'
 import { ChannelUtils } from '../utils/ChannelUtils'
-import { Future, Maybe } from '../utils/fp'
+import { Future, IO, List, Maybe } from '../utils/fp'
+import { LogUtils } from '../utils/LogUtils'
 import { DiscordConnector } from './DiscordConnector'
+import { PartialLogger } from './Logger'
 
 export type GuildStateService = ReturnType<typeof GuildStateService>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const GuildStateService = (
-  guildStatePersistence: GuildStatePersistence,
+  Logger: PartialLogger,
   discord: DiscordConnector,
+  guildStatePersistence: GuildStatePersistence,
 ) => {
-  const cache: ReadonlyMap<GuildId, GuildState> = readonlyMap.empty
+  const logger = Logger('GuildStateService')
+
+  const cache = new Map<GuildId, GuildState>()
 
   return {
     findAll: guildStatePersistence.findAll,
 
-    // setCalls: (guild: Guild, calls: Calls): Future<boolean> =>
-    //   set(guild, GuildState.Lens.calls, Maybe.some(StaticCalls.fromCalls(calls))),
+    setCalls: (guild: Guild, calls: Calls): IO<GuildState> =>
+      cacheUpdateAtAndUpsertDb(guild, GuildState.Lens.calls.set(Maybe.some(calls))),
 
-    getCalls: (guild: Guild): Future<Maybe<Calls>> => get(guild, GuildState.Lens.calls.get),
+    getCalls: (guild: Guild): Future<Maybe<Calls>> =>
+      pipe(get(guild), Future.map(GuildState.Lens.calls.get)),
 
-    // setDefaultRole: (guild: Guild, role: Role): Future<boolean> =>
-    //   set(guild, GuildState.Lens.defaultRole, Maybe.some(TSnowflake.wrap(role.id))),
+    setDefaultRole: (guild: Guild, role: Role): IO<GuildState> =>
+      cacheUpdateAtAndUpsertDb(guild, GuildState.Lens.defaultRole.set(Maybe.some(role))),
 
     getDefaultRole: (guild: Guild): Future<Maybe<Role>> =>
-      get(guild, GuildState.Lens.defaultRole.get),
+      pipe(get(guild), Future.map(GuildState.Lens.defaultRole.get)),
+
+    getSubscriptions: (guild: Guild): Future<ReadonlyMap<TSnowflake, unknown>> =>
+      pipe(get(guild), Future.map(GuildState.Lens.subscriptions.get)),
+
+    setSubscriptions: (
+      guild: Guild,
+      subscriptions: ReadonlyMap<TSnowflake, unknown>,
+    ): IO<GuildState> =>
+      cacheUpdateAtAndUpsertDb(guild, GuildState.Lens.subscriptions.set(subscriptions)),
   }
 
-  // function set<A>(guild: Guild, lens: Lens<GuildState, A>, a: A): Future<boolean> {
-  //   const guildId = GuildId.wrap(guild.id)
-  //   return pipe(
-  //     guildStatePersistence.find(guildId),
-  //     Future.map(Maybe.getOrElse(() => GuildState.empty(guildId))),
-  //     Future.map(lens.set(a)),
-  //     Future.chain(s => guildStatePersistence.upsert(guildId, s)),
-  //   )
-  // }
+  function cacheSet(guildId: GuildId, state: GuildState): IO<ReadonlyMap<GuildId, GuildState>> {
+    return IO.fromIO(() => cache.set(guildId, state))
+  }
 
-  function get<A>(guild: Guild, getter: (state: GuildState) => A): Future<A> {
+  function cacheUpdateAtAndUpsertDb(
+    guild: Guild,
+    update: (state: GuildState) => GuildState,
+  ): IO<GuildState> {
+    const guildId = GuildId.wrap(guild.id)
+    return pipe(
+      cacheUpdateAt(guildId, update),
+      IO.chain(state => {
+        return pipe(
+          guildStatePersistence.upsert(guildId, GuildStateDb.fromGuildState(state)),
+          Future.chain(success => (success ? Future.unit : error())),
+          Future.recover(e => error('-', e)),
+          IO.runFuture,
+          IO.map(() => state),
+        )
+
+        function error(...u: List<unknown>): Future<void> {
+          return Future.fromIOEither(
+            LogUtils.withGuild(logger, 'error', guild)('Failed to upsert state', ...u),
+          )
+        }
+      }),
+    )
+  }
+
+  function cacheUpdateAt(
+    guildId: GuildId,
+    update: (state: GuildState) => GuildState,
+  ): IO<GuildState> {
+    const state = pipe(
+      cache,
+      readonlyMap.lookup(GuildId.Eq)(guildId),
+      Maybe.getOrElse(() => GuildState.empty(guildId)),
+    )
+    return pipe(
+      cacheSet(guildId, update(state)),
+      IO.map(() => state),
+    )
+  }
+
+  function get(guild: Guild): Future<GuildState> {
     return pipe(
       cache,
       readonlyMap.lookup(GuildId.Eq)(GuildId.wrap(guild.id)),
-      Maybe.fold(
-        () => pipe(addGuildToCacheFromDb(guild), Future.map(getter)),
-        flow(getter, Future.right),
-      ),
+      Maybe.fold(() => pipe(addGuildToCacheFromDb(guild)), Future.right),
     )
   }
 
@@ -67,9 +114,21 @@ export const GuildStateService = (
           flow(
             fetchCallsAndDefaultRole(guild),
             Future.map(
-              (res): GuildState => ({ ...res, id: guildId, subscriptions: readonlyMap.empty }),
+              ({ calls, defaultRole }): GuildState => ({
+                id: guildId,
+                calls,
+                defaultRole,
+                subscriptions: readonlyMap.empty,
+              }),
             ),
           ),
+        ),
+      ),
+      Future.chain(state =>
+        pipe(
+          cacheSet(guildId, state),
+          Future.fromIOEither,
+          Future.map(() => state),
         ),
       ),
     )
