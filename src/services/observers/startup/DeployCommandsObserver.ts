@@ -9,6 +9,7 @@ import { TObserver } from '../../../models/TObserver'
 import { Future, List } from '../../../utils/fp'
 import { GuildStateService } from '../../GuildStateService'
 import { PartialLogger } from '../../Logger'
+import { adminCommands } from '../commands/AdminCommandsObserver'
 import { musicObserverCommand } from '../commands/MusicObserver'
 import { pingObserverCommand } from '../commands/PingObserver'
 
@@ -22,7 +23,7 @@ export const DeployCommandsObserver = (
   return {
     next: () => {
       const commands = pipe(
-        [pingObserverCommand, musicObserverCommand],
+        [...adminCommands, pingObserverCommand, musicObserverCommand],
         List.map(command => command.toJSON()),
       )
 

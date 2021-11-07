@@ -16,6 +16,7 @@ import { DiscordConnector } from './services/DiscordConnector'
 import { GuildStateService } from './services/GuildStateService'
 import { Logger as LoggerType, PartialLogger } from './services/Logger'
 import { ActivityStatusObserver } from './services/observers/ActivityStatusObserver'
+import { AdminCommandsObserver } from './services/observers/commands/AdminCommandsObserver'
 import { MusicObserver } from './services/observers/commands/MusicObserver'
 import { PingObserver } from './services/observers/commands/PingObserver'
 import { MadEventsObserver } from './services/observers/MadEventObserver'
@@ -109,6 +110,7 @@ export const Application = (
       sub(ThanksCaptainObserver(config.captain, discord), or(MadEvent.isMessageCreate)),
 
       // commands
+      sub(AdminCommandsObserver(), or(MadEvent.isInteractionCreate)),
       sub(PingObserver(), or(MadEvent.isInteractionCreate)),
       sub(MusicObserver(Logger, guildStateService), or(MadEvent.isInteractionCreate)),
 
