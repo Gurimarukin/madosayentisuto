@@ -27,6 +27,7 @@ import { PingObserver } from './services/observers/PingObserver'
 import { SendGreetingDMObserver } from './services/observers/SendGreetingDMObserver'
 import { SetDefaultRoleObserver } from './services/observers/SetDefaultRoleObserver'
 import { ThanksCaptainObserver } from './services/observers/ThanksCaptainObserver'
+import { VoiceStateUpdateTransformer } from './services/observers/VoiceStateUpdateTransformer'
 import { publishDiscordEvents } from './services/publishers/publishDiscordEvents'
 import { scheduleCronJob } from './services/publishers/scheduleCronJob'
 import { PubSub } from './services/PubSub'
@@ -85,10 +86,6 @@ export const Application = (
         apply.sequenceT(IO.ApplicativePar)(
           // startup
           sub(
-            ActivityStatusObserver(Logger, discord, botStatePersistence),
-            or(MadEvent.isAppStarted, MadEvent.isDbReady, MadEvent.isCronJob),
-          ),
-          sub(
             IndexesEnsureObserver(Logger, pubSub.subject, [guildStatePersistence.ensureIndexes]),
             or(MadEvent.isAppStarted),
           ),
@@ -96,6 +93,11 @@ export const Application = (
             DeployCommandsObserver(config.client, Logger, guildStateService),
             or(MadEvent.isDbReady),
           ),
+          sub(
+            ActivityStatusObserver(Logger, discord, botStatePersistence),
+            or(MadEvent.isAppStarted, MadEvent.isDbReady, MadEvent.isCronJob),
+          ),
+          sub(VoiceStateUpdateTransformer(Logger, pubSub.subject), or(MadEvent.isVoiceStateUpdate)),
 
           // leave/join
           sub(SendGreetingDMObserver(Logger), or(MadEvent.isGuildMemberAdd)),
@@ -104,12 +106,8 @@ export const Application = (
 
           // calls
           sub(
-            NotifyVoiceCallObserver(Logger, guildStateService, pubSub.subject),
-            or(
-              MadEvent.isVoiceStateUpdate,
-              MadEvent.isPublicCallStarted,
-              MadEvent.isPublicCallEnded,
-            ),
+            NotifyVoiceCallObserver(Logger, guildStateService),
+            or(MadEvent.isPublicCallStarted, MadEvent.isPublicCallEnded),
           ),
 
           // messages
