@@ -246,6 +246,7 @@ export const DiscordConnector = {
         new Promise<Client>(resolve => {
           const client = new Client({
             intents: [
+              Intents.FLAGS.DIRECT_MESSAGES,
               Intents.FLAGS.GUILDS,
               Intents.FLAGS.GUILD_BANS,
               Intents.FLAGS.GUILD_MEMBERS,
