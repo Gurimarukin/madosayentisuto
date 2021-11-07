@@ -31,7 +31,6 @@ module.exports = {
           'APIInteractionDataResolvedChannel',
           'APIRole',
           'GuildChannel',
-          'Interaction<CacheType>',
           'Role',
           'ThreadChannel',
         ],

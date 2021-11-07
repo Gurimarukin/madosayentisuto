@@ -1,3 +1,5 @@
+import util from 'util'
+
 import { StageChannel, VoiceChannel } from 'discord.js'
 
 import { MadEvent } from '../../models/MadEvent'
@@ -22,7 +24,11 @@ export const MadEventsObserver = (logger: Logger): TObserver<MadEvent> => ({
             event.interaction.guild,
             event.interaction.channel,
             event.interaction.user,
-          )} ${event.interaction}`
+          )} ${
+            event.interaction.isCommand()
+              ? event.interaction
+              : util.formatWithOptions({ breakLength: Infinity }, { type: event.interaction.type })
+          }`
 
         case 'GuildMemberAdd':
         case 'GuildMemberRemove':
