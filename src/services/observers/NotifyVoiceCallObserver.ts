@@ -185,7 +185,7 @@ export const NotifyVoiceCallObserver = (
         logger,
         'info',
         member.guild,
-      )(`Call ended in "#${channel.name}" by "${member.user.tag}"`),
+      )(`Call ended in #${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() => guildStateService.getCalls(member.guild)),
       Future.chain(
