@@ -5,7 +5,3 @@ export type Calls = {
   readonly channel: TextChannel
   readonly role: Role
 }
-
-export const Calls = {
-  of: (message: Message, channel: TextChannel, role: Role): Calls => ({ message, channel, role }),
-}
