@@ -8,7 +8,7 @@ import { Calls } from '../models/guildState/Calls'
 import { CallsDb } from '../models/guildState/db/CallsDb'
 import { GuildStateDb } from '../models/guildState/db/GuildStateDb'
 import { GuildState } from '../models/guildState/GuildState'
-import { TSnowflake } from '../models/TSnowflake'
+import { MusicSubscription } from '../models/guildState/MusicSubscription'
 import { GuildStatePersistence } from '../persistence/GuildStatePersistence'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { Future, IO, List, Maybe } from '../utils/fp'
@@ -46,13 +46,11 @@ export const GuildStateService = (
     getDefaultRole: (guild: Guild): Future<Maybe<Role>> =>
       pipe(get(guild), Future.map(GuildState.Lens.defaultRole.get)),
 
-    setSubscriptions: (
-      guild: Guild,
-      subscriptions: ReadonlyMap<TSnowflake, unknown>,
-    ): IO<GuildState> => setLens(guild, 'subscriptions', subscriptions),
+    setSubscription: (guild: Guild, subscription: Maybe<MusicSubscription>): IO<GuildState> =>
+      setLens(guild, 'subscription', subscription),
 
-    getSubscriptions: (guild: Guild): Future<ReadonlyMap<TSnowflake, unknown>> =>
-      pipe(get(guild), Future.map(GuildState.Lens.subscriptions.get)),
+    getSubscription: (guild: Guild): Future<Maybe<MusicSubscription>> =>
+      pipe(get(guild), Future.map(GuildState.Lens.subscription.get)),
   }
 
   function cacheSet(guildId: GuildId, state: GuildState): IO<ReadonlyMap<GuildId, GuildState>> {
@@ -157,7 +155,7 @@ export const GuildStateService = (
                 id: guildId,
                 calls,
                 defaultRole,
-                subscriptions: readonlyMap.empty,
+                subscription: Maybe.none,
               }),
             ),
           ),

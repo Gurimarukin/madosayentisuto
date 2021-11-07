@@ -3,6 +3,7 @@ import {
   Client,
   ClientPresence,
   Collection,
+  CommandInteraction,
   DiscordAPIError,
   Guild,
   GuildAuditLogsEntry,
@@ -204,6 +205,9 @@ const addRole = (
     // Future.map(_ => {}),
   )
 
+const deferReply = (interaction: CommandInteraction): Future<void> =>
+  Future.tryCatch(() => interaction.deferReply())
+
 const sendMessage = (
   channel: PartialTextBasedChannelFields,
   options: string | MessagePayload | MessageOptions,
@@ -237,6 +241,7 @@ export const DiscordConnector = {
   fetchPartial,
   fetchRole,
   addRole,
+  deferReply,
   sendMessage,
   sendPrettyMessage,
 

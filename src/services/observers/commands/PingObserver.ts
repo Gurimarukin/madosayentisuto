@@ -12,12 +12,10 @@ export const PingObserver = (): TObserver<InteractionCreate> => ({
   next: event => {
     const interaction = event.interaction
 
-    if (!interaction.isCommand()) return Future.unit
-
-    if (interaction.commandName === pingObserverCommand.name) {
-      return Future.tryCatch(() => interaction.reply({ content: 'pong', ephemeral: true }))
+    if (!interaction.isCommand() || interaction.commandName !== pingObserverCommand.name) {
+      return Future.unit
     }
 
-    return Future.unit
+    return Future.tryCatch(() => interaction.reply({ content: 'pong', ephemeral: true }))
   },
 })

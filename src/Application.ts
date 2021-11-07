@@ -110,7 +110,7 @@ export const Application = (
 
       // commands
       sub(PingObserver(), or(MadEvent.isInteractionCreate)),
-      sub(MusicObserver(Logger), or(MadEvent.isDbReady, MadEvent.isPublicCallStarted)),
+      sub(MusicObserver(Logger, guildStateService), or(MadEvent.isInteractionCreate)),
 
       sub(MadEventsObserver(logger), or(refinement.id())),
     ),

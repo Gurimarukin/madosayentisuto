@@ -1,3 +1,4 @@
+import { SlashCommandBuilder } from '@discordjs/builders'
 import {
   AudioPlayerStatus,
   StreamType,
@@ -11,33 +12,43 @@ import {
 import { StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { DbReady, PublicCallStarted } from '../../../models/MadEvent'
+import { InteractionCreate } from '../../../models/MadEvent'
 import { TObserver } from '../../../models/TObserver'
-import { Future, IO } from '../../../utils/fp'
-import { LogUtils } from '../../../utils/LogUtils'
+import { Future, IO, todo } from '../../../utils/fp'
+import { GuildStateService } from '../../GuildStateService'
 import { PartialLogger } from '../../Logger'
 
-export const MusicObserver = (Logger: PartialLogger): TObserver<DbReady | PublicCallStarted> => {
+export const musicObserverCommand = new SlashCommandBuilder()
+  .setName('play')
+  .setDescription('Plays music')
+
+export const MusicObserver = (
+  Logger: PartialLogger,
+  guildStateService: GuildStateService,
+): TObserver<InteractionCreate> => {
   const logger = Logger('MusicObserver')
   const player = createAudioPlayer()
 
   return {
     next: event => {
-      switch (event.type) {
-        case 'DbReady':
-          return playSong()
+      const interaction = event.interaction
+      // const guild = interaction.guild
 
-        case 'PublicCallStarted':
-          return pipe(
-            connectToChannel(event.channel),
-            Future.map(connection => connection.subscribe(player)),
-            Future.chain(() =>
-              Future.fromIOEither(
-                LogUtils.withGuild(logger, 'debug', event.channel.guild)('Playing now'),
-              ),
-            ),
-          )
-      }
+      // if (
+      //   !interaction.isCommand() ||
+      //   interaction.commandName !== musicObserverCommand.name ||
+      //   guild === null
+      // ) {
+      //   return Future.unit
+      // }
+
+      // const res = pipe(
+      //   DiscordConnector.deferReply(interaction),
+      //   Future.chain(() => guildStateService.getSubscription(guild)),
+      //   Future.chain()
+      // )
+
+      return todo(guildStateService, logger, interaction, playSong, connectToChannel)
     },
   }
 
