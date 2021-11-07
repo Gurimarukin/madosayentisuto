@@ -19,7 +19,7 @@ import { Future, todo } from '../../../utils/fp'
 const callsInitCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
   .setName('calls')
-  .setDescription("Jean Plank n'est pas votre secrétaire mais gère vos appels.")
+  .setDescription("Jean Plank n'est pas votre secrétaire mais gère vos appels")
   .addSubcommand(subcommand =>
     /**
      * Jean Plank envoie un message dans le salon où la commande a été effectuée.
@@ -28,18 +28,18 @@ const callsInitCommand = new SlashCommandBuilder()
      */
     subcommand
       .setName('init')
-      .setDescription(`Pour initier la gestion des appels.`)
+      .setDescription(`Pour initier la gestion des appels`)
       .addChannelOption(option =>
         option
           .setName('channel')
           .addChannelTypes([ChannelType.GuildText])
-          .setDescription('Le salon dans lequel les appels seront notifiés.')
+          .setDescription('Le salon dans lequel les appels seront notifiés')
           .setRequired(true),
       )
       .addRoleOption(option =>
         option
           .setName('role')
-          .setDescription('Le rôle qui sera notifié des appels.')
+          .setDescription('Le rôle qui sera notifié des appels')
           .setRequired(true),
       ),
   )
