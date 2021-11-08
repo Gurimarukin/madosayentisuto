@@ -1,7 +1,5 @@
-1. Clics boutons auto rôle
-2. Abonnement appels
-3. Stream de musique : https:1.github.com/JamesKyburz/youtube-audio-stream
-4. Commandes pour toute cette merde
+1. Stream de musique : https:1.github.com/JamesKyburz/youtube-audio-stream
+2. Commandes pour toute cette merde
    1. DefaultRoleGet
    2. DefaultRoleSet
 
