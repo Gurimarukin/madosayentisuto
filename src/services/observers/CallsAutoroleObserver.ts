@@ -59,10 +59,10 @@ export const CallsAutoroleObserver = (
             pipe(
               DiscordConnector.addRole(member, role),
               Future.map(success => {
-                const log = LogUtils.pretty(logger, guild, interaction.channel, member.user)
+                const log = LogUtils.pretty(logger, guild)
                 return success
-                  ? log('debug', `Added to role @${role.name}`)
-                  : log('warn', `Couldn't add to role @${role.name}`)
+                  ? log('debug', `Added user ${member.user.tag} to role @${role.name}`)
+                  : log('warn', `Couldn't add ${member.user.tag} to role @${role.name}`)
               }),
               Future.chain(Future.fromIOEither),
             ),

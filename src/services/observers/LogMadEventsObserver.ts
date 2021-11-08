@@ -22,8 +22,8 @@ export const LogMadEventsObserver = (logger: Logger): TObserver<MadEvent> => ({
         case 'InteractionCreate':
           return `${format(
             event.interaction.guild,
-            event.interaction.channel,
             event.interaction.user,
+            event.interaction.channel,
           )} ${
             event.interaction.isCommand()
               ? event.interaction
@@ -39,16 +39,15 @@ export const LogMadEventsObserver = (logger: Logger): TObserver<MadEvent> => ({
         case 'VoiceStateUpdate':
           return `${format(
             event.oldState.guild,
-            null,
             event.oldState.member?.user ?? event.newState.member?.user,
           )} ${maybeChannel(event.oldState.channel)} > ${maybeChannel(event.newState.channel)}`
 
         case 'PublicCallStarted':
         case 'PublicCallEnded':
-          return `${format(event.channel.guild, event.channel)} ${event.member.user.tag}`
+          return format(event.channel.guild, event.member.user, event.channel)
 
         case 'MessageCreate':
-          return `${format(event.message.guild, event.message.channel, event.message.author)} ${
+          return `${format(event.message.guild, event.message.author, event.message.channel)} ${
             event.message.content
           }`
       }

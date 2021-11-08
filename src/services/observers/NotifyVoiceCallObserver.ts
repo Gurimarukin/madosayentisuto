@@ -31,12 +31,9 @@ export const NotifyVoiceCallObserver = (
     member: GuildMember,
     channel: VoiceChannel | StageChannel,
   ): Future<void> {
+    const log = LogUtils.pretty(logger, member.guild)
     return pipe(
-      LogUtils.withGuild(
-        logger,
-        'info',
-        member.guild,
-      )(`Call started in #${channel.name} by ${member.user.tag}`),
+      log('info', `Call started in #${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() => guildStateService.getCalls(member.guild)),
       Future.chain(
@@ -52,11 +49,10 @@ export const NotifyVoiceCallObserver = (
                 Maybe.fold(
                   () =>
                     Future.fromIOEither(
-                      LogUtils.withGuild(
-                        logger,
+                      log(
                         'warn',
-                        member.guild,
-                      )(`Couldn't send call started notification in #${calls.channel.name}`),
+                        `Couldn't send call started notification in #${calls.channel.name}`,
+                      ),
                     ),
                   () => Future.unit,
                 ),
@@ -71,12 +67,9 @@ export const NotifyVoiceCallObserver = (
     member: GuildMember,
     channel: VoiceChannel | StageChannel,
   ): Future<void> {
+    const log = LogUtils.pretty(logger, member.guild)
     return pipe(
-      LogUtils.withGuild(
-        logger,
-        'info',
-        member.guild,
-      )(`Call ended in #${channel.name} by ${member.user.tag}`),
+      log('info', `Call ended in #${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() => guildStateService.getCalls(member.guild)),
       Future.chain(
@@ -89,11 +82,10 @@ export const NotifyVoiceCallObserver = (
                 Maybe.fold(
                   () =>
                     Future.fromIOEither(
-                      LogUtils.withGuild(
-                        logger,
+                      log(
                         'warn',
-                        member.guild,
-                      )(`Couldn't send call ended notification in #${calls.channel.name}`),
+                        `Couldn't send call ended notification in #${calls.channel.name}`,
+                      ),
                     ),
                   () => Future.unit,
                 ),

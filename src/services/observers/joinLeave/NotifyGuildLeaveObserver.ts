@@ -27,20 +27,20 @@ export const NotifyGuildLeaveObserver = (Logger: PartialLogger): TObserver<Guild
         io.map(n => new Date(n)),
         Future.fromIO,
         Future.chain(now => getLastLog(now, guild, TSnowflake.wrap(user.id))),
-        Future.chain(log => {
-          const logWithGuild = LogUtils.withGuild(logger, 'info', guild)
+        Future.chain(logEntry => {
+          const log = LogUtils.pretty(logger, guild)
           const boldMember = bold(user.tag)
           return pipe(
-            log,
+            logEntry,
             Maybe.fold(
               () =>
                 pipe(
-                  logWithGuild(`${user.tag} left the guild`),
+                  log('info', `${user.tag} left the guild`),
                   IO.chain(() => randomMessage(leaveMessages)(boldMember)),
                 ),
               ({ action, executor, reason }) =>
                 pipe(
-                  logWithGuild(logMessage(user.tag, executor.tag, action, reason)),
+                  log('info', logMessage(user.tag, executor.tag, action, reason)),
                   IO.chain(() =>
                     randomMessage(kickOrBanMessages(action))(boldMember, userMention(executor.id)),
                   ),

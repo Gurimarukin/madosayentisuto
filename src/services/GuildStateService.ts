@@ -78,12 +78,15 @@ export const GuildStateService = (
     update: (state: GuildState) => GuildState,
   ): IO<GuildState> {
     const guildId = GuildId.wrap(guild.id)
+
     return pipe(
       cacheUpdateAt(guildId, update),
       IO.chain(state => {
+        const log = LogUtils.pretty(logger, guild)
+
         // upsert new state, but don't wait until it's done; immediatly return state from cache
         return pipe(
-          LogUtils.withGuild(logger, 'debug', guild)('Upserting state'),
+          log('debug', 'Upserting state'),
           Future.fromIOEither,
           Future.chain(() =>
             guildStatePersistence.upsert(guildId, GuildStateDb.fromGuildState(state)),
@@ -95,9 +98,7 @@ export const GuildStateService = (
         )
 
         function error(...u: List<unknown>): Future<void> {
-          return Future.fromIOEither(
-            LogUtils.withGuild(logger, 'error', guild)('Failed to upsert state', ...u),
-          )
+          return Future.fromIOEither(log('error', 'Failed to upsert state', ...u))
         }
       }),
     )
@@ -141,11 +142,10 @@ export const GuildStateService = (
           Maybe.fold(
             () =>
               pipe(
-                LogUtils.withGuild(
-                  logger,
+                LogUtils.pretty(logger, guild)(
                   'debug',
-                  guild,
-                )("State wasn't found in cache, loading it from db"),
+                  "State wasn't found in cache, loading it from db",
+                ),
                 Future.fromIOEither,
                 Future.chain(() => addGuildToCacheFromDb(guild)),
               ),

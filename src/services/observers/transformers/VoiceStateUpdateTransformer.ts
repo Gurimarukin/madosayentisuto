@@ -61,11 +61,10 @@ export const VoiceStateUpdateTransformer = (
     channel: VoiceChannel | StageChannel,
   ): Future<void> {
     return pipe(
-      LogUtils.withGuild(
-        logger,
+      LogUtils.pretty(logger, channel.guild)(
         'debug',
-        channel.guild,
-      )(`${member.user.tag} joined the channel #${channel.name}`),
+        `${member.user.tag} joined the channel #${channel.name}`,
+      ),
       Future.fromIOEither,
       Future.chain(() =>
         ChannelUtils.isPublic(channel) && peopleInPublicVocalChans(member.guild).length === 1
@@ -81,11 +80,10 @@ export const VoiceStateUpdateTransformer = (
     to: VoiceChannel | StageChannel,
   ): Future<void> {
     return pipe(
-      LogUtils.withGuild(
-        logger,
+      LogUtils.pretty(logger, from.guild)(
         'debug',
-        from.guild,
-      )(`${member.user.tag} moved from channel #${from.name} to #${to.name}`),
+        `${member.user.tag} moved from channel #${from.name} to #${to.name}`,
+      ),
       Future.fromIOEither,
       Future.chain(() => {
         const inPublicChans = peopleInPublicVocalChans(member.guild)
@@ -113,11 +111,10 @@ export const VoiceStateUpdateTransformer = (
 
   function onLeftChannel(member: GuildMember, channel: VoiceChannel | StageChannel): Future<void> {
     return pipe(
-      LogUtils.withGuild(
-        logger,
+      LogUtils.pretty(logger, channel.guild)(
         'debug',
-        channel.guild,
-      )(`${member.user.tag} left the channel #${channel.name}`),
+        `${member.user.tag} left the channel #${channel.name}`,
+      ),
       Future.fromIOEither,
       Future.chain(() =>
         ChannelUtils.isPublic(channel) && List.isEmpty(peopleInPublicVocalChans(member.guild))

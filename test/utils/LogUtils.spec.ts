@@ -1,10 +1,11 @@
 import { Guild, TextChannel, User } from 'discord.js'
+import { refinement } from 'fp-ts'
 
 import { ChannelUtils } from '../../src/utils/ChannelUtils'
 import { LogUtils } from '../../src/utils/LogUtils'
 
 const { __testableFormat } = LogUtils
-const format = __testableFormat((() => true) as unknown as typeof ChannelUtils.isNamedChannel)
+const format = __testableFormat(refinement.id() as typeof ChannelUtils.isNamedChannel)
 
 describe('LogUtils.format', () => {
   it('should format', () => {
@@ -14,11 +15,11 @@ describe('LogUtils.format', () => {
 
     expect(format(null, null, null)).toStrictEqual('')
     expect(format(guild, null, null)).toStrictEqual('[My Guild]')
-    expect(format(null, channel, null)).toStrictEqual('#my-channel')
-    expect(format(null, null, author)).toStrictEqual('User#12345:')
-    expect(format(guild, channel, null)).toStrictEqual('[My Guild#my-channel]')
-    expect(format(guild, null, author)).toStrictEqual('[My Guild] User#12345:')
-    expect(format(null, channel, author)).toStrictEqual('#my-channel User#12345:')
-    expect(format(guild, channel, author)).toStrictEqual('[My Guild#my-channel] User#12345:')
+    expect(format(null, null, channel)).toStrictEqual('#my-channel')
+    expect(format(null, author, null)).toStrictEqual('User#12345:')
+    expect(format(guild, null, channel)).toStrictEqual('[My Guild#my-channel]')
+    expect(format(guild, author, null)).toStrictEqual('[My Guild] User#12345:')
+    expect(format(null, author, channel)).toStrictEqual('#my-channel User#12345:')
+    expect(format(guild, author, channel)).toStrictEqual('[My Guild#my-channel] User#12345:')
   })
 })

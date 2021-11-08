@@ -17,33 +17,23 @@ export const SetDefaultRoleObserver = (
   return {
     next: event => {
       const member = event.member
+      const log = LogUtils.pretty(logger, member.guild)
+
       return pipe(
         guildStateService.getDefaultRole(member.guild),
         Future.chain(
           Maybe.fold(
             () =>
               Future.fromIOEither(
-                LogUtils.withGuild(
-                  logger,
-                  'warn',
-                  member.guild,
-                )(`No role stored - couldn't add ${member.user.tag}`),
+                log('warn', `No default role stored, couldn't add ${member.user.tag}`),
               ),
             role =>
               pipe(
                 DiscordConnector.addRole(member, role),
                 Future.map(success =>
                   success
-                    ? LogUtils.withGuild(
-                        logger,
-                        'debug',
-                        member.guild,
-                      )(`Added user ${member.user.tag} to role @${role.name}`)
-                    : LogUtils.withGuild(
-                        logger,
-                        'warn',
-                        member.guild,
-                      )(`Couldn't add ${member.user.tag} to role @${role.name}`),
+                    ? log('debug', `Added user ${member.user.tag} to role @${role.name}`)
+                    : log('warn', `Couldn't add ${member.user.tag} to role @${role.name}`),
                 ),
                 Future.chain(Future.fromIOEither),
               ),
