@@ -27,6 +27,8 @@ export const LogMadEventsObserver = (logger: Logger): TObserver<MadEvent> => ({
           )} ${
             event.interaction.isCommand()
               ? event.interaction
+              : event.interaction.isButton()
+              ? `Button("${event.interaction.customId}")`
               : util.formatWithOptions({ breakLength: Infinity }, { type: event.interaction.type })
           }`
 
