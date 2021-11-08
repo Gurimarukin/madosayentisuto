@@ -1,14 +1,14 @@
 import { REST } from '@discordjs/rest'
-import { RESTPostAPIApplicationCommandsJSONBody, Routes } from 'discord-api-types/v9'
+import { APIMessage, RESTPostAPIApplicationCommandsJSONBody, Routes } from 'discord-api-types/v9'
 import {
   ApplicationCommand,
   ApplicationCommandPermissions,
+  BaseCommandInteraction,
   Channel,
   Client,
   ClientApplication,
   ClientPresence,
   Collection,
-  CommandInteraction,
   DiscordAPIError,
   Guild,
   GuildApplicationCommandPermissionData,
@@ -17,6 +17,7 @@ import {
   Intents,
   InteractionReplyOptions,
   Message,
+  MessageComponentInteraction,
   MessageEmbed,
   MessageOptions,
   MessagePayload,
@@ -51,6 +52,8 @@ type MyPartial<A extends NotPartial> =
       readonly fetch: () => Promise<A>
     }
   | A
+
+type MyInteraction = BaseCommandInteraction | MessageComponentInteraction
 
 export type DiscordConnector = ReturnType<typeof of>
 
@@ -218,9 +221,6 @@ const addRole = (
     debugLeft('addRole'),
   )
 
-const deferReply = (interaction: CommandInteraction): Future<void> =>
-  Future.tryCatch(() => interaction.deferReply())
-
 const deleteMessage = (message: Message): Future<boolean> =>
   pipe(
     Future.tryCatch(() => message.delete()),
@@ -239,13 +239,38 @@ const guildCommandsPermissionsSet = (
     }),
   )
 
-const interactionDeleteReply = (interaction: CommandInteraction): Future<void> =>
+const interactionDeferReply = (interaction: MyInteraction): Future<void> =>
+  Future.tryCatch(() => interaction.deferReply())
+
+const interactionDeleteReply = (interaction: MyInteraction): Future<void> =>
   Future.tryCatch(() => interaction.deleteReply())
 
+const interactionEditReply = (
+  interaction: MyInteraction,
+  options: string | MessagePayload | InteractionReplyOptions,
+): Future<APIMessage | Message> => Future.tryCatch(() => interaction.editReply(options))
+
+const interactionFollowUp = (
+  interaction: MyInteraction,
+  options: string | MessagePayload | InteractionReplyOptions,
+): Future<APIMessage | Message> => Future.tryCatch(() => interaction.followUp(options))
+
 const interactionReply = (
-  interaction: CommandInteraction,
+  interaction: MyInteraction,
   options: string | MessagePayload | InteractionReplyOptions,
 ): Future<void> => Future.tryCatch(() => interaction.reply(options))
+
+const removeRole = (
+  member: GuildMember,
+  roleOrRoles: RoleResolvable | List<RoleResolvable>,
+  reason?: string,
+): Future<boolean> =>
+  pipe(
+    Future.tryCatch(() => member.roles.remove(roleOrRoles, reason)),
+    Future.map(() => true),
+    Future.recover(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
+    debugLeft('removeRole'),
+  )
 
 const restPutApplicationGuildCommands = (
   rest: REST,
@@ -316,11 +341,14 @@ export const DiscordConnector = {
   hasRole,
 
   addRole,
-  deferReply,
   deleteMessage,
   guildCommandsPermissionsSet,
+  interactionDeferReply,
   interactionDeleteReply,
+  interactionEditReply,
+  interactionFollowUp,
   interactionReply,
+  removeRole,
   restPutApplicationGuildCommands,
   sendMessage,
   sendPrettyMessage,
