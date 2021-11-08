@@ -15,6 +15,7 @@ import {
   GuildAuditLogsEntry,
   GuildMember,
   Intents,
+  InteractionDeferReplyOptions,
   InteractionReplyOptions,
   Message,
   MessageComponentInteraction,
@@ -117,56 +118,6 @@ const of = (client: Client<true>) => ({
     ),
 })
 
-// return {
-//   fetchMemberForUser: (
-//     guild: Guild,
-//     user:
-//       | UserResolvable
-//       | FetchMemberOptions
-//       | (FetchMembersOptions & { readonly user: UserResolvable }),
-//   ): Future<Maybe<GuildMember>> =>
-//     pipe(
-//       Future.tryCatch(() => guild.members.fetch(user)),
-//       Future.map(Maybe.some),
-//       Future.recover<Maybe<GuildMember>>(() => Future.right(Maybe.none)),
-//       debugLeft('fetchMemberForUser'),
-//     ),
-
-//   /**
-//    * Write
-//    */
-
-//   reactMessage: (message: Message, emoji: EmojiIdentifierResolvable): Future<MessageReaction> =>
-//     Future.tryCatch(() => message.react(emoji)),
-
-//   removeRole: (
-//     member: GuildMember,
-//     roleOrRoles: RoleResolvable | List<RoleResolvable>,
-//     reason?: string,
-//   ): Future<Maybe<void>> =>
-//     pipe(
-//       Future.tryCatch(() => member.roles.remove(roleOrRoles, reason)),
-//       Future.map(() => Maybe.some(undefined)),
-//       debugLeft('removeRole'),
-//       //[ e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
-//       // Maybe.none]
-//     ),
-
-//   createInvite: (
-//     channel: BaseGuildTextChannel | BaseGuildVoiceChannel | StoreChannel,
-//     options?: CreateInviteOptions,
-//   ): Future<Invite> => Future.tryCatch(() => channel.createInvite(options)),
-
-//   // joinVoiceChannel: (voiceChannel: VoiceChannel): Future<VoiceConnection> =>
-//   //   pipe(
-//   //     Future.tryCatch(() => voiceChannel.join()),
-//   //     debugLeft('joinVoiceChannel'),
-//   //   ),
-
-//   // connectionPlay: (connection: VoiceConnection, input: string): IO<StreamDispatcher> =>
-//   //   IO.tryCatch(() => connection.play(input)),
-// }
-
 /**
  * Read
  */
@@ -239,8 +190,10 @@ const guildCommandsPermissionsSet = (
     }),
   )
 
-const interactionDeferReply = (interaction: MyInteraction): Future<void> =>
-  Future.tryCatch(() => interaction.deferReply())
+const interactionDeferReply = (
+  interaction: MyInteraction,
+  options?: InteractionDeferReplyOptions,
+): Future<void> => Future.tryCatch(() => interaction.deferReply(options))
 
 const interactionDeleteReply = (interaction: MyInteraction): Future<void> =>
   Future.tryCatch(() => interaction.deleteReply())
@@ -258,7 +211,14 @@ const interactionFollowUp = (
 const interactionReply = (
   interaction: MyInteraction,
   options: string | MessagePayload | InteractionReplyOptions,
-): Future<void> => Future.tryCatch(() => interaction.reply(options))
+): Future<void> =>
+  pipe(
+    Future.tryCatch(() => interaction.reply(options)),
+    Future.recover(e =>
+      isDiscordAPIError('Cannot send an empty message')(e) ? Future.unit : Future.left(e),
+    ),
+    debugLeft('interactionReply'),
+  )
 
 const removeRole = (
   member: GuildMember,
@@ -380,8 +340,12 @@ export const DiscordConnector = {
  * Helpers
  */
 
-const isMissingPermissionsError = (e: Error): e is DiscordAPIError =>
-  e instanceof DiscordAPIError && e.message === 'Missing Permissions'
+const isDiscordAPIError =
+  (message: string) =>
+  (e: Error): e is DiscordAPIError =>
+    e instanceof DiscordAPIError && e.message === message
+
+const isMissingPermissionsError = isDiscordAPIError('Missing Permissions')
 
 const debugLeft = <A>(functionName: string): ((f: Future<A>) => Future<A>) =>
   Future.mapLeft(e => {
@@ -401,7 +365,7 @@ const fetchMessageRec =
         Future.tryCatch(() => head.messages.fetch(message)),
         Future.map(Maybe.some),
         Future.recover(e =>
-          e instanceof DiscordAPIError && e.message === 'Unknown Message'
+          isDiscordAPIError('Unknown Message')(e)
             ? Future.right<Maybe<Message>>(Maybe.none)
             : Future.left(e),
         ),

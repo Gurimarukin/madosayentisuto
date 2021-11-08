@@ -95,8 +95,7 @@ export const AdminCommandsObserver = (
   function onCallsInit(interaction: CommandInteraction): Future<void> {
     const maybeGuild = Maybe.fromNullable(interaction.guild)
     return pipe(
-      DiscordConnector.interactionReply(interaction, '...'),
-      Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
+      DiscordConnector.interactionReply(interaction, { ephemeral: true }),
       Future.chain(() =>
         pipe(
           apply.sequenceS(Future.ApplyPar)({
