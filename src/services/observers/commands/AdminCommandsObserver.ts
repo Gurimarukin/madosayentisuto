@@ -22,9 +22,11 @@ import { TObserver } from '../../../models/TObserver'
 import { TSnowflake } from '../../../models/TSnowflake'
 import { ChannelUtils } from '../../../utils/ChannelUtils'
 import { Future, Maybe } from '../../../utils/fp'
+import { LogUtils } from '../../../utils/LogUtils'
 import { StringUtils } from '../../../utils/StringUtils'
 import { DiscordConnector } from '../../DiscordConnector'
 import { GuildStateService } from '../../GuildStateService'
+import { PartialLogger } from '../../Logger'
 import { callsButton } from '../CallsAutoroleObserver'
 
 // DefaultRoleGet
@@ -66,9 +68,12 @@ const callsInitCommand = new SlashCommandBuilder()
 export const adminCommands = [callsInitCommand]
 
 export const AdminCommandsObserver = (
+  Logger: PartialLogger,
   discord: DiscordConnector,
   guildStateService: GuildStateService,
 ): TObserver<InteractionCreate> => {
+  const logger = Logger('AdminCommandsObserver')
+
   return {
     next: event => {
       const interaction = event.interaction
@@ -137,12 +142,7 @@ export const AdminCommandsObserver = (
                   Future.map(() => {}),
                 )
               : Future.unit,
-          message =>
-            pipe(
-              guildStateService.setCalls(guild, { message, channel, role }),
-              Future.fromIOEither,
-              Future.map(() => {}),
-            ),
+          tryDeletePreviousMessageAndSetCalls(guild, channel, role),
         ),
       ),
     )
@@ -173,6 +173,26 @@ export const AdminCommandsObserver = (
         .setStyle('SECONDARY'),
     )
     return DiscordConnector.sendPrettyMessage(commandChannel, message, { components: [row] })
+  }
+
+  function tryDeletePreviousMessageAndSetCalls(
+    guild: Guild,
+    channel: TextChannel,
+    role: Role,
+  ): (message: Message) => Future<void> {
+    return message =>
+      pipe(
+        guildStateService.getCalls(guild),
+        Future.chain(
+          Maybe.fold(
+            () => Future.unit,
+            previous => deleteMessage(previous.message),
+          ),
+        ),
+        Future.map(() => guildStateService.setCalls(guild, { message, channel, role })),
+        Future.chain(Future.fromIOEither),
+        Future.map(() => {}),
+      )
   }
 
   function fetchUser(user: User | APIUser): Future<Maybe<User>> {
@@ -215,20 +235,21 @@ export const AdminCommandsObserver = (
     )
   }
 
-  // function deleteMessage(message: Message): Future<void> {
-  //   return pipe(
-  //     DiscordConnector.deleteMessage(message),
-  //     Future.chain(deleted =>
-  //       deleted
-  //         ? Future.unit
-  //         : Future.fromIOEither(
-  //             LogUtils.withAuthor(
-  //               logger,
-  //               'info',
-  //               message,
-  //             )('Not enough permissions to delete message'),
-  //           ),
-  //     ),
-  //   )
-  // }
+  function deleteMessage(message: Message): Future<void> {
+    return pipe(
+      DiscordConnector.deleteMessage(message),
+      Future.chain(deleted =>
+        deleted
+          ? Future.unit
+          : Future.fromIOEither(
+              LogUtils.pretty(
+                logger,
+                message.guild,
+                message.author,
+                message.channel,
+              )('info', 'Not enough permissions to delete message'),
+            ),
+      ),
+    )
+  }
 }
