@@ -66,7 +66,7 @@ export const CallsAutoroleObserver = (
   function onUnsubscribe(interaction: ButtonInteraction): Future<void> {
     return withCallsAndMember(
       interaction,
-      'Haha ! À la prochaine...\n(Victime.)',
+      'Haha ! À la prochaine... (Victime.)',
       guild =>
         ({ role, member }) =>
           !DiscordConnector.hasRole(member, role)
