@@ -4,6 +4,7 @@ import {
   ApplicationCommand,
   ApplicationCommandPermissions,
   BaseCommandInteraction,
+  ButtonInteraction,
   Channel,
   Client,
   ClientApplication,
@@ -17,6 +18,7 @@ import {
   Intents,
   InteractionDeferReplyOptions,
   InteractionReplyOptions,
+  InteractionUpdateOptions,
   Message,
   MessageComponentInteraction,
   MessageEmbed,
@@ -220,6 +222,11 @@ const interactionReply = (
     debugLeft('interactionReply'),
   )
 
+const interactionUpdate = (
+  interaction: ButtonInteraction,
+  options: string | MessagePayload | InteractionUpdateOptions,
+): Future<void> => Future.tryCatch(() => interaction.update(options))
+
 const messageEdit = (
   message: Message,
   options: string | MessagePayload | MessageOptions,
@@ -313,6 +320,7 @@ export const DiscordConnector = {
   interactionEditReply,
   interactionFollowUp,
   interactionReply,
+  interactionUpdate,
   messageEdit,
   removeRole,
   restPutApplicationGuildCommands,

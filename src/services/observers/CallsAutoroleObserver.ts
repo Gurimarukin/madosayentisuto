@@ -43,79 +43,69 @@ export const CallsAutoroleObserver = (
   }
 
   function onSubscribe(interaction: ButtonInteraction): Future<void> {
-    return withCallsAndMember(
-      interaction,
-      'Bienvenue à bord, moussaillon !',
-      (guild, { calls, member }) =>
-        DiscordConnector.hasRole(member, calls.role)
-          ? Future.right(true)
-          : pipe(
-              DiscordConnector.addRole(member, calls.role),
-              Future.map(success => {
-                const log = LogUtils.pretty(logger, guild)
-                return success
-                  ? log('debug', `Added ${member.user.tag} to role @${calls.role.name}`)
-                  : log('warn', `Couldn't add ${member.user.tag} to role @${calls.role.name}`)
-              }),
-              Future.chain(Future.fromIOEither),
-              Future.map(() => true),
-            ),
+    return withCallsAndMember(interaction, (guild, { calls, member }) =>
+      DiscordConnector.hasRole(member, calls.role)
+        ? Future.right(true)
+        : pipe(
+            DiscordConnector.addRole(member, calls.role),
+            Future.map(success => {
+              const log = LogUtils.pretty(logger, guild)
+              return success
+                ? log('debug', `Added ${member.user.tag} to role @${calls.role.name}`)
+                : log('warn', `Couldn't add ${member.user.tag} to role @${calls.role.name}`)
+            }),
+            Future.chain(Future.fromIOEither),
+            Future.map(() => true),
+          ),
     )
   }
 
   function onUnsubscribe(interaction: ButtonInteraction): Future<void> {
-    return withCallsAndMember(
-      interaction,
-      'Haha ! À la prochaine... (Victime.)',
-      (guild, { calls, member }) =>
-        !DiscordConnector.hasRole(member, calls.role)
-          ? Future.right(true)
-          : pipe(
-              DiscordConnector.removeRole(member, calls.role),
-              Future.map(success => {
-                const log = LogUtils.pretty(logger, guild)
-                return success
-                  ? log('debug', `Removed ${member.user.tag} from role @${calls.role.name}`)
-                  : log('warn', `Couldn't remove ${member.user.tag} to role @${calls.role.name}`)
-              }),
-              Future.chain(Future.fromIOEither),
-              Future.map(() => true),
-            ),
+    return withCallsAndMember(interaction, (guild, { calls, member }) =>
+      !DiscordConnector.hasRole(member, calls.role)
+        ? Future.right(true)
+        : pipe(
+            DiscordConnector.removeRole(member, calls.role),
+            Future.map(success => {
+              const log = LogUtils.pretty(logger, guild)
+              return success
+                ? log('debug', `Removed ${member.user.tag} from role @${calls.role.name}`)
+                : log('warn', `Couldn't remove ${member.user.tag} to role @${calls.role.name}`)
+            }),
+            Future.chain(Future.fromIOEither),
+            Future.map(() => true),
+          ),
     )
   }
 
   function withCallsAndMember(
     interaction: ButtonInteraction,
-    successMessage: string,
     f: (guild: Guild, callsAndMember: CallsAndMember) => Future<boolean>,
   ): Future<void> {
     const guild = interaction.guild
     return pipe(
-      DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
-      Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
-      Future.chain(() =>
-        guild === null
-          ? Future.right(Maybe.none)
-          : pipe(
-              fetchCallsAndMember(guild, interaction.member),
-              Future.chain(
-                Maybe.fold(
-                  () => Future.right(Maybe.none),
-                  callsAndMember =>
-                    pipe(
-                      f(guild, callsAndMember),
-                      Future.map(success => (success ? Maybe.some(callsAndMember) : Maybe.none)),
-                    ),
-                ),
+      guild === null
+        ? Future.right(Maybe.none)
+        : pipe(
+            fetchCallsAndMember(guild, interaction.member),
+            Future.chain(
+              Maybe.fold(
+                () => Future.right(Maybe.none),
+                callsAndMember =>
+                  pipe(
+                    f(guild, callsAndMember),
+                    Future.map(success => (success ? Maybe.some(callsAndMember) : Maybe.none)),
+                  ),
               ),
             ),
-      ),
+          ),
       Future.chain(
         Maybe.fold(
           () => Future.unit,
           ({ calls }) => refreshCallsInitMessage(calls),
         ),
       ),
+      Future.chain(() => DiscordConnector.interactionUpdate(interaction, {})),
     )
   }
 
