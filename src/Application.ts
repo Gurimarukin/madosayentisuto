@@ -111,10 +111,7 @@ export const Application = (
         ActivityStatusObserver(Logger, discord, botStatePersistence),
         or(MadEvent.isAppStarted, MadEvent.isDbReady, MadEvent.isCronJob),
       ),
-      sub(
-        CallsAutoroleObserver(Logger, discord, guildStateService),
-        or(MadEvent.isInteractionCreate),
-      ),
+      sub(CallsAutoroleObserver(Logger, guildStateService), or(MadEvent.isInteractionCreate)),
       sub(LogMadEventsObserver(logger), or(refinement.id())),
       sub(
         NotifyVoiceCallObserver(Logger, guildStateService),

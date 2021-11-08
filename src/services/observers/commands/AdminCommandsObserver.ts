@@ -7,6 +7,7 @@ import {
   Message,
   MessageActionRow,
   MessageButton,
+  MessageOptions,
   Role,
   TextBasedChannels,
   TextChannel,
@@ -95,7 +96,8 @@ export const AdminCommandsObserver = (
   function onCallsInit(interaction: CommandInteraction): Future<void> {
     const maybeGuild = Maybe.fromNullable(interaction.guild)
     return pipe(
-      DiscordConnector.interactionReply(interaction, { ephemeral: true }),
+      DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
+      Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
       Future.chain(() =>
         pipe(
           apply.sequenceS(Future.ApplyPar)({
@@ -152,26 +154,7 @@ export const AdminCommandsObserver = (
     callsChannel: ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel,
     role: Role | APIRole,
   ): Future<Maybe<Message>> {
-    const content = StringUtils.stripMargins(
-      `Yoho, ${role} !
-      |
-      |Tu peux t'abonner aux appels sur ce serveur en cliquant ci-dessous !
-      |Ils seront notifiés dans le salon ${callsChannel} (que tu devrais rendre muet).
-      |
-      |||Cliquer t'ajoute (ou t'enlève) le rôle ${role}||`,
-    )
-    const row = new MessageActionRow().addComponents(
-      new MessageButton()
-        .setCustomId(callsButton.subscribeId)
-        .setLabel("S'abonner aux appels")
-        .setStyle('PRIMARY')
-        .setEmoji(globalConfig.callsEmoji),
-      new MessageButton()
-        .setCustomId(callsButton.unsubscribeId)
-        .setLabel(' ̶S̶e̶ ̶d̶é̶s̶a̶b̶o̶n̶n̶e̶r̶    Je suis une victime')
-        .setStyle('SECONDARY'),
-    )
-    return DiscordConnector.sendPrettyMessage(commandChannel, content, { components: [row] })
+    return DiscordConnector.sendMessage(commandChannel, getInitCallsMessage(callsChannel, role))
   }
 
   function tryDeletePreviousMessageAndSetCalls(
@@ -252,3 +235,27 @@ export const AdminCommandsObserver = (
     )
   }
 }
+
+export const getInitCallsMessage = (
+  channel: ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel,
+  role: Role | APIRole,
+): MessageOptions => ({
+  content: StringUtils.stripMargins(
+    `Yoho, ${role} !
+    |Tu peux t'abonner aux appels sur ce serveur en cliquant ci-dessous !
+    |Ils seront notifiés dans le salon ${channel} (que tu devrais rendre muet).`,
+  ), // ||Cliquer t'ajoute (ou t'enlève) le rôle ${role}||
+  components: [
+    new MessageActionRow().addComponents(
+      new MessageButton()
+        .setCustomId(callsButton.subscribeId)
+        .setLabel("S'abonner aux appels")
+        .setStyle('PRIMARY')
+        .setEmoji(globalConfig.callsEmoji),
+      new MessageButton()
+        .setCustomId(callsButton.unsubscribeId)
+        .setLabel(' ̶S̶e̶ ̶d̶é̶s̶a̶b̶o̶n̶n̶e̶r̶    Je suis une victime')
+        .setStyle('SECONDARY'),
+    ),
+  ],
+})

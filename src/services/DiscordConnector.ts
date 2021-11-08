@@ -220,6 +220,11 @@ const interactionReply = (
     debugLeft('interactionReply'),
   )
 
+const messageEdit = (
+  message: Message,
+  options: string | MessagePayload | MessageOptions,
+): Future<Message> => Future.tryCatch(() => message.edit(options))
+
 const removeRole = (
   member: GuildMember,
   roleOrRoles: RoleResolvable | List<RoleResolvable>,
@@ -308,6 +313,7 @@ export const DiscordConnector = {
   interactionEditReply,
   interactionFollowUp,
   interactionReply,
+  messageEdit,
   removeRole,
   restPutApplicationGuildCommands,
   sendMessage,
