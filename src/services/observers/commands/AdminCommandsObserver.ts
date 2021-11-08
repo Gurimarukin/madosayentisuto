@@ -139,7 +139,8 @@ export const AdminCommandsObserver = (
               : Future.unit,
           message =>
             pipe(
-              Future.fromIOEither(guildStateService.setCalls(guild, { message, channel, role })),
+              guildStateService.setCalls(guild, { message, channel, role }),
+              Future.fromIOEither,
               Future.map(() => {}),
             ),
         ),

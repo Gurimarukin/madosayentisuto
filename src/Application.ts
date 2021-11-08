@@ -82,7 +82,7 @@ export const Application = (
       // └ observers/
       // │  └ commands/
       sub(AdminCommandsObserver(discord, guildStateService), or(MadEvent.isInteractionCreate)),
-      sub(MusicObserver(), or(MadEvent.isInteractionCreate)),
+      sub(MusicObserver(guildStateService), or(MadEvent.isInteractionCreate)),
       sub(PingObserver(), or(MadEvent.isInteractionCreate)),
 
       // │  └ joinLeave/

@@ -183,13 +183,7 @@ export const GuildStateService = (
           ),
         ),
       ),
-      Future.chain(state =>
-        pipe(
-          cacheSet(guildId, state),
-          Future.fromIOEither,
-          Future.map(() => state),
-        ),
-      ),
+      Future.chainFirst(state => pipe(cacheSet(guildId, state), Future.fromIOEither)),
     )
   }
 

@@ -10,7 +10,7 @@ import {
 import { TObserver } from '../../../models/TObserver'
 import { TSubject } from '../../../models/TSubject'
 import { ChannelUtils } from '../../../utils/ChannelUtils'
-import { Future, List, Maybe } from '../../../utils/fp'
+import { Future, IO, List, Maybe } from '../../../utils/fp'
 import { LogUtils } from '../../../utils/LogUtils'
 import { PartialLogger } from '../../Logger'
 
@@ -85,7 +85,7 @@ export const VoiceStateUpdateTransformer = (
         `${member.user.tag} moved from channel #${from.name} to #${to.name}`,
       ),
       Future.fromIOEither,
-      Future.chain(() => {
+      Future.map(() => {
         const inPublicChans = peopleInPublicVocalChans(member.guild)
 
         if (
@@ -93,7 +93,7 @@ export const VoiceStateUpdateTransformer = (
           ChannelUtils.isPublic(to) &&
           inPublicChans.length === 1
         ) {
-          return Future.fromIOEither(subject.next(MadEvent.PublicCallStarted(member, to)))
+          return subject.next(MadEvent.PublicCallStarted(member, to))
         }
 
         if (
@@ -101,11 +101,12 @@ export const VoiceStateUpdateTransformer = (
           ChannelUtils.isPrivate(to) &&
           List.isEmpty(inPublicChans)
         ) {
-          return Future.fromIOEither(subject.next(MadEvent.PublicCallEnded(member, to)))
+          return subject.next(MadEvent.PublicCallEnded(member, to))
         }
 
-        return Future.unit
+        return IO.unit
       }),
+      Future.chain(Future.fromIOEither),
     )
   }
 

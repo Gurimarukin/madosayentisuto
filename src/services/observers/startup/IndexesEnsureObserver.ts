@@ -18,7 +18,8 @@ export const IndexesEnsureObserver = (
   return {
     next: () =>
       pipe(
-        Future.fromIOEither(logger.info('Ensuring indexes')),
+        logger.info('Ensuring indexes'),
+        Future.fromIOEither,
         Future.chain(() =>
           pipe(
             ensureIndexes,

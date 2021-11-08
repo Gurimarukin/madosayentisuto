@@ -34,7 +34,8 @@ const retryIfFailedRec = <A>(
           ),
         a =>
           pipe(
-            Future.fromIOEither(onSuccess(a)),
+            onSuccess(a),
+            Future.fromIOEither,
             Future.map(() => a),
           ),
       ),

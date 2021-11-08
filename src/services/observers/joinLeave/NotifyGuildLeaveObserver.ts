@@ -22,33 +22,30 @@ export const NotifyGuildLeaveObserver = (Logger: PartialLogger): TObserver<Guild
     next: event => {
       const guild = event.member.guild
       const user = event.member.user
+      const log = LogUtils.pretty(logger, guild)
+      const boldMember = bold(user.tag)
       return pipe(
         date.now,
         io.map(n => new Date(n)),
         Future.fromIO,
         Future.chain(now => getLastLog(now, guild, TSnowflake.wrap(user.id))),
-        Future.chain(logEntry => {
-          const log = LogUtils.pretty(logger, guild)
-          const boldMember = bold(user.tag)
-          return pipe(
-            logEntry,
-            Maybe.fold(
-              () =>
-                pipe(
-                  log('info', `${user.tag} left the guild`),
-                  IO.chain(() => randomMessage(leaveMessages)(boldMember)),
+        Future.map(
+          Maybe.fold(
+            () =>
+              pipe(
+                log('info', `${user.tag} left the guild`),
+                IO.chain(() => randomMessage(leaveMessages)(boldMember)),
+              ),
+            ({ action, executor, reason }) =>
+              pipe(
+                log('info', logMessage(user.tag, executor.tag, action, reason)),
+                IO.chain(() =>
+                  randomMessage(kickOrBanMessages(action))(boldMember, userMention(executor.id)),
                 ),
-              ({ action, executor, reason }) =>
-                pipe(
-                  log('info', logMessage(user.tag, executor.tag, action, reason)),
-                  IO.chain(() =>
-                    randomMessage(kickOrBanMessages(action))(boldMember, userMention(executor.id)),
-                  ),
-                ),
-            ),
-            Future.fromIOEither,
-          )
-        }),
+              ),
+          ),
+        ),
+        Future.chain(Future.fromIOEither),
         sendMessage(event.member.guild),
       )
     },

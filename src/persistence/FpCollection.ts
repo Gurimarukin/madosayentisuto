@@ -37,7 +37,8 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
     options: { readonly session?: ClientSession } = {},
   ): Future<void> =>
     pipe(
-      Future.fromIOEither(logger.debug('Ensuring indexes')),
+      logger.debug('Ensuring indexes'),
+      Future.fromIOEither,
       Future.chain(() =>
         collection(c =>
           // eslint-disable-next-line functional/prefer-readonly-type
@@ -51,12 +52,7 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
     const encoded = codec.encode(doc)
     return pipe(
       collection(c => c.insertOne(encoded, options)),
-      Future.chain(res =>
-        pipe(
-          Future.fromIOEither(logger.debug('inserted', encoded)),
-          Future.map(() => res),
-        ),
-      ),
+      Future.chainFirst(() => Future.fromIOEither(logger.debug('inserted', encoded))),
     )
   },
 
@@ -64,11 +60,8 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
     const encoded = docs.map(codec.encode)
     return pipe(
       collection(c => c.insertMany(encoded, options)),
-      Future.chain(res =>
-        pipe(
-          Future.fromIOEither(logger.debug(`inserted ${res.insertedCount} documents`)),
-          Future.map(() => res),
-        ),
+      Future.chainFirst(res =>
+        Future.fromIOEither(logger.debug(`inserted ${res.insertedCount} documents`)),
       ),
     )
   },
@@ -77,12 +70,7 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
     const encoded = codec.encode(doc)
     return pipe(
       collection(c => c.updateOne(filter, { $set: encoded as MatchKeysAndValues<O> }, options)),
-      Future.chain(res =>
-        pipe(
-          Future.fromIOEither(logger.debug('updated', encoded)),
-          Future.map(() => res),
-        ),
-      ),
+      Future.chainFirst(() => Future.fromIOEither(logger.debug('updated', encoded))),
     )
   },
 
@@ -94,12 +82,7 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
     const encoded = codec.encode(doc)
     return pipe(
       collection(c => c.replaceOne(filter, encoded as O, options)),
-      Future.chain(res =>
-        pipe(
-          Future.fromIOEither(logger.debug('upserted', encoded)),
-          Future.map(() => res),
-        ),
-      ),
+      Future.chainFirst(() => Future.fromIOEither(logger.debug('upserted', encoded))),
     )
   },
 
@@ -137,11 +120,6 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
   drop: (): Future<boolean> =>
     pipe(
       collection(c => c.drop()),
-      Future.chain(res =>
-        pipe(
-          Future.fromIOEither(logger.info('dropped collection')),
-          Future.map(() => res),
-        ),
-      ),
+      Future.chainFirst(() => Future.fromIOEither(logger.info('dropped collection'))),
     ),
 })

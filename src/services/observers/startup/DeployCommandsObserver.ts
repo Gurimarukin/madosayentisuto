@@ -64,9 +64,8 @@ export const DeployCommandsObserver = (
       Future.chain(logDecodeErrors),
       Future.chain(setCommandsPermissions(guildId)),
       Future.recover(e =>
-        pipe(
+        Future.fromIOEither(
           logger.warn(`Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${e.stack}`),
-          Future.fromIOEither,
         ),
       ),
     )
