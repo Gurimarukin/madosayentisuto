@@ -152,7 +152,7 @@ export const AdminCommandsObserver = (
     callsChannel: ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel,
     role: Role | APIRole,
   ): Future<Maybe<Message>> {
-    const message = StringUtils.stripMargins(
+    const content = StringUtils.stripMargins(
       `Yoho, ${role} !
       |
       |Tu peux t'abonner aux appels sur ce serveur en cliquant ci-dessous !
@@ -171,7 +171,7 @@ export const AdminCommandsObserver = (
         .setLabel(' ̶S̶e̶ ̶d̶é̶s̶a̶b̶o̶n̶n̶e̶r̶    Je suis une victime')
         .setStyle('SECONDARY'),
     )
-    return DiscordConnector.sendPrettyMessage(commandChannel, message, { components: [row] })
+    return DiscordConnector.sendPrettyMessage(commandChannel, content, { components: [row] })
   }
 
   function tryDeletePreviousMessageAndSetCalls(
