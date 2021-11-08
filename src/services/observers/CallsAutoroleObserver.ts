@@ -91,10 +91,7 @@ export const CallsAutoroleObserver = (
     f: (guild: Guild) => (roleAndMember: RoleAndMember) => Future<boolean>,
   ): Future<void> {
     return pipe(
-      DiscordConnector.interactionReply(interaction, {
-        content: '...',
-        ephemeral: true,
-      }),
+      DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
       Future.chain(() =>
         interaction.guild === null
           ? Future.right(false)
