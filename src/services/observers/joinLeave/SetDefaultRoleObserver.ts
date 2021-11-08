@@ -1,12 +1,12 @@
 import { pipe } from 'fp-ts/function'
 
-import { GuildMemberAdd } from '../../models/MadEvent'
-import { TObserver } from '../../models/TObserver'
-import { Future, Maybe } from '../../utils/fp'
-import { LogUtils } from '../../utils/LogUtils'
-import { DiscordConnector } from '../DiscordConnector'
-import { GuildStateService } from '../GuildStateService'
-import { PartialLogger } from '../Logger'
+import { GuildMemberAdd } from '../../../models/MadEvent'
+import { TObserver } from '../../../models/TObserver'
+import { Future, Maybe } from '../../../utils/fp'
+import { LogUtils } from '../../../utils/LogUtils'
+import { DiscordConnector } from '../../DiscordConnector'
+import { GuildStateService } from '../../GuildStateService'
+import { PartialLogger } from '../../Logger'
 
 export const SetDefaultRoleObserver = (
   Logger: PartialLogger,

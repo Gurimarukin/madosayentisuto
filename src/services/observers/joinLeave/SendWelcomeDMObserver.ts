@@ -1,17 +1,17 @@
 import { MessageEmbed } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { GuildMemberAdd } from '../../models/MadEvent'
-import { TObserver } from '../../models/TObserver'
-import { Colors } from '../../utils/Colors'
-import { Future, Maybe } from '../../utils/fp'
-import { LogUtils } from '../../utils/LogUtils'
-import { StringUtils } from '../../utils/StringUtils'
-import { DiscordConnector } from '../DiscordConnector'
-import { PartialLogger } from '../Logger'
+import { GuildMemberAdd } from '../../../models/MadEvent'
+import { TObserver } from '../../../models/TObserver'
+import { Colors } from '../../../utils/Colors'
+import { Future, Maybe } from '../../../utils/fp'
+import { LogUtils } from '../../../utils/LogUtils'
+import { StringUtils } from '../../../utils/StringUtils'
+import { DiscordConnector } from '../../DiscordConnector'
+import { PartialLogger } from '../../Logger'
 
-export const SendGreetingDMObserver = (Logger: PartialLogger): TObserver<GuildMemberAdd> => {
-  const logger = Logger('SendGreetingDMObserver')
+export const SendWelcomeDMObserver = (Logger: PartialLogger): TObserver<GuildMemberAdd> => {
+  const logger = Logger('SendWelcomeDMObserver')
 
   return {
     next: event => {

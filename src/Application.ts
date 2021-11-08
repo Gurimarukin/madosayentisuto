@@ -19,11 +19,11 @@ import { ActivityStatusObserver } from './services/observers/ActivityStatusObser
 import { AdminCommandsObserver } from './services/observers/commands/AdminCommandsObserver'
 import { MusicObserver } from './services/observers/commands/MusicObserver'
 import { PingObserver } from './services/observers/commands/PingObserver'
-import { MadEventsObserver } from './services/observers/MadEventObserver'
-import { NotifyGuildLeaveObserver } from './services/observers/NotifyGuildLeaveObserver'
+import { NotifyGuildLeaveObserver } from './services/observers/joinLeave/NotifyGuildLeaveObserver'
+import { SendWelcomeDMObserver } from './services/observers/joinLeave/SendWelcomeDMObserver'
+import { SetDefaultRoleObserver } from './services/observers/joinLeave/SetDefaultRoleObserver'
+import { LogMadEventsObserver } from './services/observers/LogMadEventsObserver'
 import { NotifyVoiceCallObserver } from './services/observers/NotifyVoiceCallObserver'
-import { SendGreetingDMObserver } from './services/observers/SendGreetingDMObserver'
-import { SetDefaultRoleObserver } from './services/observers/SetDefaultRoleObserver'
 import { DeployCommandsObserver } from './services/observers/startup/DeployCommandsObserver'
 import { IndexesEnsureObserver } from './services/observers/startup/IndexesEnsureObserver'
 import { ThanksCaptainObserver } from './services/observers/ThanksCaptainObserver'
@@ -99,7 +99,7 @@ export const Application = (
       ),
 
       // leave/join
-      sub(SendGreetingDMObserver(Logger), or(MadEvent.isGuildMemberAdd)),
+      sub(SendWelcomeDMObserver(Logger), or(MadEvent.isGuildMemberAdd)),
       sub(SetDefaultRoleObserver(Logger, guildStateService), or(MadEvent.isGuildMemberAdd)),
       sub(NotifyGuildLeaveObserver(Logger), or(MadEvent.isGuildMemberRemove)),
 
@@ -117,7 +117,7 @@ export const Application = (
       sub(PingObserver(), or(MadEvent.isInteractionCreate)),
       sub(MusicObserver(), or(MadEvent.isInteractionCreate)),
 
-      sub(MadEventsObserver(logger), or(refinement.id())),
+      sub(LogMadEventsObserver(logger), or(refinement.id())),
     ),
     IO.chain(() => pubSub.subject.next(MadEvent.AppStarted)),
     IO.chain(() => logger.info('Started')),
