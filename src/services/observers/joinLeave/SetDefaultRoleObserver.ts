@@ -32,26 +32,20 @@ export const SetDefaultRoleObserver = (
             role =>
               pipe(
                 DiscordConnector.addRole(member, role),
-                Future.chain(v =>
-                  pipe(
-                    v,
-                    Maybe.fold(
-                      () =>
-                        LogUtils.withGuild(
-                          logger,
-                          'warn',
-                          member.guild,
-                        )(`Couldn't add ${member.user.tag} to role "${role.name}"`),
-                      () =>
-                        LogUtils.withGuild(
-                          logger,
-                          'debug',
-                          member.guild,
-                        )(`Added user ${member.user.tag} to role "${role.name}"`),
-                    ),
-                    Future.fromIOEither,
-                  ),
+                Future.map(success =>
+                  success
+                    ? LogUtils.withGuild(
+                        logger,
+                        'debug',
+                        member.guild,
+                      )(`Added user ${member.user.tag} to role @${role.name}`)
+                    : LogUtils.withGuild(
+                        logger,
+                        'warn',
+                        member.guild,
+                      )(`Couldn't add ${member.user.tag} to role @${role.name}`),
                 ),
+                Future.chain(Future.fromIOEither),
               ),
           ),
         ),

@@ -177,6 +177,13 @@ const fetchAuditLogs = (guild: Guild): Future<Collection<string, GuildAuditLogsE
 const fetchCommand = (guild: Guild, commandId: CommandId): Future<ApplicationCommand> =>
   Future.tryCatch(() => guild.commands.fetch(CommandId.unwrap(commandId)))
 
+const fetchMember = (guild: Guild, memberId: TSnowflake): Future<Maybe<GuildMember>> =>
+  pipe(
+    Future.tryCatch(() => guild.members.fetch(TSnowflake.unwrap(memberId))),
+    Future.map(Maybe.some),
+    debugLeft('fetchMember'),
+  )
+
 const fetchMessage = (guild: Guild, messageId: TSnowflake): Future<Maybe<Message>> =>
   pipe(
     guild.channels.cache.toJSON(),
@@ -193,6 +200,8 @@ const fetchRole = (guild: Guild, roleId: TSnowflake): Future<Maybe<Role>> =>
     Future.map(Maybe.fromNullable),
   )
 
+const hasRole = (member: GuildMember, role: Role): boolean => member.roles.cache.has(role.id)
+
 /**
  * Write
  */
@@ -201,11 +210,11 @@ const addRole = (
   member: GuildMember,
   roleOrRoles: RoleResolvable | List<RoleResolvable>,
   reason?: string,
-): Future<Maybe<void>> =>
+): Future<boolean> =>
   pipe(
     Future.tryCatch(() => member.roles.add(roleOrRoles, reason)),
-    Future.map(() => Maybe.some(undefined)),
-    Future.recover(e => (isMissingPermissionsError(e) ? Future.right(Maybe.none) : Future.left(e))),
+    Future.map(() => true),
+    Future.recover(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
     debugLeft('addRole'),
   )
 
@@ -300,9 +309,11 @@ export const DiscordConnector = {
 
   fetchAuditLogs,
   fetchCommand,
+  fetchMember,
   fetchMessage,
   fetchPartial,
   fetchRole,
+  hasRole,
 
   addRole,
   deferReply,

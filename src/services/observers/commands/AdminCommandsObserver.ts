@@ -25,6 +25,7 @@ import { Future, Maybe } from '../../../utils/fp'
 import { StringUtils } from '../../../utils/StringUtils'
 import { DiscordConnector } from '../../DiscordConnector'
 import { GuildStateService } from '../../GuildStateService'
+import { callsButton } from '../CallsAutoroleObserver'
 
 // DefaultRoleGet
 // DefaultRoleSet
@@ -161,12 +162,12 @@ export const AdminCommandsObserver = (
     )
     const row = new MessageActionRow().addComponents(
       new MessageButton()
-        .setCustomId('callsSubscribe')
+        .setCustomId(callsButton.subscribeId)
         .setLabel("S'abonner aux appels")
         .setStyle('PRIMARY')
         .setEmoji(globalConfig.callsEmoji),
       new MessageButton()
-        .setCustomId('callsUnsubscribe')
+        .setCustomId(callsButton.unsubscribeId)
         .setLabel(' ̶S̶e̶ ̶d̶é̶s̶a̶b̶o̶n̶n̶e̶r̶    Je suis une victime')
         .setStyle('SECONDARY'),
     )

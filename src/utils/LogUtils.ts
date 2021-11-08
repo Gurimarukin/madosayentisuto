@@ -39,6 +39,11 @@ const __testableFormat =
 
 const format = __testableFormat(ChannelUtils.isNamedChannel)
 
+const pretty =
+  (logger: Logger, ...args: Parameters<typeof format>) =>
+  (level: LogLevel, ...us: List<unknown>): IO<void> =>
+    logger[level](format(...args), ...us)
+
 const withGuild =
   (logger: Logger, level: LogLevel, guild: Guild) =>
   (...args: List<unknown>): IO<void> =>
@@ -49,4 +54,4 @@ const withAuthor =
   (...args: List<unknown>): IO<void> =>
     logger[level](format(message.guild, message.channel, message.author), ...args)
 
-export const LogUtils = { __testableFormat, format, withGuild, withAuthor }
+export const LogUtils = { __testableFormat, format, pretty, withGuild, withAuthor }
