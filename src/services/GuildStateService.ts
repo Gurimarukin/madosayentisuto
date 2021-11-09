@@ -46,8 +46,8 @@ export const GuildStateService = (
 
     getDefaultRole: (guild: Guild): Future<Maybe<Role>> => get(guild, 'defaultRole'),
 
-    setSubscription: (guild: Guild, subscription: Maybe<MusicSubscription>): IO<GuildState> =>
-      setLens(guild, 'subscription', subscription),
+    setSubscription: (guild: Guild, subscription: MusicSubscription): IO<GuildState> =>
+      setLens(guild, 'subscription', Maybe.some(subscription)),
 
     getSubscription: (guild: Guild): IO<Maybe<MusicSubscription>> =>
       pipe(get(guild, 'subscription'), IO.map(Maybe.flatten)),
@@ -92,7 +92,7 @@ export const GuildStateService = (
             guildStatePersistence.upsert(guildId, GuildStateDb.fromGuildState(state)),
           ),
           Future.chain(success => (success ? Future.unit : error())),
-          Future.recover(e => error('-', e)),
+          Future.orElse(e => error('-', e)),
           IO.runFuture,
           IO.map(() => state),
         )

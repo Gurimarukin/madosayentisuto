@@ -112,11 +112,10 @@ export const Future = {
   ...taskEither,
   right: futureRight,
   left: <A = never>(e: Error): Future<A> => taskEither.left(e),
+  error: <A = never>(message?: string): Future<A> => taskEither.left(Error(message)),
   fromIO: futureFromIO,
   tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, unknownAsError),
   unit: futureRight<void>(undefined),
-  recover: <A, B>(onError: (e: Error) => Future<B>): ((future: Future<A>) => Future<A | B>) =>
-    task.chain(either.fold<Error, A, Future<A | B>>(onError, futureRight)),
   runUnsafe: <A>(fa: Future<A>): Promise<A> => pipe(fa, task.map(Try.get))(),
   delay:
     <A>(ms: MsDuration) =>

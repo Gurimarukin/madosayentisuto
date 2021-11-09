@@ -53,7 +53,7 @@ export const Application = (
             task.chain(either =>
               pipe(
                 Future.tryCatch(() => client.close()),
-                Future.recover(e =>
+                Future.orElse(e =>
                   Future.fromIOEither(logger.error('Failed to close client:\n', e)),
                 ),
                 task.map(() => either),

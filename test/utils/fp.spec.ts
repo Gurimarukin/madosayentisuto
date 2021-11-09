@@ -2,11 +2,11 @@ import { pipe } from 'fp-ts/function'
 
 import { Either, Future } from '../../src/utils/fp'
 
-describe('Future.recover', () => {
+describe('Future.orElse', () => {
   it("should return f if it isn't failed", () => {
     const res = pipe(
       Future.right<string>('toto'),
-      Future.recover(() => Future.right('titi')),
+      Future.orElse(() => Future.right('titi')),
     )()
     return res.then(r => expect(r).toStrictEqual(Either.right('toto')))
   })
@@ -14,7 +14,7 @@ describe('Future.recover', () => {
   it('should return first matching recovery', () => {
     const res = pipe(
       Future.left<string>(SyntaxError('this is an error')),
-      Future.recover(e =>
+      Future.orElse(e =>
         e instanceof EvalError
           ? Future.right('eval error')
           : e instanceof SyntaxError
@@ -30,7 +30,7 @@ describe('Future.recover', () => {
   it('should return f if no matching error', () => {
     const res = pipe(
       Future.left<string>(SyntaxError('this is an error')),
-      Future.recover(e =>
+      Future.orElse(e =>
         e instanceof EvalError
           ? Future.right('eval error')
           : e.message === 'another message'

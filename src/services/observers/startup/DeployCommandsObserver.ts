@@ -63,7 +63,7 @@ export const DeployCommandsObserver = (
       DiscordConnector.restPutApplicationGuildCommands(rest, config.client.id, guildId, commands),
       Future.chain(logDecodeErrors),
       Future.chain(setCommandsPermissions(guildId)),
-      Future.recover(e =>
+      Future.orElse(e =>
         Future.fromIOEither(
           logger.warn(`Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${e.stack}`),
         ),

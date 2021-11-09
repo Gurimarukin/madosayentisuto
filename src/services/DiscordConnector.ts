@@ -1,4 +1,11 @@
 import { REST } from '@discordjs/rest'
+import {
+  AudioPlayer,
+  AudioPlayerStatus,
+  VoiceConnection,
+  VoiceConnectionStatus,
+  entersState as discordEntersState,
+} from '@discordjs/voice'
 import { APIMessage, RESTPostAPIApplicationCommandsJSONBody, Routes } from 'discord-api-types/v9'
 import {
   ApplicationCommand,
@@ -39,6 +46,7 @@ import { globalConfig } from '../globalConfig'
 import { Activity } from '../models/Activity'
 import { CommandId } from '../models/CommandId'
 import { GuildId } from '../models/GuildId'
+import { MsDuration } from '../models/MsDuration'
 import { PutCommandResult } from '../models/PutCommandResult'
 import { TSnowflake } from '../models/TSnowflake'
 import { ChannelUtils } from '../utils/ChannelUtils'
@@ -75,7 +83,7 @@ const of = (client: Client<true>) => ({
     pipe(
       Future.tryCatch(() => client.channels.fetch(TSnowflake.unwrap(channelId))),
       Future.map(Maybe.fromNullable),
-      // Future.recover<Maybe<Channel>>(_ => Future.right(Maybe.none)),
+      // Future.orElse<Maybe<Channel>>(_ => Future.right(Maybe.none)),
       debugLeft('fetchChannel'),
       //   [
       //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
@@ -170,7 +178,7 @@ const addRole = (
   pipe(
     Future.tryCatch(() => member.roles.add(roleOrRoles, reason)),
     Future.map(() => true),
-    Future.recover(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
+    Future.orElse(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
     debugLeft('addRole'),
   )
 
@@ -178,8 +186,32 @@ const deleteMessage = (message: Message): Future<boolean> =>
   pipe(
     Future.tryCatch(() => message.delete()),
     Future.map(() => true),
-    Future.recover(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
+    Future.orElse(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
   )
+
+function entersState(
+  target: VoiceConnection,
+  status: VoiceConnectionStatus,
+  timeout: MsDuration,
+): Future<VoiceConnection>
+function entersState(
+  target: AudioPlayer,
+  status: AudioPlayerStatus,
+  timeout: MsDuration,
+): Future<AudioPlayer>
+function entersState(
+  target: VoiceConnection | AudioPlayer,
+  status: VoiceConnectionStatus | AudioPlayerStatus,
+  timeout: MsDuration | MsDuration,
+): Future<VoiceConnection | AudioPlayer> {
+  return Future.tryCatch(() =>
+    discordEntersState(
+      target as VoiceConnection,
+      status as VoiceConnectionStatus,
+      MsDuration.unwrap(timeout),
+    ),
+  )
+}
 
 const guildCommandsPermissionsSet = (
   guild: Guild,
@@ -216,7 +248,7 @@ const interactionReply = (
 ): Future<void> =>
   pipe(
     Future.tryCatch(() => interaction.reply(options)),
-    Future.recover(e =>
+    Future.orElse(e =>
       isDiscordAPIError('Cannot send an empty message')(e) ? Future.unit : Future.left(e),
     ),
     debugLeft('interactionReply'),
@@ -240,7 +272,7 @@ const removeRole = (
   pipe(
     Future.tryCatch(() => member.roles.remove(roleOrRoles, reason)),
     Future.map(() => true),
-    Future.recover(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
+    Future.orElse(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
     debugLeft('removeRole'),
   )
 
@@ -277,7 +309,7 @@ const sendMessage = (
   pipe(
     Future.tryCatch(() => channel.send(options)),
     Future.map(Maybe.some),
-    // Future.recover<Maybe<Message>>(e =>
+    // Future.orElse<Maybe<Message>>(e =>
     //   e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user'
     //     ? Future.right(Maybe.none)
     //     : Future.left(e),
@@ -314,6 +346,7 @@ export const DiscordConnector = {
 
   addRole,
   deleteMessage,
+  entersState,
   guildCommandsPermissionsSet,
   interactionDeferReply,
   interactionDeleteReply,
@@ -378,7 +411,7 @@ const fetchMessageRec =
       return pipe(
         Future.tryCatch(() => head.messages.fetch(message)),
         Future.map(Maybe.some),
-        Future.recover(e =>
+        Future.orElse(e =>
           isDiscordAPIError('Unknown Message')(e)
             ? Future.right<Maybe<Message>>(Maybe.none)
             : Future.left(e),
