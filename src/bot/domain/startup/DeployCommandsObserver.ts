@@ -1,26 +1,28 @@
 import { REST } from '@discordjs/rest'
-import type { Config } from 'bot/Config'
-import { adminCommands } from 'bot/domain/commands/AdminCommandsObserver'
-import { playCommand } from 'bot/domain/commands/MusicCommandsObserver'
-import { pingCommand } from 'bot/domain/commands/PingCommandObserver'
-import { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import { CommandId } from 'bot/models/commands/CommandId'
-import type { PutCommandResult } from 'bot/models/commands/PutCommandResult'
-import { GuildId } from 'bot/models/GuildId'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
-import type { DbReady } from 'bot/models/MadEvent'
-import type { TObserver } from 'bot/models/rx/TObserver'
-import { TSnowflake } from 'bot/models/TSnowflake'
-import type { GuildStateService } from 'bot/services/GuildStateService'
 import type {
   ApplicationCommandPermissionData,
   Guild,
   GuildApplicationCommandPermissionData,
 } from 'discord.js'
 import { ApplicationCommandPermissionTypes } from 'discord.js/typings/enums'
-import { pipe } from 'fp-ts/function'
 import type { Separated } from 'fp-ts/Separated'
+import { pipe } from 'fp-ts/function'
+
 import { Future, IO, List, Maybe, NonEmptyArray } from 'shared/utils/fp'
+
+import type { Config } from 'bot/Config'
+import { adminCommands } from 'bot/domain/commands/AdminCommandsObserver'
+import { playCommand } from 'bot/domain/commands/MusicCommandsObserver'
+import { pingCommand } from 'bot/domain/commands/PingCommandObserver'
+import { DiscordConnector } from 'bot/helpers/DiscordConnector'
+import { GuildId } from 'bot/models/GuildId'
+import type { DbReady } from 'bot/models/MadEvent'
+import { TSnowflake } from 'bot/models/TSnowflake'
+import { CommandId } from 'bot/models/commands/CommandId'
+import type { PutCommandResult } from 'bot/models/commands/PutCommandResult'
+import type { LoggerGetter } from 'bot/models/logger/LoggerType'
+import type { TObserver } from 'bot/models/rx/TObserver'
+import type { GuildStateService } from 'bot/services/GuildStateService'
 
 export const DeployCommandsObserver = (
   Logger: LoggerGetter,

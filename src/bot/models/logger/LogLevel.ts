@@ -1,7 +1,9 @@
-import { Colors } from 'bot/constants'
 import type { ColorResolvable } from 'discord.js'
 import * as D from 'io-ts/Decoder'
+
 import type { Dict } from 'shared/utils/fp'
+
+import { Colors } from 'bot/constants'
 
 const decoder = D.union(
   D.literal('debug'),

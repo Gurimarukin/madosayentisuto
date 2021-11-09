@@ -1,11 +1,13 @@
+import { pipe } from 'fp-ts/function'
+
+import { Future, IO, Maybe } from 'shared/utils/fp'
+
 import type { DiscordConnector } from 'bot/helpers/DiscordConnector'
+import type { AppStarted, CronJob, DbReady } from 'bot/models/MadEvent'
 import { Activity } from 'bot/models/botState/Activity'
 import type { LoggerGetter } from 'bot/models/logger/LoggerType'
-import type { AppStarted, CronJob, DbReady } from 'bot/models/MadEvent'
 import type { TObserver } from 'bot/models/rx/TObserver'
 import type { BotStatePersistence } from 'bot/persistence/BotStatePersistence'
-import { pipe } from 'fp-ts/function'
-import { Future, IO, Maybe } from 'shared/utils/fp'
 
 export const ActivityStatusObserver = (
   Logger: LoggerGetter,

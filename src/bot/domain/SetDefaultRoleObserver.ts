@@ -1,11 +1,13 @@
+import { pipe } from 'fp-ts/function'
+
+import { Future, Maybe } from 'shared/utils/fp'
+
 import { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
 import type { GuildMemberAdd } from 'bot/models/MadEvent'
+import type { LoggerGetter } from 'bot/models/logger/LoggerType'
 import type { TObserver } from 'bot/models/rx/TObserver'
 import type { GuildStateService } from 'bot/services/GuildStateService'
 import { LogUtils } from 'bot/utils/LogUtils'
-import { pipe } from 'fp-ts/function'
-import { Future, Maybe } from 'shared/utils/fp'
 
 export const SetDefaultRoleObserver = (
   Logger: LoggerGetter,

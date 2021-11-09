@@ -1,19 +1,21 @@
-import { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import { GuildId } from 'bot/models/GuildId'
-import type { Calls } from 'bot/models/guildState/Calls'
-import type { CallsDb } from 'bot/models/guildState/db/CallsDb'
-import { GuildStateDb } from 'bot/models/guildState/db/GuildStateDb'
-import { GuildState } from 'bot/models/guildState/GuildState'
-import type { MusicSubscription } from 'bot/models/guildState/MusicSubscription'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
-import type { GuildStatePersistence } from 'bot/persistence/GuildStatePersistence'
-import { ChannelUtils } from 'bot/utils/ChannelUtils'
-import { LogUtils } from 'bot/utils/LogUtils'
 import type { Guild, Role } from 'discord.js'
 import { apply, readonlyMap } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import type { Lens as MonocleLens } from 'monocle-ts'
+
 import { Future, IO, List, Maybe } from 'shared/utils/fp'
+
+import { DiscordConnector } from 'bot/helpers/DiscordConnector'
+import { GuildId } from 'bot/models/GuildId'
+import type { Calls } from 'bot/models/guildState/Calls'
+import { GuildState } from 'bot/models/guildState/GuildState'
+import type { MusicSubscription } from 'bot/models/guildState/MusicSubscription'
+import type { CallsDb } from 'bot/models/guildState/db/CallsDb'
+import { GuildStateDb } from 'bot/models/guildState/db/GuildStateDb'
+import type { LoggerGetter } from 'bot/models/logger/LoggerType'
+import type { GuildStatePersistence } from 'bot/persistence/GuildStatePersistence'
+import { ChannelUtils } from 'bot/utils/ChannelUtils'
+import { LogUtils } from 'bot/utils/LogUtils'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type LensInner<A extends MonocleLens<any, any>> = A extends MonocleLens<any, infer B> ? B : never

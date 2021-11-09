@@ -5,4 +5,7 @@ module.exports = {
   singleQuote: true,
   trailingComma: 'all',
   arrowParens: 'avoid',
+  importOrder: ['<THIRD_PARTY_MODULES>', '^shared/(.*)$', '^bot/(.*)$', '^[./]'],
+  importOrderSeparation: true,
+  importOrderSortSpecifiers: true,
 }

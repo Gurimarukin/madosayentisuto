@@ -1,9 +1,11 @@
+import type { Role } from 'discord.js'
+import { Lens as MonocleLens } from 'monocle-ts'
+
+import { Maybe } from 'shared/utils/fp'
+
 import type { GuildId } from 'bot/models/GuildId'
 import type { Calls } from 'bot/models/guildState/Calls'
 import type { MusicSubscription } from 'bot/models/guildState/MusicSubscription'
-import type { Role } from 'discord.js'
-import { Lens as MonocleLens } from 'monocle-ts'
-import { Maybe } from 'shared/utils/fp'
 
 export type GuildState = {
   readonly id: GuildId

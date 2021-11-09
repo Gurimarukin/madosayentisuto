@@ -1,6 +1,7 @@
-import type { Calls } from 'bot/models/guildState/Calls'
-import { TSnowflake } from 'bot/models/TSnowflake'
 import * as C from 'io-ts/Codec'
+
+import { TSnowflake } from 'bot/models/TSnowflake'
+import type { Calls } from 'bot/models/guildState/Calls'
 
 const codec = C.struct({
   message: TSnowflake.codec, // listen reactions to this message

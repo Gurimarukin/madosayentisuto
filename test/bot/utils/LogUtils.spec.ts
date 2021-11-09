@@ -1,7 +1,8 @@
-import type { ChannelUtils } from 'bot/utils/ChannelUtils'
-import { LogUtils } from 'bot/utils/LogUtils'
 import type { Guild, TextChannel, User } from 'discord.js'
 import { refinement } from 'fp-ts'
+
+import type { ChannelUtils } from 'bot/utils/ChannelUtils'
+import { LogUtils } from 'bot/utils/LogUtils'
 
 const { __testableFormat } = LogUtils
 const format = __testableFormat(refinement.id() as typeof ChannelUtils.isNamedChannel)

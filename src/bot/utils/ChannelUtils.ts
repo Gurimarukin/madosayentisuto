@@ -1,13 +1,5 @@
-import type {
-  Channel,
-  PartialDMChannel} from 'discord.js';
-import {
-  GuildChannel,
-  StageChannel,
-  TextChannel,
-  ThreadChannel,
-  VoiceChannel,
-} from 'discord.js'
+import type { Channel, PartialDMChannel } from 'discord.js'
+import { GuildChannel, StageChannel, TextChannel, ThreadChannel, VoiceChannel } from 'discord.js'
 import { predicate, refinement } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 

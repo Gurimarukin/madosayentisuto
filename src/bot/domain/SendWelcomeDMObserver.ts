@@ -1,13 +1,15 @@
+import { MessageEmbed } from 'discord.js'
+import { pipe } from 'fp-ts/function'
+
+import { Future, Maybe } from 'shared/utils/fp'
+
 import { Colors } from 'bot/constants'
 import { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
 import type { GuildMemberAdd } from 'bot/models/MadEvent'
+import type { LoggerGetter } from 'bot/models/logger/LoggerType'
 import type { TObserver } from 'bot/models/rx/TObserver'
 import { LogUtils } from 'bot/utils/LogUtils'
 import { StringUtils } from 'bot/utils/StringUtils'
-import { MessageEmbed } from 'discord.js'
-import { pipe } from 'fp-ts/function'
-import { Future, Maybe } from 'shared/utils/fp'
 
 export const SendWelcomeDMObserver = (Logger: LoggerGetter): TObserver<GuildMemberAdd> => {
   const logger = Logger('SendWelcomeDMObserver')

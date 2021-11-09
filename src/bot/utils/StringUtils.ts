@@ -1,4 +1,5 @@
 import { pipe } from 'fp-ts/function'
+
 import type { List, Tuple } from 'shared/utils/fp'
 import { Maybe } from 'shared/utils/fp'
 

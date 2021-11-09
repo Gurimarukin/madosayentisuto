@@ -1,9 +1,11 @@
+import { pipe } from 'fp-ts/function'
+
+import { Future } from 'shared/utils/fp'
+
 import { Application } from 'bot/Application'
 import { Config } from 'bot/Config'
 import { DiscordConnector } from 'bot/helpers/DiscordConnector'
 import { DiscordLogger } from 'bot/helpers/DiscordLogger'
-import { pipe } from 'fp-ts/function'
-import { Future } from 'shared/utils/fp'
 
 const main: Future<void> = pipe(
   Future.Do,

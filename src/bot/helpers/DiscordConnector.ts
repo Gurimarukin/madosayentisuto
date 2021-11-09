@@ -6,15 +6,6 @@ import type {
   VoiceConnectionStatus,
 } from '@discordjs/voice'
 import { entersState as discordEntersState } from '@discordjs/voice'
-import type { ClientConfig } from 'bot/Config'
-import { Colors, globalConfig } from 'bot/constants'
-import type { Activity } from 'bot/models/botState/Activity'
-import { CommandId } from 'bot/models/commands/CommandId'
-import { PutCommandResult } from 'bot/models/commands/PutCommandResult'
-import { GuildId } from 'bot/models/GuildId'
-import { TSnowflake } from 'bot/models/TSnowflake'
-import { ChannelUtils } from 'bot/utils/ChannelUtils'
-import { decodeError } from 'bot/utils/decodeError'
 import type { APIMessage, RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
 import { Routes } from 'discord-api-types/v9'
 import type {
@@ -44,11 +35,22 @@ import type {
   User,
 } from 'discord.js'
 import { Client, DiscordAPIError, Intents, MessageEmbed } from 'discord.js'
-import { flow, pipe } from 'fp-ts/function'
 import type { Separated } from 'fp-ts/Separated'
+import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
+
 import { MsDuration } from 'shared/models/MsDuration'
 import { Either, Future, IO, List, Maybe } from 'shared/utils/fp'
+
+import type { ClientConfig } from 'bot/Config'
+import { Colors, globalConfig } from 'bot/constants'
+import { GuildId } from 'bot/models/GuildId'
+import { TSnowflake } from 'bot/models/TSnowflake'
+import type { Activity } from 'bot/models/botState/Activity'
+import { CommandId } from 'bot/models/commands/CommandId'
+import { PutCommandResult } from 'bot/models/commands/PutCommandResult'
+import { ChannelUtils } from 'bot/utils/ChannelUtils'
+import { decodeError } from 'bot/utils/decodeError'
 
 type NotPartial = {
   readonly partial: false

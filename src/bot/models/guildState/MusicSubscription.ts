@@ -1,4 +1,4 @@
-import type { AudioPlayer, VoiceConnection} from '@discordjs/voice';
+import type { AudioPlayer, VoiceConnection } from '@discordjs/voice'
 import { createAudioPlayer } from '@discordjs/voice'
 
 export type MusicSubscription = {

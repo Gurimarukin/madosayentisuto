@@ -1,6 +1,3 @@
-import type { LoggerType } from 'bot/models/logger/LoggerType'
-import type { LogLevel } from 'bot/models/logger/LogLevel'
-import { ChannelUtils } from 'bot/utils/ChannelUtils'
 import type {
   DMChannel,
   Guild,
@@ -12,7 +9,12 @@ import type {
   User,
   VoiceChannel,
 } from 'discord.js'
+
 import type { IO, List } from 'shared/utils/fp'
+
+import type { LogLevel } from 'bot/models/logger/LogLevel'
+import type { LoggerType } from 'bot/models/logger/LoggerType'
+import { ChannelUtils } from 'bot/utils/ChannelUtils'
 
 type Chan =
   | PartialDMChannel

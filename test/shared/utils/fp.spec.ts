@@ -1,4 +1,5 @@
 import { pipe } from 'fp-ts/function'
+
 import { Either, Future } from 'shared/utils/fp'
 
 describe('Future.orElse', () => {

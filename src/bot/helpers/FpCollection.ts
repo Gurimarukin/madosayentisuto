@@ -1,6 +1,3 @@
-import type { LoggerType } from 'bot/models/logger/LoggerType'
-import type { IndexDescription, WithoutProjection } from 'bot/models/MongoTypings'
-import { decodeError } from 'bot/utils/decodeError'
 import { pipe } from 'fp-ts/function'
 import type { Codec } from 'io-ts/Codec'
 import type {
@@ -19,8 +16,13 @@ import type {
   UpdateOptions,
   UpdateResult,
 } from 'mongodb'
+
 import type { List, Tuple } from 'shared/utils/fp'
 import { Either, Future, Maybe } from 'shared/utils/fp'
+
+import type { IndexDescription, WithoutProjection } from 'bot/models/MongoTypings'
+import type { LoggerType } from 'bot/models/logger/LoggerType'
+import { decodeError } from 'bot/utils/decodeError'
 
 export type FpCollection = ReturnType<typeof FpCollection>
 

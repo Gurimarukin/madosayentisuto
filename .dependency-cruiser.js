@@ -100,20 +100,22 @@ module.exports = {
       from: {},
       to: {
         couldNotResolve: true,
+        path: '^src',
       },
     },
-    {
-      name: 'no-duplicate-dep-types',
-      comment:
-        "Likeley this module depends on an external ('npm') package that occurs more than once " +
-        'in your package.json i.e. bot as a devDependencies and in dependencies. This will cause ' +
-        'maintenance problems later on.',
-      severity: 'warn',
-      from: {},
-      to: {
-        moreThanOneDependencyType: true,
-      },
-    },
+    // no clue what this is...
+    // {
+    //   name: 'no-duplicate-dep-types',
+    //   comment:
+    //     "Likeley this module depends on an external ('npm') package that occurs more than once " +
+    //     'in your package.json i.e. bot as a devDependencies and in dependencies. This will cause ' +
+    //     'maintenance problems later on.',
+    //   severity: 'warn',
+    //   from: {},
+    //   to: {
+    //     moreThanOneDependencyType: true,
+    //   },
+    // },
 
     /* rules you might want to tweak for your specific situation: */
     {
@@ -194,7 +196,7 @@ module.exports = {
         path: '^src/shared',
       },
       to: {
-        pathNot: '^(node_modules|fs|util|src/shared)',
+        pathNot: '^(node_modules|fs|util|shared)',
       },
     },
     {

@@ -1,9 +1,10 @@
-import { globalConfig } from 'bot/constants'
-import { callsButton } from 'bot/domain/CallsAutoroleObserver'
-import { StringUtils } from 'bot/utils/StringUtils'
 import type { APIInteractionDataResolvedChannel, APIRole } from 'discord-api-types'
 import type { GuildChannel, MessageOptions, Role, ThreadChannel } from 'discord.js'
 import { MessageActionRow, MessageButton } from 'discord.js'
+
+import { globalConfig } from 'bot/constants'
+import { callsButton } from 'bot/domain/CallsAutoroleObserver'
+import { StringUtils } from 'bot/utils/StringUtils'
 
 export const getInitCallsMessage = (
   channel: ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel,

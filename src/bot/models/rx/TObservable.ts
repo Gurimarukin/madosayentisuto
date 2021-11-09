@@ -1,6 +1,8 @@
-import type { TObserver } from 'bot/models/rx/TObserver'
 import type { Observable, PartialObserver, Subscription } from 'rxjs'
+
 import { Future, IO } from 'shared/utils/fp'
+
+import type { TObserver } from 'bot/models/rx/TObserver'
 
 export type TObservable<A> = Observable<A>
 

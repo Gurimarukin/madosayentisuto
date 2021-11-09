@@ -1,4 +1,5 @@
 import { flow } from 'fp-ts/function'
+
 import type { List } from 'shared/utils/fp'
 import { Either, Maybe, NonEmptyArray } from 'shared/utils/fp'
 

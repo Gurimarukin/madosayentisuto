@@ -1,6 +1,8 @@
-import { ConfReader } from 'bot/helpers/ConfReader'
 import * as D from 'io-ts/Decoder'
+
 import { Either } from 'shared/utils/fp'
+
+import { ConfReader } from 'bot/helpers/ConfReader'
 
 describe('ConfReader.fromJsons', () => {
   it('should fail for non object', () => {

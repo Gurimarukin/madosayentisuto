@@ -1,13 +1,4 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
-import { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import { getInitCallsMessage } from 'bot/helpers/getInitCallsMessage'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
-import type { InteractionCreate } from 'bot/models/MadEvent'
-import type { TObserver } from 'bot/models/rx/TObserver'
-import { TSnowflake } from 'bot/models/TSnowflake'
-import type { GuildStateService } from 'bot/services/GuildStateService'
-import { ChannelUtils } from 'bot/utils/ChannelUtils'
-import { LogUtils } from 'bot/utils/LogUtils'
 import type {
   APIInteractionDataResolvedChannel,
   APIRole,
@@ -25,7 +16,18 @@ import type {
 import { Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
+
 import { Future, Maybe } from 'shared/utils/fp'
+
+import { DiscordConnector } from 'bot/helpers/DiscordConnector'
+import { getInitCallsMessage } from 'bot/helpers/getInitCallsMessage'
+import type { InteractionCreate } from 'bot/models/MadEvent'
+import { TSnowflake } from 'bot/models/TSnowflake'
+import type { LoggerGetter } from 'bot/models/logger/LoggerType'
+import type { TObserver } from 'bot/models/rx/TObserver'
+import type { GuildStateService } from 'bot/services/GuildStateService'
+import { ChannelUtils } from 'bot/utils/ChannelUtils'
+import { LogUtils } from 'bot/utils/LogUtils'
 
 // DefaultRoleGet
 // DefaultRoleSet
