@@ -1,10 +1,9 @@
+import { Application } from 'bot/Application'
+import { Config } from 'bot/Config'
+import { DiscordConnector } from 'bot/helpers/DiscordConnector'
+import { DiscordLogger } from 'bot/helpers/DiscordLogger'
 import { pipe } from 'fp-ts/function'
-
-import { Application } from './Application'
-import { Config } from './config/Config'
-import { DiscordConnector } from './services/DiscordConnector'
-import { PartialLogger } from './services/Logger'
-import { Future } from './utils/fp'
+import { Future } from 'shared/utils/fp'
 
 const main: Future<void> = pipe(
   Future.Do,
@@ -12,7 +11,7 @@ const main: Future<void> = pipe(
   Future.bind('client', ({ config }) => DiscordConnector.futureClient(config.client)),
   Future.chain(({ config, client }) => {
     const discord = DiscordConnector.of(client)
-    const Logger = PartialLogger(config, discord)
+    const Logger = DiscordLogger(config, discord)
     return Future.fromIOEither(Application(Logger, config, discord))
   }),
 )

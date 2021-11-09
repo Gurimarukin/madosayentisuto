@@ -16,6 +16,10 @@ module.exports = {
   rules: {
     '@typescript-eslint/array-type': ['warn', { default: 'array', readonly: 'generic' }],
     '@typescript-eslint/consistent-type-definitions': 'off', // use functional/prefer-type-literal, it's better
+    '@typescript-eslint/consistent-type-imports': [
+      'warn',
+      { prefer: 'type-imports', disallowTypeAnnotations: false },
+    ],
     '@typescript-eslint/explicit-function-return-type': [
       'warn',
       {
@@ -38,11 +42,17 @@ module.exports = {
     ],
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/no-namespace': 'warn',
+    '@typescript-eslint/no-restricted-imports': [
+      'warn',
+      {
+        patterns: [{ group: ['./*'] }, { group: ['../*'] }],
+      },
+    ],
     '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'warn',
     '@typescript-eslint/no-unnecessary-condition': 'warn',
     '@typescript-eslint/no-unused-vars': 'warn',
     '@typescript-eslint/no-use-before-define': 'off',
-    '@typescript-eslint/no-namespace': 'warn',
     '@typescript-eslint/strict-boolean-expressions': [
       'warn',
       {
@@ -105,6 +115,7 @@ module.exports = {
     'no-multiple-empty-lines': ['warn', { max: 1 }],
     'no-multi-spaces': 'warn',
     'no-redeclare': 'off',
+    'no-restricted-imports': 'off',
     'no-shadow': ['warn', { builtinGlobals: true, hoist: 'functions' }],
     'no-undef': 'off',
     'no-unneeded-ternary': 'warn',

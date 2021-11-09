@@ -1,7 +1,6 @@
+import { Config } from 'bot/Config'
 import { pipe } from 'fp-ts/function'
-
-import { Config } from './config/Config'
-import { Future } from './utils/fp'
+import { Future } from 'shared/utils/fp'
 
 const main: Future<void> = pipe(
   // check config

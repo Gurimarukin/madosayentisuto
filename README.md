@@ -1,21 +1,12 @@
 # Madosayentisuto
 
-Create `conf/local.conf.json` file using content of `conf/local.example.conf.json` (change needed values).
-
-
-## Bot commands
-
-    okb defaultRole get
-    okb defaultRole set <@role>
-
-    okb calls init <#channel> <@role>
+    cp conf/local.example.conf.json conf/local.conf.json # change needed values
 
 
 ## Deploy
 
-    pnpm i
-    npm run checkEnv
-    npm run build
+    yarn install
+    yarn run build
     node dist/src/index.js
 
 
@@ -25,5 +16,5 @@ Create `conf/local.conf.json` file using content of `conf/local.example.conf.jso
 
     mongo -u user -p password --authenticationDatabase admin madosayentisuto
 
-    pnpm i
-    npm run ~run
+    yarn install
+    yarn run ~run
