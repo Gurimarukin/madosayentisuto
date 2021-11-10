@@ -1,10 +1,14 @@
-import type { APIInteractionDataResolvedChannel, APIRole } from 'discord-api-types'
+import type { APIInteractionDataResolvedChannel, APIRole } from 'discord-api-types/v9'
 import type { GuildChannel, MessageOptions, Role, ThreadChannel } from 'discord.js'
 import { MessageActionRow, MessageButton } from 'discord.js'
 
-import { globalConfig } from 'bot/constants'
-import { callsButton } from 'bot/domain/CallsAutoroleObserver'
-import { StringUtils } from 'bot/utils/StringUtils'
+import { globalConfig } from '../constants'
+import { StringUtils } from '../utils/StringUtils'
+
+export const callsButton = {
+  subscribeId: 'callsSubscribe',
+  unsubscribeId: 'callsUnsubscribe',
+}
 
 export const getInitCallsMessage = (
   channel: ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel,

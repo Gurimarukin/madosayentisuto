@@ -1,6 +1,6 @@
 import * as D from 'io-ts/Decoder'
 
-import { StringUtils } from 'bot/utils/StringUtils'
+import { StringUtils } from './StringUtils'
 
 export const decodeError =
   (name: string) =>

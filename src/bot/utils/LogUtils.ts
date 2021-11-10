@@ -10,11 +10,11 @@ import type {
   VoiceChannel,
 } from 'discord.js'
 
-import type { IO, List } from 'shared/utils/fp'
+import type { IO, List } from '../../shared/utils/fp'
 
-import type { LogLevel } from 'bot/models/logger/LogLevel'
-import type { LoggerType } from 'bot/models/logger/LoggerType'
-import { ChannelUtils } from 'bot/utils/ChannelUtils'
+import type { LogLevel } from '../models/logger/LogLevel'
+import type { LoggerType } from '../models/logger/LoggerType'
+import { ChannelUtils } from './ChannelUtils'
 
 type Chan =
   | PartialDMChannel

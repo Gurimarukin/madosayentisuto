@@ -1,12 +1,12 @@
 import { pipe } from 'fp-ts/function'
 
-import { Future, Maybe } from 'shared/utils/fp'
+import { Future, Maybe } from '../../shared/utils/fp'
 
-import { FpCollection } from 'bot/helpers/FpCollection'
-import type { MongoCollection } from 'bot/models/MongoCollection'
-import type { BotStateOutput } from 'bot/models/botState/BotState'
-import { BotState } from 'bot/models/botState/BotState'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
+import { FpCollection } from '../helpers/FpCollection'
+import type { MongoCollection } from '../models/MongoCollection'
+import type { BotStateOutput } from '../models/botState/BotState'
+import { BotState } from '../models/botState/BotState'
+import type { LoggerGetter } from '../models/logger/LoggerType'
 
 export type BotStatePersistence = ReturnType<typeof BotStatePersistence>
 

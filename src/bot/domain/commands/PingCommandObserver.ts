@@ -1,10 +1,10 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 
-import { Future } from 'shared/utils/fp'
+import { Future } from '../../../shared/utils/fp'
 
-import { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import type { InteractionCreate } from 'bot/models/MadEvent'
-import type { TObserver } from 'bot/models/rx/TObserver'
+import { DiscordConnector } from '../../helpers/DiscordConnector'
+import type { InteractionCreate } from '../../models/MadEvent'
+import type { TObserver } from '../../models/rx/TObserver'
 
 export const pingCommand = new SlashCommandBuilder()
   .setName('ping')

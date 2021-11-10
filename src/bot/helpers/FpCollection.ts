@@ -17,12 +17,12 @@ import type {
   UpdateResult,
 } from 'mongodb'
 
-import type { List, Tuple } from 'shared/utils/fp'
-import { Either, Future, Maybe } from 'shared/utils/fp'
+import type { List, Tuple } from '../../shared/utils/fp'
+import { Either, Future, Maybe } from '../../shared/utils/fp'
 
-import type { IndexDescription, WithoutProjection } from 'bot/models/MongoTypings'
-import type { LoggerType } from 'bot/models/logger/LoggerType'
-import { decodeError } from 'bot/utils/decodeError'
+import type { IndexDescription, WithoutProjection } from '../models/MongoTypings'
+import type { LoggerType } from '../models/logger/LoggerType'
+import { decodeError } from '../utils/decodeError'
 
 export type FpCollection = ReturnType<typeof FpCollection>
 

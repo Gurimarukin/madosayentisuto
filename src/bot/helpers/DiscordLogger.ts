@@ -3,13 +3,13 @@ import { MessageEmbed } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import util from 'util'
 
-import type { List } from 'shared/utils/fp'
-import { Future, IO, Maybe } from 'shared/utils/fp'
+import type { List } from '../../shared/utils/fp'
+import { Future, IO, Maybe } from '../../shared/utils/fp'
 
-import type { Config } from 'bot/Config'
-import { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import { LogLevel, LogLevelOrOff } from 'bot/models/logger/LogLevel'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
+import type { Config } from '../Config'
+import { LogLevel, LogLevelOrOff } from '../models/logger/LogLevel'
+import type { LoggerGetter } from '../models/logger/LoggerType'
+import { DiscordConnector } from './DiscordConnector'
 
 export const DiscordLogger =
   (config: Config, discord: DiscordConnector): LoggerGetter =>

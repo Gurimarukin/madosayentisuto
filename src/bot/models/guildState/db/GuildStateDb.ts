@@ -1,12 +1,12 @@
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
-import { Dict, Maybe } from 'shared/utils/fp'
+import { Dict, Maybe } from '../../../../shared/utils/fp'
 
-import { GuildId } from 'bot/models/GuildId'
-import { TSnowflake } from 'bot/models/TSnowflake'
-import type { GuildState } from 'bot/models/guildState/GuildState'
-import { CallsDb } from 'bot/models/guildState/db/CallsDb'
+import { GuildId } from '../../GuildId'
+import { TSnowflake } from '../../TSnowflake'
+import type { GuildState } from '../GuildState'
+import { CallsDb } from './CallsDb'
 
 const guildStateDbOnlyIdCodec = C.struct({
   id: GuildId.codec,

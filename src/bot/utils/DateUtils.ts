@@ -1,4 +1,4 @@
-import { MsDuration } from 'shared/models/MsDuration'
+import { MsDuration } from '../../shared/models/MsDuration'
 
 type MsFormat = {
   readonly hours: number

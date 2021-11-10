@@ -1,6 +1,6 @@
 import type { ColorResolvable } from 'discord.js'
 
-import { MsDuration } from 'shared/models/MsDuration'
+import { MsDuration } from '../shared/models/MsDuration'
 
 const darkred: ColorResolvable = '#8b0000'
 

@@ -1,12 +1,12 @@
 import type { StageChannel, VoiceChannel } from 'discord.js'
 import util from 'util'
 
-import { Future } from 'shared/utils/fp'
+import { Future } from '../../shared/utils/fp'
 
-import type { MadEvent } from 'bot/models/MadEvent'
-import type { LoggerType } from 'bot/models/logger/LoggerType'
-import type { TObserver } from 'bot/models/rx/TObserver'
-import { LogUtils } from 'bot/utils/LogUtils'
+import type { MadEvent } from '../models/MadEvent'
+import type { LoggerType } from '../models/logger/LoggerType'
+import type { TObserver } from '../models/rx/TObserver'
+import { LogUtils } from '../utils/LogUtils'
 
 const { format } = LogUtils
 

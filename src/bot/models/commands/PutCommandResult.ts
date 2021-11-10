@@ -1,11 +1,11 @@
 import type { ApplicationCommandType } from 'discord-api-types/payloads/v9'
 import * as D from 'io-ts/Decoder'
 
-import { Maybe } from 'shared/utils/fp'
+import { Maybe } from '../../../shared/utils/fp'
 
-import { GuildId } from 'bot/models/GuildId'
-import { TSnowflake } from 'bot/models/TSnowflake'
-import { CommandId } from 'bot/models/commands/CommandId'
+import { GuildId } from '../GuildId'
+import { TSnowflake } from '../TSnowflake'
+import { CommandId } from './CommandId'
 
 const applicationCommandTypeCodec: D.Decoder<unknown, ApplicationCommandType> = D.union(
   D.literal(1),

@@ -1,6 +1,6 @@
 import * as C from 'io-ts/Codec'
 
-import { ActivityTypeBot } from 'bot/models/botState/ActivityTypeBot'
+import { ActivityTypeBot } from './ActivityTypeBot'
 
 const of = (type: ActivityTypeBot, name: string): Activity => ({ type, name })
 

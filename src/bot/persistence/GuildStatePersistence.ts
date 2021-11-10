@@ -1,13 +1,13 @@
 import { flow, pipe } from 'fp-ts/function'
 
-import { Future, List, Maybe } from 'shared/utils/fp'
+import { Future, List, Maybe } from '../../shared/utils/fp'
 
-import { FpCollection } from 'bot/helpers/FpCollection'
-import { GuildId } from 'bot/models/GuildId'
-import type { MongoCollection } from 'bot/models/MongoCollection'
-import type { GuildStateDbOutput } from 'bot/models/guildState/db/GuildStateDb'
-import { GuildStateDb, GuildStateDbOnlyId } from 'bot/models/guildState/db/GuildStateDb'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
+import { FpCollection } from '../helpers/FpCollection'
+import { GuildId } from '../models/GuildId'
+import type { MongoCollection } from '../models/MongoCollection'
+import type { GuildStateDbOutput } from '../models/guildState/db/GuildStateDb'
+import { GuildStateDb, GuildStateDbOnlyId } from '../models/guildState/db/GuildStateDb'
+import type { LoggerGetter } from '../models/logger/LoggerType'
 
 export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>
 

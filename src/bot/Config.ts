@@ -2,14 +2,14 @@ import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
-import type { List } from 'shared/utils/fp'
-import { Either, IO, NonEmptyArray } from 'shared/utils/fp'
+import type { List } from '../shared/utils/fp'
+import { Either, IO, NonEmptyArray } from '../shared/utils/fp'
 
-import { ConfReader } from 'bot/helpers/ConfReader'
-import { TSnowflake } from 'bot/models/TSnowflake'
-import type { ValidatedNea } from 'bot/models/ValidatedNea'
-import { LogLevelOrOff } from 'bot/models/logger/LogLevel'
-import { StringUtils } from 'bot/utils/StringUtils'
+import { ConfReader } from './helpers/ConfReader'
+import { TSnowflake } from './models/TSnowflake'
+import type { ValidatedNea } from './models/ValidatedNea'
+import { LogLevelOrOff } from './models/logger/LogLevel'
+import { StringUtils } from './utils/StringUtils'
 
 const seqS = apply.sequenceS(Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>()))
 

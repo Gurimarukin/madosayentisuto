@@ -100,7 +100,6 @@ module.exports = {
       from: {},
       to: {
         couldNotResolve: true,
-        path: '^src',
       },
     },
     // no clue what this is...
@@ -196,7 +195,7 @@ module.exports = {
         path: '^src/shared',
       },
       to: {
-        pathNot: '^(node_modules|fs|util|shared)',
+        pathNot: '^(node_modules|fs|util|src/shared)',
       },
     },
     {

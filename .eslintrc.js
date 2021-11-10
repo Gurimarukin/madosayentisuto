@@ -43,12 +43,7 @@ module.exports = {
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-namespace': 'warn',
-    '@typescript-eslint/no-restricted-imports': [
-      'warn',
-      {
-        patterns: [{ group: ['./*'] }, { group: ['../*'] }],
-      },
-    ],
+    '@typescript-eslint/no-restricted-imports': 'off',
     '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'warn',
     '@typescript-eslint/no-unnecessary-condition': 'warn',
     '@typescript-eslint/no-unused-vars': 'warn',

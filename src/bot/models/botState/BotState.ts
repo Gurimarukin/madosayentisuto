@@ -1,9 +1,9 @@
 import * as C from 'io-ts/Codec'
 import { Lens as MonocleLens } from 'monocle-ts'
 
-import { Maybe } from 'shared/utils/fp'
+import { Maybe } from '../../../shared/utils/fp'
 
-import { Activity } from 'bot/models/botState/Activity'
+import { Activity } from './Activity'
 
 const codec = C.struct({
   activity: Maybe.codec(Activity.codec),

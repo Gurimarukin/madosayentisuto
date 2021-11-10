@@ -1,9 +1,9 @@
 import { Subject } from 'rxjs'
 
-import { IO } from 'shared/utils/fp'
+import { IO } from '../../../shared/utils/fp'
 
-import type { TObservable } from 'bot/models/rx/TObservable'
-import type { TSubject } from 'bot/models/rx/TSubject'
+import type { TObservable } from './TObservable'
+import type { TSubject } from './TSubject'
 
 type StrongSubject<A> = Omit<Subject<A>, 'next'> & {
   // eslint-disable-next-line functional/no-return-void

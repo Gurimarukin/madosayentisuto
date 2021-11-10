@@ -5,7 +5,12 @@ module.exports = {
   singleQuote: true,
   trailingComma: 'all',
   arrowParens: 'avoid',
-  importOrder: ['<THIRD_PARTY_MODULES>', '^shared/(.*)$', '^bot/(.*)$', '^[./]'],
+  importOrder: [
+    '<THIRD_PARTY_MODULES>',
+    '^(\\.?\\.\\/)+(src/)?shared/(.*)$',
+    '^(\\.?\\.\\/)+(src/)?bot/(.*)$',
+    '^[./]',
+  ],
   importOrderSeparation: true,
   importOrderSortSpecifiers: true,
 }

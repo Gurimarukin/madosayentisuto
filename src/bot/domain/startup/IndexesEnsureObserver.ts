@@ -1,15 +1,15 @@
 import { pipe } from 'fp-ts/function'
 
-import type { List } from 'shared/utils/fp'
-import { Future } from 'shared/utils/fp'
+import type { List } from '../../../shared/utils/fp'
+import { Future } from '../../../shared/utils/fp'
 
-import { globalConfig } from 'bot/constants'
-import type { AppStarted, DbReady } from 'bot/models/MadEvent'
-import { MadEvent } from 'bot/models/MadEvent'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
-import type { TObserver } from 'bot/models/rx/TObserver'
-import type { TSubject } from 'bot/models/rx/TSubject'
-import { FutureUtils } from 'bot/utils/FutureUtils'
+import { globalConfig } from '../../constants'
+import type { AppStarted, DbReady } from '../../models/MadEvent'
+import { MadEvent } from '../../models/MadEvent'
+import type { LoggerGetter } from '../../models/logger/LoggerType'
+import type { TObserver } from '../../models/rx/TObserver'
+import type { TSubject } from '../../models/rx/TSubject'
+import { FutureUtils } from '../../utils/FutureUtils'
 
 export const IndexesEnsureObserver = (
   Logger: LoggerGetter,

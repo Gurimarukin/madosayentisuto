@@ -6,11 +6,7 @@
     "sourceMap": true,
     "noEmit": true,
     "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "paths": {
-      "bot/*": ["./src/bot/*"],
-      "shared/*": ["./src/shared/*"]
-    }
+    "noUnusedParameters": false
   },
   "include": ["src", "test"]
 }

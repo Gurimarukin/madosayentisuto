@@ -4,26 +4,21 @@ import { GuildMember } from 'discord.js'
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { Future, Maybe } from 'shared/utils/fp'
+import { Future, Maybe } from '../../shared/utils/fp'
 
-import { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import { getInitCallsMessage } from 'bot/helpers/getInitCallsMessage'
-import type { InteractionCreate } from 'bot/models/MadEvent'
-import { TSnowflake } from 'bot/models/TSnowflake'
-import type { Calls } from 'bot/models/guildState/Calls'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
-import type { TObserver } from 'bot/models/rx/TObserver'
-import type { GuildStateService } from 'bot/services/GuildStateService'
-import { LogUtils } from 'bot/utils/LogUtils'
+import { DiscordConnector } from '../helpers/DiscordConnector'
+import { callsButton, getInitCallsMessage } from '../helpers/getInitCallsMessage'
+import type { InteractionCreate } from '../models/MadEvent'
+import { TSnowflake } from '../models/TSnowflake'
+import type { Calls } from '../models/guildState/Calls'
+import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { TObserver } from '../models/rx/TObserver'
+import type { GuildStateService } from '../services/GuildStateService'
+import { LogUtils } from '../utils/LogUtils'
 
 type CallsAndMember = {
   readonly calls: Calls
   readonly member: GuildMember
-}
-
-export const callsButton = {
-  subscribeId: 'callsSubscribe',
-  unsubscribeId: 'callsUnsubscribe',
 }
 
 export const CallsAutoroleObserver = (

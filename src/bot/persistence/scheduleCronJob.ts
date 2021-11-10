@@ -1,15 +1,15 @@
 import { pipe } from 'fp-ts/function'
 
-import { MsDuration } from 'shared/models/MsDuration'
-import { IO } from 'shared/utils/fp'
+import { MsDuration } from '../../shared/models/MsDuration'
+import { IO } from '../../shared/utils/fp'
 
-import { globalConfig } from 'bot/constants'
-import type { CronJob } from 'bot/models/MadEvent'
-import { MadEvent } from 'bot/models/MadEvent'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
-import type { TSubject } from 'bot/models/rx/TSubject'
-import { DateUtils } from 'bot/utils/DateUtils'
-import { StringUtils } from 'bot/utils/StringUtils'
+import { globalConfig } from '../constants'
+import type { CronJob } from '../models/MadEvent'
+import { MadEvent } from '../models/MadEvent'
+import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { TSubject } from '../models/rx/TSubject'
+import { DateUtils } from '../utils/DateUtils'
+import { StringUtils } from '../utils/StringUtils'
 
 const { pad10, pad100 } = StringUtils
 

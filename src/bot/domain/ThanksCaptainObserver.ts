@@ -1,13 +1,13 @@
 import type { Message } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import type { List } from 'shared/utils/fp'
-import { Future, Maybe } from 'shared/utils/fp'
+import type { List } from '../../shared/utils/fp'
+import { Future, Maybe } from '../../shared/utils/fp'
 
-import type { CaptainConfig } from 'bot/Config'
-import { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import type { MessageCreate } from 'bot/models/MadEvent'
-import type { TObserver } from 'bot/models/rx/TObserver'
+import type { CaptainConfig } from '../Config'
+import { DiscordConnector } from '../helpers/DiscordConnector'
+import type { MessageCreate } from '../models/MadEvent'
+import type { TObserver } from '../models/rx/TObserver'
 
 export const ThanksCaptainObserver = (
   config: CaptainConfig,

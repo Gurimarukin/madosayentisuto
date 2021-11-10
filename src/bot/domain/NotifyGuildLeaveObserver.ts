@@ -5,17 +5,17 @@ import { date, io, number, ord, random, semigroup, string } from 'fp-ts'
 import type { Ord } from 'fp-ts/Ord'
 import { flow, pipe } from 'fp-ts/function'
 
-import { MsDuration } from 'shared/models/MsDuration'
-import { Future, IO, List, Maybe, NonEmptyArray } from 'shared/utils/fp'
+import { MsDuration } from '../../shared/models/MsDuration'
+import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
-import { globalConfig } from 'bot/constants'
-import { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import type { GuildMemberRemove } from 'bot/models/MadEvent'
-import { TSnowflake } from 'bot/models/TSnowflake'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
-import type { TObserver } from 'bot/models/rx/TObserver'
-import { ChannelUtils } from 'bot/utils/ChannelUtils'
-import { LogUtils } from 'bot/utils/LogUtils'
+import { globalConfig } from '../constants'
+import { DiscordConnector } from '../helpers/DiscordConnector'
+import type { GuildMemberRemove } from '../models/MadEvent'
+import { TSnowflake } from '../models/TSnowflake'
+import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { TObserver } from '../models/rx/TObserver'
+import { ChannelUtils } from '../utils/ChannelUtils'
+import { LogUtils } from '../utils/LogUtils'
 
 export const NotifyGuildLeaveObserver = (Logger: LoggerGetter): TObserver<GuildMemberRemove> => {
   const logger = Logger('NotifyGuildLeave')

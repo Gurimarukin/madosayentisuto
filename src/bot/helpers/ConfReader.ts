@@ -2,12 +2,12 @@ import { json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
-import { Dict, Either, IO, List, Maybe, NonEmptyArray } from 'shared/utils/fp'
+import { Dict, Either, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
-import { ValidatedNea } from 'bot/models/ValidatedNea'
-import { FileUtils } from 'bot/utils/FileUtils'
-import { StringUtils } from 'bot/utils/StringUtils'
-import { unknownToError } from 'bot/utils/unknownToError'
+import { ValidatedNea } from '../models/ValidatedNea'
+import { FileUtils } from '../utils/FileUtils'
+import { StringUtils } from '../utils/StringUtils'
+import { unknownToError } from '../utils/unknownToError'
 
 export type ConfReader = <A>(
   decoder: D.Decoder<unknown, A>,

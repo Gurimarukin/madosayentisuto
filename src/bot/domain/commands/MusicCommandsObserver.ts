@@ -4,14 +4,14 @@ import type { CommandInteraction, Guild } from 'discord.js'
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
-import { MsDuration } from 'shared/models/MsDuration'
-import { Future, Maybe } from 'shared/utils/fp'
+import { MsDuration } from '../../../shared/models/MsDuration'
+import { Future, Maybe } from '../../../shared/utils/fp'
 
-import { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import type { InteractionCreate } from 'bot/models/MadEvent'
-import { MusicSubscription } from 'bot/models/guildState/MusicSubscription'
-import type { TObserver } from 'bot/models/rx/TObserver'
-import type { GuildStateService } from 'bot/services/GuildStateService'
+import { DiscordConnector } from '../../helpers/DiscordConnector'
+import type { InteractionCreate } from '../../models/MadEvent'
+import { MusicSubscription } from '../../models/guildState/MusicSubscription'
+import type { TObserver } from '../../models/rx/TObserver'
+import type { GuildStateService } from '../../services/GuildStateService'
 
 export const playCommand = new SlashCommandBuilder()
   .setName('play')

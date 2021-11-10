@@ -1,7 +1,7 @@
 import { flow } from 'fp-ts/function'
 
-import type { List } from 'shared/utils/fp'
-import { Either, Maybe, NonEmptyArray } from 'shared/utils/fp'
+import type { List } from '../../shared/utils/fp'
+import { Either, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
 const fromEither: <E, A>(either: Either<E, A>) => ValidatedNea<E, A> = Either.mapLeft(
   NonEmptyArray.of,

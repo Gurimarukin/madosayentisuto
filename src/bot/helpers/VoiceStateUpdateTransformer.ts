@@ -1,15 +1,15 @@
 import type { Guild, GuildChannel, GuildMember, StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { Future, IO, List, Maybe } from 'shared/utils/fp'
+import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 
-import type { PublicCallEnded, PublicCallStarted, VoiceStateUpdate } from 'bot/models/MadEvent'
-import { MadEvent } from 'bot/models/MadEvent'
-import type { LoggerGetter } from 'bot/models/logger/LoggerType'
-import type { TObserver } from 'bot/models/rx/TObserver'
-import type { TSubject } from 'bot/models/rx/TSubject'
-import { ChannelUtils } from 'bot/utils/ChannelUtils'
-import { LogUtils } from 'bot/utils/LogUtils'
+import type { PublicCallEnded, PublicCallStarted, VoiceStateUpdate } from '../models/MadEvent'
+import { MadEvent } from '../models/MadEvent'
+import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { TObserver } from '../models/rx/TObserver'
+import type { TSubject } from '../models/rx/TSubject'
+import { ChannelUtils } from '../utils/ChannelUtils'
+import { LogUtils } from '../utils/LogUtils'
 
 export const VoiceStateUpdateTransformer = (
   Logger: LoggerGetter,

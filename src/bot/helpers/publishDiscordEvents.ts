@@ -1,11 +1,11 @@
 import type { ClientEvents } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { IO } from 'shared/utils/fp'
+import { IO } from '../../shared/utils/fp'
 
-import type { DiscordConnector } from 'bot/helpers/DiscordConnector'
-import { MadEvent } from 'bot/models/MadEvent'
-import type { TSubject } from 'bot/models/rx/TSubject'
+import { MadEvent } from '../models/MadEvent'
+import type { TSubject } from '../models/rx/TSubject'
+import type { DiscordConnector } from './DiscordConnector'
 
 export const publishDiscordEvents = (
   discord: DiscordConnector,
