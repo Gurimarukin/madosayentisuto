@@ -8,7 +8,7 @@ import { MsDuration } from '../../../shared/models/MsDuration'
 import { Future, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import type { InteractionCreate } from '../../models/MadEvent'
+import type { InteractionCreate } from '../../models/events/MadEvent'
 import { MusicSubscription } from '../../models/guildState/MusicSubscription'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { GuildStateService } from '../../services/GuildStateService'

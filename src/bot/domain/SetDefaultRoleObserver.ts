@@ -3,7 +3,7 @@ import { pipe } from 'fp-ts/function'
 import { Future, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { GuildMemberAdd } from '../models/MadEvent'
+import type { GuildMemberAdd } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import type { GuildStateService } from '../services/GuildStateService'
