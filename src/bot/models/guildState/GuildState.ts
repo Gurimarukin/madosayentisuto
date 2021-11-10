@@ -3,9 +3,9 @@ import { Lens as MonocleLens } from 'monocle-ts'
 
 import { Maybe } from '../../../shared/utils/fp'
 
+import type { MusicSubscription } from '../../helpers/music/MusicSubscription'
 import type { GuildId } from '../GuildId'
 import type { Calls } from './Calls'
-import type { MusicSubscription } from './MusicSubscription'
 
 export type GuildState = {
   readonly id: GuildId

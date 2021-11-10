@@ -80,7 +80,7 @@ export const Application = (
         AdminCommandsObserver(Logger, discord, guildStateService),
         or(MadEvent.isInteractionCreate),
       ),
-      sub(MusicCommandsObserver(guildStateService), or(MadEvent.isInteractionCreate)),
+      sub(MusicCommandsObserver(Logger, guildStateService), or(MadEvent.isInteractionCreate)),
       sub(PingObserver(), or(MadEvent.isInteractionCreate)),
 
       // │  └ startup/

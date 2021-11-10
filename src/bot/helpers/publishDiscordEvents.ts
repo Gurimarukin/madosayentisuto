@@ -14,7 +14,7 @@ export const publishDiscordEvents = (
   discord: DiscordConnector,
   subject: TSubject<MadEvent>,
 ): IO<void> => {
-  const pub = PubSubUtils.publishOn<ToTiny<ClientEvents>, MadEvent>(discord.client.on, subject.next)
+  const pub = PubSubUtils.publishOn<ToTiny<ClientEvents>, MadEvent>(discord.client, subject.next)
 
   return pipe(
     apply.sequenceT(IO.ApplyPar)(
@@ -23,6 +23,7 @@ export const publishDiscordEvents = (
       pub('interactionCreate', MadEvent.InteractionCreate),
       pub('messageCreate', MadEvent.MessageCreate),
       pub('voiceStateUpdate', MadEvent.VoiceStateUpdate),
+
       // pub('messageReactionAdd', MadEvent.MessageReactionAdd),
       // pub('messageReactionRemove', MadEvent.MessageReactionRemove),
     ),

@@ -1,15 +1,14 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
-import { VoiceConnectionStatus, joinVoiceChannel } from '@discordjs/voice'
 import type { CommandInteraction, Guild } from 'discord.js'
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
-import { MsDuration } from '../../../shared/models/MsDuration'
-import { Future, Maybe } from '../../../shared/utils/fp'
+import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
+import { MusicSubscription } from '../../helpers/music/MusicSubscription'
 import type { InteractionCreate } from '../../models/events/MadEvent'
-import { MusicSubscription } from '../../models/guildState/MusicSubscription'
+import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { GuildStateService } from '../../services/GuildStateService'
 
@@ -18,6 +17,7 @@ export const playCommand = new SlashCommandBuilder()
   .setDescription('Jean Plank joue un petit air')
 
 export const MusicCommandsObserver = (
+  Logger: LoggerGetter,
   guildStateService: GuildStateService,
 ): TObserver<InteractionCreate> => {
   return {
@@ -49,24 +49,15 @@ export const MusicCommandsObserver = (
                 }),
                 Future.map(() => {}),
               ),
-            subscription => {
-              const res = pipe(
-                DiscordConnector.entersState(
-                  subscription.voiceConnection,
-                  VoiceConnectionStatus.Ready,
-                  MsDuration.seconds(20),
+            subscription =>
+              pipe(
+                subscription.playSong(),
+                Future.fromIOEither,
+                Future.chain(() =>
+                  DiscordConnector.interactionFollowUp(interaction, 'Playing song.'),
                 ),
-                Future.orElseFirst(() =>
-                  DiscordConnector.interactionFollowUp(
-                    interaction,
-                    'Failed to join voice channel within 20 seconds, please try again later!',
-                  ),
-                ),
-              )
-
-              console.log('subscription =', subscription, res)
-              return Future.error('TODO - some')
-            },
+                Future.map(() => {}),
+              ),
           ),
         ),
       )
@@ -82,18 +73,13 @@ export const MusicCommandsObserver = (
     }
 
     const channel = interaction.member.voice.channel
-    const subscription = MusicSubscription.fromVoiceConnection(
-      joinVoiceChannel({
-        channelId: channel.id,
-        guildId: guild.id,
-        adapterCreator: channel.guild.voiceAdapterCreator,
-      }),
-    )
+
     // subscription.voiceConnection.on('error', console.warn)
     return pipe(
-      guildStateService.setSubscription(guild, subscription),
+      MusicSubscription(Logger, channel),
+      IO.chainFirst(subscription => guildStateService.setSubscription(guild, subscription)),
       Future.fromIOEither,
-      Future.map(() => Maybe.some(subscription)),
+      Future.map(Maybe.some),
     )
   }
 }

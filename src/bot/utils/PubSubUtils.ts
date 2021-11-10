@@ -25,12 +25,10 @@ export type ToTiny<L extends ListenerSignature<L>> = {
   [K in keyof L]: (...args: L[K]) => any
 }
 
-/* eslint-disable functional/no-return-void */
-type EventListenable<L extends TinyListenerSignature<L>> = <K extends keyof L>(
-  event: K,
-  listener: L[K],
-) => void
-/* eslint-enable functional/no-return-void */
+type EventListenable<L extends TinyListenerSignature<L>> = {
+  // eslint-disable-next-line functional/no-return-void
+  readonly on: <K extends keyof L>(event: K, listener: L[K]) => void
+}
 
 const publishOn =
   <L extends TinyListenerSignature<L>, A>(
@@ -39,7 +37,7 @@ const publishOn =
   ) =>
   <K extends keyof L>(event: K, transformer: (...args: Parameters<L[K]>) => A): IO<void> =>
     IO.tryCatch(() =>
-      listenable(event, ((...args: Parameters<L[K]>) =>
+      listenable.on(event, ((...args: Parameters<L[K]>) =>
         pipe(dispatch(transformer(...args)), IO.runUnsafe)) as L[K]),
     )
 
