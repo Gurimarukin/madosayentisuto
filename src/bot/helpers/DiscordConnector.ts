@@ -2,9 +2,11 @@ import type { REST } from '@discordjs/rest'
 import type {
   AudioPlayer,
   AudioPlayerStatus,
+  PlayerSubscription,
   VoiceConnection,
   VoiceConnectionStatus,
 } from '@discordjs/voice'
+import { StreamType, createAudioResource } from '@discordjs/voice'
 import { entersState as discordEntersState } from '@discordjs/voice'
 import type { APIMessage, RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
 import { Routes } from 'discord-api-types/v9'
@@ -180,6 +182,15 @@ const addRole = (
     debugLeft('addRole'),
   )
 
+const connectionSubscribe = (
+  connection: VoiceConnection,
+  player: AudioPlayer,
+): IO<Maybe<PlayerSubscription>> =>
+  pipe(
+    IO.tryCatch(() => connection.subscribe(player)),
+    IO.map(Maybe.fromNullable),
+  )
+
 const deleteMessage = (message: Message): Future<boolean> =>
   pipe(
     Future.tryCatch(() => message.delete()),
@@ -262,6 +273,12 @@ const messageEdit = (
   options: string | MessagePayload | MessageOptions,
 ): Future<Message> => Future.tryCatch(() => message.edit(options))
 
+const playerPlayArbitrary = (player: AudioPlayer, url: string): IO<void> =>
+  pipe(
+    IO.tryCatch(() => createAudioResource(url, { inputType: StreamType.Arbitrary })),
+    IO.chain(resource => IO.tryCatch(() => player.play(resource))),
+  )
+
 const removeRole = (
   member: GuildMember,
   roleOrRoles: RoleResolvable | List<RoleResolvable>,
@@ -343,6 +360,7 @@ export const DiscordConnector = {
   hasRole,
 
   addRole,
+  connectionSubscribe,
   deleteMessage,
   entersState,
   guildCommandsPermissionsSet,
@@ -353,6 +371,7 @@ export const DiscordConnector = {
   interactionReply,
   interactionUpdate,
   messageEdit,
+  playerPlayArbitrary,
   removeRole,
   restPutApplicationGuildCommands,
   sendMessage,

@@ -74,7 +74,6 @@ export const MusicCommandsObserver = (
 
     const channel = interaction.member.voice.channel
 
-    // subscription.voiceConnection.on('error', console.warn)
     return pipe(
       MusicSubscription(Logger, channel),
       IO.chainFirst(subscription => guildStateService.setSubscription(guild, subscription)),

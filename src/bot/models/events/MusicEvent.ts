@@ -1,12 +1,18 @@
 import type { VoiceConnectionState, VoiceConnectionStatus } from '@discordjs/voice'
 
-export type MusicEvent = MusicError | VoiceConnectionReady
+export type MusicEvent = ConnectionError | VoiceConnectionReady | PlayerError
 
-export type MusicError = {
-  readonly type: 'MusicError'
+export type ConnectionError = {
+  readonly type: 'ConnectionError'
   readonly error: Error
 }
-const MusicError = (error: Error): MusicError => ({ type: 'MusicError', error })
+const ConnectionError = (error: Error): ConnectionError => ({ type: 'ConnectionError', error })
+
+export type PlayerError = {
+  readonly type: 'PlayerError'
+  readonly error: Error
+}
+const PlayerError = (error: Error): PlayerError => ({ type: 'PlayerError', error })
 
 export type VoiceConnectionReady = {
   readonly type: 'VoiceConnectionReady'
@@ -23,6 +29,7 @@ const VoiceConnectionReady = (
 })
 
 export const MusicEvent = {
-  MusicError,
+  ConnectionError,
+  PlayerError,
   VoiceConnectionReady,
 }
