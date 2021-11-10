@@ -19,7 +19,7 @@
     "style": "yarn run prettier && yarn run lint",
     "test": "yarn run style && yarn run dc && yarn run jest",
     "dc": "depcruise --config -- src",
-    "dcGraph": "depcruise -x '(node_modules|fs|util|fp\\.ts)' -T dot src | dot -T svg | depcruise-wrap-stream-in-html > dependencygraph.html"
+    "dcGraph": "depcruise -x '(node_modules|fs|util|fp\\.ts)' -T dot src | dot -T svg -Gsplines=ortho | depcruise-wrap-stream-in-html > dependencygraph.html"
   },
   "repository": {
     "type": "git",
