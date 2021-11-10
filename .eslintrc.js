@@ -80,7 +80,7 @@ module.exports = {
     ],
     'functional/no-conditional-statement': 'off', // switch aren't bad :/
     'functional/no-expression-statement': [
-      'error',
+      'warn',
       {
         ignorePattern: [
           '^afterEach\\(',
