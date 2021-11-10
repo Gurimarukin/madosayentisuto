@@ -1,12 +1,9 @@
 import { apply, refinement, task } from 'fp-ts'
-import { observable } from 'fp-ts-rxjs'
-import type { Refinement } from 'fp-ts/Refinement'
 import { pipe } from 'fp-ts/function'
 import type { Collection } from 'mongodb'
 import { MongoClient } from 'mongodb'
-import type { Subscription } from 'rxjs'
 
-import { Future, IO, List, NonEmptyArray, Try } from '../shared/utils/fp'
+import { Future, IO } from '../shared/utils/fp'
 
 import type { Config } from './Config'
 import { CallsAutoroleObserver } from './domain/CallsAutoroleObserver'
@@ -27,14 +24,15 @@ import { VoiceStateUpdateTransformer } from './helpers/VoiceStateUpdateTransform
 import { publishDiscordEvents } from './helpers/publishDiscordEvents'
 import type { MongoCollection } from './models/MongoCollection'
 import { MadEvent } from './models/events/MadEvent'
-import type { LoggerGetter, LoggerType } from './models/logger/LoggerType'
+import type { LoggerGetter } from './models/logger/LoggerType'
 import { PubSub } from './models/rx/PubSub'
-import { TObservable } from './models/rx/TObservable'
-import type { TObserver } from './models/rx/TObserver'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { scheduleCronJob } from './persistence/scheduleCronJob'
 import { GuildStateService } from './services/GuildStateService'
+import { PubSubUtils } from './utils/PubSubUtils'
+
+const { or } = PubSubUtils
 
 export const Application = (
   Logger: LoggerGetter,
@@ -72,7 +70,7 @@ export const Application = (
 
   const pubSub = PubSub<MadEvent>()
 
-  const sub = subscribe(logger, pubSub.observable)
+  const sub = PubSubUtils.subscribe(logger, pubSub.observable)
 
   return pipe(
     apply.sequenceT(IO.ApplyPar)(
@@ -123,49 +121,5 @@ export const Application = (
     ),
     IO.chain(() => pubSub.subject.next(MadEvent.AppStarted)),
     IO.chain(() => logger.info('Started')),
-  )
-}
-
-const subscribe =
-  <A>(logger: LoggerType, observable_: TObservable<A>) =>
-  <B extends A>(
-    { next }: TObserver<B>,
-    // we invert it, so we are sure our Refinement is exhaustive
-    refinement_: Refinement<A, Exclude<A, B>>,
-  ): IO<Subscription> =>
-    pipe(
-      observable_,
-      observable.filter(refinement.not(refinement_) as unknown as Refinement<A, B>),
-      TObservable.subscribe({
-        next: b =>
-          pipe(
-            next(b),
-            task.chain(Try.fold(e => Future.fromIOEither(logger.error(e.stack)), Future.right)),
-          ),
-      }),
-    )
-
-/**
- * Syntatic sugar.
- * It isn't really a `or` operator, as it returns `not(b) [and not(c) [and not(d) ...]]`,
- * but `subscribe` (above) does a final `not`, so it ends up being a `or`.
- * And it makes `subscribe` typesafe.
- */
-function or<A, B extends A>(b: Refinement<A, B>): Refinement<A, Exclude<A, B>>
-function or<A, B extends A, C extends A>(
-  b: Refinement<A, B>,
-  c: Refinement<A, C>,
-): Refinement<A, Exclude<A, B> & Exclude<A, C>>
-function or<A, B extends A, C extends A, D extends A>(
-  b: Refinement<A, B>,
-  c: Refinement<A, C>,
-  d: Refinement<A, D>,
-): Refinement<A, Exclude<A, B> & Exclude<A, C> & Exclude<A, D>>
-function or<A, R extends NonEmptyArray<Refinement<A, A>>>(...refinements_: R): Refinement<A, A> {
-  return pipe(refinements_, NonEmptyArray.unprepend, ([head, tail]) =>
-    pipe(
-      tail,
-      List.reduce(refinement.not(head), (acc, r) => pipe(acc, refinement.and(refinement.not(r)))),
-    ),
   )
 }
