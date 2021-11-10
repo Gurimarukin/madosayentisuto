@@ -34,7 +34,7 @@ export const IndexesEnsureObserver = (
           onFailure: e => logger.error('Failed to ensure indexes:\n', e),
           onSuccess: () => logger.info('Ensured indexes'),
         }),
-        Future.chain(() => Future.fromIOEither(subject.next(MadEvent.DbReady))),
+        Future.chain(() => Future.fromIOEither(subject.next(MadEvent.DbReady()))),
       ),
   }
 }

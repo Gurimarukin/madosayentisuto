@@ -27,7 +27,7 @@ export const scheduleCronJob = (Logger: LoggerGetter, subject: TSubject<CronJob>
     IO.chain(() =>
       IO.tryCatch(() =>
         setInterval(
-          () => pipe(subject.next(MadEvent.CronJob), IO.runUnsafe),
+          () => pipe(subject.next(MadEvent.CronJob()), IO.runUnsafe),
           MsDuration.unwrap(globalConfig.cronJobInterval),
         ),
       ),

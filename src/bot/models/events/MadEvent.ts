@@ -8,133 +8,45 @@ import type {
   VoiceState,
 } from 'discord.js'
 
-export type MadEvent =
-  | AppStarted
-  | DbReady
-  | CronJob
-  | InteractionCreate
-  | GuildMemberAdd
-  | GuildMemberRemove
-  | VoiceStateUpdate
-  | PublicCallStarted
-  | PublicCallEnded
-  | MessageCreate
+import { createUnion } from '../../utils/createUnion'
 
-const isAppStarted = (e: MadEvent): e is AppStarted => e.type === 'AppStarted'
-const isDbReady = (e: MadEvent): e is DbReady => e.type === 'DbReady'
-const isCronJob = (e: MadEvent): e is CronJob => e.type === 'CronJob'
-const isInteractionCreate = (e: MadEvent): e is InteractionCreate => e.type === 'InteractionCreate'
-const isGuildMemberAdd = (e: MadEvent): e is GuildMemberAdd => e.type === 'GuildMemberAdd'
-const isGuildMemberRemove = (e: MadEvent): e is GuildMemberRemove => e.type === 'GuildMemberRemove'
-const isVoiceStateUpdate = (e: MadEvent): e is VoiceStateUpdate => e.type === 'VoiceStateUpdate'
-const isPublicCallStarted = (e: MadEvent): e is PublicCallStarted => e.type === 'PublicCallStarted'
-const isPublicCallEnded = (e: MadEvent): e is PublicCallEnded => e.type === 'PublicCallEnded'
-const isMessageCreate = (e: MadEvent): e is MessageCreate => e.type === 'MessageCreate'
+export type MadEvent = typeof MadEvent.T
 
-export type AppStarted = { readonly type: 'AppStarted' }
-const AppStarted: AppStarted = { type: 'AppStarted' }
+export const MadEvent = createUnion({
+  AppStarted: () => ({}),
 
-export type DbReady = { readonly type: 'DbReady' }
-const DbReady: DbReady = { type: 'DbReady' }
+  DbReady: () => ({}),
 
-export type CronJob = { readonly type: 'CronJob' }
-const CronJob: CronJob = { type: 'CronJob' }
+  CronJob: () => ({}),
 
-export type InteractionCreate = {
-  readonly type: 'InteractionCreate'
-  readonly interaction: Interaction
-}
-const InteractionCreate = (interaction: Interaction): InteractionCreate => ({
-  type: 'InteractionCreate',
-  interaction,
+  InteractionCreate: (interaction: Interaction) => ({ interaction }),
+
+  GuildMemberAdd: (member: GuildMember) => ({ member }),
+
+  GuildMemberRemove: (member: GuildMember | PartialGuildMember) => ({ member }),
+
+  VoiceStateUpdate: (oldState: VoiceState, newState: VoiceState) => ({ oldState, newState }),
+
+  PublicCallStarted: (member: GuildMember, channel: VoiceChannel | StageChannel) => ({
+    member,
+    channel,
+  }),
+
+  PublicCallEnded: (member: GuildMember, channel: VoiceChannel | StageChannel) => ({
+    member,
+    channel,
+  }),
+
+  MessageCreate: (message: Message) => ({ message }),
 })
 
-export type GuildMemberAdd = {
-  readonly type: 'GuildMemberAdd'
-  readonly member: GuildMember
-}
-const GuildMemberAdd = (member: GuildMember): GuildMemberAdd => ({
-  type: 'GuildMemberAdd',
-  member,
-})
-
-export type GuildMemberRemove = {
-  readonly type: 'GuildMemberRemove'
-  readonly member: GuildMember | PartialGuildMember
-}
-const GuildMemberRemove = (member: GuildMember | PartialGuildMember): GuildMemberRemove => ({
-  type: 'GuildMemberRemove',
-  member,
-})
-
-export type VoiceStateUpdate = {
-  readonly type: 'VoiceStateUpdate'
-  readonly oldState: VoiceState
-  readonly newState: VoiceState
-}
-const VoiceStateUpdate = (oldState: VoiceState, newState: VoiceState): VoiceStateUpdate => ({
-  type: 'VoiceStateUpdate',
-  oldState,
-  newState,
-})
-
-export type PublicCallStarted = {
-  readonly type: 'PublicCallStarted'
-  readonly member: GuildMember
-  readonly channel: VoiceChannel | StageChannel
-}
-const PublicCallStarted = (
-  member: GuildMember,
-  channel: VoiceChannel | StageChannel,
-): PublicCallStarted => ({
-  type: 'PublicCallStarted',
-  member,
-  channel,
-})
-
-export type PublicCallEnded = {
-  readonly type: 'PublicCallEnded'
-  readonly member: GuildMember
-  readonly channel: VoiceChannel | StageChannel
-}
-const PublicCallEnded = (
-  member: GuildMember,
-  channel: VoiceChannel | StageChannel,
-): PublicCallEnded => ({
-  type: 'PublicCallEnded',
-  member,
-  channel,
-})
-
-export type MessageCreate = {
-  readonly type: 'MessageCreate'
-  readonly message: Message
-}
-const MessageCreate = (message: Message): MessageCreate => ({
-  type: 'MessageCreate',
-  message,
-})
-
-export const MadEvent = {
-  isAppStarted,
-  isDbReady,
-  isCronJob,
-  isInteractionCreate,
-  isGuildMemberAdd,
-  isGuildMemberRemove,
-  isVoiceStateUpdate,
-  isMessageCreate,
-  isPublicCallStarted,
-  isPublicCallEnded,
-
-  AppStarted,
-  DbReady,
-  CronJob,
-  InteractionCreate,
-  GuildMemberAdd,
-  GuildMemberRemove,
-  VoiceStateUpdate,
-  PublicCallStarted,
-  PublicCallEnded,
-  MessageCreate,
-}
+export type AppStarted = typeof MadEvent.AppStarted.T
+export type DbReady = typeof MadEvent.DbReady.T
+export type CronJob = typeof MadEvent.CronJob.T
+export type InteractionCreate = typeof MadEvent.InteractionCreate.T
+export type GuildMemberAdd = typeof MadEvent.GuildMemberAdd.T
+export type GuildMemberRemove = typeof MadEvent.GuildMemberRemove.T
+export type VoiceStateUpdate = typeof MadEvent.VoiceStateUpdate.T
+export type PublicCallStarted = typeof MadEvent.PublicCallStarted.T
+export type PublicCallEnded = typeof MadEvent.PublicCallEnded.T
+export type MessageCreate = typeof MadEvent.MessageCreate.T

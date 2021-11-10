@@ -78,43 +78,43 @@ export const Application = (
       // │  └ commands/
       sub(
         AdminCommandsObserver(Logger, discord, guildStateService),
-        or(MadEvent.isInteractionCreate),
+        or(MadEvent.is('InteractionCreate')),
       ),
-      sub(MusicCommandsObserver(Logger, guildStateService), or(MadEvent.isInteractionCreate)),
-      sub(PingObserver(), or(MadEvent.isInteractionCreate)),
+      sub(MusicCommandsObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),
+      sub(PingObserver(), or(MadEvent.is('InteractionCreate'))),
 
       // │  └ startup/
       sub(
         ActivityStatusObserver(Logger, discord, botStatePersistence),
-        or(MadEvent.isAppStarted, MadEvent.isDbReady, MadEvent.isCronJob),
+        or(MadEvent.is('AppStarted'), MadEvent.is('DbReady'), MadEvent.is('CronJob')),
       ),
       sub(
         DeployCommandsObserver(Logger, config, discord, guildStateService),
-        or(MadEvent.isDbReady),
+        or(MadEvent.is('DbReady')),
       ),
       sub(
         IndexesEnsureObserver(Logger, pubSub.subject, [guildStatePersistence.ensureIndexes]),
-        or(MadEvent.isAppStarted),
+        or(MadEvent.is('AppStarted')),
       ),
 
       // │
-      sub(CallsAutoroleObserver(Logger, guildStateService), or(MadEvent.isInteractionCreate)),
-      sub(NotifyGuildLeaveObserver(Logger), or(MadEvent.isGuildMemberRemove)),
+      sub(CallsAutoroleObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),
+      sub(NotifyGuildLeaveObserver(Logger), or(MadEvent.is('GuildMemberRemove'))),
       sub(
         NotifyVoiceCallObserver(Logger, guildStateService),
-        or(MadEvent.isPublicCallStarted, MadEvent.isPublicCallEnded),
+        or(MadEvent.is('PublicCallStarted'), MadEvent.is('PublicCallEnded')),
       ),
-      sub(SendWelcomeDMObserver(Logger), or(MadEvent.isGuildMemberAdd)),
-      sub(SetDefaultRoleObserver(Logger, guildStateService), or(MadEvent.isGuildMemberAdd)),
-      sub(ThanksCaptainObserver(config.captain, discord), or(MadEvent.isMessageCreate)),
+      sub(SendWelcomeDMObserver(Logger), or(MadEvent.is('GuildMemberAdd'))),
+      sub(SetDefaultRoleObserver(Logger, guildStateService), or(MadEvent.is('GuildMemberAdd'))),
+      sub(ThanksCaptainObserver(config.captain, discord), or(MadEvent.is('MessageCreate'))),
 
       // └ helpers/
       sub(LogMadEventsObserver(logger), or(refinement.id())),
       publishDiscordEvents(discord, pubSub.subject),
       scheduleCronJob(Logger, pubSub.subject),
-      sub(VoiceStateUpdateTransformer(Logger, pubSub.subject), or(MadEvent.isVoiceStateUpdate)),
+      sub(VoiceStateUpdateTransformer(Logger, pubSub.subject), or(MadEvent.is('VoiceStateUpdate'))),
     ),
-    IO.chain(() => pubSub.subject.next(MadEvent.AppStarted)),
+    IO.chain(() => pubSub.subject.next(MadEvent.AppStarted())),
     IO.chain(() => logger.info('Started')),
   )
 }
