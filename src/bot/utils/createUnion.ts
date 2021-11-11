@@ -7,9 +7,9 @@
 /**
  * source: https://github.com/AlexGalays/spacelift/blob/be302c4807b23114de27dda6a90b315c3af56631/src/union.ts
  */
-import type { List } from '../../shared/utils/fp'
+import type { Dict, List } from '../../shared/utils/fp'
 
-type UnionDescription = Record<string, (...args: List<any>) => any>
+type UnionDescription = Dict<string, (...args: List<any>) => any>
 
 type UnionResult<T extends UnionDescription> = {
   readonly T: Union<T>
