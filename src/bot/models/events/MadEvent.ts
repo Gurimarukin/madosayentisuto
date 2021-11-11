@@ -40,13 +40,13 @@ export const MadEvent = createUnion({
   MessageCreate: (message: Message) => ({ message }),
 })
 
-export type AppStarted = typeof MadEvent.AppStarted.T
-export type DbReady = typeof MadEvent.DbReady.T
-export type CronJob = typeof MadEvent.CronJob.T
-export type InteractionCreate = typeof MadEvent.InteractionCreate.T
-export type GuildMemberAdd = typeof MadEvent.GuildMemberAdd.T
-export type GuildMemberRemove = typeof MadEvent.GuildMemberRemove.T
-export type VoiceStateUpdate = typeof MadEvent.VoiceStateUpdate.T
-export type PublicCallStarted = typeof MadEvent.PublicCallStarted.T
-export type PublicCallEnded = typeof MadEvent.PublicCallEnded.T
-export type MessageCreate = typeof MadEvent.MessageCreate.T
+export type MadEventAppStarted = typeof MadEvent.AppStarted.T
+export type MadEventDbReady = typeof MadEvent.DbReady.T
+export type MadEventCronJob = typeof MadEvent.CronJob.T
+export type MadEventInteractionCreate = typeof MadEvent.InteractionCreate.T
+export type MadEventGuildMemberAdd = typeof MadEvent.GuildMemberAdd.T
+export type MadEventGuildMemberRemove = typeof MadEvent.GuildMemberRemove.T
+export type MadEventVoiceStateUpdate = typeof MadEvent.VoiceStateUpdate.T
+export type MadEventPublicCallStarted = typeof MadEvent.PublicCallStarted.T
+export type MadEventPublicCallEnded = typeof MadEvent.PublicCallEnded.T
+export type MadEventMessageCreate = typeof MadEvent.MessageCreate.T

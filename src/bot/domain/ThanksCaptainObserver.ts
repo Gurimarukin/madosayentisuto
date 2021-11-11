@@ -6,13 +6,13 @@ import { Future, Maybe } from '../../shared/utils/fp'
 
 import type { CaptainConfig } from '../Config'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MessageCreate } from '../models/events/MadEvent'
+import type { MadEventMessageCreate } from '../models/events/MadEvent'
 import type { TObserver } from '../models/rx/TObserver'
 
 export const ThanksCaptainObserver = (
   config: CaptainConfig,
   discord: DiscordConnector,
-): TObserver<MessageCreate> => {
+): TObserver<MadEventMessageCreate> => {
   return {
     next: event => {
       const message = event.message

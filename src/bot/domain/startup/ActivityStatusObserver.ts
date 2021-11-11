@@ -4,7 +4,11 @@ import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
 import type { DiscordConnector } from '../../helpers/DiscordConnector'
 import { Activity } from '../../models/botState/Activity'
-import type { AppStarted, CronJob, DbReady } from '../../models/events/MadEvent'
+import type {
+  MadEventAppStarted,
+  MadEventCronJob,
+  MadEventDbReady,
+} from '../../models/events/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { BotStatePersistence } from '../../persistence/BotStatePersistence'
@@ -13,7 +17,7 @@ export const ActivityStatusObserver = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
   botStatePersistence: BotStatePersistence,
-): TObserver<AppStarted | DbReady | CronJob> => {
+): TObserver<MadEventAppStarted | MadEventDbReady | MadEventCronJob> => {
   const logger = Logger('ActivityStatusObserver')
 
   return {

@@ -4,9 +4,9 @@ import { pipe } from 'fp-ts/function'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import type {
-  PublicCallEnded,
-  PublicCallStarted,
-  VoiceStateUpdate,
+  MadEventPublicCallEnded,
+  MadEventPublicCallStarted,
+  MadEventVoiceStateUpdate,
 } from '../models/events/MadEvent'
 import { MadEvent } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
@@ -17,8 +17,8 @@ import { LogUtils } from '../utils/LogUtils'
 
 export const VoiceStateUpdateTransformer = (
   Logger: LoggerGetter,
-  subject: TSubject<PublicCallStarted | PublicCallEnded>,
-): TObserver<VoiceStateUpdate> => {
+  subject: TSubject<MadEventPublicCallStarted | MadEventPublicCallEnded>,
+): TObserver<MadEventVoiceStateUpdate> => {
   const logger = Logger('VoiceStateUpdateTransformer')
 
   return {
@@ -128,7 +128,7 @@ export const VoiceStateUpdateTransformer = (
 }
 
 // ensures that we have the same id
-const getMember = ({ oldState, newState }: VoiceStateUpdate): Maybe<GuildMember> =>
+const getMember = ({ oldState, newState }: MadEventVoiceStateUpdate): Maybe<GuildMember> =>
   pipe(
     Maybe.fromNullable(oldState.member),
     Maybe.chain(memberOld =>

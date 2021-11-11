@@ -9,7 +9,7 @@ import { Future, Maybe } from '../../shared/utils/fp'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { callsButton, getInitCallsMessage } from '../helpers/getInitCallsMessage'
 import { TSnowflake } from '../models/TSnowflake'
-import type { InteractionCreate } from '../models/events/MadEvent'
+import type { MadEventInteractionCreate } from '../models/events/MadEvent'
 import type { Calls } from '../models/guildState/Calls'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
@@ -24,7 +24,7 @@ type CallsAndMember = {
 export const CallsAutoroleObserver = (
   Logger: LoggerGetter,
   guildStateService: GuildStateService,
-): TObserver<InteractionCreate> => {
+): TObserver<MadEventInteractionCreate> => {
   const logger = Logger('CallsAutoroleObserver')
 
   return {

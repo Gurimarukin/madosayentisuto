@@ -4,7 +4,7 @@ import { MsDuration } from '../../shared/models/MsDuration'
 import { IO } from '../../shared/utils/fp'
 
 import { globalConfig } from '../constants'
-import type { CronJob } from '../models/events/MadEvent'
+import type { MadEventCronJob } from '../models/events/MadEvent'
 import { MadEvent } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TSubject } from '../models/rx/TSubject'
@@ -13,7 +13,10 @@ import { StringUtils } from '../utils/StringUtils'
 
 const { pad10, pad100 } = StringUtils
 
-export const scheduleCronJob = (Logger: LoggerGetter, subject: TSubject<CronJob>): IO<void> => {
+export const scheduleCronJob = (
+  Logger: LoggerGetter,
+  subject: TSubject<MadEventCronJob>,
+): IO<void> => {
   const logger = Logger('scheduleCronJob')
 
   const { hours, minutes, seconds, milliseconds } = DateUtils.msFormat(globalConfig.cronJobInterval)

@@ -16,7 +16,7 @@ import { GuildId } from '../../models/GuildId'
 import { TSnowflake } from '../../models/TSnowflake'
 import { CommandId } from '../../models/commands/CommandId'
 import type { PutCommandResult } from '../../models/commands/PutCommandResult'
-import type { DbReady } from '../../models/events/MadEvent'
+import type { MadEventDbReady } from '../../models/events/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { GuildStateService } from '../../services/GuildStateService'
@@ -29,7 +29,7 @@ export const DeployCommandsObserver = (
   config: Config,
   discord: DiscordConnector,
   guildStateService: GuildStateService,
-): TObserver<DbReady> => {
+): TObserver<MadEventDbReady> => {
   const logger = Logger('DeployCommandsObserver')
 
   const rest = new REST({ version: '9' }).setToken(config.client.secret)

@@ -7,7 +7,7 @@ import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { MusicSubscription } from '../../helpers/music/MusicSubscription'
-import type { InteractionCreate } from '../../models/events/MadEvent'
+import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { GuildStateService } from '../../services/GuildStateService'
@@ -19,7 +19,7 @@ export const playCommand = new SlashCommandBuilder()
 export const MusicCommandsObserver = (
   Logger: LoggerGetter,
   guildStateService: GuildStateService,
-): TObserver<InteractionCreate> => {
+): TObserver<MadEventInteractionCreate> => {
   return {
     next: event => {
       const interaction = event.interaction

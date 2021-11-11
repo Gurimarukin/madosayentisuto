@@ -14,3 +14,7 @@ export const MusicEvent = createUnion({
     newState: VoiceConnectionState & { readonly status: VoiceConnectionStatus.Ready },
   ) => ({ oldState, newState }),
 })
+
+export type MusicEventConnectionError = typeof MusicEvent.ConnectionError.T
+export type MusicEventPlayerError = typeof MusicEvent.PlayerError.T
+export type MusicEventVoiceConnectionReady = typeof MusicEvent.VoiceConnectionReady.T

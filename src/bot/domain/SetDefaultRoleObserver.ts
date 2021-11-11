@@ -3,7 +3,7 @@ import { pipe } from 'fp-ts/function'
 import { Future, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { GuildMemberAdd } from '../models/events/MadEvent'
+import type { MadEventGuildMemberAdd } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import type { GuildStateService } from '../services/GuildStateService'
@@ -12,7 +12,7 @@ import { LogUtils } from '../utils/LogUtils'
 export const SetDefaultRoleObserver = (
   Logger: LoggerGetter,
   guildStateService: GuildStateService,
-): TObserver<GuildMemberAdd> => {
+): TObserver<MadEventGuildMemberAdd> => {
   const logger = Logger('SetDefaultRoleObserver')
 
   return {

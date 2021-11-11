@@ -11,13 +11,15 @@ import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 import { globalConfig } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { TSnowflake } from '../models/TSnowflake'
-import type { GuildMemberRemove } from '../models/events/MadEvent'
+import type { MadEventGuildMemberRemove } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
-export const NotifyGuildLeaveObserver = (Logger: LoggerGetter): TObserver<GuildMemberRemove> => {
+export const NotifyGuildLeaveObserver = (
+  Logger: LoggerGetter,
+): TObserver<MadEventGuildMemberRemove> => {
   const logger = Logger('NotifyGuildLeave')
 
   return {

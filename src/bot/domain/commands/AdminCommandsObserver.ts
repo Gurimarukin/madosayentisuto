@@ -22,7 +22,7 @@ import { Future, Maybe } from '../../../shared/utils/fp'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { getInitCallsMessage } from '../../helpers/getInitCallsMessage'
 import { TSnowflake } from '../../models/TSnowflake'
-import type { InteractionCreate } from '../../models/events/MadEvent'
+import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { GuildStateService } from '../../services/GuildStateService'
@@ -71,7 +71,7 @@ export const AdminCommandsObserver = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
   guildStateService: GuildStateService,
-): TObserver<InteractionCreate> => {
+): TObserver<MadEventInteractionCreate> => {
   const logger = Logger('AdminCommandsObserver')
 
   return {
