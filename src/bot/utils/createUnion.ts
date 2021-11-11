@@ -9,6 +9,8 @@
  */
 import type { Dict, List } from '../../shared/utils/fp'
 
+type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R
+
 type UnionDescription = Dict<string, (...args: List<any>) => any>
 
 type UnionResult<T extends UnionDescription> = {
@@ -33,7 +35,9 @@ type Union<T extends UnionDescription> = {
 /**
  * Creates a type-safe union, providing: derived types, factories and type-guards in a single declaration.
  */
-export function createUnion<D extends UnionDescription>(description: D): UnionResult<D> {
+export function createUnion<D extends UnionDescription>(
+  description: EnforceNonEmptyRecord<D>,
+): UnionResult<D> {
   const factories = Object.keys(description).reduce((acc, key) => {
     const factory = description[key] as (...args: List<any>) => any
     const factoryWithType = (...args: List<any>) => ({
