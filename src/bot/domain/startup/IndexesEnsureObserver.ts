@@ -3,7 +3,7 @@ import { pipe } from 'fp-ts/function'
 import type { List } from '../../../shared/utils/fp'
 import { Future } from '../../../shared/utils/fp'
 
-import { globalConfig } from '../../constants'
+import { constants } from '../../constants'
 import type { MadEventAppStarted, MadEventDbReady } from '../../models/events/MadEvent'
 import { MadEvent } from '../../models/events/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
@@ -30,7 +30,7 @@ export const IndexesEnsureObserver = (
             Future.map(() => {}),
           ),
         ),
-        FutureUtils.retryIfFailed(globalConfig.retryEnsuringIndexes, {
+        FutureUtils.retryIfFailed(constants.retryEnsuringIndexes, {
           onFailure: e => logger.error('Failed to ensure indexes:\n', e),
           onSuccess: () => logger.info('Ensured indexes'),
         }),

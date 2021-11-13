@@ -6,6 +6,7 @@ import { MongoClient } from 'mongodb'
 import { Future, IO } from '../shared/utils/fp'
 
 import type { Config } from './Config'
+import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
 import { CallsAutoroleObserver } from './domain/CallsAutoroleObserver'
 import { NotifyGuildLeaveObserver } from './domain/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './domain/NotifyVoiceCallObserver'
@@ -15,7 +16,6 @@ import { ThanksCaptainObserver } from './domain/ThanksCaptainObserver'
 import { AdminCommandsObserver } from './domain/commands/AdminCommandsObserver'
 import { MusicCommandsObserver } from './domain/commands/MusicCommandsObserver'
 import { PingObserver } from './domain/commands/PingCommandObserver'
-import { ActivityStatusObserver } from './domain/startup/ActivityStatusObserver'
 import { DeployCommandsObserver } from './domain/startup/DeployCommandsObserver'
 import { IndexesEnsureObserver } from './domain/startup/IndexesEnsureObserver'
 import type { DiscordConnector } from './helpers/DiscordConnector'
@@ -85,10 +85,6 @@ export const Application = (
 
       // │  └ startup/
       sub(
-        ActivityStatusObserver(Logger, discord, botStatePersistence),
-        or(MadEvent.is('AppStarted'), MadEvent.is('DbReady'), MadEvent.is('CronJob')),
-      ),
-      sub(
         DeployCommandsObserver(Logger, config, discord, guildStateService),
         or(MadEvent.is('DbReady')),
       ),
@@ -98,6 +94,10 @@ export const Application = (
       ),
 
       // │
+      sub(
+        ActivityStatusObserver(Logger, discord, botStatePersistence),
+        or(MadEvent.is('AppStarted'), MadEvent.is('DbReady'), MadEvent.is('CronJob')),
+      ),
       sub(CallsAutoroleObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),
       sub(NotifyGuildLeaveObserver(Logger), or(MadEvent.is('GuildMemberRemove'))),
       sub(

@@ -2,7 +2,7 @@ import type { APIInteractionDataResolvedChannel, APIRole } from 'discord-api-typ
 import type { GuildChannel, MessageOptions, Role, ThreadChannel } from 'discord.js'
 import { MessageActionRow, MessageButton } from 'discord.js'
 
-import { globalConfig } from '../constants'
+import { constants } from '../constants'
 import { StringUtils } from '../utils/StringUtils'
 
 export const callsButton = {
@@ -25,7 +25,7 @@ export const getInitCallsMessage = (
         .setCustomId(callsButton.subscribeId)
         .setLabel("S'abonner aux appels")
         .setStyle('PRIMARY')
-        .setEmoji(globalConfig.callsEmoji),
+        .setEmoji(constants.callsEmoji),
       new MessageButton()
         .setCustomId(callsButton.unsubscribeId)
         .setLabel(' ̶S̶e̶ ̶d̶é̶s̶a̶b̶o̶n̶n̶e̶r̶    Je suis une victime')

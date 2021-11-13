@@ -2,6 +2,8 @@ import type { ColorResolvable } from 'discord.js'
 
 import { MsDuration } from '../shared/models/MsDuration'
 
+import { Activity } from './models/botState/Activity'
+
 const darkred: ColorResolvable = '#8b0000'
 
 const dimgray: ColorResolvable = '#686a66'
@@ -11,10 +13,12 @@ const tomato: ColorResolvable = '#f54234'
 
 export const Colors = { darkred, dimgray, lightseagreen, goldenrod, tomato }
 
-export const globalConfig = {
+export const constants = {
   callsEmoji: '🔔', // :bell:
 
   retryEnsuringIndexes: MsDuration.minutes(5),
+
+  defaultActivity: Activity.of('PLAYING', 'hisser les voiles...'),
 
   fetchLogsLimit: 30,
   networkTolerance: MsDuration.seconds(6),

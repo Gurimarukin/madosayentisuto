@@ -45,7 +45,7 @@ import { MsDuration } from '../../shared/models/MsDuration'
 import { Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import type { ClientConfig } from '../Config'
-import { Colors, globalConfig } from '../constants'
+import { Colors, constants } from '../constants'
 import { GuildId } from '../models/GuildId'
 import { TSnowflake } from '../models/TSnowflake'
 import type { Activity } from '../models/botState/Activity'
@@ -134,7 +134,7 @@ const of = (client: Client<true>) => ({
 
 const fetchAuditLogs = (guild: Guild): Future<Collection<string, GuildAuditLogsEntry>> =>
   pipe(
-    Future.tryCatch(() => guild.fetchAuditLogs({ limit: globalConfig.fetchLogsLimit })),
+    Future.tryCatch(() => guild.fetchAuditLogs({ limit: constants.fetchLogsLimit })),
     Future.map(logs => logs.entries),
   )
 

@@ -7,7 +7,7 @@ import { flow, pipe } from 'fp-ts/function'
 
 import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
-import { globalConfig } from '../constants'
+import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { TSnowflake } from '../models/TSnowflake'
 import type { MadEventGuildMemberRemove } from '../models/events/MadEvent'
@@ -87,10 +87,7 @@ const validActions: List<ValidKeys['action']> = ['MEMBER_KICK', 'MEMBER_BAN_ADD'
 const isValidLog =
   (now: Date, userId: TSnowflake) =>
   (entry: GuildAuditLogsEntry): entry is ValidLogsEntry => {
-    const nowMinusNetworkTolerance = pipe(
-      now,
-      DateUtils.minusDuration(globalConfig.networkTolerance),
-    )
+    const nowMinusNetworkTolerance = pipe(now, DateUtils.minusDuration(constants.networkTolerance))
     return (
       ord.leq(date.Ord)(nowMinusNetworkTolerance, entry.createdAt) &&
       List.elem(string.Eq)(entry.action, validActions) &&
