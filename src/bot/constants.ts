@@ -16,8 +16,6 @@ export const globalConfig = {
 
   retryEnsuringIndexes: MsDuration.minutes(5),
 
-  cronJobInterval: MsDuration.days(1),
-
   fetchLogsLimit: 30,
   networkTolerance: MsDuration.seconds(6),
 
