@@ -1,11 +1,10 @@
 import { bold, userMention } from '@discordjs/builders'
 import type { Guild, GuildAuditLogsEntry, TextChannel } from 'discord.js'
 import { User } from 'discord.js'
-import { date, io, number, ord, random, semigroup, string } from 'fp-ts'
+import { date, number, ord, random, semigroup, string } from 'fp-ts'
 import type { Ord } from 'fp-ts/Ord'
 import { flow, pipe } from 'fp-ts/function'
 
-import { MsDuration } from '../../shared/models/MsDuration'
 import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
 import { globalConfig } from '../constants'
@@ -15,6 +14,7 @@ import type { MadEventGuildMemberRemove } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import { ChannelUtils } from '../utils/ChannelUtils'
+import { DateUtils } from '../utils/DateUtils'
 import { LogUtils } from '../utils/LogUtils'
 
 export const NotifyGuildLeaveObserver = (
@@ -29,8 +29,7 @@ export const NotifyGuildLeaveObserver = (
       const log = LogUtils.pretty(logger, guild)
       const boldMember = bold(user.tag)
       return pipe(
-        date.now,
-        io.map(n => new Date(n)),
+        date.create,
         Future.fromIO,
         Future.chain(now => getLastLog(now, guild, TSnowflake.wrap(user.id))),
         Future.map(
@@ -88,8 +87,9 @@ const validActions: List<ValidKeys['action']> = ['MEMBER_KICK', 'MEMBER_BAN_ADD'
 const isValidLog =
   (now: Date, userId: TSnowflake) =>
   (entry: GuildAuditLogsEntry): entry is ValidLogsEntry => {
-    const nowMinusNetworkTolerance = new Date(
-      now.getTime() - MsDuration.unwrap(globalConfig.networkTolerance),
+    const nowMinusNetworkTolerance = pipe(
+      now,
+      DateUtils.minusDuration(globalConfig.networkTolerance),
     )
     return (
       ord.leq(date.Ord)(nowMinusNetworkTolerance, entry.createdAt) &&

@@ -1,3 +1,5 @@
+import { flow } from 'fp-ts/function'
+
 import { MsDuration } from '../../shared/models/MsDuration'
 
 type MsFormat = {
@@ -20,4 +22,14 @@ const msFormat = (ms: MsDuration): MsFormat => {
   }
 }
 
-export const DateUtils = { msFormat }
+const plusDuration =
+  (ms: MsDuration) =>
+  (date: Date): Date =>
+    new Date(date.getTime() + MsDuration.unwrap(ms))
+
+const minusDuration: (ms: MsDuration) => (date: Date) => Date = flow(
+  MsDuration.modify(n => -n),
+  plusDuration,
+)
+
+export const DateUtils = { msFormat, plusDuration, minusDuration }

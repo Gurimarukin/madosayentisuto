@@ -86,7 +86,7 @@ const shouldLog = (setLevel: LogLevelOrOff, level: LogLevel): boolean =>
 
 const formatConsole = (name: string, level: LogLevel, msg: string): string => {
   const withName = `${name} - ${msg}`
-  const withTimestamp = `${color(formatDate(new Date()), '30;1')} ${withName}` // fp-ts date.now
+  const withTimestamp = `${color(formatDate(new Date()), '30;1')} ${withName}` // fp-ts date.create
   const c = LogLevel.shellColor[level]
   return level === 'info' || level === 'warn'
     ? `${color(level.toUpperCase(), c)}  ${withTimestamp}`
