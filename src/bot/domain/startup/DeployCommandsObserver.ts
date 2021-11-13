@@ -53,7 +53,7 @@ export const DeployCommandsObserver = (
   return {
     next: () =>
       pipe(
-        guildStateService.findAll(),
+        guildStateService.findAllIds(),
         Future.chain(Future.traverseArray(putCommandsForGuild)),
         Future.chain(() => Future.fromIOEither(logger.info('Ensured commands'))),
       ),

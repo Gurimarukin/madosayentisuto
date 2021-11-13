@@ -1,13 +1,14 @@
-import type { Guild, Role } from 'discord.js'
+import type { Guild, Role, TextChannel } from 'discord.js'
 import { apply, readonlyMap } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import type { Lens as MonocleLens } from 'monocle-ts'
 
-import { Future, IO, List, Maybe } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, inspect } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import type { MusicSubscription } from '../helpers/music/MusicSubscription'
 import { GuildId } from '../models/GuildId'
+import type { TSnowflake } from '../models/TSnowflake'
 import type { Calls } from '../models/guildState/Calls'
 import { GuildState } from '../models/guildState/GuildState'
 import type { CallsDb } from '../models/guildState/db/CallsDb'
@@ -35,7 +36,18 @@ export const GuildStateService = (
   const cache = new Map<GuildId, GuildState>()
 
   return {
-    findAll: guildStatePersistence.findAll,
+    findAllIds: guildStatePersistence.findAllIds,
+
+    findAllItsFridayChannels: (): Future<List<TextChannel>> =>
+      pipe(
+        guildStatePersistence.findAllItsFridayChannels(),
+        Future.chain(
+          Future.traverseArray(({ id, itsFridayChannel }) =>
+            discord.fetchChannel(itsFridayChannel),
+          ),
+        ),
+        Future.map(flow(List.compact, List.filter(ChannelUtils.isTextChannel))),
+      ),
 
     setCalls: (guild: Guild, calls: Calls): IO<GuildState> =>
       setLens(guild, 'calls', Maybe.some(calls)),
@@ -46,6 +58,12 @@ export const GuildStateService = (
       setLens(guild, 'defaultRole', Maybe.some(role)),
 
     getDefaultRole: (guild: Guild): Future<Maybe<Role>> => get(guild, 'defaultRole'),
+
+    setItsFridayChannel: (guild: Guild, channel: TextChannel): IO<GuildState> =>
+      setLens(guild, 'itsFridayChannel', Maybe.some(channel)),
+
+    getItsFridayChannel: (guild: Guild): Future<Maybe<TextChannel>> =>
+      get(guild, 'itsFridayChannel'),
 
     setSubscription: (guild: Guild, subscription: MusicSubscription): IO<GuildState> =>
       setLens(guild, 'subscription', Maybe.some(subscription)),
@@ -172,12 +190,13 @@ export const GuildStateService = (
         Maybe.fold(
           () => Future.right(GuildState.empty(guildId)),
           flow(
-            fetchCallsAndDefaultRole(guild),
+            fetchDbProperties(guild),
             Future.map(
-              ({ calls, defaultRole }): GuildState => ({
+              ({ calls, defaultRole, itsFridayChannel }): GuildState => ({
                 id: guildId,
                 calls,
                 defaultRole,
+                itsFridayChannel,
                 subscription: Maybe.none,
               }),
             ),
@@ -188,13 +207,16 @@ export const GuildStateService = (
     )
   }
 
-  function fetchCallsAndDefaultRole(
+  function fetchDbProperties(
     guild: Guild,
-  ): (state: GuildStateDb) => Future<Pick<GuildState, 'calls' | 'defaultRole'>> {
-    return ({ calls, defaultRole }) =>
+  ): (
+    state: GuildStateDb,
+  ) => Future<Pick<GuildState, 'calls' | 'defaultRole' | 'itsFridayChannel'>> {
+    return ({ calls, defaultRole, itsFridayChannel }) =>
       apply.sequenceS(Future.ApplyPar)({
         calls: chainFutureT(calls, fetchCalls(guild)),
         defaultRole: chainFutureT(defaultRole, id => DiscordConnector.fetchRole(guild, id)),
+        itsFridayChannel: chainFutureT(itsFridayChannel, id => fetchTextChannel(id)),
       })
   }
 
@@ -203,14 +225,18 @@ export const GuildStateService = (
       pipe(
         apply.sequenceS(Future.ApplyPar)({
           message: DiscordConnector.fetchMessage(guild, message),
-          channel: pipe(
-            discord.fetchChannel(channel),
-            Future.map(Maybe.filter(ChannelUtils.isTextChannel)),
-          ),
+          channel: fetchTextChannel(channel),
           role: DiscordConnector.fetchRole(guild, role),
         }),
         Future.map(apply.sequenceS(Maybe.Apply)), // return Some only if all are Some
       )
+  }
+
+  function fetchTextChannel(channelId: TSnowflake): Future<Maybe<TextChannel>> {
+    return pipe(
+      discord.fetchChannel(channelId),
+      Future.map(Maybe.filter(ChannelUtils.isTextChannel)),
+    )
   }
 }
 

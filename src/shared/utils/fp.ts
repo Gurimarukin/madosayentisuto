@@ -126,6 +126,7 @@ export const Future = {
 
 const ioTryCatch = <A>(a: Lazy<A>): IO<A> => ioEither.tryCatch(a, unknownAsError)
 const ioFromIO: <A>(fa: io.IO<A>) => IO<A> = ioEither.fromIO
+const ioRunUnsafe = <A>(ioA: IO<A>): A => Try.get(ioA())
 export type IO<A> = io.IO<Try<A>>
 export const IO = {
   ...ioEither,
@@ -137,5 +138,9 @@ export const IO = {
       // eslint-disable-next-line functional/no-expression-statement
       Future.runUnsafe(f)
     }),
-  runUnsafe: <A>(ioA: IO<A>): A => Try.get(ioA()),
+  runUnsafe: ioRunUnsafe,
+  delay:
+    (delay: MsDuration) =>
+    (io_: IO<void>): IO<NodeJS.Timeout> =>
+      IO.tryCatch(() => setTimeout(() => pipe(io_, ioRunUnsafe), MsDuration.unwrap(delay))),
 }

@@ -324,6 +324,7 @@ const sendMessage = (
   pipe(
     Future.tryCatch(() => channel.send(options)),
     Future.map(Maybe.some),
+    debugLeft('sendMessage'),
     // Future.orElse<Maybe<Message>>(e =>
     //   e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user'
     //     ? Future.right(Maybe.none)

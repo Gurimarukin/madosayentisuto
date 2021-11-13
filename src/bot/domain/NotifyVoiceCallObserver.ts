@@ -1,7 +1,7 @@
 import type { GuildMember, StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { Future, Maybe } from '../../shared/utils/fp'
+import { Future, IO, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import type { MadEventPublicCallEnded, MadEventPublicCallStarted } from '../models/events/MadEvent'
@@ -46,18 +46,17 @@ export const NotifyVoiceCallObserver = (
                 calls.channel,
                 `Ha ha ! **@${member.displayName}** appelle **#${channel.name}**... ${calls.role} doit payer !`,
               ),
-              Future.chain(
+              Future.map(
                 Maybe.fold(
                   () =>
-                    Future.fromIOEither(
-                      log(
-                        'warn',
-                        `Couldn't send call started notification in #${calls.channel.name}`,
-                      ),
+                    log(
+                      'warn',
+                      `Couldn't send call started notification in #${calls.channel.name}`,
                     ),
-                  () => Future.unit,
+                  () => IO.unit,
                 ),
               ),
+              Future.chain(Future.fromIOEither),
             ),
         ),
       ),
@@ -79,18 +78,14 @@ export const NotifyVoiceCallObserver = (
           calls =>
             pipe(
               DiscordConnector.sendMessage(calls.channel, `Un appel s'est terminé.`),
-              Future.chain(
+              Future.map(
                 Maybe.fold(
                   () =>
-                    Future.fromIOEither(
-                      log(
-                        'warn',
-                        `Couldn't send call ended notification in #${calls.channel.name}`,
-                      ),
-                    ),
-                  () => Future.unit,
+                    log('warn', `Couldn't send call ended notification in #${calls.channel.name}`),
+                  () => IO.unit,
                 ),
               ),
+              Future.chain(Future.fromIOEither),
             ),
         ),
       ),

@@ -1,13 +1,20 @@
-import { flow, pipe } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 
-import { Future, List, Maybe } from '../../shared/utils/fp'
+import type { Dict, Maybe } from '../../shared/utils/fp'
+import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import { GuildId } from '../models/GuildId'
 import type { MongoCollection } from '../models/MongoCollection'
 import type { GuildStateDbOutput } from '../models/guildState/db/GuildStateDb'
-import { GuildStateDb, GuildStateDbOnlyId } from '../models/guildState/db/GuildStateDb'
+import {
+  GuildStateDb,
+  GuildStateDbIdAndItsFridayChannel,
+  GuildStateDbOnlyId,
+} from '../models/guildState/db/GuildStateDb'
 import type { LoggerGetter } from '../models/logger/LoggerType'
+
+type Projection = Partial<Dict<keyof GuildStateDbOutput, 1>>
 
 export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>
 
@@ -27,19 +34,24 @@ export const GuildStatePersistence = (Logger: LoggerGetter, mongoCollection: Mon
     find: (id: GuildId): Future<Maybe<GuildStateDb>> =>
       collection.findOne({ id: GuildId.unwrap(id) }),
 
-    findAll: (): Future<List<GuildId>> =>
-      pipe(
-        collection.collection(coll => pipe(coll.find({}, { projection: { id: 1 } })).toArray()),
-        Future.map(
-          List.filterMap(
-            flow(
-              GuildStateDbOnlyId.codec.decode,
-              Maybe.fromEither,
-              Maybe.map(({ id }) => id),
-            ),
-          ),
-        ),
-      ),
+    findAllIds: (): Future<List<GuildId>> => {
+      const projection: Projection = { id: 1 }
+      return pipe(
+        collection.findAll([GuildStateDbOnlyId.codec, 'GuildStateDbOnlyId'])({}, { projection }),
+        Future.map(List.map(({ id }) => id)),
+      )
+    },
+
+    findAllItsFridayChannels: (): Future<List<GuildStateDbIdAndItsFridayChannel>> => {
+      const projection: Projection = { id: 1, itsFridayChannel: 1 }
+      return collection.findAll([
+        GuildStateDbIdAndItsFridayChannel.codec,
+        'GuildStateDbIdAndItsFridayChannel',
+      ])(
+        { $and: [{ itsFridayChannel: { $exists: true } }, { itsFridayChannel: { $ne: null } }] },
+        { projection },
+      )
+    },
 
     upsert: (id: GuildId, state: GuildStateDb): Future<boolean> =>
       pipe(

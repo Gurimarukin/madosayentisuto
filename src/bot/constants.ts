@@ -20,6 +20,11 @@ export const constants = {
 
   defaultActivity: Activity.of('PLAYING', 'hisser les voiles...'),
 
+  itsFridayUrl:
+    'https://cdn.discordapp.com/attachments/636626556734930948/909046875804545064/cestvrai.mp4',
+  // PeerTube:  https://tube.fede.re/w/gAfpve8szQ5TtiPfRqkNEi
+  // thumbnail: https://cdn.discordapp.com/attachments/636626556734930948/909048276957945886/unknown.png
+
   fetchLogsLimit: 30,
   networkTolerance: MsDuration.seconds(6),
 

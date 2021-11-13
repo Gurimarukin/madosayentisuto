@@ -1,5 +1,6 @@
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 import type { Codec } from 'io-ts/Codec'
+import type { Decoder } from 'io-ts/Decoder'
 import type {
   BulkWriteOptions,
   ClientSession,
@@ -17,8 +18,8 @@ import type {
   UpdateResult,
 } from 'mongodb'
 
-import type { List, Tuple } from '../../shared/utils/fp'
-import { Either, Future, Maybe } from '../../shared/utils/fp'
+import type { Tuple } from '../../shared/utils/fp'
+import { Either, Future, List, Maybe } from '../../shared/utils/fp'
 
 import type { IndexDescription, WithoutProjection } from '../models/MongoTypings'
 import type { LoggerType } from '../models/logger/LoggerType'
@@ -118,6 +119,30 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
   //         .map(u => pipe(codec.decode(u), Either.mapLeft(decodeError(codecName)(u)))),
   //     ),
   //   ),
+
+  findAll:
+    <B>([decoder, decoderName]: Tuple<Decoder<O, B>, string>) =>
+    (query: Filter<O>, options?: FindOptions<O>): Future<List<B>> =>
+      pipe(
+        collection(coll => coll.find(query, options).toArray()),
+        Future.chain(
+          Future.traverseSeqArray(u =>
+            pipe(
+              decoder.decode(u),
+              Either.fold(
+                flow(
+                  decodeError(decoderName)(u),
+                  e => logger.warn(e.message),
+                  Future.fromIOEither,
+                  Future.map(() => Maybe.none),
+                ),
+                flow(Maybe.some, Future.right),
+              ),
+            ),
+          ),
+        ),
+        Future.map(List.compact),
+      ),
 
   drop: (): Future<boolean> =>
     pipe(
