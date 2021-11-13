@@ -1,9 +1,11 @@
 import { refinement, task } from 'fp-ts'
 import { observable } from 'fp-ts-rxjs'
 import type { Refinement } from 'fp-ts/Refinement'
+import type { Lazy } from 'fp-ts/function'
 import { pipe } from 'fp-ts/function'
 import type { Subscription } from 'rxjs'
 
+import { MsDuration } from '../../shared/models/MsDuration'
 import { Future, List, NonEmptyArray, Try } from '../../shared/utils/fp'
 import { IO } from '../../shared/utils/fp'
 
@@ -33,13 +35,16 @@ type EventListenable<L extends TinyListenerSignature<L>> = {
 const publishOn =
   <L extends TinyListenerSignature<L>, A>(
     listenable: EventListenable<L>,
-    dispatch: (a: A) => IO<void>,
+    publish: (a: A) => IO<void>,
   ) =>
   <K extends keyof L>(event: K, transformer: (...args: Parameters<L[K]>) => A): IO<void> =>
     IO.tryCatch(() =>
       listenable.on(event, ((...args: Parameters<L[K]>) =>
-        pipe(dispatch(transformer(...args)), IO.runUnsafe)) as L[K]),
+        pipe(publish(transformer(...args)), IO.runUnsafe)) as L[K]),
     )
+
+const delayPublish = (io: Lazy<IO<void>>, delay: MsDuration): IO<NodeJS.Timeout> =>
+  IO.tryCatch(() => setTimeout(() => pipe(io(), IO.runUnsafe), MsDuration.unwrap(delay)))
 
 const subscribe =
   <A>(logger: LoggerType, observable_: TObservable<A>) =>
@@ -85,4 +90,4 @@ function or<A, R extends NonEmptyArray<Refinement<A, A>>>(...refinements_: R): R
   )
 }
 
-export const PubSubUtils = { publishOn, subscribe, or }
+export const PubSubUtils = { publishOn, delayPublish, subscribe, or }
