@@ -3,7 +3,7 @@ import { apply, readonlyMap } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import type { Lens as MonocleLens } from 'monocle-ts'
 
-import { Future, IO, List, Maybe, inspect } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import type { MusicSubscription } from '../helpers/music/MusicSubscription'
@@ -42,9 +42,7 @@ export const GuildStateService = (
       pipe(
         guildStatePersistence.findAllItsFridayChannels(),
         Future.chain(
-          Future.traverseArray(({ id, itsFridayChannel }) =>
-            discord.fetchChannel(itsFridayChannel),
-          ),
+          Future.traverseArray(itsFridayChannel => discord.fetchChannel(itsFridayChannel)),
         ),
         Future.map(flow(List.compact, List.filter(ChannelUtils.isTextChannel))),
       ),

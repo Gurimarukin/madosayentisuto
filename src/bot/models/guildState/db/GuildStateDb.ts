@@ -57,10 +57,9 @@ export type GuildStateDbOutput = C.OutputOf<typeof codec>
 
 export const GuildStateDb = { codec, keys, empty, fromGuildState }
 
-const idAndItsFridayChannelCodec = C.struct({
-  ...onlyIdProperties,
-  itsFridayChannel: TSnowflake.codec, // TODO: only itsFridayChannel
+const onlyItsFridayChannelCodec = C.struct({
+  itsFridayChannel: TSnowflake.codec,
 })
 
-export type GuildStateDbIdAndItsFridayChannel = C.TypeOf<typeof idAndItsFridayChannelCodec>
-export const GuildStateDbIdAndItsFridayChannel = { codec: idAndItsFridayChannelCodec }
+export type GuildStateDbOnlyItsFridayChannel = C.TypeOf<typeof onlyItsFridayChannelCodec>
+export const GuildStateDbOnlyItsFridayChannel = { codec: onlyItsFridayChannelCodec }

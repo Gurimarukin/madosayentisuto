@@ -31,6 +31,8 @@ import { LogUtils } from '../../utils/LogUtils'
 
 // DefaultRoleGet
 // DefaultRoleSet
+// ItsFridaySet
+// ItsFridayGet
 // Say
 // ActivityGet
 // ActivityUnset

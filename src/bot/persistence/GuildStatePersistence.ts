@@ -6,11 +6,12 @@ import { Future, List } from '../../shared/utils/fp'
 import { FpCollection } from '../helpers/FpCollection'
 import { GuildId } from '../models/GuildId'
 import type { MongoCollection } from '../models/MongoCollection'
+import type { TSnowflake } from '../models/TSnowflake'
 import type { GuildStateDbOutput } from '../models/guildState/db/GuildStateDb'
 import {
   GuildStateDb,
-  GuildStateDbIdAndItsFridayChannel,
   GuildStateDbOnlyId,
+  GuildStateDbOnlyItsFridayChannel,
 } from '../models/guildState/db/GuildStateDb'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 
@@ -42,14 +43,17 @@ export const GuildStatePersistence = (Logger: LoggerGetter, mongoCollection: Mon
       )
     },
 
-    findAllItsFridayChannels: (): Future<List<GuildStateDbIdAndItsFridayChannel>> => {
-      const projection: Projection = { id: 1, itsFridayChannel: 1 }
-      return collection.findAll([
-        GuildStateDbIdAndItsFridayChannel.codec,
-        'GuildStateDbIdAndItsFridayChannel',
-      ])(
-        { $and: [{ itsFridayChannel: { $exists: true } }, { itsFridayChannel: { $ne: null } }] },
-        { projection },
+    findAllItsFridayChannels: (): Future<List<TSnowflake>> => {
+      const projection: Projection = { itsFridayChannel: 1 }
+      return pipe(
+        collection.findAll([
+          GuildStateDbOnlyItsFridayChannel.codec,
+          'GuildStateDbOnlyItsFridayChannel',
+        ])(
+          { $and: [{ itsFridayChannel: { $exists: true } }, { itsFridayChannel: { $ne: null } }] },
+          { projection },
+        ),
+        Future.map(List.map(({ itsFridayChannel }) => itsFridayChannel)),
       )
     },
 
