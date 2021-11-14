@@ -1,6 +1,7 @@
 import type { Message } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
+import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import type { List } from '../../shared/utils/fp'
 import { Future, Maybe } from '../../shared/utils/fp'
 
@@ -52,11 +53,9 @@ export const ThanksCaptainObserver = (
 const answerNoNeedToThankMe = (message: Message): Future<void> =>
   pipe(
     DiscordConnector.sendMessage(message.channel, 'Haha ! Inutile de me remercier...'),
-    Future.map(
-      Maybe.fold(
-        () => {}, // TODO: what if message wasn't sent?
-        () => {},
-      ),
+    futureMaybe.match(
+      () => {}, // TODO: what if message wasn't sent?
+      () => {},
     ),
   )
 

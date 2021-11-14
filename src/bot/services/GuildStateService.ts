@@ -3,6 +3,7 @@ import { apply, readonlyMap } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import type { Lens as MonocleLens } from 'monocle-ts'
 
+import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
@@ -177,18 +178,14 @@ export const GuildStateService = (
     return pipe(
       getFromCache(guildId),
       Future.fromIOEither,
-      Future.chain(
-        Maybe.fold(
-          () =>
-            pipe(
-              LogUtils.pretty(logger, guild)(
-                'debug',
-                "State wasn't found in cache, loading it from db",
-              ),
-              Future.fromIOEither,
-              Future.chain(() => addGuildToCacheFromDb(guild)),
-            ),
-          Future.right,
+      futureMaybe.getOrElse(() =>
+        pipe(
+          LogUtils.pretty(logger, guild)(
+            'debug',
+            "State wasn't found in cache, loading it from db",
+          ),
+          Future.fromIOEither,
+          Future.chain(() => addGuildToCacheFromDb(guild)),
         ),
       ),
     )
@@ -198,20 +195,18 @@ export const GuildStateService = (
     const guildId = GuildId.wrap(guild.id)
     return pipe(
       guildStatePersistence.find(guildId),
-      Future.chain(
-        Maybe.fold(
-          () => Future.right(GuildState.empty(guildId)),
-          flow(
-            fetchDbProperties(guild),
-            Future.map(
-              ({ calls, defaultRole, itsFridayChannel }): GuildState => ({
-                id: guildId,
-                calls,
-                defaultRole,
-                itsFridayChannel,
-                subscription: Maybe.none,
-              }),
-            ),
+      futureMaybe.matchE(
+        () => Future.right(GuildState.empty(guildId)),
+        flow(
+          fetchDbProperties(guild),
+          Future.map(
+            ({ calls, defaultRole, itsFridayChannel }): GuildState => ({
+              id: guildId,
+              calls,
+              defaultRole,
+              itsFridayChannel,
+              subscription: Maybe.none,
+            }),
           ),
         ),
       ),
@@ -234,14 +229,11 @@ export const GuildStateService = (
 
   function fetchCalls(guild: Guild): (calls: CallsDb) => Future<Maybe<Calls>> {
     return ({ message, channel, role }) =>
-      pipe(
-        apply.sequenceS(Future.ApplyPar)({
-          message: DiscordConnector.fetchMessage(guild, message),
-          channel: fetchTextChannel(channel),
-          role: DiscordConnector.fetchRole(guild, role),
-        }),
-        Future.map(apply.sequenceS(Maybe.Apply)), // return Some only if all are Some
-      )
+      apply.sequenceS(futureMaybe.ApplyPar)({
+        message: DiscordConnector.fetchMessage(guild, message),
+        channel: fetchTextChannel(channel),
+        role: DiscordConnector.fetchRole(guild, role),
+      })
   }
 
   function fetchTextChannel(channelId: TSnowflake): Future<Maybe<TextChannel>> {
@@ -259,7 +251,4 @@ const isDbKey = (key: WithouId<keyof GuildState>): key is WithouId<keyof GuildSt
   )
 
 const chainFutureT = <A, B>(fa: Maybe<A>, f: (a: A) => Future<Maybe<B>>): Future<Maybe<B>> =>
-  pipe(
-    fa,
-    Maybe.fold(() => Future.right(Maybe.none), f),
-  )
+  pipe(fa, futureMaybe.fromOption, futureMaybe.chain(f))

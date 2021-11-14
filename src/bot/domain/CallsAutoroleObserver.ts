@@ -4,6 +4,7 @@ import { GuildMember } from 'discord.js'
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
+import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
@@ -35,6 +36,7 @@ export const CallsAutoroleObserver = (
 
       if (interaction.customId === callsButton.subscribeId) return onSubscribe(interaction)
       if (interaction.customId === callsButton.unsubscribeId) return onUnsubscribe(interaction)
+
       return Future.unit
     },
   }
@@ -79,29 +81,17 @@ export const CallsAutoroleObserver = (
     interaction: ButtonInteraction,
     f: (guild: Guild, callsAndMember: CallsAndMember) => Future<boolean>,
   ): Future<void> {
-    const guild = interaction.guild
     return pipe(
-      guild === null
-        ? Future.right(Maybe.none)
-        : pipe(
-            fetchCallsAndMember(guild, interaction.member),
-            Future.chain(
-              Maybe.fold(
-                () => Future.right(Maybe.none),
-                callsAndMember =>
-                  pipe(
-                    f(guild, callsAndMember),
-                    Future.map(success => (success ? Maybe.some(callsAndMember) : Maybe.none)),
-                  ),
-              ),
-            ),
-          ),
-      Future.chain(
-        Maybe.fold(
-          () => Future.unit,
-          ({ calls }) => refreshCallsInitMessage(calls),
-        ),
+      futureMaybe.Do,
+      futureMaybe.bind('guild', () => futureMaybe.fromNullable(interaction.guild)),
+      futureMaybe.bind('callsAndMember', ({ guild }) =>
+        fetchCallsAndMember(guild, interaction.member),
       ),
+      futureMaybe.bind('success', ({ guild, callsAndMember }) =>
+        pipe(f(guild, callsAndMember), Future.map(Maybe.some)),
+      ),
+      Future.map(Maybe.filter(({ success }) => success)),
+      futureMaybe.chainSome(({ callsAndMember: { calls } }) => refreshCallsInitMessage(calls)),
       Future.chain(() => DiscordConnector.interactionUpdate(interaction, {})),
     )
   }
@@ -117,15 +107,12 @@ export const CallsAutoroleObserver = (
     guild: Guild,
     member: GuildMember | APIInteractionGuildMember,
   ): Future<Maybe<CallsAndMember>> {
-    return pipe(
-      apply.sequenceS(Future.ApplyPar)({
-        calls: guildStateService.getCalls(guild),
-        member:
-          member instanceof GuildMember
-            ? Future.right(Maybe.some(member))
-            : DiscordConnector.fetchMember(guild, TSnowflake.wrap(member.user.id)),
-      }),
-      Future.map(apply.sequenceS(Maybe.Apply)),
-    )
+    return apply.sequenceS(futureMaybe.ApplyPar)({
+      calls: guildStateService.getCalls(guild),
+      member:
+        member instanceof GuildMember
+          ? Future.right(Maybe.some(member))
+          : DiscordConnector.fetchMember(guild, TSnowflake.wrap(member.user.id)),
+    })
   }
 }

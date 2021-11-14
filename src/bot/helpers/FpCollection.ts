@@ -18,6 +18,7 @@ import type {
   UpdateResult,
 } from 'mongodb'
 
+import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import type { Tuple } from '../../shared/utils/fp'
 import { Either, Future, List, Maybe } from '../../shared/utils/fp'
 
@@ -95,15 +96,11 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
     pipe(
       collection(c => c.findOne(filter, options)),
       Future.map(Maybe.fromNullable),
-      Future.chain(
-        Maybe.fold(
-          () => Future.right(Maybe.none),
-          u =>
-            pipe(
-              codec.decode(u),
-              Either.bimap(decodeError(codecName)(u), Maybe.some),
-              Future.fromEither,
-            ),
+      futureMaybe.chain(u =>
+        pipe(
+          codec.decode(u),
+          Either.bimap(decodeError(codecName)(u), Maybe.some),
+          Future.fromEither,
         ),
       ),
     ),

@@ -5,6 +5,7 @@ import { date, number, ord, random, semigroup, string } from 'fp-ts'
 import type { Ord } from 'fp-ts/Ord'
 import { flow, pipe } from 'fp-ts/function'
 
+import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
@@ -64,21 +65,13 @@ export const NotifyGuildLeaveObserver = (
   function sendMessage(guild: Guild): (futureMessage: Future<string>) => Future<void> {
     return futureMessage =>
       pipe(
-        goodbyeChannel(guild),
-        Maybe.fold(
-          () => Future.unit, // TODO: what if no goodbyeChannel?
-          channel =>
-            pipe(
-              futureMessage,
-              Future.chain(message => DiscordConnector.sendPrettyMessage(channel, message)),
-              Future.map(
-                Maybe.fold(
-                  () => {}, // TODO: what if message wasn't sent?
-                  () => {},
-                ),
-              ),
-            ),
+        futureMaybe.Do,
+        futureMaybe.apS('channel', futureMaybe.fromOption(goodbyeChannel(guild))),
+        futureMaybe.apS('message', futureMaybe.fromFuture(futureMessage)),
+        futureMaybe.chain(({ channel, message }) =>
+          DiscordConnector.sendPrettyMessage(channel, message),
         ),
+        Future.map(() => {}),
       )
   }
 }

@@ -1,6 +1,7 @@
 import type { GuildMember, StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
+import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, IO, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
@@ -37,29 +38,23 @@ export const NotifyVoiceCallObserver = (
       log('info', `Call started in 📢${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() => guildStateService.getCalls(member.guild)),
-      Future.chain(
-        Maybe.fold(
-          () => Future.unit,
-          calls =>
-            pipe(
-              DiscordConnector.sendMessage(
-                calls.channel,
-                `Ha ha ! **@${member.displayName}** appelle ${channel}... ${calls.role} doit payer !`,
-              ),
-              Future.map(
-                Maybe.fold(
-                  () =>
-                    log(
-                      'warn',
-                      `Couldn't send call started notification in #${calls.channel.name}`,
-                    ),
-                  () => IO.unit,
-                ),
-              ),
-              Future.chain(Future.fromIOEither),
+      futureMaybe.chainSome(calls =>
+        pipe(
+          DiscordConnector.sendMessage(
+            calls.channel,
+            `Ha ha ! **@${member.displayName}** appelle ${channel}... ${calls.role} doit payer !`,
+          ),
+          Future.map(
+            Maybe.fold(
+              () =>
+                log('warn', `Couldn't send call started notification in #${calls.channel.name}`),
+              () => IO.unit,
             ),
+          ),
+          Future.chain(Future.fromIOEither),
         ),
       ),
+      Future.map(() => {}),
     )
   }
 
@@ -72,23 +67,19 @@ export const NotifyVoiceCallObserver = (
       log('info', `Call ended in 📢${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() => guildStateService.getCalls(member.guild)),
-      Future.chain(
-        Maybe.fold(
-          () => Future.unit,
-          calls =>
-            pipe(
-              DiscordConnector.sendMessage(calls.channel, `Un appel s'est terminé.`),
-              Future.map(
-                Maybe.fold(
-                  () =>
-                    log('warn', `Couldn't send call ended notification in #${calls.channel.name}`),
-                  () => IO.unit,
-                ),
-              ),
-              Future.chain(Future.fromIOEither),
+      futureMaybe.chainSome(calls =>
+        pipe(
+          DiscordConnector.sendMessage(calls.channel, `Un appel s'est terminé.`),
+          Future.map(
+            Maybe.fold(
+              () => log('warn', `Couldn't send call ended notification in #${calls.channel.name}`),
+              () => IO.unit,
             ),
+          ),
+          Future.chain(Future.fromIOEither),
         ),
       ),
+      Future.map(() => {}),
     )
   }
 }

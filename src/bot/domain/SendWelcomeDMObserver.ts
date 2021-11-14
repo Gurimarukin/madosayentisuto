@@ -1,7 +1,8 @@
 import { MessageEmbed } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { Future, Maybe } from '../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/FutureMaybe'
+import { Future } from '../../shared/utils/fp'
 
 import { Colors } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
@@ -45,12 +46,9 @@ export const SendWelcomeDMObserver = (Logger: LoggerGetter): TObserver<MadEventG
             ],
           }),
         ),
-        Future.chain(
-          Maybe.fold(
-            () =>
-              Future.fromIOEither(log('warn', `Couldn't send greeting DM to ${member.user.tag}`)),
-            () => Future.unit,
-          ),
+        futureMaybe.matchE(
+          () => Future.fromIOEither(log('warn', `Couldn't send greeting DM to ${member.user.tag}`)),
+          () => Future.unit,
         ),
       )
     },

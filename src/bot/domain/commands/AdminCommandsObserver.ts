@@ -17,7 +17,8 @@ import { Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { Future, Maybe, futureMaybe } from '../../../shared/utils/fp'
+import { futureMaybe } from '../../../shared/utils/FutureMaybe'
+import { Future, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { getInitCallsMessage } from '../../helpers/getInitCallsMessage'
@@ -135,26 +136,18 @@ export const AdminCommandsObserver = (
       DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
       Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
       Future.chain(() =>
-        pipe(
-          apply.sequenceS(Future.ApplyPar)({
-            guild: Future.right(maybeGuild),
-            author: fetchUser(interaction.member.user),
-            commandChannel: Future.right(Maybe.fromNullable(interaction.channel)),
-            callsChannel: fetchChannel(
-              Maybe.fromNullable(interaction.options.getChannel('channel')),
-            ),
-            role: fetchRole(maybeGuild, Maybe.fromNullable(interaction.options.getRole('role'))),
-          }),
-          Future.map(apply.sequenceS(Maybe.Apply)),
-          Future.chain(
-            Maybe.fold(
-              () => Future.unit,
-              ({ guild, author, commandChannel, callsChannel, role }) =>
-                sendInitMessageAndUpdateState(guild, author, commandChannel, callsChannel, role),
-            ),
-          ),
-        ),
+        apply.sequenceS(futureMaybe.ApplyPar)({
+          guild: Future.right(maybeGuild),
+          author: fetchUser(interaction.member.user),
+          commandChannel: futureMaybe.fromNullable(interaction.channel),
+          callsChannel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel('channel'))),
+          role: fetchRole(maybeGuild, Maybe.fromNullable(interaction.options.getRole('role'))),
+        }),
       ),
+      futureMaybe.chainSome(({ guild, author, commandChannel, callsChannel, role }) =>
+        sendInitMessageAndUpdateState(guild, author, commandChannel, callsChannel, role),
+      ),
+      Future.map(() => {}),
     )
   }
 
@@ -201,12 +194,7 @@ export const AdminCommandsObserver = (
     return message =>
       pipe(
         guildStateService.getCalls(guild),
-        Future.chain(
-          Maybe.fold(
-            () => Future.unit,
-            previous => deleteMessage(previous.message),
-          ),
-        ),
+        futureMaybe.chainSome(previous => deleteMessage(previous.message)),
         Future.map(() => guildStateService.setCalls(guild, { message, channel, role })),
         Future.chain(Future.fromIOEither),
         Future.map(() => {}),
@@ -223,16 +211,14 @@ export const AdminCommandsObserver = (
     maybeChannel: Maybe<ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel>,
   ): Future<Maybe<TextChannel>> {
     return pipe(
-      maybeChannel,
-      Maybe.fold(
-        () => Future.right(Maybe.none),
-        channel =>
-          channel instanceof TextChannel
-            ? Future.right(Maybe.some(channel))
-            : pipe(
-                discord.fetchChannel(TSnowflake.wrap(channel.id)),
-                Future.map(Maybe.filter(ChannelUtils.isTextChannel)),
-              ),
+      futureMaybe.fromOption(maybeChannel),
+      futureMaybe.chain(channel =>
+        channel instanceof TextChannel
+          ? Future.right(Maybe.some(channel))
+          : pipe(
+              discord.fetchChannel(TSnowflake.wrap(channel.id)),
+              Future.map(Maybe.filter(ChannelUtils.isTextChannel)),
+            ),
       ),
     )
   }
@@ -243,12 +229,11 @@ export const AdminCommandsObserver = (
   ): Future<Maybe<Role>> {
     return pipe(
       apply.sequenceS(Maybe.Apply)({ guild: maybeGuild, role: maybeRole }),
-      Maybe.fold(
-        () => Future.right(Maybe.none),
-        ({ guild, role }) =>
-          role instanceof Role
-            ? Future.right(Maybe.some(role))
-            : DiscordConnector.fetchRole(guild, TSnowflake.wrap(role.id)),
+      futureMaybe.fromOption,
+      futureMaybe.chain(({ guild, role }) =>
+        role instanceof Role
+          ? Future.right(Maybe.some(role))
+          : DiscordConnector.fetchRole(guild, TSnowflake.wrap(role.id)),
       ),
     )
   }

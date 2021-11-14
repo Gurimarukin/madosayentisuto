@@ -1,3 +1,4 @@
+import type { Role, TextChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { MsDuration } from '../../shared/models/MsDuration'
@@ -36,6 +37,10 @@ function mkString(startOrSep: string, sep?: string, end?: string): (list: List<s
       : list.join(startOrSep)
 }
 
+const prettyChannel = (channel: TextChannel): string => `#${channel.name}`
+
+const prettyRole = (role: Role): string => `@${role.name}`
+
 const prettyMs = (ms: MsDuration): string => {
   const d = new Date(Date.UTC(0, 0, 0, 0, 0, 0, MsDuration.unwrap(ms)))
   const h = Math.floor(MsDuration.unwrap(ms) / (1000 * 60 * 60))
@@ -58,6 +63,8 @@ export const StringUtils = {
   mkString,
   pad10,
   pad100,
+  prettyChannel,
+  prettyRole,
   prettyMs,
   stripMargins,
 }

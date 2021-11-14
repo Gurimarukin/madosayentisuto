@@ -1,8 +1,9 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import type { CommandInteraction, Guild } from 'discord.js'
 import { GuildMember } from 'discord.js'
-import { flow, pipe } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 
+import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
@@ -33,12 +34,7 @@ export const MusicCommandsObserver = (
         DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
         Future.map(() => guildStateService.getSubscription(guild)),
         Future.chain(Future.fromIOEither),
-        Future.chain(
-          Maybe.fold(
-            () => createSubscriptionIfVoiceChannel(guild, interaction),
-            flow(Maybe.some, Future.right),
-          ),
-        ),
+        futureMaybe.alt(() => createSubscriptionIfVoiceChannel(guild, interaction)),
         Future.chain(
           Maybe.fold(
             () =>

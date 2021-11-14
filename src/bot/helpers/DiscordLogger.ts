@@ -3,8 +3,9 @@ import { MessageEmbed } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import util from 'util'
 
+import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import type { List } from '../../shared/utils/fp'
-import { Future, IO, Maybe } from '../../shared/utils/fp'
+import { Future, IO } from '../../shared/utils/fp'
 
 import type { Config } from '../Config'
 import { LogLevel, LogLevelOrOff } from '../models/logger/LogLevel'
@@ -34,20 +35,10 @@ export const DiscordLogger =
         const futures = config.admins.map(userId =>
           pipe(
             discord.fetchUser(userId),
-            Future.chain(
-              Maybe.fold(
-                () => Future.unit,
-                user =>
-                  pipe(
-                    DiscordConnector.sendMessage(user, msg),
-                    Future.map(
-                      Maybe.fold(
-                        () => {}, // TODO: what to do if message wasn't sent?
-                        () => {},
-                      ),
-                    ),
-                  ),
-              ),
+            futureMaybe.chain(user => DiscordConnector.sendMessage(user, msg)),
+            futureMaybe.match(
+              () => {}, // TODO: what to do if message wasn't sent?
+              () => {},
             ),
           ),
         )

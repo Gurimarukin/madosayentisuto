@@ -42,6 +42,7 @@ import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { MsDuration } from '../../shared/models/MsDuration'
+import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import type { ClientConfig } from '../Config'
@@ -96,14 +97,10 @@ const of = (client: Client<true>) => ({
       IO.tryCatch(() => client.users.cache.get(TSnowflake.unwrap(userId))),
       IO.map(Maybe.fromNullable),
       Future.fromIOEither,
-      Future.chain(
-        Maybe.fold(
-          () =>
-            pipe(
-              Future.tryCatch(() => client.users.fetch(TSnowflake.unwrap(userId))),
-              Future.map(Maybe.some),
-            ),
-          flow(Maybe.some, Future.right),
+      futureMaybe.alt(() =>
+        pipe(
+          Future.tryCatch(() => client.users.fetch(TSnowflake.unwrap(userId))),
+          Future.map(Maybe.some),
         ),
       ),
       debugLeft('fetchUser'),
