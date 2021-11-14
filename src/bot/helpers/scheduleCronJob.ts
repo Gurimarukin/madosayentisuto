@@ -11,8 +11,6 @@ import type { TSubject } from '../models/rx/TSubject'
 import { DateUtils } from '../utils/DateUtils'
 import { StringUtils } from '../utils/StringUtils'
 
-const { pad10, pad100 } = StringUtils
-
 const cronJobInterval = MsDuration.days(1)
 
 export const scheduleCronJob = (
@@ -25,7 +23,7 @@ export const scheduleCronJob = (
     date.create,
     IO.fromIO,
     IO.map(now => {
-      const tomorrow8am = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 8)
+      const tomorrow8am = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 8, 0, 0, 0)
       return pipe(
         tomorrow8am,
         DateUtils.minusDuration(MsDuration.fromDate(now)),
@@ -34,9 +32,9 @@ export const scheduleCronJob = (
     }),
     IO.chainFirst(untilTomorrow8am =>
       logger.info(
-        `Scheduling activity refresh - 8am is in ${pretty(untilTomorrow8am)} (interval: ${pretty(
-          cronJobInterval,
-        )})`,
+        `Scheduling activity refresh - 8am is in ${StringUtils.prettyMs(
+          untilTomorrow8am,
+        )} (interval: ${StringUtils.prettyMs(cronJobInterval)})`,
       ),
     ),
     IO.chain(untilTomorrow8am =>
@@ -59,13 +57,4 @@ export const scheduleCronJob = (
   function publishEvent(): IO<void> {
     return subject.next(MadEvent.CronJob())
   }
-}
-
-const pretty = (ms: MsDuration): string => {
-  const d = new Date(Date.UTC(0, 0, 0, 0, 0, 0, MsDuration.unwrap(ms)))
-  const h = Math.floor(MsDuration.unwrap(ms) / (1000 * 60 * 60))
-  const m = d.getUTCMinutes()
-  const s = d.getUTCSeconds()
-  const ms_ = d.getUTCMilliseconds()
-  return `${pad10(h)}:${pad10(m)}:${pad10(s)}.${pad100(ms_)}`
 }
