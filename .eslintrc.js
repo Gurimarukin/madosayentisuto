@@ -36,6 +36,7 @@ module.exports = {
           'APIRole',
           'GuildChannel',
           'Role',
+          'TextChannel',
           'ThreadChannel',
         ],
       },

@@ -1,4 +1,5 @@
 import type { io } from 'fp-ts'
+import { optionT } from 'fp-ts'
 import {
   either,
   ioEither,
@@ -143,4 +144,15 @@ export const IO = {
     (delay: MsDuration) =>
     (io_: IO<void>): IO<NodeJS.Timeout> =>
       IO.tryCatch(() => setTimeout(() => pipe(io_, ioRunUnsafe), MsDuration.unwrap(delay))),
+}
+
+const futureMaybeChain = optionT.chain(taskEither.Monad)
+const futureMaybeChainSome = <A, B>(
+  f: (a: A) => Future<B>,
+): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) =>
+  futureMaybeChain(flow(f, taskEither.map(option.some)))
+export const futureMaybe = {
+  chain: futureMaybeChain,
+  chainSome: futureMaybeChainSome,
+  match: optionT.match(taskEither.Functor),
 }

@@ -34,7 +34,7 @@ export const NotifyVoiceCallObserver = (
   ): Future<void> {
     const log = LogUtils.pretty(logger, member.guild)
     return pipe(
-      log('info', `Call started in #${channel.name} by ${member.user.tag}`),
+      log('info', `Call started in 📢${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() => guildStateService.getCalls(member.guild)),
       Future.chain(
@@ -44,7 +44,7 @@ export const NotifyVoiceCallObserver = (
             pipe(
               DiscordConnector.sendMessage(
                 calls.channel,
-                `Ha ha ! **@${member.displayName}** appelle **#${channel.name}**... ${calls.role} doit payer !`,
+                `Ha ha ! **@${member.displayName}** appelle ${channel}... ${calls.role} doit payer !`,
               ),
               Future.map(
                 Maybe.fold(
@@ -69,7 +69,7 @@ export const NotifyVoiceCallObserver = (
   ): Future<void> {
     const log = LogUtils.pretty(logger, member.guild)
     return pipe(
-      log('info', `Call ended in #${channel.name} by ${member.user.tag}`),
+      log('info', `Call ended in 📢${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() => guildStateService.getCalls(member.guild)),
       Future.chain(

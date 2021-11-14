@@ -23,13 +23,14 @@ export type MusicSubscription = {
   readonly observable: TObservable<MusicEvent>
   readonly subject: TSubject<MusicEvent>
   readonly playSong: () => IO<void>
+  readonly stringify: () => string
 }
 
 export const MusicSubscription = (
   Logger: LoggerGetter,
   channel: VoiceChannel | StageChannel,
 ): IO<MusicSubscription> => {
-  const logger = Logger(`MusicSubscription-${channel.guild.id}`)
+  const logger = Logger(`MusicSubscription-${channel.guild.name}`)
 
   const { observable, subject } = PubSub<MusicEvent>()
 
@@ -60,7 +61,7 @@ export const MusicSubscription = (
 
   return pipe(
     apply.sequenceT(IO.ApplyPar)(connectionPublish, playerPublish, subscribe),
-    IO.map(() => ({ observable, subject, playSong })),
+    IO.map(() => ({ observable, subject, playSong, stringify })),
   )
 
   function playSong(): IO<void> {
@@ -98,5 +99,9 @@ export const MusicSubscription = (
       ),
       Future.fromIOEither,
     )
+  }
+
+  function stringify(): string {
+    return `<MusicSubscription[${channel.guild.name}]>`
   }
 }

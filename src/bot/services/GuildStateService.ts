@@ -47,6 +47,8 @@ export const GuildStateService = (
         Future.map(flow(List.compact, List.filter(ChannelUtils.isTextChannel))),
       ),
 
+    getState: (guild: Guild): Future<GuildState> => getShouldLoadFromDb(guild),
+
     setCalls: (guild: Guild, calls: Calls): IO<GuildState> =>
       setLens(guild, 'calls', Maybe.some(calls)),
 
@@ -147,37 +149,49 @@ export const GuildStateService = (
 
     // check if we are getting a key that exists in GuildStateDb
     const shouldLoadFromDb = isDbKey(key)
-    const fromCache = pipe(
-      IO.fromIO(() => readonlyMap.lookup(GuildId.Eq)(GuildId.wrap(guild.id), cache)),
-    )
 
     if (shouldLoadFromDb) {
       const res: Future<LensInner<GuildStateLens[K]>> = pipe(
-        fromCache,
-        Future.fromIOEither,
-        Future.chain(
-          Maybe.fold(
-            () =>
-              pipe(
-                LogUtils.pretty(logger, guild)(
-                  'debug',
-                  "State wasn't found in cache, loading it from db",
-                ),
-                Future.fromIOEither,
-                Future.chain(() => addGuildToCacheFromDb(guild)),
-              ),
-            Future.right,
-          ),
-        ),
+        getShouldLoadFromDb(guild),
         Future.map(getter),
       )
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return res as any // I know what I'm doing
     }
 
-    const res: IO<Maybe<LensInner<GuildStateLens[K]>>> = pipe(fromCache, IO.map(Maybe.map(getter)))
+    const guildId = GuildId.wrap(guild.id)
+    const res: IO<Maybe<LensInner<GuildStateLens[K]>>> = pipe(
+      getFromCache(guildId),
+      IO.map(Maybe.map(getter)),
+    )
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return res as any // I know what I'm doing
+  }
+
+  function getFromCache(guildId: GuildId): IO<Maybe<GuildState>> {
+    return IO.fromIO(() => readonlyMap.lookup(GuildId.Eq)(guildId, cache))
+  }
+
+  function getShouldLoadFromDb(guild: Guild): Future<GuildState> {
+    const guildId = GuildId.wrap(guild.id)
+    return pipe(
+      getFromCache(guildId),
+      Future.fromIOEither,
+      Future.chain(
+        Maybe.fold(
+          () =>
+            pipe(
+              LogUtils.pretty(logger, guild)(
+                'debug',
+                "State wasn't found in cache, loading it from db",
+              ),
+              Future.fromIOEither,
+              Future.chain(() => addGuildToCacheFromDb(guild)),
+            ),
+          Future.right,
+        ),
+      ),
+    )
   }
 
   function addGuildToCacheFromDb(guild: Guild): Future<GuildState> {

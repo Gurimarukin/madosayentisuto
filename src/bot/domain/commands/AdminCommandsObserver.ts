@@ -17,32 +17,39 @@ import { Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { Future, Maybe } from '../../../shared/utils/fp'
+import { Future, Maybe, futureMaybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { getInitCallsMessage } from '../../helpers/getInitCallsMessage'
 import { TSnowflake } from '../../models/TSnowflake'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
+import type { Calls } from '../../models/guildState/Calls'
+import type { GuildState } from '../../models/guildState/GuildState'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { GuildStateService } from '../../services/GuildStateService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { LogUtils } from '../../utils/LogUtils'
+import { StringUtils } from '../../utils/StringUtils'
 
-// DefaultRoleGet
 // DefaultRoleSet
 // ItsFridaySet
-// ItsFridayGet
 // Say
-// ActivityGet
 // ActivityUnset
 // ActivitySet
 // ActivityRefresh
 
+const stateGetCommand = new SlashCommandBuilder()
+  .setDefaultPermission(false)
+  .setName('state')
+  .setDescription("Dans quel état j'erre ?")
+  .addSubcommand(subcommand =>
+    subcommand.setName('get').setDescription('État de Jean Plank pour ce serveur'),
+  )
 const callsInitCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
   .setName('calls')
-  .setDescription("Jean Plank n'est pas votre secrétaire mais gère vos appels")
+  .setDescription("Jean Plank n'est pas votre secrétaire, mais il gère vos appels")
   .addSubcommand(subcommand =>
     /**
      * Jean Plank envoie un message dans le salon où la commande a été effectuée.
@@ -67,7 +74,7 @@ const callsInitCommand = new SlashCommandBuilder()
       ),
   )
 
-export const adminCommands = [callsInitCommand]
+export const adminCommands = [stateGetCommand, callsInitCommand]
 
 export const AdminCommandsObserver = (
   Logger: LoggerGetter,
@@ -82,15 +89,43 @@ export const AdminCommandsObserver = (
 
       if (!interaction.isCommand()) return Future.unit
 
-      if (interaction.commandName === 'calls') return onCalls(interaction)
+      switch (interaction.commandName) {
+        case 'state':
+          return onState(interaction)
+        case 'calls':
+          return onCalls(interaction)
+      }
 
       return Future.unit
     },
   }
 
-  function onCalls(interaction: CommandInteraction): Future<void> {
-    if (interaction.options.getSubcommand(false) === 'init') return onCallsInit(interaction)
+  function onState(interaction: CommandInteraction): Future<void> {
+    switch (interaction.options.getSubcommand(false)) {
+      case 'get':
+        return onStateGet(interaction)
+    }
+    return Future.unit
+  }
 
+  function onStateGet(interaction: CommandInteraction): Future<void> {
+    return pipe(
+      DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
+      Future.map(() => Maybe.fromNullable(interaction.guild)),
+      futureMaybe.chainSome(guild => guildStateService.getState(guild)),
+      futureMaybe.match(() => 'Rien à montrer pour ce serveur', formatState),
+      Future.chain(content =>
+        DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+      ),
+      Future.map(() => {}),
+    )
+  }
+
+  function onCalls(interaction: CommandInteraction): Future<void> {
+    switch (interaction.options.getSubcommand(false)) {
+      case 'init':
+        return onCallsInit(interaction)
+    }
     return Future.unit
   }
 
@@ -236,3 +271,17 @@ export const AdminCommandsObserver = (
     )
   }
 }
+
+const maybeStr = <A>(fa: Maybe<A>, str: (a: A) => string = String): string =>
+  pipe(fa, Maybe.map(str), Maybe.toNullable, String)
+
+const formatState = ({ calls, defaultRole, itsFridayChannel, subscription }: GuildState): string =>
+  StringUtils.stripMargins(
+    `- **calls**: ${maybeStr(calls, formatCalls)}
+    |- **defaultRole**: ${maybeStr(defaultRole)}
+    |- **itsFridayChannel**: ${maybeStr(itsFridayChannel)}
+    |- **subscription**: ${maybeStr(subscription, s => s.stringify())}`,
+  )
+
+const formatCalls = ({ message, channel, role }: Calls): string =>
+  `${role} - ${channel} - <${message.url}>`

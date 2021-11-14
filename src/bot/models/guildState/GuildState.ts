@@ -11,23 +11,23 @@ export type GuildState = {
   readonly id: GuildId
   readonly calls: Maybe<Calls>
   readonly defaultRole: Maybe<Role>
-  readonly subscription: Maybe<MusicSubscription>
   readonly itsFridayChannel: Maybe<TextChannel>
+  readonly subscription: Maybe<MusicSubscription>
 }
 
 const empty = (id: GuildId): GuildState => ({
   id,
   calls: Maybe.none,
   defaultRole: Maybe.none,
-  subscription: Maybe.none,
   itsFridayChannel: Maybe.none,
+  subscription: Maybe.none,
 })
 
 const Lens = {
   calls: MonocleLens.fromPath<GuildState>()(['calls']),
   defaultRole: MonocleLens.fromPath<GuildState>()(['defaultRole']),
-  subscription: MonocleLens.fromPath<GuildState>()(['subscription']),
   itsFridayChannel: MonocleLens.fromPath<GuildState>()(['itsFridayChannel']),
+  subscription: MonocleLens.fromPath<GuildState>()(['subscription']),
 }
 
 export const GuildState = { empty, Lens }
