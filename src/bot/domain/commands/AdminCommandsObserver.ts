@@ -75,7 +75,20 @@ const callsInitCommand = new SlashCommandBuilder()
       ),
   )
 
-export const adminCommands = [stateGetCommand, callsInitCommand]
+const defaultRoleSetCommand = new SlashCommandBuilder()
+  .setDefaultPermission(false)
+  .setName('defaultrole')
+  .setDescription("Jean Plank donne un rôle au nouveau membres d'équipages")
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('set')
+      .setDescription('Jean Plank veut bien changer le rôle par défaut de ce serveur')
+      .addRoleOption(option =>
+        option.setName('role').setDescription('Le nouveau rôle par défaut').setRequired(true),
+      ),
+  )
+
+export const adminCommands = [stateGetCommand, callsInitCommand, defaultRoleSetCommand]
 
 export const AdminCommandsObserver = (
   Logger: LoggerGetter,
@@ -95,12 +108,17 @@ export const AdminCommandsObserver = (
           return onState(interaction)
         case 'calls':
           return onCalls(interaction)
+        case 'defaultrole':
+          return onDefaultRole(interaction)
       }
 
       return Future.unit
     },
   }
 
+  /**
+   * state
+   */
   function onState(interaction: CommandInteraction): Future<void> {
     switch (interaction.options.getSubcommand(false)) {
       case 'get':
@@ -122,6 +140,9 @@ export const AdminCommandsObserver = (
     )
   }
 
+  /**
+   * calls
+   */
   function onCalls(interaction: CommandInteraction): Future<void> {
     switch (interaction.options.getSubcommand(false)) {
       case 'init':
@@ -200,6 +221,45 @@ export const AdminCommandsObserver = (
         Future.map(() => {}),
       )
   }
+
+  /**
+   * defaultrole
+   */
+  function onDefaultRole(interaction: CommandInteraction): Future<void> {
+    switch (interaction.options.getSubcommand(false)) {
+      case 'set':
+        return onDefaultRoleSet(interaction)
+    }
+    return Future.unit
+  }
+
+  function onDefaultRoleSet(interaction: CommandInteraction): Future<void> {
+    const maybeGuild = Maybe.fromNullable(interaction.guild)
+    return pipe(
+      DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
+      Future.chain(() =>
+        apply.sequenceS(futureMaybe.ApplyPar)({
+          guild: Future.right(maybeGuild),
+          role: fetchRole(maybeGuild, Maybe.fromNullable(interaction.options.getRole('role'))),
+        }),
+      ),
+      futureMaybe.chainSome(({ guild, role }) =>
+        Future.fromIOEither(guildStateService.setDefaultRole(guild, role)),
+      ),
+      futureMaybe.match(
+        () => 'Erreur',
+        ({ defaultRole }) => `Nouveau rôle par défaut : ${Maybe.toNullable(defaultRole)}`,
+      ),
+      Future.chain(content =>
+        DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+      ),
+      Future.map(() => {}),
+    )
+  }
+
+  /**
+   * Helpers
+   */
 
   function fetchUser(user: User | APIUser): Future<Maybe<User>> {
     return user instanceof User
