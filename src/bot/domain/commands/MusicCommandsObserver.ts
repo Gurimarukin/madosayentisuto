@@ -4,7 +4,7 @@ import { GuildMember } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
-import { Future, IO, Maybe } from '../../../shared/utils/fp'
+import { Future, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { MusicSubscription } from '../../helpers/music/MusicSubscription'
@@ -72,8 +72,8 @@ export const MusicCommandsObserver = (
 
     return pipe(
       MusicSubscription(Logger, channel),
-      IO.chainFirst(subscription => guildStateService.setSubscription(guild, subscription)),
       Future.fromIOEither,
+      Future.chainFirst(subscription => guildStateService.setSubscription(guild, subscription)),
       Future.map(Maybe.some),
     )
   }

@@ -50,23 +50,23 @@ export const GuildStateService = (
 
     getState: (guild: Guild): Future<GuildState> => getShouldLoadFromDb(guild),
 
-    setCalls: (guild: Guild, calls: Calls): IO<GuildState> =>
+    setCalls: (guild: Guild, calls: Calls): Future<GuildState> =>
       setLens(guild, 'calls', Maybe.some(calls)),
 
     getCalls: (guild: Guild): Future<Maybe<Calls>> => get(guild, 'calls'),
 
-    setDefaultRole: (guild: Guild, role: Role): IO<GuildState> =>
+    setDefaultRole: (guild: Guild, role: Role): Future<GuildState> =>
       setLens(guild, 'defaultRole', Maybe.some(role)),
 
     getDefaultRole: (guild: Guild): Future<Maybe<Role>> => get(guild, 'defaultRole'),
 
-    setItsFridayChannel: (guild: Guild, channel: TextChannel): IO<GuildState> =>
+    setItsFridayChannel: (guild: Guild, channel: TextChannel): Future<GuildState> =>
       setLens(guild, 'itsFridayChannel', Maybe.some(channel)),
 
     getItsFridayChannel: (guild: Guild): Future<Maybe<TextChannel>> =>
       get(guild, 'itsFridayChannel'),
 
-    setSubscription: (guild: Guild, subscription: MusicSubscription): IO<GuildState> =>
+    setSubscription: (guild: Guild, subscription: MusicSubscription): Future<GuildState> =>
       setLens(guild, 'subscription', Maybe.some(subscription)),
 
     getSubscription: (guild: Guild): IO<Maybe<MusicSubscription>> =>
@@ -81,27 +81,23 @@ export const GuildStateService = (
     guild: Guild,
     key: K,
     a: LensInner<GuildStateLens[K]>,
-  ): IO<GuildState> {
+  ): Future<GuildState> {
     // check if we are updating a key that exists in GuildStateDb
     const shouldUpsert = isDbKey(key)
 
     type Setter = (a_: LensInner<GuildStateLens[K]>) => (s: GuildState) => GuildState
     const update = (GuildState.Lens[key].set as Setter)(a)
 
-    return shouldUpsert
-      ? cacheUpdateAtAndUpsertDb(guild, update)
-      : cacheUpdateAt(GuildId.wrap(guild.id), update)
+    return shouldUpsert ? cacheUpdateAtAndUpsertDb(guild, update) : cacheUpdateAt(guild, update)
   }
 
   function cacheUpdateAtAndUpsertDb(
     guild: Guild,
     update: (state: GuildState) => GuildState,
-  ): IO<GuildState> {
-    const guildId = GuildId.wrap(guild.id)
-
+  ): Future<GuildState> {
     return pipe(
-      cacheUpdateAt(guildId, update),
-      IO.chain(state => {
+      cacheUpdateAt(guild, update),
+      Future.chainFirst(newState => {
         const log = LogUtils.pretty(logger, guild)
 
         // upsert new state, but don't wait until it's done; immediatly return state from cache
@@ -109,12 +105,15 @@ export const GuildStateService = (
           log('debug', 'Upserting state'),
           Future.fromIOEither,
           Future.chain(() =>
-            guildStatePersistence.upsert(guildId, GuildStateDb.fromGuildState(state)),
+            guildStatePersistence.upsert(
+              GuildId.wrap(guild.id),
+              GuildStateDb.fromGuildState(newState),
+            ),
           ),
           Future.chain(success => (success ? Future.unit : error())),
           Future.orElse(e => error('-', e)),
           IO.runFuture,
-          IO.map(() => state),
+          Future.fromIOEither,
         )
 
         function error(...u: List<unknown>): Future<void> {
@@ -125,18 +124,15 @@ export const GuildStateService = (
   }
 
   function cacheUpdateAt(
-    guildId: GuildId,
+    guild: Guild,
     update: (state: GuildState) => GuildState,
-  ): IO<GuildState> {
-    const state = pipe(
-      cache,
-      readonlyMap.lookup(GuildId.Eq)(guildId),
-      Maybe.getOrElse(() => GuildState.empty(guildId)),
-    )
-    const updated = update(state)
+  ): Future<GuildState> {
     return pipe(
-      cacheSet(guildId, updated),
-      IO.map(() => updated),
+      getShouldLoadFromDb(guild),
+      Future.map(update),
+      Future.chainFirst(newState =>
+        Future.fromIOEither(cacheSet(GuildId.wrap(guild.id), newState)),
+      ),
     )
   }
 
