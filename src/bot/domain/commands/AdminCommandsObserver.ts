@@ -38,14 +38,14 @@ import { StringUtils } from '../../utils/StringUtils'
 // ActivitySet
 // ActivityRefresh
 
-const stateGetCommand = new SlashCommandBuilder()
+const stateCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
   .setName('state')
   .setDescription("Dans quel état j'erre ?")
   .addSubcommand(subcommand =>
     subcommand.setName('get').setDescription('État de Jean Plank pour ce serveur'),
   )
-const callsInitCommand = new SlashCommandBuilder()
+const callsCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
   .setName('calls')
   .setDescription("Jean Plank n'est pas votre secrétaire, mais il gère vos appels")
@@ -73,7 +73,7 @@ const callsInitCommand = new SlashCommandBuilder()
       ),
   )
 
-const defaultRoleSetCommand = new SlashCommandBuilder()
+const defaultRoleCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
   .setName('defaultrole')
   .setDescription("Jean Plank donne un rôle au nouveau membres d'équipages")
@@ -86,7 +86,7 @@ const defaultRoleSetCommand = new SlashCommandBuilder()
       ),
   )
 
-const itsFridaySetChannel = new SlashCommandBuilder()
+const itsFridayCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
   .setName('itsfriday')
   .setDescription("Jean Plank vous informe que nous sommes vendredi (c'est vrai)")
@@ -103,12 +103,7 @@ const itsFridaySetChannel = new SlashCommandBuilder()
       ),
   )
 
-export const adminCommands = [
-  stateGetCommand,
-  callsInitCommand,
-  defaultRoleSetCommand,
-  itsFridaySetChannel,
-]
+export const adminCommands = [stateCommand, callsCommand, defaultRoleCommand, itsFridayCommand]
 
 export const AdminCommandsObserver = (
   Logger: LoggerGetter,
