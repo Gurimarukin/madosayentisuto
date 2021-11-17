@@ -33,8 +33,6 @@ import { ChannelUtils } from '../../utils/ChannelUtils'
 import { LogUtils } from '../../utils/LogUtils'
 import { StringUtils } from '../../utils/StringUtils'
 
-// DefaultRoleSet
-// ItsFridaySet
 // Say
 // ActivityUnset
 // ActivitySet
@@ -63,8 +61,8 @@ const callsInitCommand = new SlashCommandBuilder()
       .addChannelOption(option =>
         option
           .setName('channel')
-          .addChannelTypes([ChannelType.GuildText])
           .setDescription('Le salon dans lequel les appels seront notifiés')
+          .addChannelTypes([ChannelType.GuildText])
           .setRequired(true),
       )
       .addRoleOption(option =>
@@ -88,7 +86,29 @@ const defaultRoleSetCommand = new SlashCommandBuilder()
       ),
   )
 
-export const adminCommands = [stateGetCommand, callsInitCommand, defaultRoleSetCommand]
+const itsFridaySetChannel = new SlashCommandBuilder()
+  .setDefaultPermission(false)
+  .setName('itsfriday')
+  .setDescription("Jean Plank vous informe que nous sommes vendredi (c'est vrai)")
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('set')
+      .setDescription('Jean Plank veut bien changer le salon pour cette information vitale')
+      .addChannelOption(option =>
+        option
+          .setName('channel')
+          .setDescription('Le nouveau salon pour cette information vitale')
+          .addChannelTypes([ChannelType.GuildText])
+          .setRequired(true),
+      ),
+  )
+
+export const adminCommands = [
+  stateGetCommand,
+  callsInitCommand,
+  defaultRoleSetCommand,
+  itsFridaySetChannel,
+]
 
 export const AdminCommandsObserver = (
   Logger: LoggerGetter,
@@ -110,6 +130,8 @@ export const AdminCommandsObserver = (
           return onCalls(interaction)
         case 'defaultrole':
           return onDefaultRole(interaction)
+        case 'itsfriday':
+          return onItsFriday(interaction)
       }
 
       return Future.unit
@@ -119,6 +141,7 @@ export const AdminCommandsObserver = (
   /**
    * state
    */
+
   function onState(interaction: CommandInteraction): Future<void> {
     switch (interaction.options.getSubcommand(false)) {
       case 'get':
@@ -143,6 +166,7 @@ export const AdminCommandsObserver = (
   /**
    * calls
    */
+
   function onCalls(interaction: CommandInteraction): Future<void> {
     switch (interaction.options.getSubcommand(false)) {
       case 'init':
@@ -225,6 +249,7 @@ export const AdminCommandsObserver = (
   /**
    * defaultrole
    */
+
   function onDefaultRole(interaction: CommandInteraction): Future<void> {
     switch (interaction.options.getSubcommand(false)) {
       case 'set':
@@ -234,32 +259,71 @@ export const AdminCommandsObserver = (
   }
 
   function onDefaultRoleSet(interaction: CommandInteraction): Future<void> {
-    const maybeGuild = Maybe.fromNullable(interaction.guild)
-    return pipe(
-      DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
-      Future.chain(() =>
+    return commonSetState(interaction, maybeGuild =>
+      pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: Future.right(maybeGuild),
           role: fetchRole(maybeGuild, Maybe.fromNullable(interaction.options.getRole('role'))),
         }),
+        futureMaybe.chainSome(({ guild, role }) =>
+          Future.fromIOEither(guildStateService.setDefaultRole(guild, role)),
+        ),
+        futureMaybe.match(
+          () => 'Erreur',
+          ({ defaultRole }) => `Nouveau rôle par défaut : ${Maybe.toNullable(defaultRole)}`,
+        ),
       ),
-      futureMaybe.chainSome(({ guild, role }) =>
-        Future.fromIOEither(guildStateService.setDefaultRole(guild, role)),
+    )
+  }
+
+  /**
+   * itsfriday
+   */
+
+  function onItsFriday(interaction: CommandInteraction): Future<void> {
+    switch (interaction.options.getSubcommand(false)) {
+      case 'set':
+        return onItsFridaySet(interaction)
+    }
+    return Future.unit
+  }
+
+  function onItsFridaySet(interaction: CommandInteraction): Future<void> {
+    return commonSetState(interaction, maybeGuild =>
+      pipe(
+        apply.sequenceS(futureMaybe.ApplyPar)({
+          guild: Future.right(maybeGuild),
+          channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel('channel'))),
+        }),
+        futureMaybe.chainSome(({ guild, channel }) =>
+          Future.fromIOEither(guildStateService.setItsFridayChannel(guild, channel)),
+        ),
+        futureMaybe.match(
+          () => 'Erreur',
+          ({ itsFridayChannel }) =>
+            `Nouveau salon pour "C'est vendredi" : ${Maybe.toNullable(itsFridayChannel)}`,
+        ),
       ),
-      futureMaybe.match(
-        () => 'Erreur',
-        ({ defaultRole }) => `Nouveau rôle par défaut : ${Maybe.toNullable(defaultRole)}`,
-      ),
-      Future.chain(content =>
-        DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
-      ),
-      Future.map(() => {}),
     )
   }
 
   /**
    * Helpers
    */
+
+  function commonSetState(
+    interaction: CommandInteraction,
+    f: (guild: Maybe<Guild>) => Future<string>,
+  ): Future<void> {
+    return pipe(
+      DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
+      Future.chain(() => f(Maybe.fromNullable(interaction.guild))),
+      Future.chain(content =>
+        DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+      ),
+      Future.map(() => {}),
+    )
+  }
 
   function fetchUser(user: User | APIUser): Future<Maybe<User>> {
     return user instanceof User
