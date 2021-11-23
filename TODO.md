@@ -1,4 +1,4 @@
-1. J'aime pas trop les voleurs et les fils de pute
+1. Music
 2. Commands:
    1. Say
    2. Img

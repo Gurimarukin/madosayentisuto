@@ -13,7 +13,7 @@ import { NotifyGuildLeaveObserver } from './domain/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './domain/NotifyVoiceCallObserver'
 import { SendWelcomeDMObserver } from './domain/SendWelcomeDMObserver'
 import { SetDefaultRoleObserver } from './domain/SetDefaultRoleObserver'
-import { ThanksCaptainObserver } from './domain/ThanksCaptainObserver'
+import { TextInteractionsObserver } from './domain/TextInteractionsObserver'
 import { AdminCommandsObserver } from './domain/commands/AdminCommandsObserver'
 import { MusicCommandsObserver } from './domain/commands/MusicCommandsObserver'
 import { PingObserver } from './domain/commands/PingCommandObserver'
@@ -110,7 +110,7 @@ export const Application = (
       ),
       sub(SendWelcomeDMObserver(Logger), or(MadEvent.is('GuildMemberAdd'))),
       sub(SetDefaultRoleObserver(Logger, guildStateService), or(MadEvent.is('GuildMemberAdd'))),
-      sub(ThanksCaptainObserver(config.captain, discord), or(MadEvent.is('MessageCreate'))),
+      sub(TextInteractionsObserver(config.captain, discord), or(MadEvent.is('MessageCreate'))),
 
       // └ helpers/
       sub(LogMadEventsObserver(logger), or(refinement.id())),
