@@ -1,16 +1,12 @@
 import type { ColorResolvable } from 'discord.js'
-import * as D from 'io-ts/Decoder'
 
 import type { Dict } from '../../../shared/utils/fp'
 
 import { Colors } from '../../constants'
+import { createEnum } from '../../utils/createEnum'
 
-const decoder = D.union(
-  D.literal('debug'),
-  D.literal('info'),
-  D.literal('warn'),
-  D.literal('error'),
-)
+const levelEnum = createEnum('debug', 'info', 'warn', 'error')
+const { decoder } = levelEnum
 
 const shellColor: Dict<LogLevel, string> = {
   debug: '90',
@@ -26,11 +22,12 @@ const hexColor: Dict<LogLevel, ColorResolvable> = {
   error: Colors.tomato,
 }
 
-export type LogLevel = D.TypeOf<typeof decoder>
+export type LogLevel = typeof levelEnum.T
 
 export const LogLevel = { decoder, shellColor, hexColor }
 
-const codec = D.union(LogLevel.decoder, D.literal('off'))
+const levelOrOffEnum = createEnum('off', ...levelEnum.values)
+const { codec } = levelOrOffEnum
 
 const value: Dict<LogLevelOrOff, number> = {
   debug: 4,
@@ -40,6 +37,6 @@ const value: Dict<LogLevelOrOff, number> = {
   off: 0,
 }
 
-export type LogLevelOrOff = D.TypeOf<typeof codec>
+export type LogLevelOrOff = typeof levelOrOffEnum.T
 
 export const LogLevelOrOff = { codec, value }

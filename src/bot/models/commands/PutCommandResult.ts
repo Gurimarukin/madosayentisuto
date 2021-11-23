@@ -3,15 +3,12 @@ import * as D from 'io-ts/Decoder'
 
 import { Maybe } from '../../../shared/utils/fp'
 
+import { createEnum } from '../../utils/createEnum'
 import { GuildId } from '../GuildId'
 import { TSnowflake } from '../TSnowflake'
 import { CommandId } from './CommandId'
 
-const applicationCommandTypeCodec: D.Decoder<unknown, ApplicationCommandType> = D.union(
-  D.literal(1),
-  D.literal(2),
-  D.literal(3),
-)
+const { codec: applicationCommandTypeCodec } = createEnum<ApplicationCommandType>(1, 2, 3)
 
 const codec = D.struct({
   id: CommandId.codec,

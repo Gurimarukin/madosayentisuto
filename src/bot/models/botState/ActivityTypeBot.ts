@@ -1,18 +1,7 @@
-import * as C from 'io-ts/Codec'
-import * as D from 'io-ts/Decoder'
-import * as E from 'io-ts/Encoder'
+import { createEnum } from '../../utils/createEnum'
 
-const decoder = D.union(
-  C.literal('PLAYING'),
-  C.literal('STREAMING'),
-  C.literal('LISTENING'),
-  C.literal('WATCHING'),
-  C.literal('COMPETING'),
-)
+const enum_ = createEnum('PLAYING', 'STREAMING', 'LISTENING', 'WATCHING', 'COMPETING')
+const { values, decoder, encoder, codec } = enum_
 
-const encoder = E.id<ActivityTypeBot>()
-const codec = C.make(decoder, encoder)
-
-export type ActivityTypeBot = D.TypeOf<typeof decoder>
-
-export const ActivityTypeBot = { decoder, encoder, codec }
+export type ActivityTypeBot = typeof enum_.T
+export const ActivityTypeBot = { values, decoder, encoder, codec }
