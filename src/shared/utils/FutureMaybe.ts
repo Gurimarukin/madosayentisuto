@@ -21,8 +21,11 @@ const ap = optionT.ap(Future.ApplyPar)
 
 const chain = optionT.chain(Future.Monad)
 
-const chainSome = <A, B>(f: (a: A) => Future<B>): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) =>
+const chainFuture = <A, B>(f: (a: A) => Future<B>): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) =>
   chain(flow(f, Future.map(Maybe.some)))
+
+const chainMaybe: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
+  optionT.chainOptionK(Future.Monad)
 
 const fromFuture: <A>(ma: Future<A>) => Future<Maybe<A>> = optionT.fromF(Future.Functor)
 
@@ -76,7 +79,8 @@ export const futureMaybe = {
   apS: apply.apS(ApplyPar),
   bind: fpTsChain.bind(Chain),
   chain,
-  chainSome,
+  chainMaybe,
+  chainFuture,
   fromFuture,
   fromNullable,
   fromOption,

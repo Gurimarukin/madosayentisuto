@@ -91,7 +91,7 @@ export const CallsAutoroleObserver = (
         pipe(f(guild, callsAndMember), Future.map(Maybe.some)),
       ),
       Future.map(Maybe.filter(({ success }) => success)),
-      futureMaybe.chainSome(({ callsAndMember: { calls } }) => refreshCallsInitMessage(calls)),
+      futureMaybe.chainFuture(({ callsAndMember: { calls } }) => refreshCallsInitMessage(calls)),
       Future.chain(() => DiscordConnector.interactionUpdate(interaction, {})),
     )
   }

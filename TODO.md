@@ -1,22 +1,18 @@
-1. Stream de musique : https:1.github.com/JamesKyburz/youtube-audio-stream
-2. Commandes pour toute cette merde
-   1. DefaultRoleGet
-   2. DefaultRoleSet
-
-   3. ActivityGet
-   4. ActivityUnset
-   5. ActivitySet
-   6. ActivityRefresh
-
-   7. (Say)
+1. J'aime pas trop les voleurs et les fils de pute
+2. Commands:
+   1. Say
+   2. Img
 
 - ensure indexes: unsubscribe when done?
 - commands register: unsubscribe when done?
-
-1. Watch together -> c mor
 
 - moderators/owner
 - polls
 - generalize bot
 
 What if 'CronJob' arrives before 'DbReady' (for activity status)? There should be a way to check that 'DbReady' was sent, when 'CronJob' arrives.
+
+---
+
+- https://github.com/JamesKyburz/youtube-audio-stream
+- watch together -> c mor (pour l'instant)

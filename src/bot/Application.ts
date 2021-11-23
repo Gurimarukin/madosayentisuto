@@ -30,6 +30,7 @@ import type { LoggerGetter } from './models/logger/LoggerType'
 import { PubSub } from './models/rx/PubSub'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
+import { BotStateService } from './services/BotStateService'
 import { GuildStateService } from './services/GuildStateService'
 import { PubSubUtils } from './utils/PubSubUtils'
 
@@ -67,6 +68,7 @@ export const Application = (
   const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
 
+  const botStateService = BotStateService(Logger, discord, botStatePersistence)
   const guildStateService = GuildStateService(Logger, discord, guildStatePersistence)
 
   const pubSub = PubSub<MadEvent>()
@@ -78,7 +80,7 @@ export const Application = (
       // └ domain/
       // │  └ commands/
       sub(
-        AdminCommandsObserver(Logger, discord, guildStateService),
+        AdminCommandsObserver(Logger, discord, botStateService, guildStateService),
         or(MadEvent.is('InteractionCreate')),
       ),
       sub(MusicCommandsObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),
@@ -96,7 +98,7 @@ export const Application = (
 
       // │
       sub(
-        ActivityStatusObserver(Logger, discord, botStatePersistence),
+        ActivityStatusObserver(botStateService),
         or(MadEvent.is('AppStarted'), MadEvent.is('DbReady'), MadEvent.is('CronJob')),
       ),
       sub(CallsAutoroleObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),

@@ -1,4 +1,3 @@
-import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
@@ -7,11 +6,9 @@ import { Either, IO, NonEmptyArray } from '../shared/utils/fp'
 
 import { ConfReader } from './helpers/ConfReader'
 import { TSnowflake } from './models/TSnowflake'
-import type { ValidatedNea } from './models/ValidatedNea'
+import { ValidatedNea } from './models/ValidatedNea'
 import { LogLevelOrOff } from './models/logger/LogLevel'
 import { StringUtils } from './utils/StringUtils'
-
-const seqS = apply.sequenceS(Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>()))
 
 export type Config = {
   readonly client: ClientConfig
@@ -49,17 +46,17 @@ export const Config = {
 }
 
 const readConfig = (r: ConfReader): ValidatedNea<string, Config> =>
-  seqS({
+  ValidatedNea.sequenceS({
     client: readClientConfig(r),
     admins: r(NonEmptyArray.decoder(TSnowflake.codec))('admins'),
-    logger: seqS({
+    logger: ValidatedNea.sequenceS({
       consoleLevel: r(LogLevelOrOff.codec)('logger', 'consoleLevel'),
-      discordDM: seqS({
+      discordDM: ValidatedNea.sequenceS({
         level: r(LogLevelOrOff.codec)('logger', 'discordDM', 'level'),
         compact: r(D.boolean)('logger', 'discordDM', 'compact'),
       }),
     }),
-    db: seqS({
+    db: ValidatedNea.sequenceS({
       host: r(D.string)('db', 'host'),
       dbName: r(D.string)('db', 'dbName'),
       user: r(D.string)('db', 'user'),
@@ -77,7 +74,7 @@ export type ClientConfig = {
 }
 
 const readClientConfig = (r: ConfReader): ValidatedNea<string, ClientConfig> =>
-  seqS({
+  ValidatedNea.sequenceS({
     id: r(D.string)('client', 'id'),
     secret: r(D.string)('client', 'secret'),
   })
@@ -91,7 +88,7 @@ export type CaptainConfig = {
 }
 
 const readCaptainConfig = (r: ConfReader): ValidatedNea<string, CaptainConfig> =>
-  seqS({
+  ValidatedNea.sequenceS({
     mentions: r(D.array(D.string))('captain', 'mentions'),
     thanks: r(D.array(D.string))('captain', 'thanks'),
   })

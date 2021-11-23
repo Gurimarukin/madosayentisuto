@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from '@discordjs/builders'
+import { SlashCommandBuilder, inlineCode } from '@discordjs/builders'
 import type {
   APIInteractionDataResolvedChannel,
   APIRole,
@@ -15,28 +15,30 @@ import type {
 } from 'discord.js'
 import { Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
+import * as D from 'io-ts/Decoder'
 
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
-import { Future, Maybe } from '../../../shared/utils/fp'
+import type { Tuple } from '../../../shared/utils/fp'
+import { Either, NonEmptyArray } from '../../../shared/utils/fp'
+import { Future, List, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { getInitCallsMessage } from '../../helpers/getInitCallsMessage'
 import { TSnowflake } from '../../models/TSnowflake'
+import { ValidatedNea } from '../../models/ValidatedNea'
+import type { Activity } from '../../models/botState/Activity'
+import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
 import type { Calls } from '../../models/guildState/Calls'
 import type { GuildState } from '../../models/guildState/GuildState'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { TObserver } from '../../models/rx/TObserver'
+import type { BotStateService } from '../../services/BotStateService'
 import type { GuildStateService } from '../../services/GuildStateService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { LogUtils } from '../../utils/LogUtils'
 import { StringUtils } from '../../utils/StringUtils'
-
-// Say
-// ActivityUnset
-// ActivitySet
-// ActivityRefresh
 
 const stateCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
@@ -103,11 +105,63 @@ const itsFridayCommand = new SlashCommandBuilder()
       ),
   )
 
-export const adminCommands = [stateCommand, callsCommand, defaultRoleCommand, itsFridayCommand]
+const activityTypeBotChoices: List<Tuple<ActivityTypeBot, ActivityTypeBot>> = pipe(
+  ActivityTypeBot.values,
+  List.map(a => [a, a]),
+)
+const activityCommand = new SlashCommandBuilder()
+  .setDefaultPermission(false)
+  .setName('activity')
+  .setDescription('Jean Plank est un captaine occupé et le fait savoir')
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('get')
+      .setDescription("Jean Plank vous informe de ce qu'il est en train de faire"),
+  )
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('unset')
+      .setDescription("Jean Plank a fini ce qu'il était en train de faire"),
+  )
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('set')
+      .setDescription("Jean Plank annonce au monde ce qu'il est en train de faire")
+      .addStringOption(option =>
+        option
+          .setName('type')
+          .setDescription("Le type d'activité que Jean Plank est en train de faire")
+          // eslint-disable-next-line functional/prefer-readonly-type
+          .addChoices(activityTypeBotChoices as [ActivityTypeBot, ActivityTypeBot][])
+          .setRequired(true),
+      )
+      .addStringOption(option =>
+        option
+          .setName('name')
+          .setDescription("L'activité que Jean Plank est en train de faire")
+          .setRequired(true),
+      ),
+  )
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('refresh')
+      .setDescription(
+        'Jean Plank a parfois besoin de rappeler au monde à quel point il est occupé',
+      ),
+  )
+
+export const adminCommands = [
+  stateCommand,
+  callsCommand,
+  defaultRoleCommand,
+  itsFridayCommand,
+  activityCommand,
+]
 
 export const AdminCommandsObserver = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
+  botStateService: BotStateService,
   guildStateService: GuildStateService,
 ): TObserver<MadEventInteractionCreate> => {
   const logger = Logger('AdminCommandsObserver')
@@ -127,6 +181,8 @@ export const AdminCommandsObserver = (
           return onDefaultRole(interaction)
         case 'itsfriday':
           return onItsFriday(interaction)
+        case 'activity':
+          return onActivity(interaction)
       }
 
       return Future.unit
@@ -149,7 +205,7 @@ export const AdminCommandsObserver = (
     return pipe(
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
       Future.map(() => Maybe.fromNullable(interaction.guild)),
-      futureMaybe.chainSome(guild => guildStateService.getState(guild)),
+      futureMaybe.chainFuture(guild => guildStateService.getState(guild)),
       futureMaybe.match(() => 'Rien à montrer pour ce serveur', formatState),
       Future.chain(content =>
         DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
@@ -184,7 +240,7 @@ export const AdminCommandsObserver = (
           role: fetchRole(maybeGuild, Maybe.fromNullable(interaction.options.getRole('role'))),
         }),
       ),
-      futureMaybe.chainSome(({ guild, author, commandChannel, callsChannel, role }) =>
+      futureMaybe.chainFuture(({ guild, author, commandChannel, callsChannel, role }) =>
         sendInitMessageAndUpdateState(guild, author, commandChannel, callsChannel, role),
       ),
       Future.map(() => {}),
@@ -234,7 +290,7 @@ export const AdminCommandsObserver = (
     return message =>
       pipe(
         guildStateService.getCalls(guild),
-        futureMaybe.chainSome(previous => deleteMessage(previous.message)),
+        futureMaybe.chainFuture(previous => deleteMessage(previous.message)),
         Future.chain(() => guildStateService.setCalls(guild, { message, channel, role })),
         Future.map(() => {}),
       )
@@ -253,13 +309,16 @@ export const AdminCommandsObserver = (
   }
 
   function onDefaultRoleSet(interaction: CommandInteraction): Future<void> {
-    return commonSetState(interaction, maybeGuild =>
+    return withFollowUp(interaction)(() =>
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
-          guild: Future.right(maybeGuild),
-          role: fetchRole(maybeGuild, Maybe.fromNullable(interaction.options.getRole('role'))),
+          guild: Future.right(Maybe.fromNullable(interaction.guild)),
+          role: fetchRole(
+            Maybe.fromNullable(interaction.guild),
+            Maybe.fromNullable(interaction.options.getRole('role')),
+          ),
         }),
-        futureMaybe.chainSome(({ guild, role }) => guildStateService.setDefaultRole(guild, role)),
+        futureMaybe.chainFuture(({ guild, role }) => guildStateService.setDefaultRole(guild, role)),
         futureMaybe.match(
           () => 'Erreur',
           ({ defaultRole }) => `Nouveau rôle par défaut : ${Maybe.toNullable(defaultRole)}`,
@@ -281,13 +340,13 @@ export const AdminCommandsObserver = (
   }
 
   function onItsFridaySet(interaction: CommandInteraction): Future<void> {
-    return commonSetState(interaction, maybeGuild =>
+    return withFollowUp(interaction)(() =>
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
-          guild: Future.right(maybeGuild),
+          guild: Future.right(Maybe.fromNullable(interaction.guild)),
           channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel('channel'))),
         }),
-        futureMaybe.chainSome(({ guild, channel }) =>
+        futureMaybe.chainFuture(({ guild, channel }) =>
           guildStateService.setItsFridayChannel(guild, channel),
         ),
         futureMaybe.match(
@@ -300,21 +359,87 @@ export const AdminCommandsObserver = (
   }
 
   /**
+   * activity
+   */
+
+  function onActivity(interaction: CommandInteraction): Future<void> {
+    switch (interaction.options.getSubcommand(false)) {
+      case 'get':
+        return onActivityGet(interaction)
+      case 'unset':
+        return onActivityUnset(interaction)
+      case 'set':
+        return onActivitySet(interaction)
+      case 'refresh':
+        return onActivityRefresh(interaction)
+    }
+    return Future.unit
+  }
+
+  function onActivityGet(interaction: CommandInteraction): Future<void> {
+    return withFollowUp(interaction)(() =>
+      pipe(
+        botStateService.find(),
+        Future.map(({ activity }) => activity),
+        futureMaybe.match(() => 'No activity', formatActivity),
+      ),
+    )
+  }
+
+  function onActivityUnset(interaction: CommandInteraction): Future<void> {
+    return withFollowUp(interaction)(() =>
+      pipe(
+        botStateService.unsetActivity(),
+        Future.map(() => 'Activity unset'),
+      ),
+    )
+  }
+
+  function onActivitySet(interaction: CommandInteraction): Future<void> {
+    return withFollowUp(interaction)(() =>
+      pipe(
+        ValidatedNea.sequenceS({
+          type: decode(ActivityTypeBot.decoder, interaction.options.getString('type')),
+          name: decode(D.string, interaction.options.getString('name')),
+        }),
+        Either.mapLeft(
+          flow(
+            StringUtils.mkString('Invalid options from command "activity set":\n', '\n', ''),
+            Error,
+          ),
+        ),
+        Future.fromEither,
+        Future.chainFirst(activity => botStateService.setActivity(activity)),
+        Future.map(activity => `Activity set to: ${formatActivity(activity)}`),
+      ),
+    )
+  }
+
+  function onActivityRefresh(interaction: CommandInteraction): Future<void> {
+    return withFollowUp(interaction)(() =>
+      pipe(
+        botStateService.discordSetActivityFromDb(),
+        Future.map(() => 'Activity refreshed'),
+      ),
+    )
+  }
+
+  /**
    * Helpers
    */
 
-  function commonSetState(
+  function withFollowUp(
     interaction: CommandInteraction,
-    f: (guild: Maybe<Guild>) => Future<string>,
-  ): Future<void> {
-    return pipe(
-      DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
-      Future.chain(() => f(Maybe.fromNullable(interaction.guild))),
-      Future.chain(content =>
-        DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
-      ),
-      Future.map(() => {}),
-    )
+  ): (f: () => Future<string>) => Future<void> {
+    return f =>
+      pipe(
+        DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
+        Future.chain(() => f()),
+        Future.chain(content =>
+          DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+        ),
+        Future.map(() => {}),
+      )
   }
 
   function fetchUser(user: User | APIUser): Future<Maybe<User>> {
@@ -386,3 +511,8 @@ const formatState = ({ calls, defaultRole, itsFridayChannel, subscription }: Gui
 
 const formatCalls = ({ message, channel, role }: Calls): string =>
   `${role} - ${channel} - <${message.url}>`
+
+const formatActivity = ({ type, name }: Activity): string => inlineCode(`${type} ${name}`)
+
+const decode = <A>(decoder: D.Decoder<unknown, A>, u: unknown): ValidatedNea<string, A> =>
+  pipe(decoder.decode(u), Either.mapLeft(flow(D.draw, NonEmptyArray.of)))

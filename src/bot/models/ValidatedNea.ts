@@ -1,3 +1,4 @@
+import { apply } from 'fp-ts'
 import { flow } from 'fp-ts/function'
 
 import type { List } from '../../shared/utils/fp'
@@ -22,6 +23,10 @@ const fromEmptyErrors: <A>(either: Either<List<string>, A>) => ValidatedNea<stri
   'Got empty Errors from codec',
 )
 
+const sequenceS = apply.sequenceS(
+  Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>()),
+)
+
 export type ValidatedNea<E, A> = Either<NonEmptyArray<E>, A>
 
-export const ValidatedNea = { fromEither, fromOption, fromEmptyE, fromEmptyErrors }
+export const ValidatedNea = { fromEither, fromOption, fromEmptyE, fromEmptyErrors, sequenceS }
