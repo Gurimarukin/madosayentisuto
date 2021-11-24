@@ -1,4 +1,4 @@
-import { json } from 'fp-ts'
+import { apply, json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
@@ -56,9 +56,10 @@ const parseJsonFiles = (path: string, ...paths: List<string>): IO<NonEmptyArray<
   paths.reduce(
     (acc_, path_) =>
       pipe(
-        IO.Do,
-        IO.bind('acc', () => acc_),
-        IO.bind('newConf', () => loadConfigFile(path_)),
+        apply.sequenceS(IO.ApplyPar)({
+          acc: acc_,
+          newConf: loadConfigFile(path_),
+        }),
         IO.map(({ acc, newConf }) => NonEmptyArray.snoc(acc, newConf)),
       ),
     pipe(loadConfigFile(path), IO.map(NonEmptyArray.of)),
