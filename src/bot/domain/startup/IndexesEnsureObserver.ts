@@ -14,7 +14,7 @@ import { FutureUtils } from '../../utils/FutureUtils'
 export const IndexesEnsureObserver = (
   Logger: LoggerGetter,
   subject: TSubject<MadEventDbReady>,
-  ensureIndexes: List<() => Future<void>>,
+  ensureIndexes: List<Future<void>>,
 ): TObserver<MadEventAppStarted> => {
   const logger = Logger('IndexesEnsureObserver')
 
@@ -25,8 +25,7 @@ export const IndexesEnsureObserver = (
         Future.fromIOEither,
         Future.chain(() =>
           pipe(
-            ensureIndexes,
-            Future.traverseArray(f => f()),
+            Future.sequenceArray(ensureIndexes),
             Future.map(() => {}),
           ),
         ),

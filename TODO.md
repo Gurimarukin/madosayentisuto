@@ -1,7 +1,8 @@
 1. Music
 2. Commands:
-   1. Say
-   2. Img
+   1. Randomcase
+   2. Say
+   3. Img
 
 - ensure indexes: unsubscribe when done?
 - commands register: unsubscribe when done?

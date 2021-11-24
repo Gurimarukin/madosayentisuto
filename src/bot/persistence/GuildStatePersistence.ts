@@ -28,9 +28,10 @@ export const GuildStatePersistence = (Logger: LoggerGetter, mongoCollection: Mon
     [GuildStateDb.codec, 'GuildStateDb'],
   )
 
+  const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { id: -1 }, unique: true }])
+
   return {
-    ensureIndexes: (): Future<void> =>
-      collection.ensureIndexes([{ key: { id: -1 }, unique: true }]),
+    ensureIndexes,
 
     find: (id: GuildId): Future<Maybe<GuildStateDb>> =>
       collection.findOne({ id: GuildId.unwrap(id) }),

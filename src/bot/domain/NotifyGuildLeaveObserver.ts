@@ -33,21 +33,19 @@ export const NotifyGuildLeaveObserver = (
         date.create,
         Future.fromIO,
         Future.chain(now => getLastLog(now, guild, TSnowflake.wrap(user.id))),
-        Future.map(
-          Maybe.fold(
-            () =>
-              pipe(
-                log('info', `${user.tag} left the guild`),
-                IO.chain(() => randomMessage(leaveMessages)(boldMember)),
+        futureMaybe.match(
+          () =>
+            pipe(
+              log('info', `${user.tag} left the guild`),
+              IO.chain(() => randomMessage(leaveMessages)(boldMember)),
+            ),
+          ({ action, executor, reason }) =>
+            pipe(
+              log('info', logMessage(user.tag, executor.tag, action, reason)),
+              IO.chain(() =>
+                randomMessage(kickOrBanMessages(action))(boldMember, userMention(executor.id)),
               ),
-            ({ action, executor, reason }) =>
-              pipe(
-                log('info', logMessage(user.tag, executor.tag, action, reason)),
-                IO.chain(() =>
-                  randomMessage(kickOrBanMessages(action))(boldMember, userMention(executor.id)),
-                ),
-              ),
-          ),
+            ),
         ),
         Future.chain(Future.fromIOEither),
         sendMessage(event.member.guild),

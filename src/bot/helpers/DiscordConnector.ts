@@ -431,9 +431,7 @@ const fetchMessageRec =
             ? Future.right<Maybe<Message>>(Maybe.none)
             : Future.left(e),
         ),
-        Future.chain(
-          Maybe.fold(() => fetchMessageRec(message)(tail), flow(Maybe.some, Future.right)),
-        ),
+        futureMaybe.matchE(() => fetchMessageRec(message)(tail), flow(Maybe.some, Future.right)),
       )
     }
     return Future.right(Maybe.none)

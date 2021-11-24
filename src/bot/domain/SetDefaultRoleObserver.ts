@@ -1,6 +1,7 @@
 import { pipe } from 'fp-ts/function'
 
-import { Future, Maybe } from '../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/FutureMaybe'
+import { Future } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import type { MadEventGuildMemberAdd } from '../models/events/MadEvent'
@@ -22,23 +23,21 @@ export const SetDefaultRoleObserver = (
 
       return pipe(
         guildStateService.getDefaultRole(member.guild),
-        Future.chain(
-          Maybe.fold(
-            () =>
-              Future.fromIOEither(
-                log('warn', `No default role stored, couldn't add ${member.user.tag}`),
+        futureMaybe.matchE(
+          () =>
+            Future.fromIOEither(
+              log('warn', `No default role stored, couldn't add ${member.user.tag}`),
+            ),
+          role =>
+            pipe(
+              DiscordConnector.addRole(member, role),
+              Future.map(success =>
+                success
+                  ? log('debug', `Added ${member.user.tag} to role @${role.name}`)
+                  : log('warn', `Couldn't add ${member.user.tag} to role @${role.name}`),
               ),
-            role =>
-              pipe(
-                DiscordConnector.addRole(member, role),
-                Future.map(success =>
-                  success
-                    ? log('debug', `Added ${member.user.tag} to role @${role.name}`)
-                    : log('warn', `Couldn't add ${member.user.tag} to role @${role.name}`),
-                ),
-                Future.chain(Future.fromIOEither),
-              ),
-          ),
+              Future.chain(Future.fromIOEither),
+            ),
         ),
       )
     },

@@ -256,20 +256,18 @@ export const AdminCommandsObserver = (
   ): Future<void> {
     return pipe(
       sendInitMessage(commandChannel, channel, role),
-      Future.chain(
-        Maybe.fold(
-          () =>
-            ChannelUtils.isNamedChannel(commandChannel)
-              ? pipe(
-                  DiscordConnector.sendPrettyMessage(
-                    author,
-                    `Impossible d'envoyer le message d'abonnement dans le salon **#${commandChannel.name}**.`,
-                  ),
-                  Future.map(() => {}),
-                )
-              : Future.unit,
-          tryDeletePreviousMessageAndSetCalls(guild, channel, role),
-        ),
+      futureMaybe.matchE(
+        () =>
+          ChannelUtils.isNamedChannel(commandChannel)
+            ? pipe(
+                DiscordConnector.sendPrettyMessage(
+                  author,
+                  `Impossible d'envoyer le message d'abonnement dans le salon **#${commandChannel.name}**.`,
+                ),
+                Future.map(() => {}),
+              )
+            : Future.unit,
+        tryDeletePreviousMessageAndSetCalls(guild, channel, role),
       ),
     )
   }
@@ -309,7 +307,7 @@ export const AdminCommandsObserver = (
   }
 
   function onDefaultRoleSet(interaction: CommandInteraction): Future<void> {
-    return withFollowUp(interaction)(() =>
+    return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: Future.right(Maybe.fromNullable(interaction.guild)),
@@ -340,7 +338,7 @@ export const AdminCommandsObserver = (
   }
 
   function onItsFridaySet(interaction: CommandInteraction): Future<void> {
-    return withFollowUp(interaction)(() =>
+    return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: Future.right(Maybe.fromNullable(interaction.guild)),
@@ -377,7 +375,7 @@ export const AdminCommandsObserver = (
   }
 
   function onActivityGet(interaction: CommandInteraction): Future<void> {
-    return withFollowUp(interaction)(() =>
+    return withFollowUp(interaction)(
       pipe(
         botStateService.find(),
         Future.map(({ activity }) => activity),
@@ -387,7 +385,7 @@ export const AdminCommandsObserver = (
   }
 
   function onActivityUnset(interaction: CommandInteraction): Future<void> {
-    return withFollowUp(interaction)(() =>
+    return withFollowUp(interaction)(
       pipe(
         botStateService.unsetActivity(),
         Future.map(() => 'Activity unset'),
@@ -396,7 +394,7 @@ export const AdminCommandsObserver = (
   }
 
   function onActivitySet(interaction: CommandInteraction): Future<void> {
-    return withFollowUp(interaction)(() =>
+    return withFollowUp(interaction)(
       pipe(
         ValidatedNea.sequenceS({
           type: decode(ActivityTypeBot.decoder, interaction.options.getString('type')),
@@ -416,7 +414,7 @@ export const AdminCommandsObserver = (
   }
 
   function onActivityRefresh(interaction: CommandInteraction): Future<void> {
-    return withFollowUp(interaction)(() =>
+    return withFollowUp(interaction)(
       pipe(
         botStateService.discordSetActivityFromDb(),
         Future.map(() => 'Activity refreshed'),
@@ -428,13 +426,11 @@ export const AdminCommandsObserver = (
    * Helpers
    */
 
-  function withFollowUp(
-    interaction: CommandInteraction,
-  ): (f: () => Future<string>) => Future<void> {
+  function withFollowUp(interaction: CommandInteraction): (f: Future<string>) => Future<void> {
     return f =>
       pipe(
         DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
-        Future.chain(() => f()),
+        Future.chain(() => f),
         Future.chain(content =>
           DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
         ),

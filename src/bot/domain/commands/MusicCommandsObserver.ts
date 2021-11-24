@@ -35,27 +35,24 @@ export const MusicCommandsObserver = (
         Future.map(() => guildStateService.getSubscription(guild)),
         Future.chain(Future.fromIOEither),
         futureMaybe.alt(() => createSubscriptionIfVoiceChannel(guild, interaction)),
-        Future.chain(
-          Maybe.fold(
-            () =>
-              pipe(
-                DiscordConnector.interactionFollowUp(interaction, {
-                  content: 'Join a voice channel and then try that again!',
-                  ephemeral: true,
-                }),
-                Future.map(() => {}),
+        futureMaybe.matchE(
+          () =>
+            pipe(
+              DiscordConnector.interactionFollowUp(interaction, {
+                content: 'Join a voice channel and then try that again!',
+                ephemeral: true,
+              }),
+            ),
+          subscription =>
+            pipe(
+              subscription.playSong(),
+              Future.fromIOEither,
+              Future.chain(() =>
+                DiscordConnector.interactionFollowUp(interaction, 'Playing song.'),
               ),
-            subscription =>
-              pipe(
-                subscription.playSong(),
-                Future.fromIOEither,
-                Future.chain(() =>
-                  DiscordConnector.interactionFollowUp(interaction, 'Playing song.'),
-                ),
-                Future.map(() => {}),
-              ),
-          ),
+            ),
         ),
+        Future.map(() => {}),
       )
     },
   }

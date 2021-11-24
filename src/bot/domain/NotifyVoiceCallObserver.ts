@@ -2,7 +2,7 @@ import type { GuildMember, StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
-import { Future, IO, Maybe } from '../../shared/utils/fp'
+import { Future, IO } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import type { MadEventPublicCallEnded, MadEventPublicCallStarted } from '../models/events/MadEvent'
@@ -44,12 +44,9 @@ export const NotifyVoiceCallObserver = (
             calls.channel,
             `Ha ha ! **@${member.displayName}** appelle ${channel}... ${calls.role} doit payer !`,
           ),
-          Future.map(
-            Maybe.fold(
-              () =>
-                log('warn', `Couldn't send call started notification in #${calls.channel.name}`),
-              () => IO.unit,
-            ),
+          futureMaybe.match(
+            () => log('warn', `Couldn't send call started notification in #${calls.channel.name}`),
+            () => IO.unit,
           ),
           Future.chain(Future.fromIOEither),
         ),
@@ -70,11 +67,9 @@ export const NotifyVoiceCallObserver = (
       futureMaybe.chainFuture(calls =>
         pipe(
           DiscordConnector.sendMessage(calls.channel, `Un appel s'est terminé.`),
-          Future.map(
-            Maybe.fold(
-              () => log('warn', `Couldn't send call ended notification in #${calls.channel.name}`),
-              () => IO.unit,
-            ),
+          futureMaybe.match(
+            () => log('warn', `Couldn't send call ended notification in #${calls.channel.name}`),
+            () => IO.unit,
           ),
           Future.chain(Future.fromIOEither),
         ),
