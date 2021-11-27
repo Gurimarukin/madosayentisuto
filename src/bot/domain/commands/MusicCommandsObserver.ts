@@ -1,15 +1,16 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
-import type { CommandInteraction, Guild } from 'discord.js'
+import type { CommandInteraction, StageChannel, VoiceChannel } from 'discord.js'
 import { GuildMember } from 'discord.js'
+import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { Future, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import { MusicSubscription } from '../../helpers/music/MusicSubscription'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
+import { Track } from '../../models/music/Track'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { GuildStateService } from '../../services/GuildStateService'
 
@@ -30,49 +31,36 @@ export const MusicCommandsObserver = (
         return Future.unit
       }
 
+      const track = Track.wrap(
+        'https://cdn.discordapp.com/attachments/849299103362973777/913098049407037500/he_looks_familiar....mp3',
+      )
       return pipe(
         DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
-        Future.map(() => guildStateService.getSubscription(guild)),
-        Future.chain(Future.fromIOEither),
-        futureMaybe.alt(() => createSubscriptionIfVoiceChannel(guild, interaction)),
+        Future.chain(() =>
+          apply.sequenceS(futureMaybe.ApplyPar)({
+            channel: Future.right(maybeVoiceChannel(interaction)),
+            subscription: pipe(guildStateService.getSubscription(guild), Future.map(Maybe.some)),
+          }),
+        ),
+        futureMaybe.map(({ channel, subscription }) => subscription.playTrack(channel, track)),
+        futureMaybe.chainFuture(Future.fromIOEither),
         futureMaybe.matchE(
           () =>
-            pipe(
-              DiscordConnector.interactionFollowUp(interaction, {
-                content: 'Join a voice channel and then try that again!',
-                ephemeral: true,
-              }),
-            ),
-          subscription =>
-            pipe(
-              subscription.playSong(),
-              Future.fromIOEither,
-              Future.chain(() =>
-                DiscordConnector.interactionFollowUp(interaction, 'Playing song.'),
-              ),
-            ),
+            DiscordConnector.interactionFollowUp(interaction, {
+              content: 'Join a voice channel and then try that again!',
+              ephemeral: true,
+            }),
+          () => DiscordConnector.interactionFollowUp(interaction, 'Playing song.'),
         ),
         Future.map(() => {}),
       )
     },
   }
 
-  function createSubscriptionIfVoiceChannel(
-    guild: Guild,
-    interaction: CommandInteraction,
-  ): Future<Maybe<MusicSubscription>> {
-    if (!(interaction.member instanceof GuildMember) || interaction.member.voice.channel === null) {
-      return Future.right(Maybe.none)
-    }
-
-    const channel = interaction.member.voice.channel
-
-    return pipe(
-      MusicSubscription(Logger, channel),
-      Future.fromIOEither,
-      Future.chainFirst(subscription => guildStateService.setSubscription(guild, subscription)),
-      Future.map(Maybe.some),
-    )
+  function maybeVoiceChannel(interaction: CommandInteraction): Maybe<VoiceChannel | StageChannel> {
+    return interaction.member instanceof GuildMember
+      ? Maybe.fromNullable(interaction.member.voice.channel)
+      : Maybe.none
   }
 }
 

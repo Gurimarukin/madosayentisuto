@@ -1,108 +1,197 @@
-import type { AudioPlayerEvents, PlayerSubscription, VoiceConnectionEvents } from '@discordjs/voice'
+import type { AudioPlayerEvents, VoiceConnectionEvents } from '@discordjs/voice'
 import { VoiceConnectionStatus } from '@discordjs/voice'
 import { createAudioPlayer, joinVoiceChannel } from '@discordjs/voice'
-import type { StageChannel, VoiceChannel } from 'discord.js'
+import type { Guild, StageChannel, VoiceChannel } from 'discord.js'
 import { apply, refinement } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 
+import { List } from '../../../shared/utils/fp'
 import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
 import { Store } from '../../models/Store'
+import type {
+  MusicEventConnectionConnecting,
+  MusicEventConnectionDestroyed,
+  MusicEventConnectionDisconnected,
+  MusicEventConnectionReady,
+  MusicEventConnectionSignalling,
+} from '../../models/events/MusicEvent'
 import { MusicEvent } from '../../models/events/MusicEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
+import type { MusicStateConnected } from '../../models/music/MusicState'
+import { MusicState } from '../../models/music/MusicState'
+import type { Track } from '../../models/music/Track'
 import { PubSub } from '../../models/rx/PubSub'
-import type { TObservable } from '../../models/rx/TObservable'
 import type { TObserver } from '../../models/rx/TObserver'
-import type { TSubject } from '../../models/rx/TSubject'
 import { PubSubUtils } from '../../utils/PubSubUtils'
 import { DiscordConnector } from '../DiscordConnector'
 
 const { or } = PubSubUtils
 
-export type MusicSubscription = {
-  readonly observable: TObservable<MusicEvent>
-  readonly subject: TSubject<MusicEvent>
-  readonly playSong: () => IO<void>
-  readonly stringify: () => string
-}
+type MyChannel = VoiceChannel | StageChannel
 
-export const MusicSubscription = (
-  Logger: LoggerGetter,
-  channel: VoiceChannel | StageChannel,
-): IO<MusicSubscription> => {
-  const logger = Logger(`MusicSubscription-${channel.guild.name}`)
+export type MusicSubscription = ReturnType<typeof MusicSubscription>
 
-  const { observable, subject } = PubSub<MusicEvent>()
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
+  const logger = Logger(`MusicSubscription-${guild.name}`)
 
-  const voiceConnection = joinVoiceChannel({
-    channelId: channel.id,
-    guildId: channel.guild.id,
-    adapterCreator: channel.guild.voiceAdapterCreator,
-  })
+  const state = Store<MusicState>(MusicState.Disconnected())
 
-  const connectionPub = PubSubUtils.publishOn<VoiceConnectionEvents, MusicEvent>(
-    voiceConnection,
-    subject.next,
-  )
-  const connectionPublish = apply.sequenceT(IO.ApplyPar)(
-    connectionPub('error', MusicEvent.ConnectionError),
-    connectionPub(VoiceConnectionStatus.Ready, MusicEvent.VoiceConnectionReady),
-  )
+  const queue = Store<List<Track>>(List.empty)
 
-  const audioPlayer = createAudioPlayer()
+  return { playTrack, stringify }
 
-  const playerPub = PubSubUtils.publishOn<AudioPlayerEvents, MusicEvent>(audioPlayer, subject.next)
-  const playerPublish = apply.sequenceT(IO.ApplyPar)(playerPub('error', MusicEvent.PlayerError))
+  function playTrack(channel: MyChannel, track: Track): IO<void> {
+    if (channel.guild.id !== guild.id) return IO.left(Error('Called playSong with a wrong guild'))
 
-  const subscriptionStore = Store<Maybe<PlayerSubscription>>(Maybe.none)
+    return pipe(
+      queue.update(List.append(track)),
+      IO.chain(() => state.get),
+      IO.chain(s => {
+        switch (s.type) {
+          case 'Disconnected':
+            return connect(channel)
 
-  const sub = PubSubUtils.subscribe(logger, observable)
-  const subscribe = sub(observer(), or(refinement.id()))
+          case 'Connecting':
+            return IO.unit // TODO: this shouldn't happen very often, but should we handle it?
 
-  return pipe(
-    apply.sequenceT(IO.ApplyPar)(connectionPublish, playerPublish, subscribe),
-    IO.map(() => ({ observable, subject, playSong, stringify })),
-  )
+          case 'Connected':
+            return IO.left(Error('TODO'))
+        }
+      }),
+    )
+  }
 
-  function playSong(): IO<void> {
-    return logger.debug('playSong')
+  function connect(channel: MyChannel): IO<void> {
+    const { observable, subject } = PubSub<MusicEvent>()
+
+    const voiceConnection = joinVoiceChannel({
+      channelId: channel.id,
+      guildId: channel.guild.id,
+      adapterCreator: channel.guild.voiceAdapterCreator,
+    })
+
+    const connectionPub = PubSubUtils.publishOn<VoiceConnectionEvents, MusicEvent>(
+      voiceConnection,
+      subject.next,
+    )
+    const connectionPublish = apply.sequenceT(IO.ApplyPar)(
+      connectionPub('error', MusicEvent.ConnectionError),
+      connectionPub(VoiceConnectionStatus.Signalling, MusicEvent.ConnectionSignalling),
+      connectionPub(VoiceConnectionStatus.Connecting, MusicEvent.ConnectionConnecting),
+      connectionPub(VoiceConnectionStatus.Ready, MusicEvent.ConnectionReady),
+      connectionPub(VoiceConnectionStatus.Disconnected, MusicEvent.ConnectionDisconnected),
+      connectionPub(VoiceConnectionStatus.Destroyed, MusicEvent.ConnectionDestroyed),
+    )
+
+    const audioPlayer = createAudioPlayer()
+
+    const playerPub = PubSubUtils.publishOn<AudioPlayerEvents, MusicEvent>(
+      audioPlayer,
+      subject.next,
+    )
+    const playerPublish = apply.sequenceT(IO.ApplyPar)(playerPub('error', MusicEvent.PlayerError))
+
+    const sub = PubSubUtils.subscribe(logger, observable)
+    const subscribe = sub(observer(), or(refinement.id()))
+
+    return sequenceTPar(
+      connectionPublish,
+      playerPublish,
+      subscribe,
+      state.set(MusicState.Connecting(channel, voiceConnection, audioPlayer)),
+    )
   }
 
   function observer(): TObserver<MusicEvent> {
     return {
-      next: event => {
+      next: flow(event => {
         switch (event.type) {
           case 'ConnectionError':
           case 'PlayerError':
-            return Future.fromIOEither(logger.warn(event.type, event.error))
+            return logger.warn(event.type, event.error)
 
-          case 'VoiceConnectionReady':
-            return onVoiceConnectionReady()
+          case 'ConnectionReady':
+            return onConnectionReady()
+
+          case 'ConnectionSignalling':
+          case 'ConnectionConnecting':
+          case 'ConnectionDisconnected':
+          case 'ConnectionDestroyed':
+            return onConnectionStateChange(event)
         }
-      },
+      }, Future.fromIOEither),
     }
   }
 
-  function onVoiceConnectionReady(): Future<void> {
+  function onConnectionReady(): IO<void> {
     return pipe(
-      DiscordConnector.connectionSubscribe(voiceConnection, audioPlayer),
-      IO.chainFirst(subscriptionStore.set),
-      IO.chain(
-        Maybe.fold(
-          () => logger.warn('Subscription failed'),
-          () =>
-            DiscordConnector.playerPlayArbitrary(
-              audioPlayer,
-              // 'https://dl.blbl.ch/champion_select.mp3',
-              'https://cdn.discordapp.com/attachments/849299103362973777/913098049407037500/he_looks_familiar....mp3',
-            ),
-        ),
-      ),
-      Future.fromIOEither,
+      state.get,
+      IO.chain(s => {
+        switch (s.type) {
+          case 'Disconnected':
+          case 'Connected':
+            return logger.warn(`Inconsistent state: onConnectionReady while state was ${s.type}`)
+
+          case 'Connecting':
+            return pipe(
+              IO.Do,
+              IO.bind('subscription', () =>
+                DiscordConnector.connectionSubscribe(s.voiceConnection, s.audioPlayer),
+              ),
+              IO.bind('connected', ({ subscription }) =>
+                IO.right(MusicState.Connected(s.audioPlayer, subscription)),
+              ),
+              IO.chainFirst(({ connected }) => state.set(connected)),
+              IO.chain(({ subscription, connected }) =>
+                pipe(
+                  subscription,
+                  Maybe.fold(
+                    () => logger.error('Subscription failed'),
+                    () => playSongFromState(connected),
+                  ),
+                ),
+              ),
+            )
+        }
+      }),
     )
   }
 
+  function playSongFromState({ audioPlayer }: MusicStateConnected): IO<void> {
+    return pipe(
+      queue.get,
+      IO.chain(
+        List.matchLeft(
+          () =>
+            // TODO: disconnect? Or maybe in onConnectionReady?
+            IO.unit,
+          head => DiscordConnector.playerPlayArbitrary(audioPlayer, head),
+        ),
+      ),
+    )
+  }
+
+  function onConnectionStateChange({
+    type,
+    oldState,
+    newState,
+  }:
+    | MusicEventConnectionSignalling
+    | MusicEventConnectionConnecting
+    | MusicEventConnectionReady
+    | MusicEventConnectionDisconnected
+    | MusicEventConnectionDestroyed): IO<void> {
+    return logger.debug(`✉️  ${type} ${oldState.status} > ${newState.status}`)
+  }
+
   function stringify(): string {
-    return `<MusicSubscription[${channel.guild.name}]>`
+    return `<MusicSubscription[${guild.name}]>`
   }
 }
+
+const sequenceTPar = flow(
+  apply.sequenceT(IO.ApplyPar),
+  IO.map(() => {}),
+)

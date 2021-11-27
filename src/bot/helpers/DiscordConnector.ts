@@ -52,6 +52,7 @@ import { TSnowflake } from '../models/TSnowflake'
 import type { Activity } from '../models/botState/Activity'
 import { CommandId } from '../models/commands/CommandId'
 import { PutCommandResult } from '../models/commands/PutCommandResult'
+import { Track } from '../models/music/Track'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { decodeError } from '../utils/decodeError'
 
@@ -270,9 +271,11 @@ const messageEdit = (
   options: string | MessagePayload | MessageOptions,
 ): Future<Message> => Future.tryCatch(() => message.edit(options))
 
-const playerPlayArbitrary = (player: AudioPlayer, url: string): IO<void> =>
+const playerPlayArbitrary = (player: AudioPlayer, track: Track): IO<void> =>
   pipe(
-    IO.tryCatch(() => createAudioResource(url, { inputType: StreamType.Arbitrary })),
+    IO.tryCatch(() =>
+      createAudioResource(Track.unwrap(track), { inputType: StreamType.Arbitrary }),
+    ),
     IO.chain(resource => IO.tryCatch(() => player.play(resource))),
   )
 
