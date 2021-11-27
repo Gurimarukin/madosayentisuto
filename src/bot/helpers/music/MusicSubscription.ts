@@ -1,4 +1,5 @@
 import type { AudioPlayerEvents, VoiceConnectionEvents } from '@discordjs/voice'
+import { AudioPlayerStatus } from '@discordjs/voice'
 import { VoiceConnectionStatus } from '@discordjs/voice'
 import { createAudioPlayer, joinVoiceChannel } from '@discordjs/voice'
 import type { Guild, StageChannel, VoiceChannel } from 'discord.js'
@@ -10,11 +11,8 @@ import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
 import { Store } from '../../models/Store'
 import type {
-  MusicEventConnectionConnecting,
-  MusicEventConnectionDestroyed,
-  MusicEventConnectionDisconnected,
   MusicEventConnectionReady,
-  MusicEventConnectionSignalling,
+  MusicEventPlayerIdle,
 } from '../../models/events/MusicEvent'
 import { MusicEvent } from '../../models/events/MusicEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
@@ -91,10 +89,20 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
       audioPlayer,
       subject.next,
     )
-    const playerPublish = apply.sequenceT(IO.ApplyPar)(playerPub('error', MusicEvent.PlayerError))
+    const playerPublish = apply.sequenceT(IO.ApplyPar)(
+      playerPub('error', MusicEvent.PlayerError),
+      playerPub(AudioPlayerStatus.Idle, MusicEvent.PlayerIdle),
+      playerPub(AudioPlayerStatus.Buffering, MusicEvent.PlayerBuffering),
+      playerPub(AudioPlayerStatus.Paused, MusicEvent.PlayerPaused),
+      playerPub(AudioPlayerStatus.Playing, MusicEvent.PlayerPlaying),
+      playerPub(AudioPlayerStatus.AutoPaused, MusicEvent.PlayerAutoPaused),
+    )
 
     const sub = PubSubUtils.subscribe(logger, observable)
-    const subscribe = sub(observer(), or(refinement.id()))
+    const subscribe = apply.sequenceT(IO.ApplyPar)(
+      sub(loggerObserver(), or(refinement.id())),
+      sub(lifecycleObserver(), or(MusicEvent.is('ConnectionReady'), MusicEvent.is('PlayerIdle'))),
+    )
 
     return sequenceTPar(
       connectionPublish,
@@ -104,22 +112,15 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     )
   }
 
-  function observer(): TObserver<MusicEvent> {
+  function lifecycleObserver(): TObserver<MusicEventConnectionReady | MusicEventPlayerIdle> {
     return {
       next: flow(event => {
         switch (event.type) {
-          case 'ConnectionError':
-          case 'PlayerError':
-            return logger.warn(event.type, event.error)
-
           case 'ConnectionReady':
             return onConnectionReady()
 
-          case 'ConnectionSignalling':
-          case 'ConnectionConnecting':
-          case 'ConnectionDisconnected':
-          case 'ConnectionDestroyed':
-            return onConnectionStateChange(event)
+          case 'PlayerIdle':
+            return IO.unit // TODO
         }
       }, Future.fromIOEither),
     }
@@ -173,17 +174,30 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     )
   }
 
-  function onConnectionStateChange({
-    type,
-    oldState,
-    newState,
-  }:
-    | MusicEventConnectionSignalling
-    | MusicEventConnectionConnecting
-    | MusicEventConnectionReady
-    | MusicEventConnectionDisconnected
-    | MusicEventConnectionDestroyed): IO<void> {
-    return logger.debug(`✉️  ${type} ${oldState.status} > ${newState.status}`)
+  function loggerObserver(): TObserver<MusicEvent> {
+    return {
+      next: flow(event => {
+        switch (event.type) {
+          case 'ConnectionError':
+          case 'PlayerError':
+            return logger.warn(event.type, event.error)
+
+          case 'ConnectionSignalling':
+          case 'ConnectionConnecting':
+          case 'ConnectionReady':
+          case 'ConnectionDisconnected':
+          case 'ConnectionDestroyed':
+
+          case 'PlayerIdle':
+          case 'PlayerBuffering':
+          case 'PlayerPaused':
+          case 'PlayerPlaying':
+          case 'PlayerAutoPaused':
+            const { type, oldState, newState } = event
+            return logger.debug(`✉️  ${type} ${oldState.status} > ${newState.status}`)
+        }
+      }, Future.fromIOEither),
+    }
   }
 
   function stringify(): string {
