@@ -18,7 +18,12 @@ type UnionResult<T extends UnionDescription> = {
   readonly is: <NAME extends keyof T>(
     name: NAME,
   ) => <U extends Union<T>>(other: U) => other is ReturnType<T[NAME]> & { readonly type: NAME }
+  readonly match: <B>(m: Match<T, B>) => (u: Union<T>) => B
 } & { readonly [K in keyof T]: Factory<T[K], K> & { readonly T: ReturnType<Factory<T[K], K>> } }
+
+type Match<T extends UnionDescription, B> = {
+  readonly [K in keyof T]: (a: Omit<ReturnType<Factory<T[K], K>>, 'type'>) => B
+}
 
 type Factory<F extends (...args: List<any>) => any, TYPE> = (
   ...args: Parameters<F>
@@ -55,8 +60,14 @@ export function createUnion<D extends UnionDescription>(
     return isCache[type]
   }
 
+  const match =
+    <B>(m: Match<D, B>) =>
+    ({ type, ...rest }: Union<D>): B =>
+      m[type](rest as any)
+
   return {
     ...factories,
     is,
+    match,
   } as any
 }
