@@ -93,8 +93,8 @@ export const MusicSubscription = (
           () =>
             DiscordConnector.playerPlayArbitrary(
               audioPlayer,
-              'https://dl.blbl.ch/champion_select.mp3',
-              // 'https://cdn.discordapp.com/attachments/849299103362973777/913098049407037500/he_looks_familiar....mp3',
+              // 'https://dl.blbl.ch/champion_select.mp3',
+              'https://cdn.discordapp.com/attachments/849299103362973777/913098049407037500/he_looks_familiar....mp3',
             ),
         ),
       ),
