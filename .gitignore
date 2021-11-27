@@ -1,4 +1,6 @@
 /dist
+/.docker-data
 /node_modules
 /.eslintcache
 /dependencygraph.svg
+/dependencygraph.html

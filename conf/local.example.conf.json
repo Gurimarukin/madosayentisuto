@@ -1,5 +1,8 @@
 {
-  "clientSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "client": {
+    "id": "xxxxxxxxxxxxxxxxxx",
+    "secret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
   "admins": ["xxxxxxxxxxxxxxxxxx"],
   "logger": {
     "consoleLevel": "info",
@@ -9,7 +12,7 @@
     }
   },
   "db": {
-    "host": "localhost:27017",
+    "host": "localhost:27018",
     "dbName": "madosayentisuto",
     "user": "user",
     "password": "password"

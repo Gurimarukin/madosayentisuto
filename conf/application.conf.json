@@ -1,12 +1,14 @@
 {
-  "clientSecret": "",
   "admins": [],
-  "cmdPrefix": "okb",
   "logger": {
     "consoleLevel": "info",
     "discordDM": {
       "level": "warn",
       "compact": true
     }
+  },
+  "captain": {
+    "mentions": ["jp", "jean", "plank", "capitaine"],
+    "thanks": ["merci", "mercis", "remercie", "remercier", "remerciement", "remerciements"]
   }
 }
