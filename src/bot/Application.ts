@@ -16,7 +16,7 @@ import { SetDefaultRoleObserver } from './domain/SetDefaultRoleObserver'
 import { TextInteractionsObserver } from './domain/TextInteractionsObserver'
 import { AdminCommandsObserver } from './domain/commands/AdminCommandsObserver'
 import { MusicCommandsObserver } from './domain/commands/MusicCommandsObserver'
-import { PingObserver } from './domain/commands/PingCommandObserver'
+import { OtherCommandsObserver } from './domain/commands/OtherCommandsObserver'
 import { DeployCommandsObserver } from './domain/startup/DeployCommandsObserver'
 import { IndexesEnsureObserver } from './domain/startup/IndexesEnsureObserver'
 import type { DiscordConnector } from './helpers/DiscordConnector'
@@ -84,7 +84,7 @@ export const Application = (
         or(MadEvent.is('InteractionCreate')),
       ),
       sub(MusicCommandsObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),
-      sub(PingObserver(), or(MadEvent.is('InteractionCreate'))),
+      sub(OtherCommandsObserver(), or(MadEvent.is('InteractionCreate'))),
 
       // │  └ startup/
       sub(
