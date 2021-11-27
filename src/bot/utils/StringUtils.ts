@@ -1,8 +1,9 @@
+import { random } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { MsDuration } from '../../shared/models/MsDuration'
-import type { List, Tuple } from '../../shared/utils/fp'
-import { Maybe } from '../../shared/utils/fp'
+import type { NonEmptyArray, Tuple } from '../../shared/utils/fp'
+import { List, Maybe } from '../../shared/utils/fp'
 
 const margin = /^\s*\|/gm
 const stripMargins = (str: string): string => str.replace(margin, '')
@@ -49,6 +50,36 @@ const pad10 = (n: number): string => (n < 10 ? `0${n}` : `${n}`)
 
 const pad100 = (n: number): string => (n < 10 ? `00${n}` : n < 100 ? `0${n}` : `${n}`)
 
+const isUnicodeLetter = (c: string): boolean => c.toLowerCase() !== c.toUpperCase()
+const isUpperCase = (c: string): boolean => c.toUpperCase() === c
+const isLowerCase = (c: string): boolean => c.toLowerCase() === c
+
+const upperOrLower: NonEmptyArray<(c: string) => string> = [
+  c => c.toUpperCase(),
+  c => c.toLowerCase(),
+]
+const randomCaseChar = (c: string): string => random.randomElem(upperOrLower)()(c)
+
+const randomCase = (str: string): string =>
+  pipe(
+    str.split(''),
+    List.reduce('', (acc, c) => {
+      if (!isUnicodeLetter(c)) return acc + c
+
+      if (acc.length < 2) return acc + randomCaseChar(c)
+
+      const a = acc.charAt(acc.length - 2)
+      const b = acc.charAt(acc.length - 1)
+
+      if (!isUnicodeLetter(a) || !isUnicodeLetter(b)) return acc + randomCaseChar(c)
+
+      if (isUpperCase(a) && isUpperCase(b)) return acc + c.toLowerCase()
+      if (isLowerCase(a) && isLowerCase(b)) return acc + c.toUpperCase()
+
+      return acc + randomCaseChar(c)
+    }),
+  )
+
 export const StringUtils = {
   ellipse,
   isEmpty,
@@ -59,5 +90,6 @@ export const StringUtils = {
   pad10,
   pad100,
   prettyMs,
+  randomCase,
   stripMargins,
 }
