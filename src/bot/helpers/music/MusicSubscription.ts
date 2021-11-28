@@ -15,6 +15,7 @@ import type {
   TextBasedChannels,
   VoiceChannel,
 } from 'discord.js'
+import { MessageAttachment } from 'discord.js'
 import { MessageActionRow, MessageButton } from 'discord.js'
 import { apply, refinement } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
@@ -24,7 +25,7 @@ import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { List } from '../../../shared/utils/fp'
 import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
-import { Colors, constants } from '../../constants'
+import { constants } from '../../constants'
 import { Store } from '../../models/Store'
 import type {
   MusicEventConnectionReady,
@@ -75,16 +76,15 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     return pipe(
       state.update(MusicState.queueTrack(track)),
       Future.fromIOEither,
+      Future.chainFirst(refreshMessage),
       Future.chain(newState => {
         switch (newState.type) {
           case 'Disconnected':
             return connect(musicChannel, stateChannel)
 
           case 'Connecting':
-            return Future.unit // TODO: this shouldn't happen very often, but should we handle it?
-
           case 'Connected':
-            return Future.error('TODO')
+            return Future.unit
         }
       }),
     )
@@ -324,7 +324,7 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
 
 const messages = {
   connecting: MessageUtils.singleSafeEmbed({
-    color: Colors.darkred,
+    color: 'RANDOM',
     description: 'Chargement...',
   }),
 
@@ -332,59 +332,102 @@ const messages = {
     playing: Maybe<Track>,
     queue: List<Track>,
     // isPlaying: boolean,
-  ): MyMessageOptions => ({
-    embeds: [
-      MessageUtils.safeEmbed({
-        color: 'RANDOM',
-        // title: 'DJean Plank',
-        thumbnail: MessageUtils.thumbnail(
-          // 'https://cdn.discordapp.com/attachments/849299103362973777/914515868791242752/unknown.png', // Photo de profil de Jean Plank
-          // 'https://cdn.discordapp.com/attachments/636626556734930948/755886935796351106/jp-mefian.gif', // JP méfian
-          'https://djfrenchy.com/wp-content/uploads/2015/04/dj-sexy-clubbing.jpg', // DJ
-        ),
-        image: pipe(
-          playing,
-          Maybe.chain(t => t.thumbnail),
-          Maybe.getOrElse(
-            () =>
-              'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
-          ),
-          MessageUtils.image,
-        ),
-        fields: [
-          MessageUtils.field(
-            'Morceau en cours :',
-            pipe(
-              playing,
-              Maybe.fold(
-                () => 'Aucun morceau en cours.',
-                t => maskedLink(t.title, t.url),
-              ),
-            ),
-          ),
-          MessageUtils.field(
-            "File d'attente :",
-            pipe(
-              queue,
-              List.match(
-                () => `Aucun morceau dans la file d'attente.\n("/play <url>" pour en ajouter)`,
-                flow(
-                  List.map(t => `• ${maskedLink(t.title, t.url)}`),
-                  StringUtils.mkString('\n'),
+  ): MyMessageOptions => {
+    const attachment = pipe(
+      playing,
+      Maybe.chain(t => t.thumbnail),
+      Maybe.getOrElse(
+        () =>
+          'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
+      ),
+      url => new MessageAttachment(url),
+    )
+    console.log('attachment =', attachment)
+    return {
+      embeds: [
+        // MessageUtils.safeEmbed({
+        //   color: 'RANDOM',
+        //   fields: [],
+        //   image: pipe(
+        //     playing,
+        //     Maybe.chain(t => t.thumbnail),
+        //     Maybe.getOrElse(
+        //       () =>
+        //         'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
+        //     ),
+        //     i => MessageUtils.image(i, 120, 120),
+        //   ),
+        // }),
+        MessageUtils.safeEmbed({
+          color: 'RANDOM',
+          // title: 'DJean Plank',
+          thumbnail: MessageUtils.thumbnail('https://i.imgur.com/AfFp7pu.png', 120, 120),
+          // pipe(
+          //   playing,
+          //   Maybe.chain(t => t.thumbnail),
+          //   Maybe.getOrElse(
+          //     () =>
+          //       'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
+          //   ),
+          //   MessageUtils.thumbnail,
+          // ),
+          // MessageUtils.thumbnail(
+          //   // 'https://cdn.discordapp.com/attachments/849299103362973777/914515868791242752/unknown.png', // Photo de profil de Jean Plank
+          //   // 'https://cdn.discordapp.com/attachments/636626556734930948/755886935796351106/jp-mefian.gif', // JP méfian
+          //   // 'https://djfrenchy.com/wp-content/uploads/2015/04/dj-sexy-clubbing.jpg', // DJ
+          //   'https://i.imgur.com/lBrj5I6.gif', // DJ Jean Plank vers la droite
+          // ),
+          fields: [
+            MessageUtils.field(
+              'Morceau en cours :',
+              pipe(
+                playing,
+                Maybe.fold(
+                  () => 'Aucun morceau en cours.',
+                  t => maskedLink(t.title, t.url),
                 ),
               ),
             ),
+            MessageUtils.field(),
+            MessageUtils.field(
+              "File d'attente :",
+              pipe(
+                queue,
+                List.match(
+                  () => `Aucun morceau dans la file d'attente.\n("/play <url>" pour en ajouter)`,
+                  flow(
+                    List.map(t => `• ${maskedLink(t.title, t.url)}`),
+                    StringUtils.mkString('\n'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          image: MessageUtils.image('https://i.imgur.com/lBrj5I6.gif'),
+          // pipe(
+          //   playing,
+          //   Maybe.chain(t => t.thumbnail),
+          //   Maybe.getOrElse(
+          //     () =>
+          //       'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
+          //   ),
+          //   MessageUtils.image,
+          // ),
+          video: MessageUtils.video(
+            'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
           ),
-        ],
-      }),
-    ],
-    components: [
-      new MessageActionRow().addComponents(
-        // isPlaying ? pauseButton : playButton,
-        nextButton,
-      ),
-    ],
-  }),
+          timestamp: new Date(),
+        }),
+      ],
+      components: [
+        new MessageActionRow().addComponents(
+          // isPlaying ? pauseButton : playButton,
+          nextButton,
+        ),
+      ],
+      attachments: [attachment],
+    }
+  },
 }
 
 const button = (

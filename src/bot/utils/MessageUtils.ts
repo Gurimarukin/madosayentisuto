@@ -6,6 +6,7 @@ import type {
   MessageEmbedImage,
   MessageEmbedOptions,
   MessageEmbedThumbnail,
+  MessageEmbedVideo,
   MessageOptions,
 } from 'discord.js'
 import { pipe } from 'fp-ts/function'
@@ -29,7 +30,10 @@ type MyImage = Partial<MessageEmbedImage> & {
   readonly _tag: 'Image'
   readonly proxy_url?: string
 }
-// type MyVideo = Partial<MessageEmbedVideo> & { _tag: 'Video', readonly proxy_url?: string }
+type MyVideo = Partial<MessageEmbedVideo> & {
+  readonly _tag: 'Video'
+  readonly proxy_url?: string
+}
 
 type MessageEmbedArgs = {
   readonly title?: string
@@ -43,7 +47,8 @@ type MessageEmbedArgs = {
   }
   readonly thumbnail?: MyThumbnail
   readonly image?: MyImage
-  // readonly video?: MyVideo
+  readonly video?: MyVideo
+  readonly timestamp?: Date
   readonly footer?: Partial<MessageEmbedFooter> & {
     readonly icon_url?: string
     readonly proxy_icon_url?: string
@@ -57,7 +62,7 @@ const safeEmbed = ({ title, fields, ...args }: MessageEmbedArgs): MessageEmbedOp
   fields: fields as EmbedFieldData[] | undefined,
 })
 
-const field = (name: string, value: string, inline?: boolean): EmbedFieldData => ({
+const field = (name = '\u200B', value = '\u200B', inline?: boolean): EmbedFieldData => ({
   name,
   value,
   inline,
@@ -75,8 +80,8 @@ const urlHeightWidthProxy =
 
 const thumbnail = urlHeightWidthProxy<MyThumbnail>()
 const image = urlHeightWidthProxy<MyImage>()
-// const video = urlHeightWidthProxy<MyVideo>()
+const video = urlHeightWidthProxy<MyVideo>()
 
 const singleSafeEmbed = (args: MessageEmbedArgs): MessageOptions => ({ embeds: [safeEmbed(args)] })
 
-export const MessageUtils = { safeEmbed, field, thumbnail, image, singleSafeEmbed }
+export const MessageUtils = { safeEmbed, field, thumbnail, image, video, singleSafeEmbed }

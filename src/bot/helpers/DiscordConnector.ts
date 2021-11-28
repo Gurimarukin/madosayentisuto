@@ -266,7 +266,11 @@ const messageDelete = (message: Message): Future<boolean> =>
   pipe(
     Future.tryCatch(() => message.delete()),
     Future.map(() => true),
-    Future.orElse(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
+    Future.orElse(e =>
+      isMissingPermissionsError(e) || isUnknownMessageError(e)
+        ? Future.right(false)
+        : Future.left(e),
+    ),
   )
 
 const messageEdit = (
@@ -427,6 +431,7 @@ const isDiscordAPIError =
     e instanceof DiscordAPIError && e.message === message
 
 const isMissingPermissionsError = isDiscordAPIError('Missing Permissions')
+const isUnknownMessageError = isDiscordAPIError('Unknown Message')
 
 const debugLeft = <A>(functionName: string): ((f: Future<A>) => Future<A>) =>
   Future.mapLeft(e => {
