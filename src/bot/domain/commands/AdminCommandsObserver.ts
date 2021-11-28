@@ -478,7 +478,7 @@ export const AdminCommandsObserver = (
 
   function deleteMessage(message: Message): Future<void> {
     return pipe(
-      DiscordConnector.deleteMessage(message),
+      DiscordConnector.messageDelete(message),
       Future.chainIOEitherK(deleted =>
         deleted
           ? IO.unit

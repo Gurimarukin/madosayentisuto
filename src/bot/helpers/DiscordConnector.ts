@@ -184,22 +184,12 @@ const addRole = (
     debugLeft('addRole'),
   )
 
-const connectionSubscribe = (
-  connection: VoiceConnection,
-  player: AudioPlayer,
-): IO<Maybe<PlayerSubscription>> =>
-  pipe(
-    IO.tryCatch(() => connection.subscribe(player)),
-    IO.map(Maybe.fromNullable),
-  )
+const audioPlayerCreate: IO<AudioPlayer> = IO.tryCatch(() => createAudioPlayer())
 
-const createAudioPlayer_: IO<AudioPlayer> = IO.tryCatch(() => createAudioPlayer())
-
-const deleteMessage = (message: Message): Future<boolean> =>
+const audioPlayerPlayArbitrary = (audioPlayer: AudioPlayer, track: Track): IO<void> =>
   pipe(
-    Future.tryCatch(() => message.delete()),
-    Future.map(() => true),
-    Future.orElse(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
+    IO.tryCatch(() => createAudioResource(track.url, { inputType: StreamType.Arbitrary })),
+    IO.chain(resource => IO.tryCatch(() => audioPlayer.play(resource))),
   )
 
 function entersState(
@@ -272,13 +262,11 @@ const interactionUpdate = (
   options: string | MessagePayload | InteractionUpdateOptions,
 ): Future<void> => Future.tryCatch(() => interaction.update(options))
 
-const joinVoiceChannel_ = (channel: VoiceChannel | StageChannel): IO<VoiceConnection> =>
-  IO.tryCatch(() =>
-    joinVoiceChannel({
-      channelId: channel.id,
-      guildId: channel.guild.id,
-      adapterCreator: channel.guild.voiceAdapterCreator,
-    }),
+const messageDelete = (message: Message): Future<boolean> =>
+  pipe(
+    Future.tryCatch(() => message.delete()),
+    Future.map(() => true),
+    Future.orElse(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
   )
 
 const messageEdit = (
@@ -286,13 +274,7 @@ const messageEdit = (
   options: string | MessagePayload | MessageOptions,
 ): Future<Message> => Future.tryCatch(() => message.edit(options))
 
-const playerPlayArbitrary = (audioPlayer: AudioPlayer, track: Track): IO<void> =>
-  pipe(
-    IO.tryCatch(() => createAudioResource(track.url, { inputType: StreamType.Arbitrary })),
-    IO.chain(resource => IO.tryCatch(() => audioPlayer.play(resource))),
-  )
-
-const removeRole = (
+const roleRemove = (
   member: GuildMember,
   roleOrRoles: RoleResolvable | List<RoleResolvable>,
   reason?: string,
@@ -355,6 +337,27 @@ const sendPrettyMessage = (
     embeds: [MessageUtils.safeEmbed({ color: Colors.darkred, description: message })],
   })
 
+const voiceConnectionDestroy = (connection: VoiceConnection): IO<void> =>
+  IO.tryCatch(() => connection.destroy())
+
+const voiceConnectionJoin = (channel: VoiceChannel | StageChannel): IO<VoiceConnection> =>
+  IO.tryCatch(() =>
+    joinVoiceChannel({
+      channelId: channel.id,
+      guildId: channel.guild.id,
+      adapterCreator: channel.guild.voiceAdapterCreator,
+    }),
+  )
+
+const voiceConnectionSubscribe = (
+  connection: VoiceConnection,
+  player: AudioPlayer,
+): IO<Maybe<PlayerSubscription>> =>
+  pipe(
+    IO.tryCatch(() => connection.subscribe(player)),
+    IO.map(Maybe.fromNullable),
+  )
+
 /**
  * DiscordConnector
  */
@@ -371,9 +374,8 @@ export const DiscordConnector = {
   hasRole,
 
   addRole,
-  connectionSubscribe,
-  createAudioPlayer: createAudioPlayer_,
-  deleteMessage,
+  audioPlayerCreate,
+  audioPlayerPlayArbitrary,
   entersState,
   guildCommandsPermissionsSet,
   interactionDeferReply,
@@ -382,13 +384,15 @@ export const DiscordConnector = {
   interactionFollowUp,
   interactionReply,
   interactionUpdate,
-  joinVoiceChannel: joinVoiceChannel_,
+  messageDelete,
   messageEdit,
-  playerPlayArbitrary,
-  removeRole,
   restPutApplicationGuildCommands,
+  roleRemove,
   sendMessage,
   sendPrettyMessage,
+  voiceConnectionDestroy,
+  voiceConnectionJoin,
+  voiceConnectionSubscribe,
 
   futureClient: (config: ClientConfig): Future<Client> =>
     Future.tryCatch(

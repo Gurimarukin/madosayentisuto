@@ -64,7 +64,7 @@ export const CallsAutoroleObserver = (
       !DiscordConnector.hasRole(member, calls.role)
         ? Future.right(true)
         : pipe(
-            DiscordConnector.removeRole(member, calls.role),
+            DiscordConnector.roleRemove(member, calls.role),
             Future.map(success => {
               const log = LogUtils.pretty(logger, guild)
               return success
