@@ -6,6 +6,7 @@ import type {
   VoiceConnection,
   VoiceConnectionStatus,
 } from '@discordjs/voice'
+import { createAudioPlayer, joinVoiceChannel } from '@discordjs/voice'
 import { StreamType, createAudioResource } from '@discordjs/voice'
 import { entersState as discordEntersState } from '@discordjs/voice'
 import type { APIMessage, RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
@@ -33,10 +34,12 @@ import type {
   PartialTextBasedChannelFields,
   Role,
   RoleResolvable,
+  StageChannel,
   TextChannel,
   User,
+  VoiceChannel,
 } from 'discord.js'
-import { Client, DiscordAPIError, Intents, MessageEmbed } from 'discord.js'
+import { Client, DiscordAPIError, Intents } from 'discord.js'
 import type { Separated } from 'fp-ts/Separated'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
@@ -52,8 +55,9 @@ import { TSnowflake } from '../models/TSnowflake'
 import type { Activity } from '../models/botState/Activity'
 import { CommandId } from '../models/commands/CommandId'
 import { PutCommandResult } from '../models/commands/PutCommandResult'
-import { Track } from '../models/music/Track'
+import type { Track } from '../models/music/Track'
 import { ChannelUtils } from '../utils/ChannelUtils'
+import { MessageUtils } from '../utils/MessageUtils'
 import { decodeError } from '../utils/decodeError'
 
 type NotPartial = {
@@ -189,6 +193,8 @@ const connectionSubscribe = (
     IO.map(Maybe.fromNullable),
   )
 
+const createAudioPlayer_: IO<AudioPlayer> = IO.tryCatch(() => createAudioPlayer())
+
 const deleteMessage = (message: Message): Future<boolean> =>
   pipe(
     Future.tryCatch(() => message.delete()),
@@ -266,17 +272,24 @@ const interactionUpdate = (
   options: string | MessagePayload | InteractionUpdateOptions,
 ): Future<void> => Future.tryCatch(() => interaction.update(options))
 
+const joinVoiceChannel_ = (channel: VoiceChannel | StageChannel): IO<VoiceConnection> =>
+  IO.tryCatch(() =>
+    joinVoiceChannel({
+      channelId: channel.id,
+      guildId: channel.guild.id,
+      adapterCreator: channel.guild.voiceAdapterCreator,
+    }),
+  )
+
 const messageEdit = (
   message: Message,
   options: string | MessagePayload | MessageOptions,
 ): Future<Message> => Future.tryCatch(() => message.edit(options))
 
-const playerPlayArbitrary = (player: AudioPlayer, track: Track): IO<void> =>
+const playerPlayArbitrary = (audioPlayer: AudioPlayer, track: Track): IO<void> =>
   pipe(
-    IO.tryCatch(() =>
-      createAudioResource(Track.unwrap(track), { inputType: StreamType.Arbitrary }),
-    ),
-    IO.chain(resource => IO.tryCatch(() => player.play(resource))),
+    IO.tryCatch(() => createAudioResource(track.url, { inputType: StreamType.Arbitrary })),
+    IO.chain(resource => IO.tryCatch(() => audioPlayer.play(resource))),
   )
 
 const removeRole = (
@@ -339,10 +352,7 @@ const sendPrettyMessage = (
 ): Future<Maybe<Message>> =>
   sendMessage(channel, {
     ...options,
-    embeds: [
-      new MessageEmbed().setColor(Colors.darkred).setDescription(message),
-      ...(options.embeds ?? []),
-    ],
+    embeds: [MessageUtils.safeEmbed({ color: Colors.darkred, description: message })],
   })
 
 /**
@@ -362,6 +372,7 @@ export const DiscordConnector = {
 
   addRole,
   connectionSubscribe,
+  createAudioPlayer: createAudioPlayer_,
   deleteMessage,
   entersState,
   guildCommandsPermissionsSet,
@@ -371,6 +382,7 @@ export const DiscordConnector = {
   interactionFollowUp,
   interactionReply,
   interactionUpdate,
+  joinVoiceChannel: joinVoiceChannel_,
   messageEdit,
   playerPlayArbitrary,
   removeRole,

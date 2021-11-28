@@ -25,7 +25,7 @@ export const getInitCallsMessage = (
         .setCustomId(callsButton.subscribeId)
         .setLabel("S'abonner aux appels")
         .setStyle('PRIMARY')
-        .setEmoji(constants.callsEmoji),
+        .setEmoji(constants.emojis.calls),
       new MessageButton()
         .setCustomId(callsButton.unsubscribeId)
         .setLabel(' ̶S̶e̶ ̶d̶é̶s̶a̶b̶o̶n̶n̶e̶r̶    Je suis une victime')

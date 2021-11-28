@@ -66,12 +66,12 @@ export const VoiceStateUpdateTransformer = (
         'debug',
         `${member.user.tag} joined the channel #${channel.name}`,
       ),
-      Future.fromIOEither,
-      Future.chain(() =>
+      IO.chain(() =>
         ChannelUtils.isPublic(channel) && peopleInPublicVocalChans(member.guild).length === 1
-          ? Future.fromIOEither(subject.next(MadEvent.PublicCallStarted(member, channel)))
-          : Future.unit,
+          ? subject.next(MadEvent.PublicCallStarted(member, channel))
+          : IO.unit,
       ),
+      Future.fromIOEither,
     )
   }
 
@@ -117,12 +117,12 @@ export const VoiceStateUpdateTransformer = (
         'debug',
         `${member.user.tag} left the channel #${channel.name}`,
       ),
-      Future.fromIOEither,
-      Future.chain(() =>
+      IO.chain(() =>
         ChannelUtils.isPublic(channel) && List.isEmpty(peopleInPublicVocalChans(member.guild))
-          ? Future.fromIOEither(subject.next(MadEvent.PublicCallEnded(member, channel)))
-          : Future.unit,
+          ? subject.next(MadEvent.PublicCallEnded(member, channel))
+          : IO.unit,
       ),
+      Future.fromIOEither,
     )
   }
 }

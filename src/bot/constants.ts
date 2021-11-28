@@ -14,7 +14,14 @@ const tomato: ColorResolvable = '#f54234'
 export const Colors = { darkred, dimgray, lightseagreen, goldenrod, tomato }
 
 export const constants = {
-  callsEmoji: '🔔', // :bell:
+  emojis: {
+    calls: '🔔', // :bell:
+    play: '▶️', // :arrow_forward:
+    pause: '⏸️', // :pause_button:
+    next: '⏩', // :fast_forward:
+
+    characters: emojiCharacters(),
+  },
 
   retryEnsuringIndexes: MsDuration.minutes(5),
 
@@ -27,8 +34,6 @@ export const constants = {
 
   fetchLogsLimit: 30,
   networkTolerance: MsDuration.seconds(6),
-
-  emojiCharacters: emojiCharacters(),
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -75,5 +80,5 @@ function emojiCharacters() {
     '*': '*️⃣',
     '!': '❗',
     '?': '❓',
-  }
+  } as const
 }

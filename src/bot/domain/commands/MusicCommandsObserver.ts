@@ -31,19 +31,23 @@ export const MusicCommandsObserver = (
         return Future.unit
       }
 
-      const track = Track.wrap(
+      const track = Track.of(
+        'He Looks Familiar...',
         'https://cdn.discordapp.com/attachments/849299103362973777/913098049407037500/he_looks_familiar....mp3',
+        // Maybe.some('https://i.ytimg.com/vi/aeWfN6CinGY/hq720.jpg'),
       )
       return pipe(
         DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
         Future.chain(() =>
           apply.sequenceS(futureMaybe.ApplyPar)({
-            channel: Future.right(maybeVoiceChannel(interaction)),
+            musicChannel: Future.right(maybeVoiceChannel(interaction)),
+            stateChannel: futureMaybe.fromNullable(interaction.channel),
             subscription: pipe(guildStateService.getSubscription(guild), Future.map(Maybe.some)),
           }),
         ),
-        futureMaybe.map(({ channel, subscription }) => subscription.playTrack(channel, track)),
-        futureMaybe.chainFuture(Future.fromIOEither),
+        futureMaybe.chainFuture(({ musicChannel, stateChannel, subscription }) =>
+          subscription.playTrack(musicChannel, stateChannel, track),
+        ),
         futureMaybe.matchE(
           () =>
             DiscordConnector.interactionFollowUp(interaction, {

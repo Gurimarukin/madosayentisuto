@@ -1,4 +1,3 @@
-import { MessageEmbed } from 'discord.js'
 import type {
   DMChannel,
   Message,
@@ -19,6 +18,7 @@ import type { CaptainConfig } from '../Config'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import type { MadEventMessageCreate } from '../models/events/MadEvent'
 import type { TObserver } from '../models/rx/TObserver'
+import { MessageUtils } from '../utils/MessageUtils'
 
 type MyChannel = PartialDMChannel | DMChannel | TextChannel | NewsChannel | ThreadChannel
 
@@ -84,13 +84,12 @@ const send =
       Future.map(() => {}),
     )
 
-const sendIDontLikeThieves = send({
-  embeds: [
-    new MessageEmbed()
-      .setTitle("J'aime pas trop les voleurs et les fils de pute.")
-      .setURL('http://george-abitbol.fr/v/374a915e'),
-  ],
-})
+const sendIDontLikeThieves = send(
+  MessageUtils.singleSafeEmbed({
+    title: "J'aime pas trop les voleurs et les fils de pute.",
+    url: 'http://george-abitbol.fr/v/374a915e',
+  }),
+)
 const sendNoNeedToThankMe = send('Haha ! Inutile de me remercier...')
 
 const cleanMessage = (message: string): List<string> =>

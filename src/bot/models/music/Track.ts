@@ -1,13 +1,15 @@
-import * as C from 'io-ts/Codec'
-import type { Newtype } from 'newtype-ts'
-import { iso } from 'newtype-ts'
+import { Maybe } from '../../../shared/utils/fp'
 
-import { fromNewtype } from '../../utils/fromNewType'
+export type Track = {
+  readonly title: string
+  readonly url: string
+  readonly thumbnail: Maybe<string>
+}
 
-export type Track = Newtype<{ readonly Track: unique symbol }, string>
+const of = (title: string, url: string, thumbnail?: string): Track => ({
+  title,
+  url,
+  thumbnail: Maybe.fromNullable(thumbnail),
+})
 
-const { wrap, unwrap } = iso<Track>()
-
-const codec = fromNewtype<Track>(C.string)
-
-export const Track = { codec, wrap, unwrap }
+export const Track = { of }
