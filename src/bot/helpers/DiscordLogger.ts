@@ -53,7 +53,7 @@ export const DiscordLogger =
     }
 
     const log = (level: LogLevel, msg: string): IO<void> =>
-      IO.runFuture(
+      IO.runFutureUnsafe(
         pipe(
           consoleLog(level, msg),
           Future.chain(() => discordDMLog(level, msg)),

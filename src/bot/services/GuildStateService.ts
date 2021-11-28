@@ -116,7 +116,7 @@ export const GuildStateService = (
           ),
           Future.chain(success => (success ? Future.unit : error())),
           Future.orElse(e => error('-', e)),
-          IO.runFuture,
+          IO.runFutureUnsafe,
           Future.fromIOEither,
         )
 
