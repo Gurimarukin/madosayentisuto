@@ -13,6 +13,7 @@ import { pipe } from 'fp-ts/function'
 
 import type { List } from '../../shared/utils/fp'
 
+import { constants } from '../constants'
 import { StringUtils } from './StringUtils'
 
 type UrlHeightWidthProxy = {
@@ -22,6 +23,11 @@ type UrlHeightWidthProxy = {
   readonly proxyURL?: string
 }
 
+type MyAuthor = Partial<MessageEmbedAuthor> & {
+  readonly _tag: 'Author'
+  readonly icon_url?: string
+  readonly proxy_icon_url?: string
+}
 type MyThumbnail = Partial<MessageEmbedThumbnail> & {
   readonly _tag: 'Thumbnail'
   readonly proxy_url?: string
@@ -34,6 +40,11 @@ type MyVideo = Partial<MessageEmbedVideo> & {
   readonly _tag: 'Video'
   readonly proxy_url?: string
 }
+type MyFooter = Partial<MessageEmbedFooter> & {
+  readonly _tag: 'Footer'
+  readonly icon_url?: string
+  readonly proxy_icon_url?: string
+}
 
 type MessageEmbedArgs = {
   readonly title?: string
@@ -41,10 +52,7 @@ type MessageEmbedArgs = {
   readonly url?: string
   readonly color?: ColorResolvable
   readonly fields?: List<EmbedFieldData>
-  readonly author?: Partial<MessageEmbedAuthor> & {
-    readonly icon_url?: string
-    readonly proxy_icon_url?: string
-  }
+  readonly author?: MyAuthor
   readonly thumbnail?: MyThumbnail
   readonly image?: MyImage
   readonly video?: MyVideo
@@ -62,11 +70,11 @@ const safeEmbed = ({ title, fields, ...args }: MessageEmbedArgs): MessageEmbedOp
   fields: fields as EmbedFieldData[] | undefined,
 })
 
-const field = (name = '\u200B', value = '\u200B', inline?: boolean): EmbedFieldData => ({
-  name,
-  value,
-  inline,
-})
+const field = (
+  name = constants.emptyChar,
+  value = constants.emptyChar,
+  inline?: boolean,
+): EmbedFieldData => ({ name, value, inline })
 
 const urlHeightWidthProxy =
   <A extends UrlHeightWidthProxy>() =>
@@ -78,10 +86,36 @@ const urlHeightWidthProxy =
       proxyURL,
     } as A)
 
+const author = (
+  name: string,
+  url?: string,
+  iconURL?: string,
+  proxyIconURL?: string,
+  icon_url?: string,
+  proxy_icon_url?: string,
+): MyAuthor => ({ name, url, iconURL, proxyIconURL, icon_url, proxy_icon_url } as MyAuthor)
+
 const thumbnail = urlHeightWidthProxy<MyThumbnail>()
 const image = urlHeightWidthProxy<MyImage>()
 const video = urlHeightWidthProxy<MyVideo>()
 
+const footer = (
+  text: string,
+  iconURL?: string,
+  proxyIconURL?: string,
+  icon_url?: string,
+  proxy_icon_url?: string,
+): MyFooter => ({ text, iconURL, proxyIconURL, icon_url, proxy_icon_url } as MyFooter)
+
 const singleSafeEmbed = (args: MessageEmbedArgs): MessageOptions => ({ embeds: [safeEmbed(args)] })
 
-export const MessageUtils = { safeEmbed, field, thumbnail, image, video, singleSafeEmbed }
+export const MessageUtils = {
+  safeEmbed,
+  field,
+  author,
+  thumbnail,
+  image,
+  video,
+  footer,
+  singleSafeEmbed,
+}

@@ -14,6 +14,8 @@ const tomato: ColorResolvable = '#f54234'
 export const Colors = { darkred, dimgray, lightseagreen, goldenrod, tomato }
 
 export const constants = {
+  emptyChar: '\u200B',
+
   emojis: {
     calls: '🔔', // :bell:
     play: '▶️', // :arrow_forward:

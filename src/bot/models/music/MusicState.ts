@@ -1,10 +1,11 @@
 import type { AudioPlayer, PlayerSubscription, VoiceConnection } from '@discordjs/voice'
-import type { Message, StageChannel, VoiceChannel } from 'discord.js'
+import type { StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { List, Maybe } from '../../../shared/utils/fp'
 
 import { createUnion } from '../../utils/createUnion'
+import type { StateMessages } from './StateMessages'
 import type { Track } from './Track'
 
 type MusicChannel = VoiceChannel | StageChannel
@@ -18,7 +19,7 @@ export type MusicStateConnected = typeof u.Connected.T
 type CommonArgs = {
   readonly playing: Maybe<Track>
   readonly queue: List<Track>
-  readonly message: Maybe<Message>
+  readonly messages: Maybe<StateMessages>
 }
 
 type DisconnectedArgs = CommonArgs
@@ -44,13 +45,13 @@ const u = createUnion({
 const empty: MusicState = u.Disconnected({
   playing: Maybe.none,
   queue: List.empty,
-  message: Maybe.none,
+  messages: Maybe.none,
 })
 
 const connecting =
   (channel: MusicChannel, voiceConnection: VoiceConnection, audioPlayer: AudioPlayer) =>
-  ({ playing, queue, message }: MusicState): MusicStateConnecting =>
-    u.Connecting({ playing, queue, message, channel, voiceConnection, audioPlayer })
+  ({ playing, queue, messages }: MusicState): MusicStateConnecting =>
+    u.Connecting({ playing, queue, messages, channel, voiceConnection, audioPlayer })
 
 const connected =
   (
@@ -58,11 +59,11 @@ const connected =
     voiceConnection: VoiceConnection,
     subscription: Maybe<PlayerSubscription>,
   ) =>
-  ({ playing, queue, message }: MusicState): MusicStateConnected =>
+  ({ playing, queue, messages }: MusicState): MusicStateConnected =>
     u.Connected({
       playing,
       queue,
-      message,
+      messages,
       audioPlayer,
       voiceConnection,
       subscription,
@@ -86,9 +87,9 @@ const queueTrack =
     queue: pipe(state.queue, List.append(track)),
   })
 
-const setMessage =
-  (message: Maybe<Message>) =>
-  (state: MusicState): MusicState => ({ ...state, message })
+const setMessages =
+  (messages: Maybe<StateMessages>) =>
+  (state: MusicState): MusicState => ({ ...state, messages })
 
 const setPlaying =
   (playing: Maybe<Track>) =>
@@ -104,7 +105,7 @@ export const MusicState = {
   connected,
   getVoiceConnection,
   queueTrack,
-  setMessage,
+  setMessages,
   setPlaying,
   setQueue,
   ...u,

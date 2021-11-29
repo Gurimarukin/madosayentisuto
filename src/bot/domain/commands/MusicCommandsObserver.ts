@@ -96,7 +96,8 @@ const validateTrack = (url: Maybe<string>): Future<Either<string, Track>> =>
       Track.of(
         'He Looks Familiar...',
         'https://cdn.discordapp.com/attachments/849299103362973777/913098049407037500/he_looks_familiar....mp3',
-        // Maybe.some('https://i.ytimg.com/vi/aeWfN6CinGY/hq720.jpg'),
+        'https://i.ytimg.com/vi/aeWfN6CinGY/hq720.jpg',
+        // 'https://f4.bcbits.com/img/a1386696993_10.jpg',
       ),
     ),
   )

@@ -7,6 +7,7 @@ import type {
 import { AudioPlayerStatus } from '@discordjs/voice'
 import { VoiceConnectionStatus } from '@discordjs/voice'
 import type {
+  ColorResolvable,
   Guild,
   MessageButtonStyleResolvable,
   MessageOptions,
@@ -15,7 +16,6 @@ import type {
   TextBasedChannels,
   VoiceChannel,
 } from 'discord.js'
-import { MessageAttachment } from 'discord.js'
 import { MessageActionRow, MessageButton } from 'discord.js'
 import { apply, refinement } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
@@ -25,9 +25,10 @@ import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { List } from '../../../shared/utils/fp'
 import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
-import { constants } from '../../constants'
+import { Colors, constants } from '../../constants'
 import { Store } from '../../models/Store'
 import type {
+  MusicEventConnectionDisconnected,
   MusicEventConnectionReady,
   MusicEventPlayerIdle,
 } from '../../models/events/MusicEvent'
@@ -35,6 +36,7 @@ import { MusicEvent } from '../../models/events/MusicEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { MusicStateConnected } from '../../models/music/MusicState'
 import { MusicState } from '../../models/music/MusicState'
+import { StateMessages } from '../../models/music/StateMessages'
 import type { Track } from '../../models/music/Track'
 import { PubSub } from '../../models/rx/PubSub'
 import type { TObserver } from '../../models/rx/TObserver'
@@ -76,7 +78,7 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     return pipe(
       state.update(MusicState.queueTrack(track)),
       Future.fromIOEither,
-      Future.chainFirst(refreshMessage),
+      Future.chainFirst(refreshMessages),
       Future.chain(newState => {
         switch (newState.type) {
           case 'Disconnected':
@@ -96,12 +98,19 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     const sub = PubSubUtils.subscribe(logger, observable)
     const subscribe = apply.sequenceT(IO.ApplyPar)(
       sub(loggerObserver(), or(refinement.id())),
-      sub(lifecycleObserver(), or(MusicEvent.is('ConnectionReady'), MusicEvent.is('PlayerIdle'))),
+      sub(
+        lifecycleObserver(),
+        or(
+          MusicEvent.is('ConnectionReady'),
+          MusicEvent.is('ConnectionDisconnected'),
+          MusicEvent.is('PlayerIdle'),
+        ),
+      ),
     )
 
     return pipe(
-      DiscordConnector.sendMessage(stateChannel, messages.connecting),
-      Future.chainIOEitherK(message => state.update(MusicState.setMessage(message))),
+      sendInitMessages(stateChannel),
+      Future.chainIOEitherK(messages => state.update(MusicState.setMessages(messages))),
       Future.chainIOEitherK(() =>
         pipe(
           apply.sequenceS(IO.ApplyPar)({
@@ -115,6 +124,27 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
         ),
       ),
       Future.map(() => {}),
+    )
+  }
+
+  function sendInitMessages(channel: TextBasedChannels): Future<Maybe<StateMessages>> {
+    return pipe(
+      DiscordConnector.sendMessage(channel, stateMessages.connecting1),
+      futureMaybe.chain(playing =>
+        pipe(
+          DiscordConnector.sendMessage(channel, stateMessages.connecting2),
+          Future.chain(
+            Maybe.fold(
+              () =>
+                pipe(
+                  DiscordConnector.messageDelete(playing),
+                  Future.map(() => Maybe.none),
+                ),
+              queue => Future.right(Maybe.some(StateMessages.of(playing, queue))),
+            ),
+          ),
+        ),
+      ),
     )
   }
 
@@ -161,12 +191,17 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     )
   }
 
-  function lifecycleObserver(): TObserver<MusicEventConnectionReady | MusicEventPlayerIdle> {
+  function lifecycleObserver(): TObserver<
+    MusicEventConnectionReady | MusicEventConnectionDisconnected | MusicEventPlayerIdle
+  > {
     return {
       next: event => {
         switch (event.type) {
           case 'ConnectionReady':
             return onConnectionReady()
+
+          case 'ConnectionDisconnected':
+            return Future.unit // TODO
 
           case 'PlayerIdle':
             return onPlayerIdle()
@@ -263,14 +298,17 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
   }
 
   function updateState(f: Endomorphism<MusicState>): Future<void> {
-    return pipe(state.update(f), Future.fromIOEither, Future.chain(refreshMessage))
+    return pipe(state.update(f), Future.fromIOEither, Future.chain(refreshMessages))
   }
 
-  function refreshMessage({ message, playing, queue }: MusicState): Future<void> {
+  function refreshMessages({ messages, playing, queue }: MusicState): Future<void> {
     return pipe(
-      futureMaybe.fromOption(message),
-      futureMaybe.chainFuture(message_ =>
-        DiscordConnector.messageEdit(message_, messages.playing(playing, queue)),
+      futureMaybe.fromOption(messages),
+      futureMaybe.chainFuture(m =>
+        Future.sequenceArray([
+          DiscordConnector.messageEdit(m.playing, stateMessages.playing(playing, queue, true)),
+          DiscordConnector.messageEdit(m.queue, stateMessages.queue(queue)),
+        ]),
       ),
       Future.map(() => {}),
     )
@@ -278,8 +316,15 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
 
   function disconnect(currentState: MusicState): Future<void> {
     return pipe(
-      currentState.message,
-      Maybe.fold(() => Future.right(true), DiscordConnector.messageDelete),
+      currentState.messages,
+      Maybe.fold(
+        () => Future.right([]),
+        m =>
+          Future.sequenceArray([
+            DiscordConnector.messageDelete(m.playing),
+            DiscordConnector.messageDelete(m.queue),
+          ]),
+      ),
       Future.chainIOEitherK(() =>
         pipe(
           MusicState.getVoiceConnection(currentState),
@@ -322,112 +367,138 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
   }
 }
 
-const messages = {
-  connecting: MessageUtils.singleSafeEmbed({
-    color: 'RANDOM',
+const queueDisplay = 5
+const messagesColor: ColorResolvable = Colors.darkred
+const images = {
+  empty: 'https://cdn.discordapp.com/attachments/849299103362973777/914578024366747668/vide.png',
+  jpDjGif: 'https://i.imgur.com/lBrj5I6.gif',
+  jpPerdu:
+    'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
+}
+
+const stateMessages = {
+  connecting1: MessageUtils.singleSafeEmbed({
+    color: messagesColor,
     description: 'Chargement...',
   }),
 
-  playing: (
-    playing: Maybe<Track>,
-    queue: List<Track>,
-    // isPlaying: boolean,
-  ): MyMessageOptions => {
-    const attachment = pipe(
-      playing,
-      Maybe.chain(t => t.thumbnail),
-      Maybe.getOrElse(
-        () =>
-          'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
-      ),
-      url => new MessageAttachment(url),
-    )
-    console.log('attachment =', attachment)
-    return {
-      embeds: [
-        // MessageUtils.safeEmbed({
-        //   color: 'RANDOM',
-        //   fields: [],
-        //   image: pipe(
-        //     playing,
-        //     Maybe.chain(t => t.thumbnail),
-        //     Maybe.getOrElse(
-        //       () =>
-        //         'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
-        //     ),
-        //     i => MessageUtils.image(i, 120, 120),
-        //   ),
-        // }),
-        MessageUtils.safeEmbed({
-          color: 'RANDOM',
-          // title: 'DJean Plank',
-          thumbnail: MessageUtils.thumbnail('https://i.imgur.com/AfFp7pu.png', 120, 120),
-          // pipe(
-          //   playing,
-          //   Maybe.chain(t => t.thumbnail),
-          //   Maybe.getOrElse(
-          //     () =>
-          //       'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
-          //   ),
-          //   MessageUtils.thumbnail,
-          // ),
-          // MessageUtils.thumbnail(
-          //   // 'https://cdn.discordapp.com/attachments/849299103362973777/914515868791242752/unknown.png', // Photo de profil de Jean Plank
-          //   // 'https://cdn.discordapp.com/attachments/636626556734930948/755886935796351106/jp-mefian.gif', // JP méfian
-          //   // 'https://djfrenchy.com/wp-content/uploads/2015/04/dj-sexy-clubbing.jpg', // DJ
-          //   'https://i.imgur.com/lBrj5I6.gif', // DJ Jean Plank vers la droite
-          // ),
-          fields: [
-            MessageUtils.field(
-              'Morceau en cours :',
-              pipe(
-                playing,
-                Maybe.fold(
-                  () => 'Aucun morceau en cours.',
-                  t => maskedLink(t.title, t.url),
-                ),
-              ),
-            ),
-            MessageUtils.field(),
-            MessageUtils.field(
-              "File d'attente :",
-              pipe(
-                queue,
-                List.match(
-                  () => `Aucun morceau dans la file d'attente.\n("/play <url>" pour en ajouter)`,
-                  flow(
-                    List.map(t => `• ${maskedLink(t.title, t.url)}`),
-                    StringUtils.mkString('\n'),
+  connecting2: MessageUtils.singleSafeEmbed({
+    color: messagesColor,
+    description: constants.emptyChar,
+  }),
+
+  playing: (playing: Maybe<Track>, queue: List<Track>, isPlaying: boolean): MyMessageOptions => ({
+    embeds: [
+      MessageUtils.safeEmbed({
+        color: messagesColor,
+        author: MessageUtils.author('En cours de lecture :'),
+        title: pipe(
+          playing,
+          Maybe.map(t => t.title),
+          Maybe.toUndefined,
+        ),
+        url: pipe(
+          playing,
+          Maybe.map(t => t.url),
+          Maybe.toUndefined,
+        ),
+        description: pipe(
+          playing,
+          Maybe.fold(
+            () => '*Aucun morceau en cours*',
+            () => undefined,
+          ),
+        ),
+        thumbnail: pipe(
+          playing,
+          Maybe.chain(t => t.thumbnail),
+          Maybe.getOrElse(() => images.jpPerdu),
+          MessageUtils.thumbnail,
+        ),
+        fields: [
+          MessageUtils.field(
+            constants.emptyChar,
+            pipe(
+              queue,
+              List.match(
+                () => `*Aucun morceau dans la file d'attente.*\n\`/play <url>\` *pour en ajouter*`,
+                flow(
+                  List.takeLeft(queueDisplay),
+                  List.map(t => `• ${maskedLink(t.title, t.url)}`),
+                  StringUtils.mkString(
+                    `*File d'attente (${queue.length}) :*\n`,
+                    '\n',
+                    queue.length <= queueDisplay ? '' : '\n...',
                   ),
                 ),
               ),
             ),
-          ],
-          image: MessageUtils.image('https://i.imgur.com/lBrj5I6.gif'),
-          // pipe(
-          //   playing,
-          //   Maybe.chain(t => t.thumbnail),
-          //   Maybe.getOrElse(
-          //     () =>
-          //       'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
-          //   ),
-          //   MessageUtils.image,
-          // ),
-          video: MessageUtils.video(
-            'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
           ),
-          timestamp: new Date(),
-        }),
-      ],
-      components: [
-        new MessageActionRow().addComponents(
-          // isPlaying ? pauseButton : playButton,
-          nextButton,
-        ),
-      ],
-      attachments: [attachment],
-    }
-  },
+        ],
+        image: MessageUtils.image(images.jpDjGif),
+      }),
+    ],
+    components: [
+      new MessageActionRow().addComponents(isPlaying ? pauseButton : playButton, nextButton),
+    ],
+  }),
+
+  // queue: (queue: List<Track>): MyMessageOptions => ({
+  //   // files: [jpDjGifAttachment],
+  //   embeds: [
+  //     pipe(
+  //       queue,
+  //       List.match(
+  //         () =>
+  //           MessageUtils.safeEmbed({
+  //             color: messagesColor,
+  //             description: `*Aucun morceau dans la file d'attente (*\`/play <url>\` *pour en ajouter)*`,
+  //           }),
+  //         neaQueue =>
+  //           MessageUtils.safeEmbed({
+  //             color: messagesColor,
+  //             fields: [
+  //               MessageUtils.field(
+  //                 `File d'attente${List.isEmpty(queue) ? '' : ` (${queue.length})`} :`,
+  //                 pipe(
+  //                   neaQueue,
+  //                   List.takeLeft(queueDisplay),
+  //                   List.map(t => `• ${t.title}`),
+  //                   StringUtils.mkString('', '\n', queue.length <= queueDisplay ? '' : '\n...'),
+  //                 ),
+  //               ),
+  //             ],
+  //           }),
+  //       ),
+  //     ),
+
+  //     // MessageUtils.safeEmbed({
+  //     //   color: messagesColor,
+  //     //   fields: [
+  //     //     MessageUtils.field(
+  //     //       "File d'attente :",
+  //     //       pipe(
+  //     //         queue,
+  //     //         List.match(
+  //     //           () => `Aucun morceau dans la file d'attente (\`/play <url>\` pour en ajouter)`,
+  //     //           flow(
+  //     //             List.map(t => `• ${maskedLink(t.title, t.url)}`),
+  //     //             StringUtils.mkString('\n'),
+  //     //           ),
+  //     //         ),
+  //     //       ),
+  //     //     ),
+  //     //   ],
+  //     //   image: MessageUtils.image(images.empty),
+  //     // }),
+  //   ],
+  // }),
+
+  queue: (u: unknown): MyMessageOptions =>
+    MessageUtils.singleSafeEmbed({
+      color: messagesColor,
+      description: constants.emptyChar,
+    }),
 }
 
 const button = (
@@ -438,13 +509,8 @@ const button = (
 ): MessageButton =>
   new MessageButton().setCustomId(id).setLabel(label).setStyle(style).setEmoji(emoji)
 
-// const pauseButton = button(musicButtons.playPauseId, 'Pause', constants.emojis.pause)
-// const playButton = button(musicButtons.playPauseId, 'Lecture', constants.emojis.play)
+const pauseButton = button(musicButtons.playPauseId, 'Pause', constants.emojis.pause)
+const playButton = button(musicButtons.playPauseId, 'Lecture', constants.emojis.play)
 const nextButton = button(musicButtons.nextId, 'Suivant', constants.emojis.next)
 
 const maskedLink = (text: string, url: string): string => `[${text}](${url})`
-
-// const sequenceTPar = flow(
-//   apply.sequenceT(IO.ApplyPar),
-//   IO.map(() => {}),
-// )
