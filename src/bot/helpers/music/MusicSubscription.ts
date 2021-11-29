@@ -22,6 +22,7 @@ import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { flow, pipe } from 'fp-ts/function'
 
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
+import type { NonEmptyArray } from '../../../shared/utils/fp'
 import { List } from '../../../shared/utils/fp'
 import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
@@ -63,19 +64,19 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
 
   const state = Store<MusicState>(MusicState.empty)
 
-  return { playTrack, stringify }
+  return { playTracks, stringify }
 
-  function playTrack(
+  function playTracks(
     musicChannel: MusicChannel,
     stateChannel: TextBasedChannels,
-    track: Track,
+    track: NonEmptyArray<Track>,
   ): Future<void> {
     if (musicChannel.guild.id !== guild.id) {
       return Future.error('Called playSong with a wrong guild')
     }
 
     return pipe(
-      state.update(MusicState.queueTrack(track)),
+      state.update(MusicState.queueTracks(track)),
       Future.fromIOEither,
       Future.chainFirst(refreshMessage),
       Future.chain(newState => {

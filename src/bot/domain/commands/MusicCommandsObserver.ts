@@ -3,7 +3,7 @@ import type { CommandInteraction, StageChannel, TextBasedChannels, VoiceChannel 
 import { GuildMember } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { Either } from '../../../shared/utils/fp'
+import { Either, NonEmptyArray } from '../../../shared/utils/fp'
 import { Future, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
@@ -11,11 +11,12 @@ import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
 import { Track } from '../../models/music/Track'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { GuildStateService } from '../../services/GuildStateService'
+import { StringUtils } from '../../utils/StringUtils'
 
 type ValidatedPlayCommand = {
   readonly musicChannel: VoiceChannel | StageChannel
   readonly stateChannel: TextBasedChannels
-  readonly track: Track
+  readonly tracks: NonEmptyArray<Track>
 }
 
 export const playCommand = new SlashCommandBuilder()
@@ -40,11 +41,19 @@ export const MusicCommandsObserver = (
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
       Future.chain(() => validatePlayCommand(interaction)),
       Future.chain(
-        Either.fold(Future.right, ({ musicChannel, stateChannel, track }) =>
+        Either.fold(Future.right, ({ musicChannel, stateChannel, tracks }) =>
           pipe(
             guildStateService.getSubscription(guild),
-            Future.chain(subscription => subscription.playTrack(musicChannel, stateChannel, track)),
-            Future.map(() => `"${track.title}" ajouté à la file d'attente.`),
+            Future.chain(subscription =>
+              subscription.playTracks(musicChannel, stateChannel, tracks),
+            ),
+            Future.map(() =>
+              pipe(
+                tracks,
+                NonEmptyArray.map(t => `"${t.title}"`),
+                StringUtils.mkString('', ', ', "ajouté à la file d'attente."),
+              ),
+            ),
           ),
         ),
       ),
@@ -77,7 +86,7 @@ const validatePlayCommand = (
             stateChannel =>
               pipe(
                 validateTrack(Maybe.fromNullable(interaction.options.getString('url'))),
-                Future.map(Either.map(track => ({ musicChannel, stateChannel, track }))),
+                Future.map(Either.map(tracks => ({ musicChannel, stateChannel, tracks }))),
               ),
           ),
         ),
@@ -89,15 +98,17 @@ const maybeVoiceChannel = (interaction: CommandInteraction): Maybe<VoiceChannel 
     ? Maybe.fromNullable(interaction.member.voice.channel)
     : Maybe.none
 
-const validateTrack = (url: Maybe<string>): Future<Either<string, Track>> =>
+const validateTrack = (url: Maybe<string>): Future<Either<string, NonEmptyArray<Track>>> =>
   // https://i.imgur.com/lBrj5I6.gifv
   Future.right(
     Either.right(
-      Track.of(
-        'He Looks Familiar...',
-        'https://cdn.discordapp.com/attachments/849299103362973777/913098049407037500/he_looks_familiar....mp3',
-        'https://i.ytimg.com/vi/aeWfN6CinGY/hq720.jpg',
-        // 'https://f4.bcbits.com/img/a1386696993_10.jpg',
+      NonEmptyArray.of(
+        Track.of(
+          'He Looks Familiar...',
+          'https://cdn.discordapp.com/attachments/849299103362973777/913098049407037500/he_looks_familiar....mp3',
+          'https://i.ytimg.com/vi/aeWfN6CinGY/hq720.jpg',
+          // 'https://f4.bcbits.com/img/a1386696993_10.jpg',
+        ),
       ),
     ),
   )

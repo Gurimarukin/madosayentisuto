@@ -2,7 +2,7 @@ import type { AudioPlayer, PlayerSubscription, VoiceConnection } from '@discordj
 import type { Message, StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { List, Maybe } from '../../../shared/utils/fp'
+import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import { createUnion } from '../../utils/createUnion'
 import type { Track } from './Track'
@@ -79,11 +79,11 @@ const getVoiceConnection = (state: MusicState): Maybe<VoiceConnection> => {
   }
 }
 
-const queueTrack =
-  (track: Track) =>
+const queueTracks =
+  (tracks: NonEmptyArray<Track>) =>
   (state: MusicState): MusicState => ({
     ...state,
-    queue: pipe(state.queue, List.append(track)),
+    queue: pipe(state.queue, NonEmptyArray.concat(tracks)),
   })
 
 const setMessage =
@@ -103,7 +103,7 @@ export const MusicState = {
   connecting,
   connected,
   getVoiceConnection,
-  queueTrack,
+  queueTracks,
   setMessage,
   setPlaying,
   setQueue,
