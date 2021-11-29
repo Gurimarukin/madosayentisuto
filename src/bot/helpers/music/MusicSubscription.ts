@@ -36,7 +36,6 @@ import { MusicEvent } from '../../models/events/MusicEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { MusicStateConnected } from '../../models/music/MusicState'
 import { MusicState } from '../../models/music/MusicState'
-import { StateMessages } from '../../models/music/StateMessages'
 import type { Track } from '../../models/music/Track'
 import { PubSub } from '../../models/rx/PubSub'
 import type { TObserver } from '../../models/rx/TObserver'
@@ -78,7 +77,7 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     return pipe(
       state.update(MusicState.queueTrack(track)),
       Future.fromIOEither,
-      Future.chainFirst(refreshMessages),
+      Future.chainFirst(refreshMessage),
       Future.chain(newState => {
         switch (newState.type) {
           case 'Disconnected':
@@ -109,8 +108,8 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     )
 
     return pipe(
-      sendInitMessages(stateChannel),
-      Future.chainIOEitherK(messages => state.update(MusicState.setMessages(messages))),
+      DiscordConnector.sendMessage(stateChannel, stateMessages.connecting),
+      Future.chainIOEitherK(message => state.update(MusicState.setMessage(message))),
       Future.chainIOEitherK(() =>
         pipe(
           apply.sequenceS(IO.ApplyPar)({
@@ -124,27 +123,6 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
         ),
       ),
       Future.map(() => {}),
-    )
-  }
-
-  function sendInitMessages(channel: TextBasedChannels): Future<Maybe<StateMessages>> {
-    return pipe(
-      DiscordConnector.sendMessage(channel, stateMessages.connecting1),
-      futureMaybe.chain(playing =>
-        pipe(
-          DiscordConnector.sendMessage(channel, stateMessages.connecting2),
-          Future.chain(
-            Maybe.fold(
-              () =>
-                pipe(
-                  DiscordConnector.messageDelete(playing),
-                  Future.map(() => Maybe.none),
-                ),
-              queue => Future.right(Maybe.some(StateMessages.of(playing, queue))),
-            ),
-          ),
-        ),
-      ),
     )
   }
 
@@ -298,17 +276,14 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
   }
 
   function updateState(f: Endomorphism<MusicState>): Future<void> {
-    return pipe(state.update(f), Future.fromIOEither, Future.chain(refreshMessages))
+    return pipe(state.update(f), Future.fromIOEither, Future.chain(refreshMessage))
   }
 
-  function refreshMessages({ messages, playing, queue }: MusicState): Future<void> {
+  function refreshMessage({ message, playing, queue }: MusicState): Future<void> {
     return pipe(
-      futureMaybe.fromOption(messages),
+      futureMaybe.fromOption(message),
       futureMaybe.chainFuture(m =>
-        Future.sequenceArray([
-          DiscordConnector.messageEdit(m.playing, stateMessages.playing(playing, queue, true)),
-          DiscordConnector.messageEdit(m.queue, stateMessages.queue(queue)),
-        ]),
+        DiscordConnector.messageEdit(m, stateMessages.playing(playing, queue, true)),
       ),
       Future.map(() => {}),
     )
@@ -316,14 +291,10 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
 
   function disconnect(currentState: MusicState): Future<void> {
     return pipe(
-      currentState.messages,
+      currentState.message,
       Maybe.fold(
-        () => Future.right([]),
-        m =>
-          Future.sequenceArray([
-            DiscordConnector.messageDelete(m.playing),
-            DiscordConnector.messageDelete(m.queue),
-          ]),
+        () => Future.right(true),
+        m => DiscordConnector.messageDelete(m),
       ),
       Future.chainIOEitherK(() =>
         pipe(
@@ -377,14 +348,9 @@ const images = {
 }
 
 const stateMessages = {
-  connecting1: MessageUtils.singleSafeEmbed({
+  connecting: MessageUtils.singleSafeEmbed({
     color: messagesColor,
     description: 'Chargement...',
-  }),
-
-  connecting2: MessageUtils.singleSafeEmbed({
-    color: messagesColor,
-    description: constants.emptyChar,
   }),
 
   playing: (playing: Maybe<Track>, queue: List<Track>, isPlaying: boolean): MyMessageOptions => ({
@@ -442,63 +408,6 @@ const stateMessages = {
       new MessageActionRow().addComponents(isPlaying ? pauseButton : playButton, nextButton),
     ],
   }),
-
-  // queue: (queue: List<Track>): MyMessageOptions => ({
-  //   // files: [jpDjGifAttachment],
-  //   embeds: [
-  //     pipe(
-  //       queue,
-  //       List.match(
-  //         () =>
-  //           MessageUtils.safeEmbed({
-  //             color: messagesColor,
-  //             description: `*Aucun morceau dans la file d'attente (*\`/play <url>\` *pour en ajouter)*`,
-  //           }),
-  //         neaQueue =>
-  //           MessageUtils.safeEmbed({
-  //             color: messagesColor,
-  //             fields: [
-  //               MessageUtils.field(
-  //                 `File d'attente${List.isEmpty(queue) ? '' : ` (${queue.length})`} :`,
-  //                 pipe(
-  //                   neaQueue,
-  //                   List.takeLeft(queueDisplay),
-  //                   List.map(t => `• ${t.title}`),
-  //                   StringUtils.mkString('', '\n', queue.length <= queueDisplay ? '' : '\n...'),
-  //                 ),
-  //               ),
-  //             ],
-  //           }),
-  //       ),
-  //     ),
-
-  //     // MessageUtils.safeEmbed({
-  //     //   color: messagesColor,
-  //     //   fields: [
-  //     //     MessageUtils.field(
-  //     //       "File d'attente :",
-  //     //       pipe(
-  //     //         queue,
-  //     //         List.match(
-  //     //           () => `Aucun morceau dans la file d'attente (\`/play <url>\` pour en ajouter)`,
-  //     //           flow(
-  //     //             List.map(t => `• ${maskedLink(t.title, t.url)}`),
-  //     //             StringUtils.mkString('\n'),
-  //     //           ),
-  //     //         ),
-  //     //       ),
-  //     //     ),
-  //     //   ],
-  //     //   image: MessageUtils.image(images.empty),
-  //     // }),
-  //   ],
-  // }),
-
-  queue: (u: unknown): MyMessageOptions =>
-    MessageUtils.singleSafeEmbed({
-      color: messagesColor,
-      description: constants.emptyChar,
-    }),
 }
 
 const button = (
