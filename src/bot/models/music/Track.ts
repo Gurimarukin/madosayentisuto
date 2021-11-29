@@ -1,4 +1,4 @@
-import { Maybe } from '../../../shared/utils/fp'
+import type { Maybe } from '../../../shared/utils/fp'
 
 export type Track = {
   readonly title: string
@@ -6,10 +6,10 @@ export type Track = {
   readonly thumbnail: Maybe<string>
 }
 
-const of = (title: string, url: string, thumbnail?: string): Track => ({
+const of = (title: string, url: string, thumbnail: Maybe<string>): Track => ({
   title,
   url,
-  thumbnail: Maybe.fromNullable(thumbnail),
+  thumbnail,
 })
 
 export const Track = { of }

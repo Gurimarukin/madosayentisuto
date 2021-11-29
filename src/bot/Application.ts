@@ -83,7 +83,7 @@ export const Application = (
         AdminCommandsObserver(Logger, discord, botStateService, guildStateService),
         or(MadEvent.is('InteractionCreate')),
       ),
-      sub(MusicCommandsObserver(guildStateService), or(MadEvent.is('InteractionCreate'))),
+      sub(MusicCommandsObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),
       sub(OtherCommandsObserver(), or(MadEvent.is('InteractionCreate'))),
 
       // │  └ startup/
