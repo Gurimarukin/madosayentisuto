@@ -7,7 +7,6 @@ import type {
   VoiceConnectionStatus,
 } from '@discordjs/voice'
 import { createAudioPlayer, joinVoiceChannel } from '@discordjs/voice'
-import { StreamType, createAudioResource } from '@discordjs/voice'
 import { entersState as discordEntersState } from '@discordjs/voice'
 import type { APIMessage, RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
 import { Routes } from 'discord-api-types/v9'
@@ -58,6 +57,7 @@ import { PutCommandResult } from '../models/commands/PutCommandResult'
 import type { Track } from '../models/music/Track'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { MessageUtils } from '../utils/MessageUtils'
+import { YtUtils } from '../utils/YtUtils'
 import { decodeError } from '../utils/decodeError'
 
 type NotPartial = {
@@ -186,11 +186,20 @@ const addRole = (
 
 const audioPlayerCreate: IO<AudioPlayer> = IO.tryCatch(() => createAudioPlayer())
 
-const audioPlayerPlayArbitrary = (audioPlayer: AudioPlayer, track: Track): IO<void> =>
+const audioPlayerPlayTrack = (audioPlayer: AudioPlayer, track: Track): Future<void> =>
   pipe(
-    IO.tryCatch(() => createAudioResource(track.url, { inputType: StreamType.Arbitrary })),
-    IO.chain(resource => IO.tryCatch(() => audioPlayer.play(resource))),
+    YtUtils.audioResource(track.url),
+    Future.map(audioResource => IO.tryCatch(() => audioPlayer.play(audioResource))),
+    Future.chain(Future.fromIOEither),
   )
+// const audioPlayerPlayArbitrary = (audioPlayer: AudioPlayer, track: Track): IO<void> =>
+//   pipe(
+//     IO.tryCatch(() => createAudioResource(track.url, { inputType: StreamType.Arbitrary })),
+//     IO.chain(resource => IO.tryCatch(() => audioPlayer.play(resource))),
+//   )
+
+const audioPlayerStop = (audioPlayer: AudioPlayer): IO<boolean> =>
+  IO.tryCatch(() => audioPlayer.stop(true))
 
 function entersState(
   target: VoiceConnection,
@@ -379,7 +388,8 @@ export const DiscordConnector = {
 
   addRole,
   audioPlayerCreate,
-  audioPlayerPlayArbitrary,
+  audioPlayerPlayTrack,
+  audioPlayerStop,
   entersState,
   guildCommandsPermissionsSet,
   interactionDeferReply,

@@ -57,7 +57,11 @@ export const MusicCommandsObserver = (
                 pipe(
                   tracks,
                   NonEmptyArray.map(t => `"${t.title}"`),
-                  StringUtils.mkString('', ', ', "ajouté à la file d'attente."),
+                  StringUtils.mkString(
+                    '',
+                    ', ',
+                    ` ajouté${tracks.length === 1 ? '' : 's'} à la file d'attente.`,
+                  ),
                 ),
               ),
             ),

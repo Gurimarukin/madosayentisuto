@@ -1,9 +1,12 @@
+import type { AudioResource } from '@discordjs/voice'
+import { createAudioResource } from '@discordjs/voice'
+import { demuxProbe } from '@discordjs/voice'
 import type { Options } from 'execa'
 import { pipe } from 'fp-ts/function'
 import type { YtFlags, YtResponse } from 'youtube-dl-exec'
 import * as youtubeDlExec from 'youtube-dl-exec'
 
-import { Either, Future } from '../../shared/utils/fp'
+import { Either, Future, IO } from '../../shared/utils/fp'
 
 import { VideosMetadata } from '../models/music/VideosMetadata'
 import { decodeError } from './decodeError'
@@ -52,8 +55,49 @@ const metadata = (url: string): Future<VideosMetadata> =>
     ),
   )
 
-// const stream = (url: string) => {
-//   const res = youtubeDlExec.exec(url, { output: '-' })
-// }
+const audioResource = (url: string): Future<AudioResource> =>
+  pipe(
+    IO.tryCatch(() =>
+      youtubeDlExec.exec(
+        url,
+        {
+          output: '-',
+          quiet: true,
+          format: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
+          limitRate: '100K',
+        },
+        { stdio: ['ignore', 'pipe', 'ignore'] },
+      ),
+    ),
+    Future.fromIOEither,
+    Future.chain(process => {
+      if (process.stdout === null) return Future.left(Error('No stdout'))
 
-export const YtUtils = { metadata }
+      const stream = process.stdout
+      return Future.tryCatch(
+        () =>
+          new Promise<AudioResource>((resolve, reject) => {
+            /* eslint-disable functional/no-expression-statement */
+            process
+              .once('spawn', () =>
+                demuxProbe(stream)
+                  .then(probe =>
+                    resolve(createAudioResource(probe.stream, { inputType: probe.type })),
+                  )
+                  .catch(onError),
+              )
+              .catch(onError)
+
+            // eslint-disable-next-line functional/no-return-void
+            function onError(error: Error): void {
+              if (!process.killed) process.kill()
+              stream.resume()
+              reject(error)
+            }
+            /* eslint-enable functional/no-expression-statement */
+          }),
+      )
+    }),
+  )
+
+export const YtUtils = { metadata, audioResource }

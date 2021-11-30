@@ -72,7 +72,7 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     track: NonEmptyArray<Track>,
   ): Future<void> {
     if (musicChannel.guild.id !== guild.id) {
-      return Future.error('Called playSong with a wrong guild')
+      return Future.left(Error('Called playSong with a wrong guild'))
     }
 
     return pipe(
@@ -270,8 +270,7 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
 
   function playTrackNow(audioPlayer: AudioPlayer, track: Track): Future<void> {
     return pipe(
-      DiscordConnector.audioPlayerPlayArbitrary(audioPlayer, track),
-      Future.fromIOEither,
+      DiscordConnector.audioPlayerPlayTrack(audioPlayer, track),
       Future.chain(() => updateState(MusicState.setPlaying(Maybe.some(track)))),
     )
   }
@@ -291,18 +290,42 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
   }
 
   function disconnect(currentState: MusicState): Future<void> {
-    return pipe(
+    const orElse = Future.orElse((e: Error) => Future.fromIOEither(logger.warn(e.message)))
+
+    const messageDelete = pipe(
       currentState.message,
       Maybe.fold(
-        () => Future.right(true),
-        m => DiscordConnector.messageDelete(m),
-      ),
-      Future.chainIOEitherK(() =>
-        pipe(
-          MusicState.getVoiceConnection(currentState),
-          Maybe.fold(() => IO.unit, DiscordConnector.voiceConnectionDestroy),
+        () => Future.unit,
+        flow(
+          DiscordConnector.messageDelete,
+          Future.map(() => {}),
         ),
       ),
+      orElse,
+    )
+    const voiceConnectionDestroy = pipe(
+      currentState,
+      MusicState.getVoiceConnection,
+      Maybe.fold(() => IO.unit, DiscordConnector.voiceConnectionDestroy),
+      Future.fromIOEither,
+      orElse,
+    )
+    const audioPlayerStop = pipe(
+      currentState,
+      MusicState.getAudioPlayer,
+      Maybe.fold(
+        () => IO.unit,
+        flow(
+          DiscordConnector.audioPlayerStop,
+          IO.map(() => {}),
+        ),
+      ),
+      Future.fromIOEither,
+      orElse,
+    )
+
+    return pipe(
+      apply.sequenceT(Future.ApplyPar)(messageDelete, voiceConnectionDestroy, audioPlayerStop),
       Future.chainIOEitherK(() => state.set(MusicState.empty)),
       Future.map(() => {}),
     )
