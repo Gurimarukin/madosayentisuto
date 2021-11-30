@@ -9,9 +9,9 @@ import type {
   MessageEmbedVideo,
   MessageOptions,
 } from 'discord.js'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 
-import type { List } from '../../shared/utils/fp'
+import { List } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
 import { StringUtils } from './StringUtils'
@@ -63,12 +63,43 @@ type MessageEmbedArgs = {
   }
 }
 
-const safeEmbed = ({ title, fields, ...args }: MessageEmbedArgs): MessageEmbedOptions => ({
+const safeEmbed = ({
+  title,
+  description,
+  fields,
+  footer,
+  author,
+  ...args
+}: MessageEmbedArgs): MessageEmbedOptions => ({
   ...args,
-  title: title === undefined ? undefined : pipe(title, StringUtils.ellipse(256)),
-  // eslint-disable-next-line functional/prefer-readonly-type
-  fields: fields as EmbedFieldData[] | undefined,
+  title: mapUndefined(title, StringUtils.ellipse(256)),
+  description: mapUndefined(description, StringUtils.ellipse(4096)),
+  fields: mapUndefined(
+    fields,
+    flow(
+      List.takeLeft(25),
+      List.map(
+        ({ name, value, inline }): EmbedFieldData => ({
+          name: pipe(name, StringUtils.ellipse(256)),
+          value: pipe(value, StringUtils.ellipse(1024)),
+          inline,
+        }),
+      ),
+    ),
+    // eslint-disable-next-line functional/prefer-readonly-type
+  ) as EmbedFieldData[] | undefined,
+  footer: mapUndefined(footer, ({ text, ...rest }): MessageEmbedOptions['footer'] => ({
+    ...rest,
+    text: mapUndefined(text, StringUtils.ellipse(2048)),
+  })),
+  author: mapUndefined(author, ({ name, ...rest }): MessageEmbedOptions['author'] => ({
+    ...rest,
+    name: mapUndefined(name, StringUtils.ellipse(256)),
+  })),
 })
+
+const mapUndefined = <A, B>(a: A | undefined, f: (a_: A) => B): B | undefined =>
+  a === undefined ? undefined : f(a)
 
 const field = (
   name = constants.emptyChar,
