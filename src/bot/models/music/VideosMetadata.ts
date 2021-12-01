@@ -6,8 +6,6 @@ import { Maybe } from '../../../shared/utils/fp'
 
 export type VideoMetadata = D.TypeOf<typeof videoMetadataDecoder>
 
-// TODO: extractor: D.string
-
 const videoMetadataDecoder = D.struct({
   title: D.string,
   url: Maybe.decoder(D.string),
