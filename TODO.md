@@ -1,7 +1,7 @@
 1. Music
 2. Commands:
-   1. Randomcase
-   2. Say
+   1. Say
+   2. Remind
    3. Img
 
 - ensure indexes: unsubscribe when done?
@@ -15,5 +15,4 @@ What if 'CronJob' arrives before 'DbReady' (for activity status)? There should b
 
 ---
 
-- https://github.com/JamesKyburz/youtube-audio-stream
 - watch together -> c mor (pour l'instant)
