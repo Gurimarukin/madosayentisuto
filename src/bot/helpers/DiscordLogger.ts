@@ -36,10 +36,7 @@ export const DiscordLogger =
           pipe(
             discord.fetchUser(userId),
             futureMaybe.chain(user => DiscordConnector.sendMessage(user, msg)),
-            futureMaybe.match(
-              () => {}, // TODO: what to do if message wasn't sent?
-              () => {},
-            ),
+            Future.map(() => {}),
           ),
         )
 
