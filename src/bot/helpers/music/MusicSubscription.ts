@@ -414,7 +414,7 @@ const stateMessages = {
                 () => `*Aucun morceau dans la file d'attente.*\n\`/play <url>\` *pour en ajouter*`,
                 flow(
                   List.takeLeft(queueDisplay),
-                  List.map(t => `• ${maskedLink(t.title, t.url)}`),
+                  List.map(t => `${maskedLink(constants.emojis.link, t.url)} ${t.title}`),
                   StringUtils.mkString(
                     `*File d'attente (${queue.length}) :*\n`,
                     '\n',

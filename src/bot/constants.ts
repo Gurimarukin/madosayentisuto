@@ -18,12 +18,13 @@ export const constants = {
 
   emojis: {
     calls: '🔔', // :bell:
+    link: '🔗', // :link:
     play: '▶️', // :arrow_forward:
     pause: '⏸️', // :pause_button:
     next: '⏩', // :fast_forward:
 
     characters: emojiCharacters(),
-  },
+  } as const,
 
   retryEnsuringIndexes: MsDuration.minutes(5),
 
