@@ -180,7 +180,7 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
             return onConnectionReady()
 
           case 'ConnectionDisconnected':
-            return Future.unit // TODO
+            return onConnectionDisconnected()
 
           case 'PlayerIdle':
             return onPlayerIdle()
@@ -226,6 +226,10 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
         }
       }),
     )
+  }
+
+  function onConnectionDisconnected(): Future<void> {
+    return pipe(state.get, Future.fromIOEither, Future.chain(disconnect))
   }
 
   function onPlayerIdle(): Future<void> {
