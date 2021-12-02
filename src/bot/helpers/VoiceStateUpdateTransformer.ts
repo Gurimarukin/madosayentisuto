@@ -155,7 +155,7 @@ const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
         }
       }
 
-      const lol = channels.find(c => c.name === 'La ligue des Légendes')
+      const lol = channels.find(c => c.name === 'La Ligue des Légendes')
       if (lol !== undefined) {
         console.log("lol.permissionsFor('everyone') =", lol.permissionsFor('everyone'))
         if (ChannelUtils.isGuildChannel(lol)) {
