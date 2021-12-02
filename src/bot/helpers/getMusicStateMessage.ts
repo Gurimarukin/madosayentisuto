@@ -1,10 +1,12 @@
 import type {
+  BaseMessageComponentOptions,
   ColorResolvable,
-  MessageButtonStyleResolvable,
+  InteractionButtonOptions,
+  MessageButtonOptions,
   MessageOptions,
   MessagePayload,
 } from 'discord.js'
-import { MessageActionRow, MessageButton } from 'discord.js'
+import { MessageActionRow } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
 import { List, Maybe } from '../../shared/utils/fp'
@@ -15,6 +17,7 @@ import { MessageUtils } from '../utils/MessageUtils'
 import { StringUtils } from '../utils/StringUtils'
 
 type MyMessageOptions = string | MessagePayload | MessageOptions
+type MyButton = Required<BaseMessageComponentOptions> & MessageButtonOptions
 
 export const musicButtons = {
   playPauseId: 'musicPlayPause',
@@ -30,10 +33,34 @@ const images = {
     'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
 }
 
-const connecting = MessageUtils.singleSafeEmbed({
-  color: messagesColor,
-  description: 'Chargement...',
-})
+const button = (
+  customId: string,
+  label: string,
+  emoji: string,
+  style: InteractionButtonOptions['style'] = 'SECONDARY',
+): MyButton => ({ type: 'BUTTON', customId, label, emoji, style })
+
+const pauseButton = button(musicButtons.playPauseId, 'Pause', constants.emojis.pause)
+const playButton = button(musicButtons.playPauseId, 'Lecture', constants.emojis.play)
+const nextButton = button(musicButtons.nextId, 'Suivant', constants.emojis.next)
+
+const connecting: MyMessageOptions = {
+  embeds: [
+    MessageUtils.safeEmbed({
+      color: messagesColor,
+      author: MessageUtils.author('Chargement'),
+      title: '...',
+      thumbnail: MessageUtils.thumbnail(images.jpPerdu),
+      image: MessageUtils.image(images.jpDjGif),
+    }),
+  ],
+  components: [
+    new MessageActionRow().addComponents(
+      { ...playButton, disabled: true },
+      { ...nextButton, disabled: true },
+    ),
+  ],
+}
 
 const playing_ = (
   playing: Maybe<Track>,
@@ -94,18 +121,6 @@ const playing_ = (
     new MessageActionRow().addComponents(isPlaying ? pauseButton : playButton, nextButton),
   ],
 })
-
-const button = (
-  id: string,
-  label: string,
-  emoji: string,
-  style: MessageButtonStyleResolvable = 'SECONDARY',
-): MessageButton =>
-  new MessageButton().setCustomId(id).setLabel(label).setStyle(style).setEmoji(emoji)
-
-const pauseButton = button(musicButtons.playPauseId, 'Pause', constants.emojis.pause)
-const playButton = button(musicButtons.playPauseId, 'Lecture', constants.emojis.play)
-const nextButton = button(musicButtons.nextId, 'Suivant', constants.emojis.next)
 
 const maskedLink = (text: string, url: string): string => `[${text}](${url})`
 

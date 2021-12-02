@@ -18,6 +18,7 @@ import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
 import { Store } from '../../models/Store'
 import type {
+  MusicEventConnectionDestroyed,
   MusicEventConnectionDisconnected,
   MusicEventConnectionReady,
   MusicEventPlayerIdle,
@@ -87,7 +88,7 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
 
           case 'Connected':
             return pipe(
-              List.isEmpty(s.queue) ? disconnect(s) : playFirstTrackFromQueue(s),
+              List.isEmpty(s.queue) ? voiceConnectionDestroy(s) : playFirstTrackFromQueue(s),
               Future.map(() => true),
             )
         }
@@ -106,6 +107,7 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
         or(
           MusicEvent.is('ConnectionReady'),
           MusicEvent.is('ConnectionDisconnected'),
+          MusicEvent.is('ConnectionDestroyed'),
           MusicEvent.is('PlayerIdle'),
         ),
       ),
@@ -174,7 +176,10 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
   }
 
   function lifecycleObserver(): TObserver<
-    MusicEventConnectionReady | MusicEventConnectionDisconnected | MusicEventPlayerIdle
+    | MusicEventConnectionReady
+    | MusicEventConnectionDisconnected
+    | MusicEventConnectionDestroyed
+    | MusicEventPlayerIdle
   > {
     return {
       next: event => {
@@ -183,7 +188,8 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
             return onConnectionReady()
 
           case 'ConnectionDisconnected':
-            return onConnectionDisconnected()
+          case 'ConnectionDestroyed':
+            return onConnectionDisconnectedOrDestroyed()
 
           case 'PlayerIdle':
             return onPlayerIdle()
@@ -205,7 +211,7 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
             )
 
           case 'Connecting':
-            if (List.isEmpty(s.queue)) return disconnect(s)
+            if (List.isEmpty(s.queue)) return voiceConnectionDestroy(s)
 
             return pipe(
               IO.Do,
@@ -231,8 +237,43 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
     )
   }
 
-  function onConnectionDisconnected(): Future<void> {
-    return pipe(state.get, Future.fromIOEither, Future.chain(disconnect))
+  function onConnectionDisconnectedOrDestroyed(): Future<void> {
+    return pipe(state.get, Future.fromIOEither, Future.chain(cleanMessageAndPlayer))
+  }
+
+  function cleanMessageAndPlayer(currentState: MusicState): Future<void> {
+    const orElse = Future.orElse((e: Error) => Future.fromIOEither(logger.warn(e.stack)))
+
+    const messageDelete = pipe(
+      currentState.message,
+      Maybe.fold(
+        () => Future.unit,
+        flow(
+          DiscordConnector.messageDelete,
+          Future.map(() => {}),
+        ),
+      ),
+      orElse,
+    )
+    const audioPlayerStop = pipe(
+      currentState,
+      MusicState.getAudioPlayer,
+      Maybe.fold(
+        () => IO.unit,
+        flow(
+          DiscordConnector.audioPlayerStop,
+          IO.map(() => {}),
+        ),
+      ),
+      Future.fromIOEither,
+      orElse,
+    )
+
+    return pipe(
+      apply.sequenceT(Future.ApplyPar)(messageDelete, audioPlayerStop),
+      Future.chainIOEitherK(() => state.set(MusicState.empty)),
+      Future.map(() => {}),
+    )
   }
 
   function onPlayerIdle(): Future<void> {
@@ -248,7 +289,7 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
             )
 
           case 'Connected':
-            if (List.isEmpty(s.queue)) return disconnect(s)
+            if (List.isEmpty(s.queue)) return voiceConnectionDestroy(s)
 
             return playFirstTrackFromQueue(s)
         }
@@ -300,45 +341,15 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
     )
   }
 
-  function disconnect(currentState: MusicState): Future<void> {
-    const orElse = Future.orElse((e: Error) => Future.fromIOEither(logger.warn(e.message)))
-
-    const messageDelete = pipe(
-      currentState.message,
-      Maybe.fold(
-        () => Future.unit,
-        flow(
-          DiscordConnector.messageDelete,
-          Future.map(() => {}),
-        ),
-      ),
-      orElse,
-    )
-    const voiceConnectionDestroy = pipe(
+  function voiceConnectionDestroy(currentState: MusicState): Future<void> {
+    return pipe(
       currentState,
       MusicState.getVoiceConnection,
       Maybe.fold(() => IO.unit, DiscordConnector.voiceConnectionDestroy),
       Future.fromIOEither,
-      orElse,
-    )
-    const audioPlayerStop = pipe(
-      currentState,
-      MusicState.getAudioPlayer,
-      Maybe.fold(
-        () => IO.unit,
-        flow(
-          DiscordConnector.audioPlayerStop,
-          IO.map(() => {}),
-        ),
+      Future.orElse(e =>
+        isAlreadyDestroyedError(e) ? Future.unit : Future.fromIOEither(logger.warn(e.stack)),
       ),
-      Future.fromIOEither,
-      orElse,
-    )
-
-    return pipe(
-      apply.sequenceT(Future.ApplyPar)(messageDelete, voiceConnectionDestroy, audioPlayerStop),
-      Future.chainIOEitherK(() => state.set(MusicState.empty)),
-      Future.map(() => {}),
     )
   }
 
@@ -372,3 +383,6 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
     return `<MusicSubscription[${guild.name}]>`
   }
 }
+
+const isAlreadyDestroyedError = (e: Error): boolean =>
+  e.message === 'Cannot destroy VoiceConnection - it has already been destroyed'

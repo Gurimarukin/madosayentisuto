@@ -75,6 +75,12 @@ function or<A, B extends A, C extends A, D extends A>(
   c: Refinement<A, C>,
   d: Refinement<A, D>,
 ): Refinement<A, Exclude<A, B> & Exclude<A, C> & Exclude<A, D>>
+function or<A, B extends A, C extends A, D extends A, E extends A>(
+  b: Refinement<A, B>,
+  c: Refinement<A, C>,
+  d: Refinement<A, D>,
+  e: Refinement<A, E>,
+): Refinement<A, Exclude<A, B> & Exclude<A, C> & Exclude<A, D> & Exclude<A, E>>
 function or<A, R extends NonEmptyArray<Refinement<A, A>>>(...refinements_: R): Refinement<A, A> {
   return pipe(refinements_, NonEmptyArray.unprepend, ([head, tail]) =>
     pipe(

@@ -14,7 +14,7 @@ import { flow, pipe } from 'fp-ts/function'
 import { Either, NonEmptyArray } from '../../../shared/utils/fp'
 import { Future, Maybe } from '../../../shared/utils/fp'
 
-import { DiscordConnector } from '../../helpers/DiscordConnector'
+import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
 import type { YoutubeDl } from '../../helpers/YoutubeDl'
 import { musicButtons } from '../../helpers/getMusicStateMessage'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
@@ -153,7 +153,7 @@ export const MusicCommandsObserver = (
                     validateTrack,
                     Future.orElse(e =>
                       pipe(
-                        logger.warn(`validateTrack Error:\n${e.message}`),
+                        logger.warn(`validateTrack Error:\n${e.stack}`),
                         Future.fromIOEither,
                         Future.map(() => Either.left('URL invalide.')),
                       ),
@@ -178,7 +178,15 @@ export const MusicCommandsObserver = (
       Future.chain(
         Either.fold(
           content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
-          () => DiscordConnector.interactionUpdate(interaction),
+          () =>
+            pipe(
+              DiscordConnector.interactionUpdate(interaction),
+              Future.orElse(e =>
+                isUnknownMessageError(e)
+                  ? Future.unit // maybe it was deleted before we can update the interaction)
+                  : Future.left(e),
+              ),
+            ),
         ),
       ),
     )

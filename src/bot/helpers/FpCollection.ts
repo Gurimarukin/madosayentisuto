@@ -129,7 +129,7 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
               Either.fold(
                 flow(
                   decodeError(decoderName)(u),
-                  e => logger.warn(e.message),
+                  e => logger.warn(e.stack),
                   Future.fromIOEither,
                   Future.map(() => Maybe.none),
                 ),
