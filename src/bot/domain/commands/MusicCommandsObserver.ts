@@ -173,17 +173,12 @@ export const MusicCommandsObserver = (
     f: Future<Either<string, void>>,
   ): Future<void> {
     return pipe(
-      DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
-      Future.chain(() =>
-        pipe(
-          validateVoiceChannel(interaction),
-          Either.fold(flow(Either.left, Future.right), () => f),
-        ),
-      ),
+      validateVoiceChannel(interaction),
+      Either.fold(flow(Either.left, Future.right), () => f),
       Future.chain(
         Either.fold(
           content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
-          () => Future.unit,
+          () => DiscordConnector.interactionUpdate(interaction),
         ),
       ),
     )
