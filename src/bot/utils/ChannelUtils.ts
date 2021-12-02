@@ -1,5 +1,4 @@
 import type { Channel, PartialDMChannel } from 'discord.js'
-import { Permissions } from 'discord.js'
 import { GuildChannel, StageChannel, TextChannel, ThreadChannel, VoiceChannel } from 'discord.js'
 import { predicate, refinement } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
@@ -23,13 +22,11 @@ const isNamedChannel = pipe(
 const isPublic = (channel: GuildChannel): boolean =>
   // channel.permissionsFor('everyone')
   channel.permissionOverwrites.valueOf().filter(p => {
-    const res = !(
-      p.deny.bitfield === Permissions.DEFAULT && p.allow.bitfield === Permissions.DEFAULT
-    )
+    const res = !(p.deny.bitfield === BigInt(0) && p.allow.bitfield === BigInt(0))
     if (channel.name === 'Mon poignard') {
       console.log('p.deny.bitfield =', p.deny.bitfield)
       console.log('p.allow.bitfield =', p.allow.bitfield)
-      console.log('Permissions.DEFAULT =', Permissions.DEFAULT)
+      console.log('BigInt(0) =', BigInt(0))
       console.log('res =', res)
     }
     return res
