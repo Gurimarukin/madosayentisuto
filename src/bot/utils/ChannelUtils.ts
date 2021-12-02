@@ -24,7 +24,7 @@ const isPublic = (channel: GuildChannel): boolean =>
   // channel.permissionsFor('everyone')
   channel.permissionOverwrites
     .valueOf()
-    .filter(p => p.deny.bitfield === Permissions.ALL && p.allow.bitfield === Permissions.ALL)
+    .filter(p => !(p.deny.bitfield === Permissions.ALL && p.allow.bitfield === Permissions.ALL))
     .size === 0
 
 const isPrivate = predicate.not(isPublic)
