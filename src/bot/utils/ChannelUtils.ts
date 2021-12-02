@@ -20,6 +20,7 @@ const isNamedChannel = pipe(
 )
 
 const isPublic = (channel: GuildChannel): boolean =>
+  // channel.permissionsFor('everyone')
   channel.permissionOverwrites.valueOf().size === 0
 
 const isPrivate = predicate.not(isPublic)

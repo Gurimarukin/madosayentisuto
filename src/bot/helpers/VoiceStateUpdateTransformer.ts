@@ -145,7 +145,10 @@ const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
     guild.channels.cache.toJSON(),
     channels => {
       const everyone = guild.roles.cache.toJSON()
-      console.log('roles =', everyone)
+      console.log(
+        'roles =',
+        everyone.map(r => r.name),
+      )
 
       const monPoignard = channels.find(c => c.name === 'Mon poignard')
       if (monPoignard !== undefined) {
