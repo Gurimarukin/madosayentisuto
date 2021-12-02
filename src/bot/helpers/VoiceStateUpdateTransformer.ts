@@ -147,6 +147,7 @@ const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
       console.log('everyone =', everyone)
 
       const monPoignard = channels.find(c => c.name === 'Mon poignard')
+      console.log('monPoignard =', monPoignard?.name)
       if (monPoignard !== undefined) {
         console.log(
           "monPoignard.permissionsFor('@everyone') =",
@@ -158,10 +159,23 @@ const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
       }
 
       const lol = channels.find(c => c.name === 'La Ligue des Légendes')
+      console.log('lol =', lol?.name)
       if (lol !== undefined) {
         console.log("lol.permissionsFor('@everyone') =", lol.permissionsFor('@everyone'))
         if (ChannelUtils.isGuildChannel(lol)) {
           console.log('ChannelUtils.isPublic(lol) =', ChannelUtils.isPublic(lol))
+        }
+      }
+
+      const dramaturges = channels.find(c => c.name === 'Dramaturges')
+      console.log('dramaturges =', dramaturges?.name)
+      if (dramaturges !== undefined) {
+        console.log(
+          "dramaturges.permissionsFor('@everyone') =",
+          dramaturges.permissionsFor('@everyone'),
+        )
+        if (ChannelUtils.isGuildChannel(dramaturges)) {
+          console.log('ChannelUtils.isPublic(dramaturges) =', ChannelUtils.isPublic(dramaturges))
         }
       }
 
