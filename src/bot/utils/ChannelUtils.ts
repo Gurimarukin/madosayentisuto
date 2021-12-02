@@ -1,4 +1,5 @@
 import type { Channel, PartialDMChannel } from 'discord.js'
+import { Permissions } from 'discord.js'
 import { GuildChannel, StageChannel, TextChannel, ThreadChannel, VoiceChannel } from 'discord.js'
 import { predicate, refinement } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
@@ -21,7 +22,10 @@ const isNamedChannel = pipe(
 
 const isPublic = (channel: GuildChannel): boolean =>
   // channel.permissionsFor('everyone')
-  channel.permissionOverwrites.valueOf().size === 0
+  channel.permissionOverwrites
+    .valueOf()
+    .filter(p => p.deny.bitfield === Permissions.ALL && p.allow.bitfield === Permissions.ALL)
+    .size === 0
 
 const isPrivate = predicate.not(isPublic)
 
