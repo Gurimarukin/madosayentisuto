@@ -67,12 +67,11 @@ export const VoiceStateUpdateTransformer = (
         `${member.user.tag} joined the channel 📢${channel.name}`,
       ),
       Future.fromIOEither,
-      Future.chain(() => {
-        console.log('ChannelUtils.isPublic(channel) =', ChannelUtils.isPublic(channel))
-        return ChannelUtils.isPublic(channel) && peopleInPublicVocalChans(member.guild).length === 1
+      Future.chain(() =>
+        ChannelUtils.isPublic(channel) && peopleInPublicVocalChans(member.guild).length === 1
           ? Future.fromIOEither(subject.next(MadEvent.PublicCallStarted(member, channel)))
-          : Future.unit
-      }),
+          : Future.unit,
+      ),
     )
   }
 
@@ -144,17 +143,14 @@ const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
   pipe(
     guild.channels.cache.toJSON(),
     channels => {
-      const everyone = guild.roles.cache.toJSON()
-      console.log(
-        'roles =',
-        everyone.map(r => r.name),
-      )
+      const everyone = guild.roles.cache.toJSON().find(r => r.name === '@everyone')
+      console.log('everyone =', everyone)
 
       const monPoignard = channels.find(c => c.name === 'Mon poignard')
       if (monPoignard !== undefined) {
         console.log(
-          "monPoignard.permissionsFor('everyone') =",
-          monPoignard.permissionsFor('everyone'),
+          "monPoignard.permissionsFor('@everyone') =",
+          monPoignard.permissionsFor('@everyone'),
         )
         if (ChannelUtils.isGuildChannel(monPoignard)) {
           console.log('ChannelUtils.isPublic(monPoignard) =', ChannelUtils.isPublic(monPoignard))
@@ -163,7 +159,7 @@ const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
 
       const lol = channels.find(c => c.name === 'La Ligue des Légendes')
       if (lol !== undefined) {
-        console.log("lol.permissionsFor('everyone') =", lol.permissionsFor('everyone'))
+        console.log("lol.permissionsFor('@everyone') =", lol.permissionsFor('@everyone'))
         if (ChannelUtils.isGuildChannel(lol)) {
           console.log('ChannelUtils.isPublic(lol) =', ChannelUtils.isPublic(lol))
         }
