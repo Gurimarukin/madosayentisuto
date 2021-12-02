@@ -1,4 +1,4 @@
-import type { Guild, GuildChannel, GuildMember, StageChannel, VoiceChannel } from 'discord.js'
+import type { Guild, GuildChannel, GuildMember, Role, StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
@@ -143,16 +143,13 @@ const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
   pipe(
     guild.channels.cache.toJSON(),
     channels => {
-      const everyone = guild.roles.cache.toJSON().find(r => r.name === '@everyone')
+      const everyone = guild.roles.cache.toJSON().find(r => r.name === '@everyone') as Role
       console.log('everyone =', everyone)
 
       const monPoignard = channels.find(c => c.name === 'Mon poignard')
       console.log('monPoignard =', monPoignard?.name)
       if (monPoignard !== undefined) {
-        console.log(
-          "monPoignard.permissionsFor('@everyone') =",
-          monPoignard.permissionsFor('@everyone'),
-        )
+        console.log('monPoignard.permissionsFor(everyone) =', monPoignard.permissionsFor(everyone))
         if (ChannelUtils.isGuildChannel(monPoignard)) {
           console.log('ChannelUtils.isPublic(monPoignard) =', ChannelUtils.isPublic(monPoignard))
         }
@@ -161,7 +158,7 @@ const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
       const lol = channels.find(c => c.name === 'La Ligue des Légendes')
       console.log('lol =', lol?.name)
       if (lol !== undefined) {
-        console.log("lol.permissionsFor('@everyone') =", lol.permissionsFor('@everyone'))
+        console.log('lol.permissionsFor(everyone) =', lol.permissionsFor(everyone))
         if (ChannelUtils.isGuildChannel(lol)) {
           console.log('ChannelUtils.isPublic(lol) =', ChannelUtils.isPublic(lol))
         }
@@ -170,10 +167,7 @@ const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
       const dramaturges = channels.find(c => c.name === 'Dramaturges')
       console.log('dramaturges =', dramaturges?.name)
       if (dramaturges !== undefined) {
-        console.log(
-          "dramaturges.permissionsFor('@everyone') =",
-          dramaturges.permissionsFor('@everyone'),
-        )
+        console.log('dramaturges.permissionsFor(everyone) =', dramaturges.permissionsFor(everyone))
         if (ChannelUtils.isGuildChannel(dramaturges)) {
           console.log('ChannelUtils.isPublic(dramaturges) =', ChannelUtils.isPublic(dramaturges))
         }
