@@ -145,20 +145,24 @@ const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
     guild.channels.cache.toJSON(),
     channels => {
       const monPoignard = channels.find(c => c.name === 'Mon poignard')
-      console.log('monPoignard =', monPoignard)
       if (monPoignard !== undefined) {
         console.log(
-          'ChannelUtils.isGuildChannel(monPoignard) =',
-          ChannelUtils.isGuildChannel(monPoignard),
+          "monPoignard.permissionsFor('everyone') =",
+          monPoignard.permissionsFor('everyone'),
         )
         if (ChannelUtils.isGuildChannel(monPoignard)) {
           console.log('ChannelUtils.isPublic(monPoignard) =', ChannelUtils.isPublic(monPoignard))
         }
-        console.log(
-          'ChannelUtils.isVoiceChannel(monPoignard) =',
-          ChannelUtils.isVoiceChannel(monPoignard),
-        )
       }
+
+      const lol = channels.find(c => c.name === 'La ligue des Légendes')
+      if (lol !== undefined) {
+        console.log("lol.permissionsFor('everyone') =", lol.permissionsFor('everyone'))
+        if (ChannelUtils.isGuildChannel(lol)) {
+          console.log('ChannelUtils.isPublic(lol) =', ChannelUtils.isPublic(lol))
+        }
+      }
+
       return channels
     },
     List.filter(
