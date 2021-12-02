@@ -22,10 +22,16 @@ const isNamedChannel = pipe(
 
 const isPublic = (channel: GuildChannel): boolean =>
   // channel.permissionsFor('everyone')
-  channel.permissionOverwrites
-    .valueOf()
-    .filter(p => !(p.deny.bitfield === Permissions.ALL && p.allow.bitfield === Permissions.ALL))
-    .size === 0
+  channel.permissionOverwrites.valueOf().filter(p => {
+    const res = !(p.deny.bitfield === Permissions.ALL && p.allow.bitfield === Permissions.ALL)
+    if (channel.name === 'Mon poignard') {
+      console.log('p.deny.bitfield =', p.deny.bitfield)
+      console.log('p.allow.bitfield =', p.allow.bitfield)
+      console.log('Permissions.ALL =', Permissions.ALL)
+      console.log('res =', res)
+    }
+    return res
+  }).size === 0
 
 const isPrivate = predicate.not(isPublic)
 
