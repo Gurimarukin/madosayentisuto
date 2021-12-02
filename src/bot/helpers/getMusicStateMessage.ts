@@ -48,8 +48,7 @@ const connecting: MyMessageOptions = {
   embeds: [
     MessageUtils.safeEmbed({
       color: messagesColor,
-      author: MessageUtils.author('Chargement'),
-      title: '...',
+      author: MessageUtils.author('Chargement...'),
       thumbnail: MessageUtils.thumbnail(images.jpPerdu),
       image: MessageUtils.image(images.jpDjGif),
     }),
