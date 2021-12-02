@@ -32,6 +32,7 @@ import type { TObserver } from '../../models/rx/TObserver'
 import type { TSubject } from '../../models/rx/TSubject'
 import { PubSubUtils } from '../../utils/PubSubUtils'
 import { DiscordConnector } from '../DiscordConnector'
+import type { YoutubeDl } from '../YoutubeDl'
 import { getMusicStateMessage } from '../getMusicStateMessage'
 
 const { or } = PubSubUtils
@@ -41,12 +42,12 @@ type MusicChannel = VoiceChannel | StageChannel
 export type MusicSubscription = ReturnType<typeof MusicSubscription>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
+export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, guild: Guild) => {
   const logger = Logger(`MusicSubscription-${guild.name}`)
 
   const state = Store<MusicState>(MusicState.empty)
 
-  return { playTracks, stringify }
+  return { playTracks, nextTrack, stringify }
 
   function playTracks(
     musicChannel: MusicChannel,
@@ -69,6 +70,26 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
           case 'Connecting':
           case 'Connected':
             return Future.unit
+        }
+      }),
+    )
+  }
+
+  function nextTrack(): Future<boolean> {
+    return pipe(
+      state.get,
+      Future.fromIOEither,
+      Future.chain(s => {
+        switch (s.type) {
+          case 'Disconnected':
+          case 'Connecting':
+            return Future.right(false)
+
+          case 'Connected':
+            return pipe(
+              List.isEmpty(s.queue) ? disconnect(s) : playFirstTrackFromQueue(s),
+              Future.map(() => true),
+            )
         }
       }),
     )
@@ -256,7 +277,11 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
 
   function playTrackNow(audioPlayer: AudioPlayer, track: Track): Future<void> {
     return pipe(
-      DiscordConnector.audioPlayerPlayTrack(audioPlayer, track),
+      youtubeDl.audioResource(track.url),
+      Future.map(audioResource =>
+        DiscordConnector.audioPlayerPlayAudioResource(audioPlayer, audioResource),
+      ),
+      Future.chain(Future.fromIOEither),
       Future.chain(() => updateState(MusicState.setPlaying(Maybe.some(track)))),
     )
   }

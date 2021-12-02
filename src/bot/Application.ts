@@ -22,6 +22,7 @@ import { IndexesEnsureObserver } from './domain/startup/IndexesEnsureObserver'
 import type { DiscordConnector } from './helpers/DiscordConnector'
 import { LogMadEventsObserver } from './helpers/LogMadEventsObserver'
 import { VoiceStateUpdateTransformer } from './helpers/VoiceStateUpdateTransformer'
+import { YoutubeDl } from './helpers/YoutubeDl'
 import { publishDiscordEvents } from './helpers/publishDiscordEvents'
 import { scheduleCronJob } from './helpers/scheduleCronJob'
 import type { MongoCollection } from './models/MongoCollection'
@@ -42,6 +43,8 @@ export const Application = (
   discord: DiscordConnector,
 ): IO<void> => {
   const logger = Logger('Application')
+
+  const youtubeDl = YoutubeDl(config.youtubeDlPath)
 
   const url = `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`
   const mongoCollection: MongoCollection =
@@ -69,7 +72,7 @@ export const Application = (
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
 
   const botStateService = BotStateService(Logger, discord, botStatePersistence)
-  const guildStateService = GuildStateService(Logger, discord, guildStatePersistence)
+  const guildStateService = GuildStateService(Logger, discord, youtubeDl, guildStatePersistence)
 
   const pubSub = PubSub<MadEvent>()
 
@@ -83,7 +86,10 @@ export const Application = (
         AdminCommandsObserver(Logger, discord, botStateService, guildStateService),
         or(MadEvent.is('InteractionCreate')),
       ),
-      sub(MusicCommandsObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),
+      sub(
+        MusicCommandsObserver(Logger, youtubeDl, guildStateService),
+        or(MadEvent.is('InteractionCreate')),
+      ),
       sub(OtherCommandsObserver(), or(MadEvent.is('InteractionCreate'))),
 
       // │  └ startup/

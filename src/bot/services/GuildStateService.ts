@@ -7,6 +7,7 @@ import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
+import type { YoutubeDl } from '../helpers/YoutubeDl'
 import { MusicSubscription } from '../helpers/music/MusicSubscription'
 import { GuildId } from '../models/GuildId'
 import type { TSnowflake } from '../models/TSnowflake'
@@ -30,6 +31,7 @@ export type GuildStateService = ReturnType<typeof GuildStateService>
 export const GuildStateService = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
+  youtubeDl: YoutubeDl,
   guildStatePersistence: GuildStatePersistence,
 ) => {
   const logger = Logger('GuildStateService')
@@ -70,7 +72,7 @@ export const GuildStateService = (
         Future.map(
           flow(
             Maybe.flatten,
-            Maybe.getOrElse(() => MusicSubscription(Logger, guild)),
+            Maybe.getOrElse(() => MusicSubscription(Logger, youtubeDl, guild)),
           ),
         ),
         Future.chainFirst(subscription => setLens(guild, 'subscription', Maybe.some(subscription))),

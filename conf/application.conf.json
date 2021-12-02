@@ -1,4 +1,5 @@
 {
+  "youtubeDlPath": "/usr/local/bin/youtube-dl",
   "admins": [],
   "logger": {
     "consoleLevel": "info",

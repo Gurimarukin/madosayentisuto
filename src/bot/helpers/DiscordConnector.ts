@@ -2,6 +2,7 @@ import type { REST } from '@discordjs/rest'
 import type {
   AudioPlayer,
   AudioPlayerStatus,
+  AudioResource,
   PlayerSubscription,
   VoiceConnection,
   VoiceConnectionStatus,
@@ -54,10 +55,8 @@ import { TSnowflake } from '../models/TSnowflake'
 import type { Activity } from '../models/botState/Activity'
 import { CommandId } from '../models/commands/CommandId'
 import { PutCommandResult } from '../models/commands/PutCommandResult'
-import type { Track } from '../models/music/Track'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { MessageUtils } from '../utils/MessageUtils'
-import { YtUtils } from '../utils/YtUtils'
 import { decodeError } from '../utils/decodeError'
 
 type NotPartial = {
@@ -186,17 +185,10 @@ const addRole = (
 
 const audioPlayerCreate: IO<AudioPlayer> = IO.tryCatch(() => createAudioPlayer())
 
-const audioPlayerPlayTrack = (audioPlayer: AudioPlayer, track: Track): Future<void> =>
-  pipe(
-    YtUtils.audioResource(track.url),
-    Future.map(audioResource => IO.tryCatch(() => audioPlayer.play(audioResource))),
-    Future.chain(Future.fromIOEither),
-  )
-// const audioPlayerPlayArbitrary = (audioPlayer: AudioPlayer, track: Track): IO<void> =>
-//   pipe(
-//     IO.tryCatch(() => createAudioResource(track.url, { inputType: StreamType.Arbitrary })),
-//     IO.chain(resource => IO.tryCatch(() => audioPlayer.play(resource))),
-//   )
+const audioPlayerPlayAudioResource = (
+  audioPlayer: AudioPlayer,
+  audioResource: AudioResource,
+): IO<void> => IO.tryCatch(() => audioPlayer.play(audioResource))
 
 const audioPlayerStop = (audioPlayer: AudioPlayer): IO<boolean> =>
   IO.tryCatch(() => audioPlayer.stop(true))
@@ -268,7 +260,7 @@ const interactionReply = (
 
 const interactionUpdate = (
   interaction: ButtonInteraction,
-  options: string | MessagePayload | InteractionUpdateOptions,
+  options: string | MessagePayload | InteractionUpdateOptions = {},
 ): Future<void> => Future.tryCatch(() => interaction.update(options))
 
 const messageDelete = (message: Message): Future<boolean> =>
@@ -388,7 +380,7 @@ export const DiscordConnector = {
 
   addRole,
   audioPlayerCreate,
-  audioPlayerPlayTrack,
+  audioPlayerPlayAudioResource,
   audioPlayerStop,
   entersState,
   guildCommandsPermissionsSet,
