@@ -1,7 +1,7 @@
 import type { Guild, GuildChannel, GuildMember, StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { Future, IO, List, Maybe, inspect } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import type {
   MadEventPublicCallEnded,
@@ -143,7 +143,24 @@ const getMember = ({ oldState, newState }: MadEventVoiceStateUpdate): Maybe<Guil
 const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
   pipe(
     guild.channels.cache.toJSON(),
-    inspect('channels:'),
+    channels => {
+      const monPoignard = channels.find(c => c.name === 'Mon poignard')
+      console.log('monPoignard =', monPoignard)
+      if (monPoignard !== undefined) {
+        console.log(
+          'ChannelUtils.isGuildChannel(monPoignard) =',
+          ChannelUtils.isGuildChannel(monPoignard),
+        )
+        if (ChannelUtils.isGuildChannel(monPoignard)) {
+          console.log('ChannelUtils.isPublic(monPoignard) =', ChannelUtils.isPublic(monPoignard))
+        }
+        console.log(
+          'ChannelUtils.isVoiceChannel(monPoignard) =',
+          ChannelUtils.isVoiceChannel(monPoignard),
+        )
+      }
+      return channels
+    },
     List.filter(
       (c): c is GuildChannel =>
         ChannelUtils.isGuildChannel(c) &&
