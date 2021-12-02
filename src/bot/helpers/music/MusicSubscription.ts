@@ -6,17 +6,7 @@ import type {
 } from '@discordjs/voice'
 import { AudioPlayerStatus } from '@discordjs/voice'
 import { VoiceConnectionStatus } from '@discordjs/voice'
-import type {
-  ColorResolvable,
-  Guild,
-  MessageButtonStyleResolvable,
-  MessageOptions,
-  MessagePayload,
-  StageChannel,
-  TextBasedChannels,
-  VoiceChannel,
-} from 'discord.js'
-import { MessageActionRow, MessageButton } from 'discord.js'
+import type { Guild, StageChannel, TextBasedChannels, VoiceChannel } from 'discord.js'
 import { apply, refinement } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { flow, pipe } from 'fp-ts/function'
@@ -26,7 +16,6 @@ import type { NonEmptyArray } from '../../../shared/utils/fp'
 import { List } from '../../../shared/utils/fp'
 import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
-import { Colors, constants } from '../../constants'
 import { Store } from '../../models/Store'
 import type {
   MusicEventConnectionDisconnected,
@@ -41,22 +30,15 @@ import type { Track } from '../../models/music/Track'
 import { PubSub } from '../../models/rx/PubSub'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { TSubject } from '../../models/rx/TSubject'
-import { MessageUtils } from '../../utils/MessageUtils'
 import { PubSubUtils } from '../../utils/PubSubUtils'
-import { StringUtils } from '../../utils/StringUtils'
 import { DiscordConnector } from '../DiscordConnector'
+import { getMusicStateMessage } from '../getMusicStateMessage'
 
 const { or } = PubSubUtils
 
 type MusicChannel = VoiceChannel | StageChannel
-type MyMessageOptions = string | MessagePayload | MessageOptions
 
 export type MusicSubscription = ReturnType<typeof MusicSubscription>
-
-const musicButtons = {
-  playPauseId: 'musicPlayPause',
-  nextId: 'musicNext',
-}
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
@@ -109,7 +91,7 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     )
 
     return pipe(
-      DiscordConnector.sendMessage(stateChannel, stateMessages.connecting),
+      DiscordConnector.sendMessage(stateChannel, getMusicStateMessage.connecting),
       Future.chainIOEitherK(message => state.update(MusicState.setMessage(message))),
       Future.chainIOEitherK(() =>
         pipe(
@@ -287,7 +269,7 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     return pipe(
       futureMaybe.fromOption(message),
       futureMaybe.chainFuture(m =>
-        DiscordConnector.messageEdit(m, stateMessages.playing(playing, queue, true)),
+        DiscordConnector.messageEdit(m, getMusicStateMessage.playing(playing, queue, true)),
       ),
       Future.map(() => {}),
     )
@@ -365,89 +347,3 @@ export const MusicSubscription = (Logger: LoggerGetter, guild: Guild) => {
     return `<MusicSubscription[${guild.name}]>`
   }
 }
-
-const queueDisplay = 5
-const messagesColor: ColorResolvable = Colors.darkred
-const images = {
-  empty: 'https://cdn.discordapp.com/attachments/849299103362973777/914578024366747668/vide.png',
-  jpDjGif: 'https://i.imgur.com/lBrj5I6.gif',
-  jpPerdu:
-    'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
-}
-
-const stateMessages = {
-  connecting: MessageUtils.singleSafeEmbed({
-    color: messagesColor,
-    description: 'Chargement...',
-  }),
-
-  playing: (playing: Maybe<Track>, queue: List<Track>, isPlaying: boolean): MyMessageOptions => ({
-    embeds: [
-      MessageUtils.safeEmbed({
-        color: messagesColor,
-        author: MessageUtils.author('En cours de lecture :'),
-        title: pipe(
-          playing,
-          Maybe.map(t => t.title),
-          Maybe.toUndefined,
-        ),
-        url: pipe(
-          playing,
-          Maybe.map(t => t.url),
-          Maybe.toUndefined,
-        ),
-        description: pipe(
-          playing,
-          Maybe.fold(
-            () => '*Aucun morceau en cours*',
-            () => undefined,
-          ),
-        ),
-        thumbnail: pipe(
-          playing,
-          Maybe.chain(t => t.thumbnail),
-          Maybe.getOrElse(() => images.jpPerdu),
-          MessageUtils.thumbnail,
-        ),
-        fields: [
-          MessageUtils.field(
-            constants.emptyChar,
-            pipe(
-              queue,
-              List.match(
-                () => `*Aucun morceau dans la file d'attente.*\n\`/play <url>\` *pour en ajouter*`,
-                flow(
-                  List.takeLeft(queueDisplay),
-                  List.map(t => `${maskedLink(constants.emojis.link, t.url)} ${t.title}`),
-                  StringUtils.mkString(
-                    `*File d'attente (${queue.length}) :*\n`,
-                    '\n',
-                    queue.length <= queueDisplay ? '' : '\n...',
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-        image: MessageUtils.image(images.jpDjGif),
-      }),
-    ],
-    components: [
-      new MessageActionRow().addComponents(isPlaying ? pauseButton : playButton, nextButton),
-    ],
-  }),
-}
-
-const button = (
-  id: string,
-  label: string,
-  emoji: string,
-  style: MessageButtonStyleResolvable = 'SECONDARY',
-): MessageButton =>
-  new MessageButton().setCustomId(id).setLabel(label).setStyle(style).setEmoji(emoji)
-
-const pauseButton = button(musicButtons.playPauseId, 'Pause', constants.emojis.pause)
-const playButton = button(musicButtons.playPauseId, 'Lecture', constants.emojis.play)
-const nextButton = button(musicButtons.nextId, 'Suivant', constants.emojis.next)
-
-const maskedLink = (text: string, url: string): string => `[${text}](${url})`
