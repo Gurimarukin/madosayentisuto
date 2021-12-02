@@ -1,7 +1,7 @@
 import type { Guild, GuildChannel, GuildMember, StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { Future, IO, List, Maybe } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, inspect } from '../../shared/utils/fp'
 
 import type {
   MadEventPublicCallEnded,
@@ -64,14 +64,15 @@ export const VoiceStateUpdateTransformer = (
     return pipe(
       LogUtils.pretty(logger, channel.guild)(
         'debug',
-        `${member.user.tag} joined the channel #${channel.name}`,
+        `${member.user.tag} joined the channel 📢${channel.name}`,
       ),
       Future.fromIOEither,
-      Future.chain(() =>
-        ChannelUtils.isPublic(channel) && peopleInPublicVocalChans(member.guild).length === 1
+      Future.chain(() => {
+        console.log('ChannelUtils.isPublic(channel) =', ChannelUtils.isPublic(channel))
+        return ChannelUtils.isPublic(channel) && peopleInPublicVocalChans(member.guild).length === 1
           ? Future.fromIOEither(subject.next(MadEvent.PublicCallStarted(member, channel)))
-          : Future.unit,
-      ),
+          : Future.unit
+      }),
     )
   }
 
@@ -83,7 +84,7 @@ export const VoiceStateUpdateTransformer = (
     return pipe(
       LogUtils.pretty(logger, from.guild)(
         'debug',
-        `${member.user.tag} moved from channel #${from.name} to #${to.name}`,
+        `${member.user.tag} moved from channel 📢${from.name} to 📢${to.name}`,
       ),
       Future.fromIOEither,
       Future.map(() => {
@@ -115,7 +116,7 @@ export const VoiceStateUpdateTransformer = (
     return pipe(
       LogUtils.pretty(logger, channel.guild)(
         'debug',
-        `${member.user.tag} left the channel #${channel.name}`,
+        `${member.user.tag} left the channel 📢${channel.name}`,
       ),
       Future.fromIOEither,
       Future.chain(() =>
@@ -142,6 +143,7 @@ const getMember = ({ oldState, newState }: MadEventVoiceStateUpdate): Maybe<Guil
 const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
   pipe(
     guild.channels.cache.toJSON(),
+    inspect('channels:'),
     List.filter(
       (c): c is GuildChannel =>
         ChannelUtils.isGuildChannel(c) &&
