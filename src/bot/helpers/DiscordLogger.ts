@@ -10,6 +10,7 @@ import type { Config } from '../Config'
 import { LogLevel, LogLevelOrOff } from '../models/logger/LogLevel'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import { MessageUtils } from '../utils/MessageUtils'
+import { StringUtils } from '../utils/StringUtils'
 import { DiscordConnector } from './DiscordConnector'
 
 export const DiscordLogger =
@@ -82,9 +83,11 @@ const formatConsole = (name: string, level: LogLevel, msg: string): string => {
 
 const formatDMCompact = (name: string, level: LogLevel, msg: string): string => {
   const withName = `${name} - ${msg}`
-  return level === 'info' || level === 'warn'
-    ? `\`${level.toUpperCase()}  ${withName}\``
-    : `\`${level.toUpperCase()} ${withName}\``
+  const res =
+    level === 'info' || level === 'warn'
+      ? `\`${level.toUpperCase()}  ${withName}\``
+      : `\`${level.toUpperCase()} ${withName}\``
+  return pipe(res, StringUtils.ellipse(2000))
 }
 
 const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageOptions =>
