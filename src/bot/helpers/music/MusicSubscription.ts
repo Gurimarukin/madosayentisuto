@@ -7,7 +7,7 @@ import type {
 import { AudioPlayerStatus } from '@discordjs/voice'
 import { VoiceConnectionStatus } from '@discordjs/voice'
 import type { Guild, StageChannel, TextBasedChannels, VoiceChannel } from 'discord.js'
-import { apply, refinement } from 'fp-ts'
+import { apply } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { flow, pipe } from 'fp-ts/function'
 
@@ -139,7 +139,7 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
 
     const sub = PubSubUtils.subscribe(logger, observable)
     const subscribe = apply.sequenceT(IO.ApplyPar)(
-      sub(loggerObserver(), or(refinement.id())),
+      // sub(loggerObserver(), or(refinement.id())),
       sub(
         lifecycleObserver(),
         or(
@@ -421,31 +421,31 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
     )
   }
 
-  function loggerObserver(): TObserver<MusicEvent> {
-    return {
-      next: flow(event => {
-        switch (event.type) {
-          case 'ConnectionError':
-          case 'PlayerError':
-            return logger.warn(event.type, event.error)
+  // function loggerObserver(): TObserver<MusicEvent> {
+  //   return {
+  //     next: flow(event => {
+  //       switch (event.type) {
+  //         case 'ConnectionError':
+  //         case 'PlayerError':
+  //           return logger.warn(event.type, event.error)
 
-          case 'ConnectionSignalling':
-          case 'ConnectionConnecting':
-          case 'ConnectionReady':
-          case 'ConnectionDisconnected':
-          case 'ConnectionDestroyed':
+  //         case 'ConnectionSignalling':
+  //         case 'ConnectionConnecting':
+  //         case 'ConnectionReady':
+  //         case 'ConnectionDisconnected':
+  //         case 'ConnectionDestroyed':
 
-          case 'PlayerIdle':
-          case 'PlayerBuffering':
-          case 'PlayerPaused':
-          case 'PlayerPlaying':
-          case 'PlayerAutoPaused':
-            const { type, oldState, newState } = event
-            return logger.debug(`✉️  ${type} ${oldState.status} > ${newState.status}`)
-        }
-      }, Future.fromIOEither),
-    }
-  }
+  //         case 'PlayerIdle':
+  //         case 'PlayerBuffering':
+  //         case 'PlayerPaused':
+  //         case 'PlayerPlaying':
+  //         case 'PlayerAutoPaused':
+  //           const { type, oldState, newState } = event
+  //           return logger.debug(`✉️  ${type} ${oldState.status} > ${newState.status}`)
+  //       }
+  //     }, Future.fromIOEither),
+  //   }
+  // }
 
   function stringify(): string {
     return `<MusicSubscription[${guild.name}]>`
