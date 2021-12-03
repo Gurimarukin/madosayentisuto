@@ -11,7 +11,7 @@ const stripMargins = (str: string): string => str.replace(margin, '')
 const ellipse =
   (take: number) =>
   (str: string): string =>
-    str.length > take ? `${str.substring(0, take)}...` : str
+    take < str.length && 3 <= take ? `${str.slice(0, take - 3)}...` : str
 
 const isEmpty = (str: string): boolean => str === ''
 

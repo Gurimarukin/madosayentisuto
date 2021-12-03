@@ -34,8 +34,12 @@ export const CallsAutoroleObserver = (
 
       if (!interaction.isButton()) return Future.unit
 
-      if (interaction.customId === callsButton.subscribeId) return onSubscribe(interaction)
-      if (interaction.customId === callsButton.unsubscribeId) return onUnsubscribe(interaction)
+      switch (interaction.customId) {
+        case callsButton.subscribeId:
+          return onSubscribe(interaction)
+        case callsButton.unsubscribeId:
+          return onUnsubscribe(interaction)
+      }
 
       return Future.unit
     },
@@ -64,7 +68,7 @@ export const CallsAutoroleObserver = (
       !DiscordConnector.hasRole(member, calls.role)
         ? Future.right(true)
         : pipe(
-            DiscordConnector.removeRole(member, calls.role),
+            DiscordConnector.roleRemove(member, calls.role),
             Future.map(success => {
               const log = LogUtils.pretty(logger, guild)
               return success
@@ -83,7 +87,8 @@ export const CallsAutoroleObserver = (
   ): Future<void> {
     return pipe(
       futureMaybe.Do,
-      futureMaybe.bind('guild', () => futureMaybe.fromNullable(interaction.guild)),
+      Future.chainFirst(() => DiscordConnector.interactionUpdate(interaction)),
+      futureMaybe.apS('guild', futureMaybe.fromNullable(interaction.guild)),
       futureMaybe.bind('callsAndMember', ({ guild }) =>
         fetchCallsAndMember(guild, interaction.member),
       ),
@@ -92,7 +97,7 @@ export const CallsAutoroleObserver = (
       ),
       Future.map(Maybe.filter(({ success }) => success)),
       futureMaybe.chainFuture(({ callsAndMember: { calls } }) => refreshCallsInitMessage(calls)),
-      Future.chain(() => DiscordConnector.interactionUpdate(interaction, {})),
+      Future.map(() => {}),
     )
   }
 

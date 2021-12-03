@@ -7,7 +7,8 @@ import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MusicSubscription } from '../helpers/music/MusicSubscription'
+import type { YoutubeDl } from '../helpers/YoutubeDl'
+import { MusicSubscription } from '../helpers/music/MusicSubscription'
 import { GuildId } from '../models/GuildId'
 import type { TSnowflake } from '../models/TSnowflake'
 import type { Calls } from '../models/guildState/Calls'
@@ -30,6 +31,7 @@ export type GuildStateService = ReturnType<typeof GuildStateService>
 export const GuildStateService = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
+  youtubeDl: YoutubeDl,
   guildStatePersistence: GuildStatePersistence,
 ) => {
   const logger = Logger('GuildStateService')
@@ -63,14 +65,18 @@ export const GuildStateService = (
     setItsFridayChannel: (guild: Guild, channel: TextChannel): Future<GuildState> =>
       setLens(guild, 'itsFridayChannel', Maybe.some(channel)),
 
-    getItsFridayChannel: (guild: Guild): Future<Maybe<TextChannel>> =>
-      get(guild, 'itsFridayChannel'),
-
-    setSubscription: (guild: Guild, subscription: MusicSubscription): Future<GuildState> =>
-      setLens(guild, 'subscription', Maybe.some(subscription)),
-
-    getSubscription: (guild: Guild): IO<Maybe<MusicSubscription>> =>
-      pipe(get(guild, 'subscription'), IO.map(Maybe.flatten)),
+    getSubscription: (guild: Guild): Future<MusicSubscription> =>
+      pipe(
+        get(guild, 'subscription'),
+        Future.fromIOEither,
+        Future.map(
+          flow(
+            Maybe.flatten,
+            Maybe.getOrElse(() => MusicSubscription(Logger, youtubeDl, guild)),
+          ),
+        ),
+        Future.chainFirst(subscription => setLens(guild, 'subscription', Maybe.some(subscription))),
+      ),
   }
 
   function cacheSet(guildId: GuildId, state: GuildState): IO<ReadonlyMap<GuildId, GuildState>> {
@@ -112,7 +118,7 @@ export const GuildStateService = (
           ),
           Future.chain(success => (success ? Future.unit : error())),
           Future.orElse(e => error('-', e)),
-          IO.runFuture,
+          IO.runFutureUnsafe,
           Future.fromIOEither,
         )
 

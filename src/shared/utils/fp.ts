@@ -10,6 +10,7 @@ import {
   task,
   taskEither,
 } from 'fp-ts'
+import type { Predicate } from 'fp-ts/Predicate'
 import type { Lazy } from 'fp-ts/function'
 import { flow, pipe } from 'fp-ts/function'
 import * as C_ from 'io-ts/Codec'
@@ -51,6 +52,8 @@ const maybeEncoder = <O, A>(encoder: E_.Encoder<O, A>): E_.Encoder<O | null, May
 })
 export const Maybe = {
   ...option,
+  every: <A>(predicate: Predicate<A>): ((fa: Maybe<A>) => boolean) =>
+    option.fold(() => true, predicate),
   decoder: maybeDecoder,
   encoder: maybeEncoder,
   codec: <O, A>(codec: C_.Codec<unknown, O, A>): C_.Codec<unknown, O | null, Maybe<A>> =>
@@ -113,7 +116,6 @@ export const Future = {
   ...taskEither,
   right: futureRight,
   left: <A = never>(e: Error): Future<A> => taskEither.left(e),
-  error: <A = never>(message?: string): Future<A> => taskEither.left(Error(message)),
   fromIO: futureFromIO,
   tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, unknownAsError),
   unit: futureRight<void>(undefined),
@@ -133,7 +135,7 @@ export const IO = {
   tryCatch: ioTryCatch,
   fromIO: ioFromIO,
   unit: ioEither.right<never, void>(undefined),
-  runFuture: <A>(f: Future<A>): IO<void> =>
+  runFutureUnsafe: <A>(f: Future<A>): IO<void> =>
     ioFromIO(() => {
       // eslint-disable-next-line functional/no-expression-statement
       Future.runUnsafe(f)

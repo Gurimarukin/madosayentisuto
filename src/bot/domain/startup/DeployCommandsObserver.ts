@@ -55,7 +55,7 @@ export const DeployCommandsObserver = (
       pipe(
         guildStateService.findAllIds(),
         Future.chain(Future.traverseArray(putCommandsForGuild)),
-        Future.chain(() => Future.fromIOEither(logger.info('Ensured commands'))),
+        Future.chainIOEitherK(() => logger.info('Ensured commands')),
       ),
   }
 

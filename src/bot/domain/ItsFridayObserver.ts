@@ -58,9 +58,9 @@ export const ItsFridayObserver = (
     )
   }
 
-  function sendMessage(c: TextChannel): Future<void> {
+  function sendMessage(channel: TextChannel): Future<void> {
     return pipe(
-      DiscordConnector.sendMessage(c, {
+      DiscordConnector.sendMessage(channel, {
         content: `C'est vrai.`,
         files: [new MessageAttachment(constants.itsFridayUrl)],
       }),
@@ -68,7 +68,11 @@ export const ItsFridayObserver = (
         Maybe.fold(
           () =>
             logger.warn(
-              `Couldn't send "It's friday" in channel ${LogUtils.format(c.guild, null, c)}`,
+              `Couldn't send "It's friday" in channel ${LogUtils.format(
+                channel.guild,
+                null,
+                channel,
+              )}`,
             ),
           () => IO.unit,
         ),

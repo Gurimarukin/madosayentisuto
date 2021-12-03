@@ -20,6 +20,7 @@ import * as D from 'io-ts/Decoder'
 
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import type { Tuple } from '../../../shared/utils/fp'
+import { IO } from '../../../shared/utils/fp'
 import { Either, NonEmptyArray } from '../../../shared/utils/fp'
 import { Future, List, Maybe } from '../../../shared/utils/fp'
 
@@ -477,18 +478,16 @@ export const AdminCommandsObserver = (
 
   function deleteMessage(message: Message): Future<void> {
     return pipe(
-      DiscordConnector.deleteMessage(message),
-      Future.chain(deleted =>
+      DiscordConnector.messageDelete(message),
+      Future.chainIOEitherK(deleted =>
         deleted
-          ? Future.unit
-          : Future.fromIOEither(
-              LogUtils.pretty(
-                logger,
-                message.guild,
-                message.author,
-                message.channel,
-              )('info', 'Not enough permissions to delete message'),
-            ),
+          ? IO.unit
+          : LogUtils.pretty(
+              logger,
+              message.guild,
+              message.author,
+              message.channel,
+            )('info', 'Not enough permissions to delete message'),
       ),
     )
   }

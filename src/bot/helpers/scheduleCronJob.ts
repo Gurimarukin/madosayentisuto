@@ -38,7 +38,12 @@ export const scheduleCronJob = (
       ),
     ),
     IO.chain(untilTomorrow8am =>
-      pipe(setCronJobInterval(), Future.fromIOEither, Future.delay(untilTomorrow8am), IO.runFuture),
+      pipe(
+        setCronJobInterval(),
+        Future.fromIOEither,
+        Future.delay(untilTomorrow8am),
+        IO.runFutureUnsafe,
+      ),
     ),
   )
 

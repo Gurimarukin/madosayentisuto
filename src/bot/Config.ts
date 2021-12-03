@@ -11,6 +11,7 @@ import { LogLevelOrOff } from './models/logger/LogLevel'
 import { StringUtils } from './utils/StringUtils'
 
 export type Config = {
+  readonly youtubeDlPath: string
   readonly client: ClientConfig
   readonly admins: NonEmptyArray<TSnowflake>
   readonly logger: {
@@ -47,6 +48,7 @@ export const Config = {
 
 const readConfig = (r: ConfReader): ValidatedNea<string, Config> =>
   ValidatedNea.sequenceS({
+    youtubeDlPath: r(D.string)('youtubeDlPath'),
     client: readClientConfig(r),
     admins: r(NonEmptyArray.decoder(TSnowflake.codec))('admins'),
     logger: ValidatedNea.sequenceS({

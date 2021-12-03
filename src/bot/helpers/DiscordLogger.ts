@@ -1,5 +1,4 @@
 import type { MessageOptions } from 'discord.js'
-import { MessageEmbed } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import util from 'util'
 
@@ -10,6 +9,7 @@ import { Future, IO } from '../../shared/utils/fp'
 import type { Config } from '../Config'
 import { LogLevel, LogLevelOrOff } from '../models/logger/LogLevel'
 import type { LoggerGetter } from '../models/logger/LoggerType'
+import { MessageUtils } from '../utils/MessageUtils'
 import { DiscordConnector } from './DiscordConnector'
 
 export const DiscordLogger =
@@ -36,10 +36,7 @@ export const DiscordLogger =
           pipe(
             discord.fetchUser(userId),
             futureMaybe.chain(user => DiscordConnector.sendMessage(user, msg)),
-            futureMaybe.match(
-              () => {}, // TODO: what to do if message wasn't sent?
-              () => {},
-            ),
+            Future.map(() => {}),
           ),
         )
 
@@ -47,13 +44,12 @@ export const DiscordLogger =
           Future.sequenceArray(futures),
           Future.map(() => {}),
         )
-      } else {
-        return Future.unit
       }
+      return Future.unit
     }
 
     const log = (level: LogLevel, msg: string): IO<void> =>
-      IO.runFuture(
+      IO.runFutureUnsafe(
         pipe(
           consoleLog(level, msg),
           Future.chain(() => discordDMLog(level, msg)),
@@ -91,11 +87,8 @@ const formatDMCompact = (name: string, level: LogLevel, msg: string): string => 
     : `\`${level.toUpperCase()} ${withName}\``
 }
 
-const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageOptions => ({
-  embeds: [
-    new MessageEmbed().setColor(LogLevel.hexColor[level]).setDescription(`${name} - ${msg}`),
-  ],
-})
+const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageOptions =>
+  MessageUtils.singleSafeEmbed({ color: LogLevel.hexColor[level], description: `${name} - ${msg}` })
 
 const formatDate = (d: Date): string => {
   const year = d.getFullYear()

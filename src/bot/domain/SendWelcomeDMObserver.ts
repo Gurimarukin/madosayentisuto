@@ -1,4 +1,3 @@
-import { MessageEmbed } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
@@ -10,6 +9,7 @@ import type { MadEventGuildMemberAdd } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import { LogUtils } from '../utils/LogUtils'
+import { MessageUtils } from '../utils/MessageUtils'
 import { StringUtils } from '../utils/StringUtils'
 
 export const SendWelcomeDMObserver = (Logger: LoggerGetter): TObserver<MadEventGuildMemberAdd> => {
@@ -29,20 +29,21 @@ export const SendWelcomeDMObserver = (Logger: LoggerGetter): TObserver<MadEventG
               `Ha ha !
               |Tu as rejoint le serveur **${member.guild.name}**, quelle erreur !
               |En guise de cadeau de bienvenue, découvre immédiatement l'histoire du véritable capitaine en cliquant sur ce lien plein de malice !
-              |C'est comme OSS 117 mais en moins bien.`,
+              |C'est comme OSS 117 mais en pirate.`,
             ),
             embeds: [
-              new MessageEmbed()
-                .setColor(Colors.darkred)
-                .setTitle('Jean Plank')
-                .setURL('https://jeanplank.blbl.ch')
-                .setThumbnail(
+              MessageUtils.safeEmbed({
+                color: Colors.darkred,
+                title: 'Jean Plank',
+                url: 'https://jeanplank.blbl.ch',
+                thumbnail: MessageUtils.thumbnail(
                   'https://cdn.discordapp.com/attachments/636626556734930948/707502811600125962/thumbnail.jpg',
-                )
-                .setDescription('Tout le monde doit payer !')
-                .setImage(
+                ),
+                description: 'Tout le monde doit payer !',
+                image: MessageUtils.image(
                   'https://cdn.discordapp.com/attachments/636626556734930948/707499903450087464/aide.jpg',
                 ),
+              }),
             ],
           }),
         ),

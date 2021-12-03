@@ -1,10 +1,10 @@
-import { refinement, task } from 'fp-ts'
+import { refinement } from 'fp-ts'
 import { observable } from 'fp-ts-rxjs'
 import type { Refinement } from 'fp-ts/Refinement'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 import type { Subscription } from 'rxjs'
 
-import { Future, List, NonEmptyArray, Try } from '../../shared/utils/fp'
+import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 import { IO } from '../../shared/utils/fp'
 
 import type { LoggerType } from '../models/logger/LoggerType'
@@ -52,11 +52,10 @@ const subscribe =
       observable_,
       observable.filter(refinement.not(refinement_) as unknown as Refinement<A, B>),
       TObservable.subscribe({
-        next: b =>
-          pipe(
-            next(b),
-            task.chain(Try.fold(e => Future.fromIOEither(logger.error(e.stack)), Future.right)),
-          ),
+        next: flow(
+          next,
+          Future.orElse(e => Future.fromIOEither(logger.error(e.stack))),
+        ),
       }),
     )
 
@@ -76,6 +75,12 @@ function or<A, B extends A, C extends A, D extends A>(
   c: Refinement<A, C>,
   d: Refinement<A, D>,
 ): Refinement<A, Exclude<A, B> & Exclude<A, C> & Exclude<A, D>>
+function or<A, B extends A, C extends A, D extends A, E extends A>(
+  b: Refinement<A, B>,
+  c: Refinement<A, C>,
+  d: Refinement<A, D>,
+  e: Refinement<A, E>,
+): Refinement<A, Exclude<A, B> & Exclude<A, C> & Exclude<A, D> & Exclude<A, E>>
 function or<A, R extends NonEmptyArray<Refinement<A, A>>>(...refinements_: R): Refinement<A, A> {
   return pipe(refinements_, NonEmptyArray.unprepend, ([head, tail]) =>
     pipe(

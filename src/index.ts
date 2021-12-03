@@ -9,7 +9,7 @@ import { DiscordLogger } from './bot/helpers/DiscordLogger'
 
 const main: Future<void> = pipe(
   Future.Do,
-  Future.bind('config', () => Future.fromIOEither(Config.load())),
+  Future.apS('config', Future.fromIOEither(Config.load())),
   Future.bind('client', ({ config }) => DiscordConnector.futureClient(config.client)),
   Future.chain(({ config, client }) => {
     const discord = DiscordConnector.of(client)

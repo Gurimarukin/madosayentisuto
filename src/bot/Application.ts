@@ -8,6 +8,7 @@ import { Future, IO } from '../shared/utils/fp'
 import type { Config } from './Config'
 import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
 import { CallsAutoroleObserver } from './domain/CallsAutoroleObserver'
+import { DisconnectVocalObserver } from './domain/DisconnectVocalObserver'
 import { ItsFridayObserver } from './domain/ItsFridayObserver'
 import { NotifyGuildLeaveObserver } from './domain/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './domain/NotifyVoiceCallObserver'
@@ -22,6 +23,7 @@ import { IndexesEnsureObserver } from './domain/startup/IndexesEnsureObserver'
 import type { DiscordConnector } from './helpers/DiscordConnector'
 import { LogMadEventsObserver } from './helpers/LogMadEventsObserver'
 import { VoiceStateUpdateTransformer } from './helpers/VoiceStateUpdateTransformer'
+import { YoutubeDl } from './helpers/YoutubeDl'
 import { publishDiscordEvents } from './helpers/publishDiscordEvents'
 import { scheduleCronJob } from './helpers/scheduleCronJob'
 import type { MongoCollection } from './models/MongoCollection'
@@ -42,6 +44,8 @@ export const Application = (
   discord: DiscordConnector,
 ): IO<void> => {
   const logger = Logger('Application')
+
+  const youtubeDl = YoutubeDl(config.youtubeDlPath)
 
   const url = `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`
   const mongoCollection: MongoCollection =
@@ -69,7 +73,7 @@ export const Application = (
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
 
   const botStateService = BotStateService(Logger, discord, botStatePersistence)
-  const guildStateService = GuildStateService(Logger, discord, guildStatePersistence)
+  const guildStateService = GuildStateService(Logger, discord, youtubeDl, guildStatePersistence)
 
   const pubSub = PubSub<MadEvent>()
 
@@ -83,7 +87,10 @@ export const Application = (
         AdminCommandsObserver(Logger, discord, botStateService, guildStateService),
         or(MadEvent.is('InteractionCreate')),
       ),
-      sub(MusicCommandsObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),
+      sub(
+        MusicCommandsObserver(Logger, youtubeDl, guildStateService),
+        or(MadEvent.is('InteractionCreate')),
+      ),
       sub(OtherCommandsObserver(), or(MadEvent.is('InteractionCreate'))),
 
       // │  └ startup/
@@ -102,6 +109,10 @@ export const Application = (
         or(MadEvent.is('AppStarted'), MadEvent.is('DbReady'), MadEvent.is('CronJob')),
       ),
       sub(CallsAutoroleObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),
+      sub(
+        DisconnectVocalObserver(config.client.id, guildStateService),
+        or(MadEvent.is('VoiceStateUpdate')),
+      ),
       sub(ItsFridayObserver(Logger, guildStateService), or(MadEvent.is('CronJob'))),
       sub(NotifyGuildLeaveObserver(Logger), or(MadEvent.is('GuildMemberRemove'))),
       sub(
@@ -116,7 +127,10 @@ export const Application = (
       sub(LogMadEventsObserver(logger), or(refinement.id())),
       publishDiscordEvents(discord, pubSub.subject),
       scheduleCronJob(Logger, pubSub.subject),
-      sub(VoiceStateUpdateTransformer(Logger, pubSub.subject), or(MadEvent.is('VoiceStateUpdate'))),
+      sub(
+        VoiceStateUpdateTransformer(Logger, config.client.id, pubSub.subject),
+        or(MadEvent.is('VoiceStateUpdate')),
+      ),
     ),
     IO.chain(() => pubSub.subject.next(MadEvent.AppStarted())),
     IO.chain(() => logger.info('Started')),
