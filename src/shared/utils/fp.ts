@@ -10,6 +10,7 @@ import {
   task,
   taskEither,
 } from 'fp-ts'
+import type { Predicate } from 'fp-ts/Predicate'
 import type { Lazy } from 'fp-ts/function'
 import { flow, pipe } from 'fp-ts/function'
 import * as C_ from 'io-ts/Codec'
@@ -51,6 +52,8 @@ const maybeEncoder = <O, A>(encoder: E_.Encoder<O, A>): E_.Encoder<O | null, May
 })
 export const Maybe = {
   ...option,
+  every: <A>(predicate: Predicate<A>): ((fa: Maybe<A>) => boolean) =>
+    option.fold(() => true, predicate),
   decoder: maybeDecoder,
   encoder: maybeEncoder,
   codec: <O, A>(codec: C_.Codec<unknown, O, A>): C_.Codec<unknown, O | null, Maybe<A>> =>

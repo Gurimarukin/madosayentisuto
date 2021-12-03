@@ -86,9 +86,9 @@ export const CallsAutoroleObserver = (
     f: (guild: Guild, callsAndMember: CallsAndMember) => Future<boolean>,
   ): Future<void> {
     return pipe(
-      DiscordConnector.interactionUpdate(interaction),
-      Future.chain(() => futureMaybe.fromNullable(interaction.guild)),
-      futureMaybe.map(guild => ({ guild })),
+      futureMaybe.Do,
+      Future.chainFirst(() => DiscordConnector.interactionUpdate(interaction)),
+      futureMaybe.apS('guild', futureMaybe.fromNullable(interaction.guild)),
       futureMaybe.bind('callsAndMember', ({ guild }) =>
         fetchCallsAndMember(guild, interaction.member),
       ),

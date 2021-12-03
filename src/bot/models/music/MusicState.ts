@@ -32,6 +32,7 @@ type ConnectingArgs = CommonArgs & {
 }
 
 type ConnectedArgs = CommonArgs & {
+  readonly channel: MusicChannel
   readonly voiceConnection: VoiceConnection
   readonly audioPlayerState: AudioPlayerState
   readonly subscription: Maybe<PlayerSubscription>
@@ -57,6 +58,7 @@ const connecting =
 const connected =
   (
     audioPlayer: AudioPlayer,
+    channel: MusicChannel,
     voiceConnection: VoiceConnection,
     subscription: Maybe<PlayerSubscription>,
   ) =>
@@ -66,15 +68,25 @@ const connected =
       queue,
       message,
       audioPlayerState: AudioPlayerState.Playing(audioPlayer),
+      channel,
       voiceConnection,
       subscription,
     })
+
+const getChannel = (state: MusicState): Maybe<MusicChannel> => {
+  switch (state.type) {
+    case 'Disconnected':
+      return Maybe.none
+    case 'Connecting':
+    case 'Connected':
+      return Maybe.some(state.channel)
+  }
+}
 
 const getVoiceConnection = (state: MusicState): Maybe<VoiceConnection> => {
   switch (state.type) {
     case 'Disconnected':
       return Maybe.none
-
     case 'Connecting':
     case 'Connected':
       return Maybe.some(state.voiceConnection)
@@ -85,10 +97,8 @@ const getAudioPlayer = (state: MusicState): Maybe<AudioPlayer> => {
   switch (state.type) {
     case 'Disconnected':
       return Maybe.none
-
     case 'Connecting':
       return Maybe.some(state.audioPlayer)
-
     case 'Connected':
       return Maybe.some(state.audioPlayerState.value)
   }
@@ -120,7 +130,6 @@ const updateAudioPlayerState =
       case 'Disconnected':
       case 'Connecting':
         return state
-
       case 'Connected':
         return { ...state, audioPlayerState: update(state.audioPlayerState) }
     }
@@ -133,6 +142,7 @@ export const MusicState = {
   empty,
   connecting,
   connected,
+  getChannel,
   getVoiceConnection,
   getAudioPlayer,
   queueTracks,

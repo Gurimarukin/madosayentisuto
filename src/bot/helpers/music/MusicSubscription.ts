@@ -49,7 +49,7 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
 
   const state = Store<MusicState>(MusicState.empty)
 
-  return { queueTracks, nextTrack, playPauseTrack, stringify }
+  return { getState: state.get, queueTracks, nextTrack, playPauseTrack, stringify }
 
   function queueTracks(
     musicChannel: MusicChannel,
@@ -245,11 +245,14 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
 
             return pipe(
               IO.Do,
-              IO.bind('subscription', () =>
+              IO.apS(
+                'subscription',
                 DiscordConnector.voiceConnectionSubscribe(s.voiceConnection, s.audioPlayer),
               ),
               IO.bind('connected', ({ subscription }) =>
-                state.update(MusicState.connected(s.audioPlayer, s.voiceConnection, subscription)),
+                state.update(
+                  MusicState.connected(s.audioPlayer, s.channel, s.voiceConnection, subscription),
+                ),
               ),
               Future.fromIOEither,
               Future.chain(({ subscription, connected }) =>

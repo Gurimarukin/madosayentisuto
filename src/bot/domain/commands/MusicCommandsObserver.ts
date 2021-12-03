@@ -19,6 +19,7 @@ import { musicButtons } from '../../helpers/getMusicStateMessage'
 import type { MusicSubscription } from '../../helpers/music/MusicSubscription'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
+import { MusicState } from '../../models/music/MusicState'
 import { Track } from '../../models/music/Track'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { GuildStateService } from '../../services/GuildStateService'
@@ -77,23 +78,27 @@ export const MusicCommandsObserver = (
     const guild = interaction.guild
     if (guild === null) return Future.unit
     return pipe(
-      DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
-      Future.chain(() => validatePlayCommand(interaction)),
-      Future.chain(
-        Either.fold(Future.right, ({ musicChannel, stateChannel, tracks }) =>
-          pipe(
-            guildStateService.getSubscription(guild),
-            Future.chain(subscription =>
+      Future.Do,
+      Future.chainFirst(() =>
+        DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
+      ),
+      Future.apS('subscription', guildStateService.getSubscription(guild)),
+      Future.bind('command', ({ subscription }) => validatePlayCommand(interaction, subscription)),
+      Future.chain(({ subscription, command }) =>
+        pipe(
+          command,
+          Either.fold(Future.right, ({ musicChannel, stateChannel, tracks }) =>
+            pipe(
               subscription.queueTracks(musicChannel, stateChannel, tracks),
-            ),
-            Future.map(() =>
-              pipe(
-                tracks,
-                NonEmptyArray.map(t => `"${t.title}"`),
-                StringUtils.mkString(
-                  '',
-                  ', ',
-                  ` ajouté${tracks.length === 1 ? '' : 's'} à la file d'attente.`,
+              Future.map(() =>
+                pipe(
+                  tracks,
+                  NonEmptyArray.map(t => `"${t.title}"`),
+                  StringUtils.mkString(
+                    '',
+                    ', ',
+                    ` ajouté${tracks.length === 1 ? '' : 's'} à la file d'attente.`,
+                  ),
                 ),
               ),
             ),
@@ -117,13 +122,20 @@ export const MusicCommandsObserver = (
 
   function validatePlayCommand(
     interaction: CommandInteraction,
+    subscription: MusicSubscription,
   ): Future<Either<string, PlayCommand>> {
     return pipe(
-      validateMusicAndStateChannel(interaction),
-      Either.fold(flow(Either.left, Future.right), ({ musicChannel, stateChannel }) =>
+      subscription.getState,
+      Future.fromIOEither,
+      Future.chain(subscriptionState =>
         pipe(
-          validateUrlThenTracks(interaction),
-          Future.map(Either.map(tracks => ({ musicChannel, stateChannel, tracks }))),
+          validateMusicAndStateChannel(interaction, subscriptionState),
+          Either.fold(flow(Either.left, Future.right), ({ musicChannel, stateChannel }) =>
+            pipe(
+              validateUrlThenTracks(interaction),
+              Future.map(Either.map(tracks => ({ musicChannel, stateChannel, tracks }))),
+            ),
+          ),
         ),
       ),
     )
@@ -171,28 +183,37 @@ export const MusicCommandsObserver = (
     const guild = interaction.guild
     if (guild === null) return Future.unit
     return pipe(
-      validateMusicChannel(interaction),
-      Either.fold(flow(Either.left, Future.right), () =>
-        pipe(
-          guildStateService.getSubscription(guild),
-          Future.chain(f),
-          Future.map(success =>
-            success ? Either.right(undefined) : Either.left('Haha ! Tu ne peux pas faire ça !'),
-          ),
-        ),
+      Future.Do,
+      Future.apS('subscription', guildStateService.getSubscription(guild)),
+      Future.bind('subscriptionState', ({ subscription }) =>
+        Future.fromIOEither(subscription.getState),
       ),
-      Future.chain(
-        Either.fold(
-          content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
-          () =>
+      Future.chain(({ subscription, subscriptionState }) =>
+        pipe(
+          validateMusicChannel(interaction, subscriptionState),
+          Either.fold(flow(Either.left, Future.right), () =>
             pipe(
-              DiscordConnector.interactionUpdate(interaction),
-              Future.orElse(e =>
-                isUnknownMessageError(e)
-                  ? Future.unit // maybe it was deleted before we can update the interaction)
-                  : Future.left(e),
+              f(subscription),
+              Future.map(success =>
+                success ? Either.right(undefined) : Either.left('Haha ! Tu ne peux pas faire ça !'),
               ),
             ),
+          ),
+          Future.chain(
+            Either.fold(
+              content =>
+                DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
+              () =>
+                pipe(
+                  DiscordConnector.interactionUpdate(interaction),
+                  Future.orElse(e =>
+                    isUnknownMessageError(e)
+                      ? Future.unit // maybe it was deleted before we can update the interaction)
+                      : Future.left(e),
+                  ),
+                ),
+            ),
+          ),
         ),
       ),
     )
@@ -201,9 +222,10 @@ export const MusicCommandsObserver = (
 
 const validateMusicAndStateChannel = (
   interaction: Interaction,
+  subscriptionState: MusicState,
 ): Either<string, Pick<PlayCommand, 'musicChannel' | 'stateChannel'>> =>
   pipe(
-    validateMusicChannel(interaction),
+    validateMusicChannel(interaction, subscriptionState),
     Either.chain(musicChannel =>
       pipe(
         interaction.channel,
@@ -217,10 +239,20 @@ const validateMusicAndStateChannel = (
 
 const validateMusicChannel = (
   interaction: Interaction,
+  subscriptionState: MusicState,
 ): Either<string, VoiceChannel | StageChannel> =>
   pipe(
     interaction.member instanceof GuildMember
       ? Maybe.fromNullable(interaction.member.voice.channel)
       : Maybe.none,
     Either.fromOption(() => 'Haha ! Il faut être dans un salon vocal pour faire ça !'),
+    Either.filterOrElse(
+      musicChannel =>
+        pipe(
+          subscriptionState,
+          MusicState.getChannel,
+          Maybe.every(c => c.id === musicChannel.id),
+        ),
+      () => 'Haha ! Il faut être dans mon salon pour faire ça !',
+    ),
   )
