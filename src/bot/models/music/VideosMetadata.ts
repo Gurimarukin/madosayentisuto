@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
-import { Either, NonEmptyArray } from '../../../shared/utils/fp'
+import { Either, List, NonEmptyArray } from '../../../shared/utils/fp'
 import { Maybe } from '../../../shared/utils/fp'
 
 export type VideoMetadata = D.TypeOf<typeof videoMetadataDecoder>
@@ -26,7 +26,7 @@ const maybePlaylistDecoder = D.struct({
 })
 
 const playlistEntriesDecoder = D.struct({
-  entries: NonEmptyArray.decoder(videoMetadataDecoder),
+  entries: NonEmptyArray.decoder(Maybe.decoder(videoMetadataDecoder)),
 })
 
 const decoder: D.Decoder<unknown, VideosMetadata> = {
@@ -49,7 +49,17 @@ const decoder: D.Decoder<unknown, VideosMetadata> = {
             () =>
               pipe(
                 playlistEntriesDecoder.decode(u),
-                Either.map(({ entries: videos }): VideosMetadata => ({ extractor, videos })),
+                Either.chain(({ entries }) => {
+                  const compacted = List.compact(entries)
+                  return pipe(
+                    compacted,
+                    NonEmptyArray.fromReadonlyArray,
+                    Maybe.fold(
+                      () => D.failure(compacted, 'NonEmptyArray'),
+                      videos => D.success<VideosMetadata>({ extractor, videos }),
+                    ),
+                  )
+                }),
               ),
           ),
         ),

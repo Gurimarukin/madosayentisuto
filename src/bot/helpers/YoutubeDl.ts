@@ -1,39 +1,14 @@
 import type { AudioResource } from '@discordjs/voice'
 import { createAudioResource } from '@discordjs/voice'
 import { demuxProbe } from '@discordjs/voice'
+import { json } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import { create as createYoutubeDl } from 'youtube-dl-exec'
 
-import { Either, Future, IO } from '../../shared/utils/fp'
+import { Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import { VideosMetadata } from '../models/music/VideosMetadata'
 import { decodeError } from '../utils/decodeError'
-
-/*
---flat-playlist                      Do not extract the videos of a
-                                     playlist, only list them.
-
---skip-download                      Do not download the video
--g, --get-url                        Simulate, quiet but print URL
--e, --get-title                      Simulate, quiet but print title
---get-thumbnail                      Simulate, quiet but print thumbnail URL
---get-description                    Simulate, quiet but print video
-                                     description
---get-duration                       Simulate, quiet but print video length
--j, --dump-json                      Simulate, quiet but print JSON
-                                     information. See the "OUTPUT TEMPLATE"
-                                     for a description of available keys.
--J, --dump-single-json               Simulate, quiet but print JSON
-                                     information for each command-line
-                                     argument. If the URL refers to a
-                                     playlist, dump the whole playlist
-                                     information in a single line.
---print-json                         Be quiet and print the video
-                                     information as JSON (video is still
-                                     being downloaded).
-
-Stream to stdout: -o -
- */
 
 export type YoutubeDl = ReturnType<typeof YoutubeDl>
 
@@ -44,8 +19,25 @@ export const YoutubeDl = (binaryPath: string) => {
   return {
     metadata: (url: string): Future<VideosMetadata> =>
       pipe(
-        Future.tryCatch(() =>
-          youtubeDlExec(url, { dumpSingleJson: true, defaultSearch: 'ytsearch' }),
+        Future.tryCatch<unknown>(() =>
+          youtubeDlExec(
+            url,
+            {
+              dumpSingleJson: true,
+              defaultSearch: 'ytsearch',
+              ignoreErrors: true,
+            },
+            { stdio: ['ignore', 'pipe', 'ignore'] },
+          ),
+        ),
+        Future.orElse(e =>
+          pipe(
+            e.message.split('\n', 2),
+            List.lookup(1),
+            Maybe.map(json.parse),
+            Maybe.chain(Maybe.fromEither),
+            Maybe.fold(() => Future.left(e), Future.right),
+          ),
         ),
         Future.chain(u =>
           pipe(
