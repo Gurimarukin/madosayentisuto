@@ -1,6 +1,4 @@
-1. Music
-   1. Disconnect when no one
-2. Commands:
+1. Commands:
    1. Say
    2. Remind
    3. Img

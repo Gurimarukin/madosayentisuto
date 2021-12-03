@@ -49,7 +49,15 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
 
   const state = Store<MusicState>(MusicState.empty)
 
-  return { getState: state.get, queueTracks, nextTrack, playPauseTrack, stringify }
+  return {
+    getState: state.get,
+    queueTracks,
+    nextTrack,
+    playPauseTrack,
+    disconnect: (): Future<void> =>
+      pipe(state.get, Future.fromIOEither, Future.chain(voiceConnectionDestroy)),
+    stringify,
+  }
 
   function queueTracks(
     musicChannel: MusicChannel,

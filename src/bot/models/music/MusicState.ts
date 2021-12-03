@@ -9,7 +9,7 @@ import { createUnion } from '../../utils/createUnion'
 import { AudioPlayerState } from './AudioPlayerState'
 import type { Track } from './Track'
 
-type MusicChannel = VoiceChannel | StageChannel
+export type MusicChannel = VoiceChannel | StageChannel
 
 export type MusicState = typeof u.T
 

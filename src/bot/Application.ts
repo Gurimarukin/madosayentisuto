@@ -8,6 +8,7 @@ import { Future, IO } from '../shared/utils/fp'
 import type { Config } from './Config'
 import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
 import { CallsAutoroleObserver } from './domain/CallsAutoroleObserver'
+import { DisconnectVocalObserver } from './domain/DisconnectVocalObserver'
 import { ItsFridayObserver } from './domain/ItsFridayObserver'
 import { NotifyGuildLeaveObserver } from './domain/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './domain/NotifyVoiceCallObserver'
@@ -108,6 +109,10 @@ export const Application = (
         or(MadEvent.is('AppStarted'), MadEvent.is('DbReady'), MadEvent.is('CronJob')),
       ),
       sub(CallsAutoroleObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),
+      sub(
+        DisconnectVocalObserver(config.client.id, guildStateService),
+        or(MadEvent.is('VoiceStateUpdate')),
+      ),
       sub(ItsFridayObserver(Logger, guildStateService), or(MadEvent.is('CronJob'))),
       sub(NotifyGuildLeaveObserver(Logger), or(MadEvent.is('GuildMemberRemove'))),
       sub(
