@@ -17,6 +17,7 @@ import { LogUtils } from '../utils/LogUtils'
 
 export const VoiceStateUpdateTransformer = (
   Logger: LoggerGetter,
+  clientId: string,
   subject: TSubject<MadEventPublicCallStarted | MadEventPublicCallEnded>,
 ): TObserver<MadEventVoiceStateUpdate> => {
   const logger = Logger('VoiceStateUpdateTransformer')
@@ -67,7 +68,9 @@ export const VoiceStateUpdateTransformer = (
         `${member.user.tag} joined the channel #${channel.name}`,
       ),
       IO.chain(() =>
-        ChannelUtils.isPublic(channel) && peopleInPublicVocalChans(member.guild).length === 1
+        ChannelUtils.isPublic(channel) &&
+        peopleInPublicVocalChans(member.guild).length === 1 &&
+        member.id !== clientId
           ? subject.next(MadEvent.PublicCallStarted(member, channel))
           : IO.unit,
       ),
@@ -87,6 +90,8 @@ export const VoiceStateUpdateTransformer = (
       ),
       Future.fromIOEither,
       Future.map(() => {
+        if (member.id === clientId) return IO.unit
+
         const inPublicChans = peopleInPublicVocalChans(member.guild)
 
         if (
@@ -118,11 +123,27 @@ export const VoiceStateUpdateTransformer = (
         `${member.user.tag} left the channel #${channel.name}`,
       ),
       IO.chain(() =>
-        ChannelUtils.isPublic(channel) && List.isEmpty(peopleInPublicVocalChans(member.guild))
+        ChannelUtils.isPublic(channel) &&
+        List.isEmpty(peopleInPublicVocalChans(member.guild)) &&
+        member.id !== clientId
           ? subject.next(MadEvent.PublicCallEnded(member, channel))
           : IO.unit,
       ),
       Future.fromIOEither,
+    )
+  }
+
+  function peopleInPublicVocalChans(guild: Guild): List<GuildMember> {
+    return pipe(
+      guild.channels.cache.toJSON(),
+      List.filter(
+        (c): c is GuildChannel =>
+          ChannelUtils.isGuildChannel(c) &&
+          ChannelUtils.isPublic(c) &&
+          ChannelUtils.isVoiceChannel(c),
+      ),
+      List.chain(c => c.members.toJSON()),
+      List.filter(m => m.id !== clientId), // don't count bot
     )
   }
 }
@@ -137,16 +158,4 @@ const getMember = ({ oldState, newState }: MadEventVoiceStateUpdate): Maybe<Guil
         Maybe.filter(memberNew => memberNew.id === memberOld.id),
       ),
     ),
-  )
-
-const peopleInPublicVocalChans = (guild: Guild): List<GuildMember> =>
-  pipe(
-    guild.channels.cache.toJSON(),
-    List.filter(
-      (c): c is GuildChannel =>
-        ChannelUtils.isGuildChannel(c) &&
-        ChannelUtils.isPublic(c) &&
-        ChannelUtils.isVoiceChannel(c),
-    ),
-    List.chain(c => c.members.toJSON()),
   )

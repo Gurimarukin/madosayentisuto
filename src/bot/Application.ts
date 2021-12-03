@@ -122,7 +122,10 @@ export const Application = (
       sub(LogMadEventsObserver(logger), or(refinement.id())),
       publishDiscordEvents(discord, pubSub.subject),
       scheduleCronJob(Logger, pubSub.subject),
-      sub(VoiceStateUpdateTransformer(Logger, pubSub.subject), or(MadEvent.is('VoiceStateUpdate'))),
+      sub(
+        VoiceStateUpdateTransformer(Logger, config.client.id, pubSub.subject),
+        or(MadEvent.is('VoiceStateUpdate')),
+      ),
     ),
     IO.chain(() => pubSub.subject.next(MadEvent.AppStarted())),
     IO.chain(() => logger.info('Started')),

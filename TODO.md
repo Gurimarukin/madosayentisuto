@@ -1,6 +1,5 @@
 1. Music
    1. Disconnect when no one
-   2. Don't count bot when detecting calls
 2. Commands:
    1. Say
    2. Remind
