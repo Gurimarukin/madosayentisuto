@@ -24,7 +24,7 @@ import type { TObserver } from '../../models/rx/TObserver'
 import type { GuildStateService } from '../../services/GuildStateService'
 import { StringUtils } from '../../utils/StringUtils'
 
-type ValidatedPlayCommand = {
+type PlayCommand = {
   readonly musicChannel: VoiceChannel | StageChannel
   readonly stateChannel: TextBasedChannels
   readonly tracks: NonEmptyArray<Track>
@@ -38,7 +38,7 @@ export const playCommand = new SlashCommandBuilder()
   )
 
 export type MusicCommandsObserver = TObserver<MadEventInteractionCreate> & {
-  readonly validateTrack: (url: string) => Future<Either<string, NonEmptyArray<Track>>>
+  readonly validateTracks: (url: string) => Future<Either<string, NonEmptyArray<Track>>>
 }
 
 export const MusicCommandsObserver = (
@@ -73,7 +73,7 @@ export const MusicCommandsObserver = (
 
       return Future.unit
     },
-    validateTrack,
+    validateTracks,
   }
 
   function onPlayCommand(interaction: CommandInteraction, guild: Guild): Future<void> {
@@ -128,71 +128,41 @@ export const MusicCommandsObserver = (
 
   function validatePlayCommand(
     interaction: CommandInteraction,
-  ): Future<Either<string, ValidatedPlayCommand>> {
-    // TODO: split this function
+  ): Future<Either<string, PlayCommand>> {
     return pipe(
-      validateVoiceChannel(interaction),
-      Either.fold(flow(Either.left, Future.right), musicChannel =>
+      validateMusicAndStateChannel(interaction),
+      Either.fold(flow(Either.left, Future.right), ({ musicChannel, stateChannel }) =>
         pipe(
-          interaction.channel,
-          Maybe.fromNullable,
-          Maybe.fold(
-            () =>
-              Future.right(
-                Either.left(
-                  "Alors ça, c'est chelou : comment peut-on faire une interaction sans salon ?",
-                ),
-              ),
-            stateChannel =>
-              pipe(
-                interaction.options.getString('url'),
-                Maybe.fromNullable,
-                Maybe.fold(
-                  () => Future.right(Either.left('Argument manquant : url')),
-                  flow(
-                    validateTrack,
-                    Future.orElse(e =>
-                      pipe(
-                        logger.warn(`validateTrack Error:\n${e.stack}`),
-                        Future.fromIOEither,
-                        Future.map(() => Either.left('URL invalide.')),
-                      ),
-                    ),
-                    Future.map(Either.map(tracks => ({ musicChannel, stateChannel, tracks }))),
-                  ),
-                ),
-              ),
+          validateUrlThenTracks(interaction),
+          Future.map(Either.map(tracks => ({ musicChannel, stateChannel, tracks }))),
+        ),
+      ),
+    )
+  }
+
+  function validateUrlThenTracks(
+    interaction: CommandInteraction,
+  ): Future<Either<string, NonEmptyArray<Track>>> {
+    return pipe(
+      interaction.options.getString('url'),
+      Maybe.fromNullable,
+      Maybe.fold(
+        () => Future.right(Either.left('Argument manquant : url')),
+        flow(
+          validateTracks,
+          Future.orElse(e =>
+            pipe(
+              logger.warn(`validateTrack Error:\n${e.stack}`),
+              Future.fromIOEither,
+              Future.map(() => Either.left('URL invalide.')),
+            ),
           ),
         ),
       ),
     )
   }
 
-  function buttonCommon(
-    interaction: ButtonInteraction,
-    f: Future<Either<string, void>>,
-  ): Future<void> {
-    return pipe(
-      validateVoiceChannel(interaction),
-      Either.fold(flow(Either.left, Future.right), () => f),
-      Future.chain(
-        Either.fold(
-          content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
-          () =>
-            pipe(
-              DiscordConnector.interactionUpdate(interaction),
-              Future.orElse(e =>
-                isUnknownMessageError(e)
-                  ? Future.unit // maybe it was deleted before we can update the interaction)
-                  : Future.left(e),
-              ),
-            ),
-        ),
-      ),
-    )
-  }
-
-  function validateTrack(url: string): Future<Either<string, NonEmptyArray<Track>>> {
+  function validateTracks(url: string): Future<Either<string, NonEmptyArray<Track>>> {
     return pipe(
       youtubeDl.metadata(url),
       Future.map(({ videos }) =>
@@ -206,7 +176,23 @@ export const MusicCommandsObserver = (
   }
 }
 
-const validateVoiceChannel = (
+const validateMusicAndStateChannel = (
+  interaction: Interaction,
+): Either<string, Pick<PlayCommand, 'musicChannel' | 'stateChannel'>> =>
+  pipe(
+    validateMusicChannel(interaction),
+    Either.chain(musicChannel =>
+      pipe(
+        interaction.channel,
+        Either.fromNullable(
+          "Alors ça, c'est chelou : comment peut-on faire une interaction sans salon ?",
+        ),
+        Either.map(stateChannel => ({ musicChannel, stateChannel })),
+      ),
+    ),
+  )
+
+const validateMusicChannel = (
   interaction: Interaction,
 ): Either<string, VoiceChannel | StageChannel> =>
   pipe(
@@ -214,4 +200,27 @@ const validateVoiceChannel = (
       ? Maybe.fromNullable(interaction.member.voice.channel)
       : Maybe.none,
     Either.fromOption(() => 'Haha ! Il faut être dans un salon vocal pour faire ça !'),
+  )
+
+const buttonCommon = (
+  interaction: ButtonInteraction,
+  f: Future<Either<string, void>>,
+): Future<void> =>
+  pipe(
+    validateMusicChannel(interaction),
+    Either.fold(flow(Either.left, Future.right), () => f),
+    Future.chain(
+      Either.fold(
+        content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
+        () =>
+          pipe(
+            DiscordConnector.interactionUpdate(interaction),
+            Future.orElse(e =>
+              isUnknownMessageError(e)
+                ? Future.unit // maybe it was deleted before we can update the interaction)
+                : Future.left(e),
+            ),
+          ),
+      ),
+    ),
   )

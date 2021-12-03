@@ -10,8 +10,8 @@ import { Track } from '../../../src/bot/models/music/Track'
 import type { GuildStateService } from '../../../src/bot/services/GuildStateService'
 import { StringUtils } from '../../../src/bot/utils/StringUtils'
 
-describe('validateTrack', () => {
-  const { validateTrack } = MusicCommandsObserver(
+describe('validateTracks', () => {
+  const { validateTracks } = MusicCommandsObserver(
     () => ({} as LoggerType),
     YoutubeDl('/usr/local/bin/youtube-dl'),
     {} as GuildStateService,
@@ -25,7 +25,7 @@ describe('validateTrack', () => {
 
   it('should validate YouTube video', () =>
     pipe(
-      validateTrack('https://www.youtube.com/watch?v=aeWfN6CinGY'),
+      validateTracks('https://www.youtube.com/watch?v=aeWfN6CinGY'),
       Future.map(res => {
         expect(res).toStrictEqual(Either.right(NonEmptyArray.of(whenImTwi)))
       }),
@@ -34,7 +34,7 @@ describe('validateTrack', () => {
 
   it('should validate YouTube video (short)', () =>
     pipe(
-      validateTrack('https://youtu.be/aeWfN6CinGY'),
+      validateTracks('https://youtu.be/aeWfN6CinGY'),
       Future.map(res => {
         expect(res).toStrictEqual(Either.right(NonEmptyArray.of(whenImTwi)))
       }),
@@ -43,7 +43,7 @@ describe('validateTrack', () => {
 
   it('should validate YouTube playlist', () =>
     pipe(
-      validateTrack('https://www.youtube.com/playlist?list=PLIbD1ba8REOOWyzNL1AEPQMpEflxjcOEL'),
+      validateTracks('https://www.youtube.com/playlist?list=PLIbD1ba8REOOWyzNL1AEPQMpEflxjcOEL'),
       Future.map(res => {
         expect(res).toStrictEqual(
           Either.right([
@@ -65,7 +65,7 @@ describe('validateTrack', () => {
 
   it('should search', () =>
     pipe(
-      validateTrack('adedigado'),
+      validateTracks('adedigado'),
       Future.map(res => {
         expect(res).toStrictEqual(
           Either.right(
@@ -83,7 +83,7 @@ describe('validateTrack', () => {
     ))
 
   it('should fail on invalid site', () =>
-    validateTrack('https://dl.blbl.ch')().then(res => {
+    validateTracks('https://dl.blbl.ch')().then(res => {
       expect(res).toStrictEqual(
         Either.left(
           Error(
@@ -101,7 +101,7 @@ describe('validateTrack', () => {
     'should validate Bandcamp album',
     () =>
       pipe(
-        validateTrack('https://frayle.bandcamp.com/album/the-white-witch-ep'),
+        validateTracks('https://frayle.bandcamp.com/album/the-white-witch-ep'),
         Future.map(res => {
           expect(res).toStrictEqual(
             Either.right([
@@ -135,7 +135,7 @@ describe('validateTrack', () => {
 
   it('should validate Bandcamp track', () =>
     pipe(
-      validateTrack('https://frayle.bandcamp.com/track/the-white-witch'),
+      validateTracks('https://frayle.bandcamp.com/track/the-white-witch'),
       Future.map(res => {
         expect(res).toStrictEqual(
           Either.right(
