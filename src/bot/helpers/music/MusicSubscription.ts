@@ -25,6 +25,7 @@ import type {
 } from '../../models/events/MusicEvent'
 import { MusicEvent } from '../../models/events/MusicEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
+import { AudioPlayerState } from '../../models/music/AudioPlayerState'
 import type { MusicStateConnected } from '../../models/music/MusicState'
 import { MusicState } from '../../models/music/MusicState'
 import type { Track } from '../../models/music/Track'
@@ -48,19 +49,19 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
 
   const state = Store<MusicState>(MusicState.empty)
 
-  return { playTracks, nextTrack, stringify }
+  return { queueTracks, nextTrack, playPauseTrack, stringify }
 
-  function playTracks(
+  function queueTracks(
     musicChannel: MusicChannel,
     stateChannel: TextBasedChannels,
-    track: NonEmptyArray<Track>,
+    tracks: NonEmptyArray<Track>,
   ): Future<void> {
     if (musicChannel.guild.id !== guild.id) {
       return Future.left(Error('Called playSong with a wrong guild'))
     }
 
     return pipe(
-      state.update(MusicState.queueTracks(track)),
+      state.update(MusicState.queueTracks(tracks)),
       Future.fromIOEither,
       Future.chainFirst(refreshMessage),
       Future.chain(newState => {
@@ -91,6 +92,35 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
               List.isEmpty(s.queue) ? voiceConnectionDestroy(s) : playFirstTrackFromQueue(s),
               Future.map(() => true),
             )
+        }
+      }),
+    )
+  }
+
+  function playPauseTrack(): Future<boolean> {
+    return pipe(
+      state.get,
+      Future.fromIOEither,
+      Future.chain(s => {
+        switch (s.type) {
+          case 'Disconnected':
+          case 'Connecting':
+            return Future.right(false)
+
+          case 'Connected':
+            const audioPlayer = s.audioPlayerState.value
+            switch (s.audioPlayerState.type) {
+              case 'Playing':
+                return updateAudioPlayerState(
+                  DiscordConnector.audioPlayerPause(audioPlayer),
+                  MusicState.setAudioPlayerStatePaused,
+                )
+              case 'Paused':
+                return updateAudioPlayerState(
+                  DiscordConnector.audioPlayerUnpause(audioPlayer),
+                  MusicState.setAudioPlayerStatePlaying,
+                )
+            }
         }
       }),
     )
@@ -297,7 +327,9 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
     )
   }
 
-  function playFirstTrackFromQueue({ audioPlayer }: MusicStateConnected): Future<void> {
+  function playFirstTrackFromQueue({
+    audioPlayerState: { value: audioPlayer },
+  }: MusicStateConnected): Future<void> {
     return pipe(
       state.get,
       IO.map(({ queue }) => queue),
@@ -323,7 +355,11 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
         DiscordConnector.audioPlayerPlayAudioResource(audioPlayer, audioResource),
       ),
       Future.chain(Future.fromIOEither),
-      Future.chain(() => updateState(MusicState.setPlaying(Maybe.some(track)))),
+      Future.chain(() =>
+        updateState(
+          flow(MusicState.setPlaying(Maybe.some(track)), MusicState.setAudioPlayerStatePlaying),
+        ),
+      ),
     )
   }
 
@@ -331,11 +367,14 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
     return pipe(state.update(f), Future.fromIOEither, Future.chain(refreshMessage))
   }
 
-  function refreshMessage({ message, playing, queue }: MusicState): Future<void> {
+  function refreshMessage(s: MusicState): Future<void> {
+    const { message, playing, queue } = s
+    const isPlaying =
+      MusicState.is('Connected')(s) && AudioPlayerState.is('Playing')(s.audioPlayerState)
     return pipe(
       futureMaybe.fromOption(message),
       futureMaybe.chainFuture(m =>
-        DiscordConnector.messageEdit(m, getMusicStateMessage.playing(playing, queue, true)),
+        DiscordConnector.messageEdit(m, getMusicStateMessage.playing(playing, queue, isPlaying)),
       ),
       Future.map(() => {}),
     )
@@ -349,6 +388,24 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
       Future.fromIOEither,
       Future.orElse(e =>
         isAlreadyDestroyedError(e) ? Future.unit : Future.fromIOEither(logger.warn(e.stack)),
+      ),
+    )
+  }
+
+  function updateAudioPlayerState(
+    audioPlayerEffect: IO<boolean>,
+    update: Endomorphism<MusicState>,
+  ): Future<boolean> {
+    return pipe(
+      audioPlayerEffect,
+      Future.fromIOEither,
+      Future.chain(success =>
+        success
+          ? pipe(
+              updateState(update),
+              Future.map(() => true),
+            )
+          : Future.right(false),
       ),
     )
   }

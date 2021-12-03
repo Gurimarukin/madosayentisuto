@@ -1,10 +1,12 @@
 import type { AudioPlayer, PlayerSubscription, VoiceConnection } from '@discordjs/voice'
 import type { Message, StageChannel, VoiceChannel } from 'discord.js'
+import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { pipe } from 'fp-ts/function'
 
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import { createUnion } from '../../utils/createUnion'
+import { AudioPlayerState } from './AudioPlayerState'
 import type { Track } from './Track'
 
 type MusicChannel = VoiceChannel | StageChannel
@@ -31,7 +33,7 @@ type ConnectingArgs = CommonArgs & {
 
 type ConnectedArgs = CommonArgs & {
   readonly voiceConnection: VoiceConnection
-  readonly audioPlayer: AudioPlayer
+  readonly audioPlayerState: AudioPlayerState
   readonly subscription: Maybe<PlayerSubscription>
 }
 
@@ -63,7 +65,7 @@ const connected =
       playing,
       queue,
       message,
-      audioPlayer,
+      audioPlayerState: AudioPlayerState.Playing(audioPlayer),
       voiceConnection,
       subscription,
     })
@@ -85,8 +87,10 @@ const getAudioPlayer = (state: MusicState): Maybe<AudioPlayer> => {
       return Maybe.none
 
     case 'Connecting':
-    case 'Connected':
       return Maybe.some(state.audioPlayer)
+
+    case 'Connected':
+      return Maybe.some(state.audioPlayerState.value)
   }
 }
 
@@ -109,6 +113,22 @@ const setQueue =
   (queue: List<Track>) =>
   (state: MusicState): MusicState => ({ ...state, queue })
 
+const updateAudioPlayerState =
+  (update: Endomorphism<AudioPlayerState>) =>
+  (state: MusicState): MusicState => {
+    switch (state.type) {
+      case 'Disconnected':
+      case 'Connecting':
+        return state
+
+      case 'Connected':
+        return { ...state, audioPlayerState: update(state.audioPlayerState) }
+    }
+  }
+
+const setAudioPlayerStatePlaying = updateAudioPlayerState(AudioPlayerState.setPlaying)
+const setAudioPlayerStatePaused = updateAudioPlayerState(AudioPlayerState.setPaused)
+
 export const MusicState = {
   empty,
   connecting,
@@ -119,5 +139,7 @@ export const MusicState = {
   setMessage,
   setPlaying,
   setQueue,
+  setAudioPlayerStatePlaying,
+  setAudioPlayerStatePaused,
   ...u,
 }

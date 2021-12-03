@@ -185,6 +185,9 @@ const addRole = (
 
 const audioPlayerCreate: IO<AudioPlayer> = IO.tryCatch(() => createAudioPlayer())
 
+const audioPlayerPause = (audioPlayer: AudioPlayer): IO<boolean> =>
+  IO.tryCatch(() => audioPlayer.pause())
+
 const audioPlayerPlayAudioResource = (
   audioPlayer: AudioPlayer,
   audioResource: AudioResource,
@@ -192,6 +195,9 @@ const audioPlayerPlayAudioResource = (
 
 const audioPlayerStop = (audioPlayer: AudioPlayer): IO<boolean> =>
   IO.tryCatch(() => audioPlayer.stop(true))
+
+const audioPlayerUnpause = (audioPlayer: AudioPlayer): IO<boolean> =>
+  IO.tryCatch(() => audioPlayer.unpause())
 
 function entersState(
   target: VoiceConnection,
@@ -381,8 +387,10 @@ export const DiscordConnector = {
 
   addRole,
   audioPlayerCreate,
+  audioPlayerPause,
   audioPlayerPlayAudioResource,
   audioPlayerStop,
+  audioPlayerUnpause,
   entersState,
   guildCommandsPermissionsSet,
   interactionDeferReply,

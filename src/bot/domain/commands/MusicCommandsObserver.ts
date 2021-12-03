@@ -2,7 +2,6 @@ import { SlashCommandBuilder } from '@discordjs/builders'
 import type {
   ButtonInteraction,
   CommandInteraction,
-  Guild,
   Interaction,
   StageChannel,
   TextBasedChannels,
@@ -17,6 +16,7 @@ import { Future, Maybe } from '../../../shared/utils/fp'
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
 import type { YoutubeDl } from '../../helpers/YoutubeDl'
 import { musicButtons } from '../../helpers/getMusicStateMessage'
+import type { MusicSubscription } from '../../helpers/music/MusicSubscription'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import { Track } from '../../models/music/Track'
@@ -51,14 +51,11 @@ export const MusicCommandsObserver = (
   return {
     next: event => {
       const interaction = event.interaction
-      const guild = interaction.guild
-
-      if (guild === null) return Future.unit
 
       if (interaction.isCommand()) {
         switch (interaction.commandName) {
           case 'play':
-            return onPlayCommand(interaction, guild)
+            return onPlayCommand(interaction)
         }
       }
 
@@ -67,7 +64,7 @@ export const MusicCommandsObserver = (
           case musicButtons.playPauseId:
             return onPlayPauseButton(interaction)
           case musicButtons.nextId:
-            return onNextButton(interaction, guild)
+            return onNextButton(interaction)
         }
       }
 
@@ -76,7 +73,9 @@ export const MusicCommandsObserver = (
     validateTracks,
   }
 
-  function onPlayCommand(interaction: CommandInteraction, guild: Guild): Future<void> {
+  function onPlayCommand(interaction: CommandInteraction): Future<void> {
+    const guild = interaction.guild
+    if (guild === null) return Future.unit
     return pipe(
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
       Future.chain(() => validatePlayCommand(interaction)),
@@ -85,7 +84,7 @@ export const MusicCommandsObserver = (
           pipe(
             guildStateService.getSubscription(guild),
             Future.chain(subscription =>
-              subscription.playTracks(musicChannel, stateChannel, tracks),
+              subscription.queueTracks(musicChannel, stateChannel, tracks),
             ),
             Future.map(() =>
               pipe(
@@ -109,21 +108,11 @@ export const MusicCommandsObserver = (
   }
 
   function onPlayPauseButton(interaction: ButtonInteraction): Future<void> {
-    return buttonCommon(interaction, Future.right(Either.right(undefined))) // TODO
+    return buttonCommon(interaction, subscription => subscription.playPauseTrack())
   }
 
-  function onNextButton(interaction: ButtonInteraction, guild: Guild): Future<void> {
-    return buttonCommon(
-      interaction,
-      pipe(
-        guildStateService.getSubscription(guild),
-        Future.chain(subscription => subscription.nextTrack()),
-        Future.map(
-          (success): Either<string, void> =>
-            success ? Either.right(undefined) : Either.left('Haha ! Tu ne peux pas faire ça !'),
-        ),
-      ),
-    )
+  function onNextButton(interaction: ButtonInteraction): Future<void> {
+    return buttonCommon(interaction, subscription => subscription.nextTrack())
   }
 
   function validatePlayCommand(
@@ -174,6 +163,40 @@ export const MusicCommandsObserver = (
       ),
     )
   }
+
+  function buttonCommon(
+    interaction: ButtonInteraction,
+    f: (suscription: MusicSubscription) => Future<boolean>,
+  ): Future<void> {
+    const guild = interaction.guild
+    if (guild === null) return Future.unit
+    return pipe(
+      validateMusicChannel(interaction),
+      Either.fold(flow(Either.left, Future.right), () =>
+        pipe(
+          guildStateService.getSubscription(guild),
+          Future.chain(f),
+          Future.map(success =>
+            success ? Either.right(undefined) : Either.left('Haha ! Tu ne peux pas faire ça !'),
+          ),
+        ),
+      ),
+      Future.chain(
+        Either.fold(
+          content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
+          () =>
+            pipe(
+              DiscordConnector.interactionUpdate(interaction),
+              Future.orElse(e =>
+                isUnknownMessageError(e)
+                  ? Future.unit // maybe it was deleted before we can update the interaction)
+                  : Future.left(e),
+              ),
+            ),
+        ),
+      ),
+    )
+  }
 }
 
 const validateMusicAndStateChannel = (
@@ -200,27 +223,4 @@ const validateMusicChannel = (
       ? Maybe.fromNullable(interaction.member.voice.channel)
       : Maybe.none,
     Either.fromOption(() => 'Haha ! Il faut être dans un salon vocal pour faire ça !'),
-  )
-
-const buttonCommon = (
-  interaction: ButtonInteraction,
-  f: Future<Either<string, void>>,
-): Future<void> =>
-  pipe(
-    validateMusicChannel(interaction),
-    Either.fold(flow(Either.left, Future.right), () => f),
-    Future.chain(
-      Either.fold(
-        content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
-        () =>
-          pipe(
-            DiscordConnector.interactionUpdate(interaction),
-            Future.orElse(e =>
-              isUnknownMessageError(e)
-                ? Future.unit // maybe it was deleted before we can update the interaction)
-                : Future.left(e),
-            ),
-          ),
-      ),
-    ),
   )
