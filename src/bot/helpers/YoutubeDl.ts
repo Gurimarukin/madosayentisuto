@@ -58,6 +58,8 @@ export const YoutubeDl = (binaryPath: string) => {
               quiet: true,
               format: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
               limitRate: '100K',
+              // format: 'worstvideo+bestaudio[ext=webm+acodec=opus+asr=48000]/worstvideo+bestaudio',
+              // // limitRate: '100K',
             },
             { stdio: ['ignore', 'pipe', 'ignore'] },
           ),

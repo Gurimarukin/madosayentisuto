@@ -1,7 +1,9 @@
-1. Commands:
-   1. Say
-   2. Remind
-   3. Img
+- Commands:
+  - Say
+  - Remind
+  - Img
+
+- replace youtube-dl with yt-dlp
 
 - ensure indexes: unsubscribe when done?
 - commands register: unsubscribe when done?
