@@ -2,6 +2,7 @@
   "extends": "@type-config/strict",
   "compilerOptions": {
     "outDir": "dist",
+    "jsx": "react",
     "incremental": true,
     "sourceMap": true,
     "noEmit": true,

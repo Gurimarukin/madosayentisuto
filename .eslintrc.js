@@ -3,15 +3,25 @@ module.exports = {
   parserOptions: {
     sourceType: 'module',
     project: './tsconfig.json',
+    ecmaFeatures: {
+      jsx: true,
+    },
   },
   plugins: ['functional', 'fp-ts'],
   extends: [
     'plugin:@typescript-eslint/recommended', // Uses the recommended rules from the @typescript-eslint/eslint-plugin
     'plugin:functional/recommended',
     'plugin:fp-ts/all',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
     'prettier/@typescript-eslint', // Uses eslint-config-prettier to disable ESLint rules from @typescript-eslint/eslint-plugin that would conflict with prettier
     'plugin:prettier/recommended', // Enables eslint-plugin-prettier and displays prettier errors as ESLint errors. Make sure this is always the last configuration in the extends array.
   ],
+  settings: {
+    react: {
+      version: 'detect',
+    },
+  },
   reportUnusedDisableDirectives: true,
   rules: {
     '@typescript-eslint/array-type': ['warn', { default: 'array', readonly: 'generic' }],
@@ -90,6 +100,7 @@ module.exports = {
           '^describe(\\.only)?\\(',
           '^expect(\\.only)?\\(',
           '^it(\\.only)?\\(',
+          '^useEffect\\(',
         ],
       },
     ],
@@ -123,6 +134,20 @@ module.exports = {
     'object-shorthand': 'warn',
     'prettier/prettier': 'off',
     quotes: ['warn', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
+    'react/display-name': 'off',
+    'react/jsx-no-bind': [
+      'warn',
+      {
+        ignoreDOMComponents: false,
+        ignoreRefs: false,
+        allowArrowFunctions: false,
+        allowFunctions: false,
+        allowBind: false,
+      },
+    ],
+    'react/no-unescaped-entities': 'off',
+    'react/prop-types': 'off',
+    'react/self-closing-comp': ['warn', { component: true, html: true }],
     'sort-imports': [
       'warn',
       {

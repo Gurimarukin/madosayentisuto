@@ -41,6 +41,10 @@ export const Either = {
 }
 
 export type Maybe<A> = option.Option<A>
+const maybeToArray: <A>(fa: Maybe<A>) => List<A> = option.fold(
+  () => [],
+  a => [a],
+)
 const maybeDecoder = <I, A>(decoder: D.Decoder<I, A>): D.Decoder<I, Maybe<A>> => ({
   decode: (u: I) =>
     u === null || u === undefined
@@ -54,6 +58,7 @@ export const Maybe = {
   ...option,
   every: <A>(predicate: Predicate<A>): ((fa: Maybe<A>) => boolean) =>
     option.fold(() => true, predicate),
+  toArray: maybeToArray,
   decoder: maybeDecoder,
   encoder: maybeEncoder,
   codec: <O, A>(codec: C_.Codec<unknown, O, A>): C_.Codec<unknown, O | null, Maybe<A>> =>
