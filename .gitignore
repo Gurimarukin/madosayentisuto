@@ -1,7 +1,9 @@
-/dist
 /.docker-data
-/node_modules
 /.eslintcache
+/.parcel-cache
+/dist
+/node_modules
+
 /dependencygraph.svg
 /dependencygraph.html
 /yarn-error.log

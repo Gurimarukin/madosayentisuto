@@ -3,12 +3,12 @@ import { pipe } from 'fp-ts/function'
 import { MsDuration } from '../../../src/shared/models/MsDuration'
 import { Either, Future, Maybe, NonEmptyArray } from '../../../src/shared/utils/fp'
 
-import { MusicCommandsObserver } from '../../../src/bot/domain/commands/MusicCommandsObserver'
-import { YoutubeDl } from '../../../src/bot/helpers/YoutubeDl'
-import type { LoggerType } from '../../../src/bot/models/logger/LoggerType'
-import { Track } from '../../../src/bot/models/music/Track'
-import type { GuildStateService } from '../../../src/bot/services/GuildStateService'
-import { StringUtils } from '../../../src/bot/utils/StringUtils'
+import { MusicCommandsObserver } from '../../../src/server/domain/commands/MusicCommandsObserver'
+import { YoutubeDl } from '../../../src/server/helpers/YoutubeDl'
+import type { LoggerType } from '../../../src/server/models/logger/LoggerType'
+import { Track } from '../../../src/server/models/music/Track'
+import type { GuildStateService } from '../../../src/server/services/GuildStateService'
+import { StringUtils } from '../../../src/server/utils/StringUtils'
 
 describe('validateTracks', () => {
   const { validateTracks } = MusicCommandsObserver(

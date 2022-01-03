@@ -1,9 +1,11 @@
+- webapp
+- safe `runFuture`/`runUnsafe`
+- replace youtube-dl with yt-dlp
+
 - Commands:
   - Say
   - Remind
   - Img
-
-- replace youtube-dl with yt-dlp
 
 - ensure indexes: unsubscribe when done?
 - commands register: unsubscribe when done?

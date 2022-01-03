@@ -202,7 +202,7 @@ module.exports = {
       name: 'only-from-whitelisted',
       severity: 'error',
       from: {
-        pathNot: '^src/(bot|shared|index.ts$|checkEnv.ts$)',
+        pathNot: '^src/(client|server|shared)',
       },
       to: {
         path: '^src',

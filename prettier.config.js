@@ -8,7 +8,8 @@ module.exports = {
   importOrder: [
     '<THIRD_PARTY_MODULES>',
     '^(\\.?\\.\\/)+(src/)?shared/(.*)$',
-    '^(\\.?\\.\\/)+(src/)?bot/(.*)$',
+    '^(\\.?\\.\\/)+(src/)?client/(.*)$',
+    '^(\\.?\\.\\/)+(src/)?server/(.*)$',
     '^[./]',
   ],
   importOrderSeparation: true,

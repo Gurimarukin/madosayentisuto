@@ -2,7 +2,7 @@ import * as D from 'io-ts/Decoder'
 
 import { Either } from '../../../src/shared/utils/fp'
 
-import { ConfReader } from '../../../src/bot/helpers/ConfReader'
+import { ConfReader } from '../../../src/server/helpers/ConfReader'
 
 describe('ConfReader.fromJsons', () => {
   it('should fail for non object', () => {

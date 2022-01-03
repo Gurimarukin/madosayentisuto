@@ -17,4 +17,5 @@
     mongo -u user -p password --authenticationDatabase admin madosayentisuto
 
     yarn install
-    yarn run ~run
+    yarn run ~server
+    yarn run ~client # in other shell
