@@ -1,6 +1,5 @@
 import { pipe } from 'fp-ts/function'
 
-import type { List } from '../../../shared/utils/fp'
 import { Future } from '../../../shared/utils/fp'
 
 import { constants } from '../../constants'
@@ -14,7 +13,7 @@ import { FutureUtils } from '../../utils/FutureUtils'
 export const IndexesEnsureObserver = (
   Logger: LoggerGetter,
   subject: TSubject<MadEventDbReady>,
-  ensureIndexes: List<Future<void>>,
+  ensureIndexes: Future<void>,
 ): TObserver<MadEventAppStarted> => {
   const logger = Logger('IndexesEnsureObserver')
 
@@ -23,12 +22,7 @@ export const IndexesEnsureObserver = (
       pipe(
         logger.info('Ensuring indexes'),
         Future.fromIOEither,
-        Future.chain(() =>
-          pipe(
-            Future.sequenceArray(ensureIndexes),
-            Future.map(() => {}),
-          ),
-        ),
+        Future.chain(() => ensureIndexes),
         FutureUtils.retryIfFailed(constants.retryEnsuringIndexes, {
           onFailure: e => logger.error('Failed to ensure indexes:\n', e),
           onSuccess: () => logger.info('Ensured indexes'),

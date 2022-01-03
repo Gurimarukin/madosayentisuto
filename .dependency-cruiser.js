@@ -199,6 +199,26 @@ module.exports = {
       },
     },
     {
+      name: 'not-to-client',
+      severity: 'error',
+      from: {
+        pathNot: '^src/client',
+      },
+      to: {
+        path: '^src/client',
+      },
+    },
+    {
+      name: 'not-to-server',
+      severity: 'error',
+      from: {
+        pathNot: '^src/server',
+      },
+      to: {
+        path: '^src/server',
+      },
+    },
+    {
       name: 'only-from-whitelisted',
       severity: 'error',
       from: {

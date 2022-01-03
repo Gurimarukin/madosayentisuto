@@ -96,6 +96,8 @@ export const Tuple = {
   of: <A, B>(a: A, b: B): Tuple<A, B> => [a, b],
 }
 
+export type Tuple3<A, B, C> = readonly [A, B, C]
+
 const unknownAsError = (e: unknown): Error => e as Error
 
 export type Try<A> = Either<Error, A>

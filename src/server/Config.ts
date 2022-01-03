@@ -2,7 +2,7 @@ import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import type { List } from '../shared/utils/fp'
-import { Either, IO, NonEmptyArray } from '../shared/utils/fp'
+import { Either, IO, Maybe, NonEmptyArray } from '../shared/utils/fp'
 
 import { ConfReader } from './helpers/ConfReader'
 import { TSnowflake } from './models/TSnowflake'
@@ -28,12 +28,28 @@ export type Config = {
     readonly password: string
   }
   readonly captain: CaptainConfig
+  readonly http: HttpConfig
+}
+
+export type ClientConfig = {
+  readonly id: string
+  readonly secret: string
+}
+
+export type CaptainConfig = {
+  readonly mentions: List<string>
+  readonly thanks: List<string>
+}
+
+export type HttpConfig = {
+  readonly port: number
+  readonly allowedOrigins: Maybe<NonEmptyArray<string>>
 }
 
 export const Config = {
   load: (): IO<Config> =>
     pipe(
-      ConfReader.fromFiles('./conf/local.conf.json', './conf/application.conf.json'),
+      ConfReader.fromFiles('./conf/server/local.conf.json', './conf/server/application.conf.json'),
       IO.chain(reader =>
         pipe(
           readConfig(reader),
@@ -65,15 +81,8 @@ const readConfig = (r: ConfReader): ValidatedNea<string, Config> =>
       password: r(D.string)('db', 'password'),
     }),
     captain: readCaptainConfig(r),
+    http: readHttpConfig(r),
   })
-
-/**
- * ClientConfig
- */
-export type ClientConfig = {
-  readonly id: string
-  readonly secret: string
-}
 
 const readClientConfig = (r: ConfReader): ValidatedNea<string, ClientConfig> =>
   ValidatedNea.sequenceS({
@@ -81,16 +90,14 @@ const readClientConfig = (r: ConfReader): ValidatedNea<string, ClientConfig> =>
     secret: r(D.string)('client', 'secret'),
   })
 
-/**
- * CaptainConfig
- */
-export type CaptainConfig = {
-  readonly mentions: List<string>
-  readonly thanks: List<string>
-}
-
 const readCaptainConfig = (r: ConfReader): ValidatedNea<string, CaptainConfig> =>
   ValidatedNea.sequenceS({
     mentions: r(D.array(D.string))('captain', 'mentions'),
     thanks: r(D.array(D.string))('captain', 'thanks'),
+  })
+
+const readHttpConfig = (r: ConfReader): ValidatedNea<string, HttpConfig> =>
+  ValidatedNea.sequenceS({
+    port: r(D.number)('http', 'port'),
+    allowedOrigins: r(Maybe.decoder(NonEmptyArray.decoder(D.string)))('http', 'allowedOrigins'),
   })

@@ -1,13 +1,19 @@
 # Madosayentisuto
 
-    cp conf/local.example.conf.json conf/local.conf.json # change needed values
+Node 16+
+
+---
+
+    cp conf/server/local.example.conf.json conf/server/local.conf.json
+    cp conf/client/.env.example conf/client/.env
+    # change needed values
 
 
 ## Deploy
 
     yarn install
     yarn run build
-    node dist/src/index.js
+    node dist/src/server/index.js
 
 
 ## Dev

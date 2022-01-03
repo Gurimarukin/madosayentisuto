@@ -16,5 +16,9 @@
     "dbName": "madosayentisuto",
     "user": "user",
     "password": "password"
+  },
+  "http": {
+    "port": 8677,
+    "allowedOrigins": ["*"]
   }
 }
