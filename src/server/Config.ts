@@ -1,13 +1,13 @@
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
+import { ValidatedNea } from '../shared/models/ValidatedNea'
 import { StringUtils } from '../shared/utils/StringUtils'
 import { List } from '../shared/utils/fp'
 import { Either, IO, Maybe, NonEmptyArray } from '../shared/utils/fp'
 
 import { ConfReader } from './helpers/ConfReader'
 import { TSnowflake } from './models/TSnowflake'
-import { ValidatedNea } from './models/ValidatedNea'
 import { LogLevelOrOff } from './models/logger/LogLevel'
 
 export type Config = {
@@ -49,7 +49,7 @@ export type HttpConfig = {
 export const Config = {
   load: (): IO<Config> =>
     pipe(
-      ConfReader.fromFiles('./conf/server/local.conf.json', './conf/server/application.conf.json'),
+      ConfReader.fromFiles('conf/local.conf.json', 'conf/application.conf.json'),
       IO.chain(reader =>
         pipe(
           readConfig(reader),

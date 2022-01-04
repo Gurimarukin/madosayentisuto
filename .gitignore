@@ -4,9 +4,9 @@
 /dist
 /node_modules
 
+/.env
 /dependencygraph.svg
 /dependencygraph.html
 /yarn-error.log
 
-/conf/client/.env
-/conf/server/local.conf.json
+/conf/local.conf.json

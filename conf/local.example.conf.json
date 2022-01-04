@@ -19,6 +19,6 @@
   },
   "http": {
     "port": 8677,
-    "allowedOrigins": ["*"]
+    "allowedOrigins": ["http://localhost:1234"]
   }
 }

@@ -2,10 +2,10 @@ import { apply, json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
+import { ValidatedNea } from '../../shared/models/ValidatedNea'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { Dict, Either, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
-import { ValidatedNea } from '../models/ValidatedNea'
 import { FileUtils } from '../utils/FileUtils'
 import { unknownToError } from '../utils/unknownToError'
 
