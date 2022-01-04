@@ -19,10 +19,7 @@ const main: Future<void> = pipe(
       Future.fromIOEither,
     ),
   ),
-  Future.bind('client', ({ config }) => {
-    console.log('config =', JSON.stringify(config, null, 2))
-    return DiscordConnector.futureClient(config.client)
-  }),
+  Future.bind('client', ({ config }) => DiscordConnector.futureClient(config.client)),
   Future.chain(({ config, client }) => {
     const discord = DiscordConnector.of(client)
     const Logger = DiscordLogger(config, discord)
