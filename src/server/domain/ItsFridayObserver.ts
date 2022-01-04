@@ -4,6 +4,7 @@ import { date, random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import { MsDuration } from '../../shared/models/MsDuration'
+import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
@@ -14,7 +15,6 @@ import type { TObserver } from '../models/rx/TObserver'
 import type { GuildStateService } from '../services/GuildStateService'
 import { DateUtils } from '../utils/DateUtils'
 import { LogUtils } from '../utils/LogUtils'
-import { StringUtils } from '../utils/StringUtils'
 
 export const ItsFridayObserver = (
   Logger: LoggerGetter,

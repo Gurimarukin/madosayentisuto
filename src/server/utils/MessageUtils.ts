@@ -11,10 +11,10 @@ import type {
 } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
+import { StringUtils } from '../../shared/utils/StringUtils'
 import { List } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
-import { StringUtils } from './StringUtils'
 
 type UrlHeightWidthProxy = {
   readonly url?: string

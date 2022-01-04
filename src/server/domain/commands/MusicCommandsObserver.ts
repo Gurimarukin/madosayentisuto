@@ -10,6 +10,7 @@ import type {
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
+import { StringUtils } from '../../../shared/utils/StringUtils'
 import { Either, NonEmptyArray } from '../../../shared/utils/fp'
 import { Future, Maybe } from '../../../shared/utils/fp'
 
@@ -23,7 +24,6 @@ import { MusicState } from '../../models/music/MusicState'
 import { Track } from '../../models/music/Track'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { GuildStateService } from '../../services/GuildStateService'
-import { StringUtils } from '../../utils/StringUtils'
 
 type PlayCommand = {
   readonly musicChannel: VoiceChannel | StageChannel

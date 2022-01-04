@@ -1,10 +1,10 @@
 import React from 'react'
 
-import { useHistory } from './router/HistoryContext'
-import { Router } from './router/Router'
+import { AppRouterComponent } from './router/AppRouterComponent'
+import { HistoryContextProvider } from './router/HistoryContext'
 
-export const App = (): JSX.Element => {
-  const { location } = useHistory()
-
-  return <Router path={location.pathname} />
-}
+export const App = (): JSX.Element => (
+  <HistoryContextProvider>
+    <AppRouterComponent />
+  </HistoryContextProvider>
+)

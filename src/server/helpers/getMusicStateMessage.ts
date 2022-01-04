@@ -9,12 +9,12 @@ import type {
 import { MessageActionRow } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
+import { StringUtils } from '../../shared/utils/StringUtils'
 import { List, Maybe } from '../../shared/utils/fp'
 
 import { Colors, constants } from '../constants'
 import type { Track } from '../models/music/Track'
 import { MessageUtils } from '../utils/MessageUtils'
-import { StringUtils } from '../utils/StringUtils'
 
 type MyMessageOptions = string | MessagePayload | MessageOptions
 type MyButton = Required<BaseMessageComponentOptions> & MessageButtonOptions

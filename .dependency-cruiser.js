@@ -100,6 +100,7 @@ module.exports = {
       from: {},
       to: {
         couldNotResolve: true,
+        pathNot: ['^ky/distribution/types/options'],
       },
     },
     // no clue what this is...

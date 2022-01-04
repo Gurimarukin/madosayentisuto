@@ -5,10 +5,10 @@ import { json } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import { create as createYoutubeDl } from 'youtube-dl-exec'
 
+import { decodeError } from '../../shared/utils/decodeError'
 import { Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import { VideosMetadata } from '../models/music/VideosMetadata'
-import { decodeError } from '../utils/decodeError'
 
 export type YoutubeDl = ReturnType<typeof YoutubeDl>
 

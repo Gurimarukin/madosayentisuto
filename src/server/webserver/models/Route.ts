@@ -1,4 +1,4 @@
-import type { Tuple3 } from '../../shared/utils/fp'
+import type { Tuple3 } from '../../../shared/utils/fp'
 
 import type { EndedMiddleware } from './EndedMiddleware'
 

@@ -8,11 +8,11 @@ import { ApplicationCommandPermissionTypes } from 'discord.js/typings/enums'
 import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
 
+import { GuildId } from '../../../shared/models/guild/GuildId'
 import { Future, IO, List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import type { Config } from '../../Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import { GuildId } from '../../models/GuildId'
 import { TSnowflake } from '../../models/TSnowflake'
 import { CommandId } from '../../models/commands/CommandId'
 import type { PutCommandResult } from '../../models/commands/PutCommandResult'

@@ -1,10 +1,10 @@
 import { pipe } from 'fp-ts/function'
 
+import { GuildId } from '../../shared/models/guild/GuildId'
 import type { Dict, Maybe } from '../../shared/utils/fp'
 import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import { GuildId } from '../models/GuildId'
 import type { MongoCollection } from '../models/MongoCollection'
 import type { TSnowflake } from '../models/TSnowflake'
 import type { GuildStateDbOutput } from '../models/guildState/db/GuildStateDb'

@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/function'
 import util from 'util'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
+import { StringUtils } from '../../shared/utils/StringUtils'
 import type { List } from '../../shared/utils/fp'
 import { Future, IO } from '../../shared/utils/fp'
 
@@ -10,7 +11,6 @@ import type { Config } from '../Config'
 import { LogLevel, LogLevelOrOff } from '../models/logger/LogLevel'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import { MessageUtils } from '../utils/MessageUtils'
-import { StringUtils } from '../utils/StringUtils'
 import { DiscordConnector } from './DiscordConnector'
 
 export const DiscordLogger =

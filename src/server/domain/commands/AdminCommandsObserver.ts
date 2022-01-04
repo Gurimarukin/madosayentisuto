@@ -19,6 +19,7 @@ import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
+import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { Tuple } from '../../../shared/utils/fp'
 import { IO } from '../../../shared/utils/fp'
 import { Either, NonEmptyArray } from '../../../shared/utils/fp'
@@ -39,7 +40,6 @@ import type { BotStateService } from '../../services/BotStateService'
 import type { GuildStateService } from '../../services/GuildStateService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { LogUtils } from '../../utils/LogUtils'
-import { StringUtils } from '../../utils/StringUtils'
 
 const stateCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)

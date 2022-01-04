@@ -2,8 +2,9 @@ import type { APIInteractionDataResolvedChannel, APIRole } from 'discord-api-typ
 import type { GuildChannel, MessageOptions, Role, ThreadChannel } from 'discord.js'
 import { MessageActionRow, MessageButton } from 'discord.js'
 
+import { StringUtils } from '../../shared/utils/StringUtils'
+
 import { constants } from '../constants'
-import { StringUtils } from '../utils/StringUtils'
 
 export const callsButton = {
   subscribeId: 'callsSubscribe',

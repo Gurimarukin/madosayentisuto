@@ -3,12 +3,12 @@ import type { CommandInteraction } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
+import { StringUtils } from '../../../shared/utils/StringUtils'
 import { Either, Future } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
 import type { TObserver } from '../../models/rx/TObserver'
-import { StringUtils } from '../../utils/StringUtils'
 
 const pingCommand = new SlashCommandBuilder()
   .setName('ping')

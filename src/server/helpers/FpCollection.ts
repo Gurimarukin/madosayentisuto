@@ -19,12 +19,12 @@ import type {
 } from 'mongodb'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
+import { decodeError } from '../../shared/utils/decodeError'
 import type { Tuple } from '../../shared/utils/fp'
 import { Either, Future, List, Maybe } from '../../shared/utils/fp'
 
 import type { IndexDescription, WithoutProjection } from '../models/MongoTypings'
 import type { LoggerType } from '../models/logger/LoggerType'
-import { decodeError } from '../utils/decodeError'
 
 export type FpCollection = ReturnType<typeof FpCollection>
 

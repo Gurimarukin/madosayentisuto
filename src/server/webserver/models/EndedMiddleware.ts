@@ -5,9 +5,9 @@ import type { HeadersOpen, ResponseEnded, StatusOpen } from 'hyper-ts'
 import * as M from 'hyper-ts/lib/Middleware'
 import type { Middleware } from 'hyper-ts/lib/Middleware'
 
-import { Dict } from '../../shared/utils/fp'
+import { Dict } from '../../../shared/utils/fp'
 
-import { unknownToError } from '../utils/unknownToError'
+import { unknownToError } from '../../utils/unknownToError'
 
 export type EndedMiddleware = Middleware<StatusOpen, ResponseEnded, unknown, void>
 
@@ -20,18 +20,14 @@ const text =
       M.ichain(() => M.send(message)),
     )
 
-function json<A, O>(
-  status: Status,
-  encode: (a: A) => O,
-  headers: Dict<string, string> = {},
-): (data: A) => EndedMiddleware {
-  return (data: A) =>
+const json =
+  <A, O>(status: Status, encode: (a: A) => O, headers: Dict<string, string> = {}) =>
+  (data: A): EndedMiddleware =>
     pipe(
       reduceHeaders(status, headers),
       M.ichain(() => M.json(encode(data), unknownToError)),
       M.orElse(() => text(Status.InternalServerError)()),
     )
-}
 
 const reduceHeaders = (
   status: Status,

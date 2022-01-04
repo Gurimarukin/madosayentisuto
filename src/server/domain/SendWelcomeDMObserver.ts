@@ -1,6 +1,7 @@
 import { pipe } from 'fp-ts/function'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
+import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future } from '../../shared/utils/fp'
 
 import { Colors } from '../constants'
@@ -10,7 +11,6 @@ import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import { LogUtils } from '../utils/LogUtils'
 import { MessageUtils } from '../utils/MessageUtils'
-import { StringUtils } from '../utils/StringUtils'
 
 export const SendWelcomeDMObserver = (Logger: LoggerGetter): TObserver<MadEventGuildMemberAdd> => {
   const logger = Logger('SendWelcomeDMObserver')

@@ -1,9 +1,9 @@
 import { random } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { MsDuration } from '../../shared/models/MsDuration'
-import type { NonEmptyArray, Tuple } from '../../shared/utils/fp'
-import { List, Maybe } from '../../shared/utils/fp'
+import { MsDuration } from '../models/MsDuration'
+import type { NonEmptyArray, Tuple } from './fp'
+import { List, Maybe } from './fp'
 
 const margin = /^\s*\|/gm
 const stripMargins = (str: string): string => str.replace(margin, '')

@@ -1,14 +1,14 @@
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
-import type { List } from '../shared/utils/fp'
+import { StringUtils } from '../shared/utils/StringUtils'
+import { List } from '../shared/utils/fp'
 import { Either, IO, Maybe, NonEmptyArray } from '../shared/utils/fp'
 
 import { ConfReader } from './helpers/ConfReader'
 import { TSnowflake } from './models/TSnowflake'
 import { ValidatedNea } from './models/ValidatedNea'
 import { LogLevelOrOff } from './models/logger/LogLevel'
-import { StringUtils } from './utils/StringUtils'
 
 export type Config = {
   readonly youtubeDlPath: string
@@ -92,8 +92,8 @@ const readClientConfig = (r: ConfReader): ValidatedNea<string, ClientConfig> =>
 
 const readCaptainConfig = (r: ConfReader): ValidatedNea<string, CaptainConfig> =>
   ValidatedNea.sequenceS({
-    mentions: r(D.array(D.string))('captain', 'mentions'),
-    thanks: r(D.array(D.string))('captain', 'thanks'),
+    mentions: r(List.decoder(D.string))('captain', 'mentions'),
+    thanks: r(List.decoder(D.string))('captain', 'thanks'),
   })
 
 const readHttpConfig = (r: ConfReader): ValidatedNea<string, HttpConfig> =>

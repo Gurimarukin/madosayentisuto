@@ -2,11 +2,11 @@ import { apply, json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
+import { StringUtils } from '../../shared/utils/StringUtils'
 import { Dict, Either, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
 import { ValidatedNea } from '../models/ValidatedNea'
 import { FileUtils } from '../utils/FileUtils'
-import { StringUtils } from '../utils/StringUtils'
 import { unknownToError } from '../utils/unknownToError'
 
 export type ConfReader = <A>(

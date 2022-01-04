@@ -45,19 +45,19 @@ import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { MsDuration } from '../../shared/models/MsDuration'
+import { GuildId } from '../../shared/models/guild/GuildId'
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
+import { decodeError } from '../../shared/utils/decodeError'
 import { Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import type { ClientConfig } from '../Config'
 import { Colors, constants } from '../constants'
-import { GuildId } from '../models/GuildId'
 import { TSnowflake } from '../models/TSnowflake'
 import type { Activity } from '../models/botState/Activity'
 import { CommandId } from '../models/commands/CommandId'
 import { PutCommandResult } from '../models/commands/PutCommandResult'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { MessageUtils } from '../utils/MessageUtils'
-import { decodeError } from '../utils/decodeError'
 
 type NotPartial = {
   readonly partial: false

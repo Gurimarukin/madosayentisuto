@@ -15,8 +15,9 @@ import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { BotStateService } from './services/BotStateService'
 import { GuildStateService } from './services/GuildStateService'
-import { Routes } from './webserver/Routes'
-import { startWebServer } from './webserver/startWebServer'
+import { Routes } from './webServer/Routes'
+import { DiscordClientController } from './webServer/controllers/DiscordClientController'
+import { startWebServer } from './webServer/startWebServer'
 
 export type Context = {
   readonly logger: LoggerType
@@ -65,7 +66,9 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
   const botStateService = BotStateService(Logger, discord, botStatePersistence)
   const guildStateService = GuildStateService(Logger, discord, youtubeDl, guildStatePersistence)
 
-  const routes = Routes()
+  const discordClientController = DiscordClientController(discord)
+
+  const routes = Routes(discordClientController)
   const startWebServer_ = startWebServer(Logger, config.http, routes)
 
   return {

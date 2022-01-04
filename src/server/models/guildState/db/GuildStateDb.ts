@@ -1,9 +1,9 @@
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
+import { GuildId } from '../../../../shared/models/guild/GuildId'
 import { Dict, Maybe } from '../../../../shared/utils/fp'
 
-import { GuildId } from '../../GuildId'
 import { TSnowflake } from '../../TSnowflake'
 import type { GuildState } from '../GuildState'
 import { CallsDb } from './CallsDb'

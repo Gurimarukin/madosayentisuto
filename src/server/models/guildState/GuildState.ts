@@ -1,10 +1,10 @@
 import type { Role, TextChannel } from 'discord.js'
 import { Lens as MonocleLens } from 'monocle-ts'
 
+import type { GuildId } from '../../../shared/models/guild/GuildId'
 import { Maybe } from '../../../shared/utils/fp'
 
 import type { MusicSubscription } from '../../helpers/music/MusicSubscription'
-import type { GuildId } from '../GuildId'
 import type { Calls } from './Calls'
 
 export type GuildState = {

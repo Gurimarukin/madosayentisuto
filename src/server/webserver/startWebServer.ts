@@ -13,10 +13,10 @@ import type { NonEmptyArray } from '../../shared/utils/fp'
 import { Dict, Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import type { HttpConfig } from '../Config'
-import type { EndedMiddleware } from '../models/EndedMiddleware'
-import { EndendMiddleware } from '../models/EndedMiddleware'
-import type { Route } from '../models/Route'
 import type { LoggerGetter, LoggerType } from '../models/logger/LoggerType'
+import type { EndedMiddleware } from './models/EndedMiddleware'
+import { EndendMiddleware } from './models/EndedMiddleware'
+import type { Route } from './models/Route'
 
 const allowedHeaders = ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 

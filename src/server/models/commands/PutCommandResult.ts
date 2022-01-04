@@ -1,10 +1,10 @@
 import type { ApplicationCommandType } from 'discord-api-types/payloads/v9'
 import * as D from 'io-ts/Decoder'
 
-import { Maybe } from '../../../shared/utils/fp'
+import { GuildId } from '../../../shared/models/guild/GuildId'
+import { List, Maybe } from '../../../shared/utils/fp'
 
 import { createEnum } from '../../utils/createEnum'
-import { GuildId } from '../GuildId'
 import { TSnowflake } from '../TSnowflake'
 import { CommandId } from './CommandId'
 
@@ -20,7 +20,7 @@ const codec = D.struct({
   name: D.string,
   description: D.string,
   guild_id: GuildId.codec,
-  options: Maybe.decoder(D.array(D.id<unknown>())),
+  options: Maybe.decoder(List.decoder(D.id<unknown>())),
 })
 
 export type PutCommandResult = D.TypeOf<typeof codec>

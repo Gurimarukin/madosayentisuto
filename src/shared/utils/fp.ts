@@ -66,10 +66,10 @@ export const Maybe = {
 }
 
 export type NonEmptyArray<A> = readonlyNonEmptyArray.ReadonlyNonEmptyArray<A>
-const neaDecoder = <A>(codec: D.Decoder<unknown, A>): D.Decoder<unknown, NonEmptyArray<A>> =>
-  pipe(D.array(codec), D.refine<List<A>, NonEmptyArray<A>>(List.isNonEmpty, 'NonEmptyArray'))
-const neaEncoder = <O, A>(codec: Encoder<O, A>): Encoder<NonEmptyArray<O>, NonEmptyArray<A>> => ({
-  encode: a => pipe(a, NonEmptyArray.map(codec.encode)),
+const neaDecoder = <A>(decoder: D.Decoder<unknown, A>): D.Decoder<unknown, NonEmptyArray<A>> =>
+  pipe(D.array(decoder), D.refine<List<A>, NonEmptyArray<A>>(List.isNonEmpty, 'NonEmptyArray'))
+const neaEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<NonEmptyArray<O>, NonEmptyArray<A>> => ({
+  encode: NonEmptyArray.map(encoder.encode),
 })
 export const NonEmptyArray = {
   ...readonlyNonEmptyArray,
@@ -83,11 +83,19 @@ export const NonEmptyArray = {
 
 // can't just alias it to `Array`
 export type List<A> = ReadonlyArray<A>
+const listDecoder: <A>(decoder: D.Decoder<unknown, A>) => D.Decoder<unknown, List<A>> = D.array
+const listEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<List<O>, List<A>> => ({
+  encode: readonlyArray.map(encoder.encode),
+})
 export const List = {
   ...readonlyArray,
   isEmpty: <A>(l: List<A>): l is readonly [] => readonlyArray.isEmpty(l),
   hasLength1: <A>(l: List<A>): l is NonEmptyArray<A> => l.length === 1,
   concat: <A>(a: List<A>, b: List<A>): List<A> => [...a, ...b],
+  decoder: listDecoder,
+  encoder: listEncoder,
+  codec: <O, A>(codec: C_.Codec<unknown, O, A>): C_.Codec<unknown, List<O>, List<A>> =>
+    C_.make(listDecoder(codec), listEncoder(codec)),
 }
 
 export type Tuple<A, B> = readonly [A, B]
