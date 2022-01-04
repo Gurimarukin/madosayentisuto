@@ -9,13 +9,13 @@ export type Config = {
   readonly apiHost: string
 }
 
-const d =
+const r =
   <A>(decoder: D.Decoder<unknown, A>) =>
   (u: unknown): ValidatedNea<string, A> =>
     pipe(decoder.decode(u), Either.mapLeft(flow(D.draw, NonEmptyArray.of)))
 
 const validate = ValidatedNea.sequenceS({
-  apiHost: d(D.string)(process.env.API_HOST),
+  apiHost: r(D.string)(process.env.API_HOST),
 })
 
 export const Config = pipe(

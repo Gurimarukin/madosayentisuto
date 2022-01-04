@@ -1,12 +1,19 @@
-import { flow, pipe } from 'fp-ts/function'
+import type * as dotenv from 'dotenv'
 import * as D from 'io-ts/Decoder'
 
 import { ValidatedNea } from '../shared/models/ValidatedNea'
-import { StringUtils } from '../shared/utils/StringUtils'
-import { List } from '../shared/utils/fp'
-import { Either, IO, Maybe, NonEmptyArray } from '../shared/utils/fp'
+import type { DecodeKey } from '../shared/utils/ConfigUtils'
+import { ConfigUtils } from '../shared/utils/ConfigUtils'
+import type { NonEmptyArray, Try } from '../shared/utils/fp'
+import type { List } from '../shared/utils/fp'
+import { Maybe } from '../shared/utils/fp'
+import {
+  arrayFromString,
+  booleanFromString,
+  nonEmptyArrayFromString,
+  numberFromString,
+} from '../shared/utils/ioTsUtils'
 
-import { ConfReader } from './helpers/ConfReader'
 import { TSnowflake } from './models/TSnowflake'
 import { LogLevelOrOff } from './models/logger/LogLevel'
 
@@ -16,7 +23,7 @@ export type Config = {
   readonly admins: NonEmptyArray<TSnowflake>
   readonly logger: {
     readonly consoleLevel: LogLevelOrOff
-    readonly discordDM: {
+    readonly discordDm: {
       readonly level: LogLevelOrOff
       readonly compact: boolean
     }
@@ -46,58 +53,46 @@ export type HttpConfig = {
   readonly allowedOrigins: Maybe<NonEmptyArray<string>>
 }
 
-export const Config = {
-  load: (): IO<Config> =>
-    pipe(
-      ConfReader.fromFiles('conf/local.conf.json', 'conf/application.conf.json'),
-      IO.chain(reader =>
-        pipe(
-          readConfig(reader),
-          Either.mapLeft(
-            flow(StringUtils.mkString('Errors while reading config:\n', '\n', ''), Error),
-          ),
-          IO.fromEither,
-        ),
-      ),
-    ),
-}
-
-const readConfig = (r: ConfReader): ValidatedNea<string, Config> =>
-  ValidatedNea.sequenceS({
-    youtubeDlPath: r(D.string)('youtubeDlPath'),
-    client: readClientConfig(r),
-    admins: r(NonEmptyArray.decoder(TSnowflake.codec))('admins'),
-    logger: ValidatedNea.sequenceS({
-      consoleLevel: r(LogLevelOrOff.codec)('logger', 'consoleLevel'),
-      discordDM: ValidatedNea.sequenceS({
-        level: r(LogLevelOrOff.codec)('logger', 'discordDM', 'level'),
-        compact: r(D.boolean)('logger', 'discordDM', 'compact'),
+const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
+  ConfigUtils.parseConfig(dict)(r =>
+    ValidatedNea.sequenceS({
+      youtubeDlPath: r(D.string)('YOUTUBE_DL_PATH'),
+      client: parseClientConfig(r),
+      admins: r(nonEmptyArrayFromString(TSnowflake.codec))('ADMINS'),
+      logger: ValidatedNea.sequenceS({
+        consoleLevel: r(LogLevelOrOff.codec)('LOGGER_CONSOLE_LEVEL'),
+        discordDm: ValidatedNea.sequenceS({
+          level: r(LogLevelOrOff.codec)('LOGGER_DISCORD_DM_LEVEL'),
+          compact: r(booleanFromString)('LOGGER_DISCORD_DM_COMPACT'),
+        }),
       }),
+      db: ValidatedNea.sequenceS({
+        host: r(D.string)('DB_HOST'),
+        dbName: r(D.string)('DB_NAME'),
+        user: r(D.string)('DB_USER'),
+        password: r(D.string)('DB_PASSWORD'),
+      }),
+      captain: parseCaptainConfig(r),
+      http: parseHttpConfig(r),
     }),
-    db: ValidatedNea.sequenceS({
-      host: r(D.string)('db', 'host'),
-      dbName: r(D.string)('db', 'dbName'),
-      user: r(D.string)('db', 'user'),
-      password: r(D.string)('db', 'password'),
-    }),
-    captain: readCaptainConfig(r),
-    http: readHttpConfig(r),
+  )
+
+const parseClientConfig = (r: DecodeKey): ValidatedNea<string, ClientConfig> =>
+  ValidatedNea.sequenceS({
+    id: r(D.string)('CLIENT_ID'),
+    secret: r(D.string)('CLIENT_SECRET'),
   })
 
-const readClientConfig = (r: ConfReader): ValidatedNea<string, ClientConfig> =>
+const parseCaptainConfig = (r: DecodeKey): ValidatedNea<string, CaptainConfig> =>
   ValidatedNea.sequenceS({
-    id: r(D.string)('client', 'id'),
-    secret: r(D.string)('client', 'secret'),
+    mentions: r(arrayFromString(D.string))('CAPTAIN_MENTIONS'),
+    thanks: r(arrayFromString(D.string))('CAPTAIN_THANKS'),
   })
 
-const readCaptainConfig = (r: ConfReader): ValidatedNea<string, CaptainConfig> =>
+const parseHttpConfig = (r: DecodeKey): ValidatedNea<string, HttpConfig> =>
   ValidatedNea.sequenceS({
-    mentions: r(List.decoder(D.string))('captain', 'mentions'),
-    thanks: r(List.decoder(D.string))('captain', 'thanks'),
+    port: r(numberFromString)('HTTP_PORT'),
+    allowedOrigins: r(Maybe.decoder(nonEmptyArrayFromString(D.string)))('HTTP_ALLOWED_ORIGINS'),
   })
 
-const readHttpConfig = (r: ConfReader): ValidatedNea<string, HttpConfig> =>
-  ValidatedNea.sequenceS({
-    port: r(D.number)('http', 'port'),
-    allowedOrigins: r(Maybe.decoder(NonEmptyArray.decoder(D.string)))('http', 'allowedOrigins'),
-  })
+export const Config = { parse }

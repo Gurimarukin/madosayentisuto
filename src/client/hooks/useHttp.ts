@@ -6,9 +6,9 @@ import type { HttpMethod } from 'ky/distribution/types/options'
 import type { SWRResponse } from 'swr'
 import useSWR from 'swr'
 
-import { decodeError } from '../../shared/utils/decodeError'
 import type { Tuple } from '../../shared/utils/fp'
 import { Either } from '../../shared/utils/fp'
+import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import { Config } from '../Config'
 

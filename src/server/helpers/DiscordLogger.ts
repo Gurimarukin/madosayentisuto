@@ -28,8 +28,8 @@ export const DiscordLogger =
         : Future.unit
 
     const discordDMLog = (level: LogLevel, rawMsg: string): Future<void> => {
-      if (shouldLog(config.logger.discordDM.level, level)) {
-        const msg: string | MessageOptions = config.logger.discordDM.compact
+      if (shouldLog(config.logger.discordDm.level, level)) {
+        const msg: string | MessageOptions = config.logger.discordDm.compact
           ? formatDMCompact(name, level, rawMsg)
           : formatDMEmbed(name, level, rawMsg)
 

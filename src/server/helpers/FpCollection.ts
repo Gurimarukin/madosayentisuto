@@ -19,9 +19,9 @@ import type {
 } from 'mongodb'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
-import { decodeError } from '../../shared/utils/decodeError'
 import type { Tuple } from '../../shared/utils/fp'
 import { Either, Future, List, Maybe } from '../../shared/utils/fp'
+import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import type { IndexDescription, WithoutProjection } from '../models/MongoTypings'
 import type { LoggerType } from '../models/logger/LoggerType'
