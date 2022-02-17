@@ -1,12 +1,9 @@
 /.docker-data
+/.env
 /.eslintcache
 /.parcel-cache
+/dependencygraph.html
+/dependencygraph.svg
 /dist
 /node_modules
-
-/.env
-/dependencygraph.svg
-/dependencygraph.html
 /yarn-error.log
-
-/conf/local.conf.json
