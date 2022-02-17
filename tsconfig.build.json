@@ -4,6 +4,7 @@
     "incremental": false,
     "sourceMap": false,
     "declaration": false,
+    "skipLibCheck": true,
     "noEmit": false
   },
   "include": ["src"]
