@@ -91,21 +91,18 @@ module.exports = {
         dependencyTypes: ['npm-no-pkg', 'npm-unknown'],
       },
     },
-
-    // TOTO: no problemo on my machine, but fuck you Github Actions
-    // {
-    //   name: 'not-to-unresolvable',
-    //   comment:
-    //     "This module depends on a module that cannot be found ('resolved to disk'). If it's an npm " +
-    //     'module: add it to your package.json. In all other cases you likely already know what to do.',
-    //   severity: 'error',
-    //   from: {},
-    //   to: {
-    //     couldNotResolve: true,
-    //     pathNot: ['^ky/distribution/types/options'],
-    //   },
-    // },
-
+    {
+      name: 'not-to-unresolvable',
+      comment:
+        "This module depends on a module that cannot be found ('resolved to disk'). If it's an npm " +
+        'module: add it to your package.json. In all other cases you likely already know what to do.',
+      severity: 'error',
+      from: {},
+      to: {
+        couldNotResolve: true,
+        pathNot: ['^ky/distribution/types/options'],
+      },
+    },
     // no clue what this is...
     // {
     //   name: 'no-duplicate-dep-types',
