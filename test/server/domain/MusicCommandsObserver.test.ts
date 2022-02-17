@@ -1,11 +1,8 @@
-import { pipe } from 'fp-ts/function'
-
 import { MsDuration } from '../../../src/shared/models/MsDuration'
-import { StringUtils } from '../../../src/shared/utils/StringUtils'
-import { Either, Future, Maybe, NonEmptyArray } from '../../../src/shared/utils/fp'
+import { Either, Maybe, NonEmptyArray } from '../../../src/shared/utils/fp'
 
 import { MusicCommandsObserver } from '../../../src/server/domain/commands/MusicCommandsObserver'
-import { YoutubeDl } from '../../../src/server/helpers/YoutubeDl'
+import { YtDlp } from '../../../src/server/helpers/YtDlp'
 import type { LoggerType } from '../../../src/server/models/logger/LoggerType'
 import { Track } from '../../../src/server/models/music/Track'
 import type { GuildStateService } from '../../../src/server/services/GuildStateService'
@@ -13,7 +10,7 @@ import type { GuildStateService } from '../../../src/server/services/GuildStateS
 describe('validateTracks', () => {
   const { validateTracks } = MusicCommandsObserver(
     () => ({} as LoggerType),
-    YoutubeDl('/usr/local/bin/youtube-dl'),
+    YtDlp('/usr/local/bin/yt-dlp'),
     {} as GuildStateService,
   )
 
@@ -24,28 +21,21 @@ describe('validateTracks', () => {
   )
 
   it('should validate YouTube video', () =>
-    pipe(
-      validateTracks('https://www.youtube.com/watch?v=aeWfN6CinGY'),
-      Future.map(res => {
-        expect(res).toStrictEqual(Either.right(NonEmptyArray.of(whenImTwi)))
-      }),
-      Future.runUnsafe,
-    ))
+    validateTracks('https://www.youtube.com/watch?v=aeWfN6CinGY')().then(res => {
+      expect(res).toStrictEqual(Either.right(Either.right(NonEmptyArray.of(whenImTwi))))
+    }))
 
   it('should validate YouTube video (short)', () =>
-    pipe(
-      validateTracks('https://youtu.be/aeWfN6CinGY'),
-      Future.map(res => {
-        expect(res).toStrictEqual(Either.right(NonEmptyArray.of(whenImTwi)))
-      }),
-      Future.runUnsafe,
-    ))
+    validateTracks('https://youtu.be/aeWfN6CinGY')().then(res => {
+      expect(res).toStrictEqual(Either.right(Either.right(NonEmptyArray.of(whenImTwi))))
+    }))
 
   it('should validate YouTube playlist', () =>
-    pipe(
-      validateTracks('https://www.youtube.com/playlist?list=PLIbD1ba8REOOWyzNL1AEPQMpEflxjcOEL'),
-      Future.map(res => {
-        expect(res).toStrictEqual(
+    validateTracks(
+      'https://www.youtube.com/playlist?list=PLIbD1ba8REOOWyzNL1AEPQMpEflxjcOEL',
+    )().then(res => {
+      expect(res).toStrictEqual(
+        Either.right(
           Either.right([
             Track.of(
               "YOU WON'T BELIEVE WHAT THIS SCREAMING MAN CAN DO !!",
@@ -58,16 +48,14 @@ describe('validateTracks', () => {
               Maybe.some('https://i.ytimg.com/vi_webp/0AfNhK9aCjo/maxresdefault.webp'),
             ),
           ]),
-        )
-      }),
-      Future.runUnsafe,
-    ))
+        ),
+      )
+    }))
 
   it('should search', () =>
-    pipe(
-      validateTracks('adedigado'),
-      Future.map(res => {
-        expect(res).toStrictEqual(
+    validateTracks('sardo nerveux')().then(res => {
+      expect(res).toStrictEqual(
+        Either.right(
           Either.right(
             NonEmptyArray.of(
               Track.of(
@@ -77,21 +65,16 @@ describe('validateTracks', () => {
               ),
             ),
           ),
-        )
-      }),
-      Future.runUnsafe,
-    ))
+        ),
+      )
+    }))
 
   it('should fail on invalid site', () =>
     validateTracks('https://dl.blbl.ch')().then(res => {
       expect(res).toStrictEqual(
         Either.left(
           Error(
-            StringUtils.stripMargins(
-              `Command failed with exit code 1: /usr/local/bin/youtube-dl https://dl.blbl.ch --dump-single-json --default-search ytsearch
-              |WARNING: Could not send HEAD request to https://dl.blbl.ch: HTTP Error 403: Forbidden
-              |ERROR: Unable to download webpage: HTTP Error 403: Forbidden (caused by <HTTPError 403: 'Forbidden'>); please report this issue on https://yt-dl.org/bug . Make sure you are using the latest version; see  https://yt-dl.org/update  on how to update. Be sure to call youtube-dl with the --verbose flag and include its complete output.`,
-            ),
+            `Command failed with exit code 1: /usr/local/bin/yt-dlp https://dl.blbl.ch --dump-single-json --default-search ytsearch --abort-on-error`,
           ),
         ),
       )
@@ -100,10 +83,9 @@ describe('validateTracks', () => {
   it(
     'should validate Bandcamp album',
     () =>
-      pipe(
-        validateTracks('https://frayle.bandcamp.com/album/the-white-witch-ep'),
-        Future.map(res => {
-          expect(res).toStrictEqual(
+      validateTracks('https://frayle.bandcamp.com/album/the-white-witch-ep')().then(res => {
+        expect(res).toStrictEqual(
+          Either.right(
             Either.right([
               Track.of(
                 'Frayle - Let The Darkness In',
@@ -126,18 +108,16 @@ describe('validateTracks', () => {
                 Maybe.some('https://f4.bcbits.com/img/a4080863901_5.jpg'),
               ),
             ]),
-          )
-        }),
-        Future.runUnsafe,
-      ),
+          ),
+        )
+      }),
     MsDuration.unwrap(MsDuration.seconds(30)),
   )
 
   it('should validate Bandcamp track', () =>
-    pipe(
-      validateTracks('https://frayle.bandcamp.com/track/the-white-witch'),
-      Future.map(res => {
-        expect(res).toStrictEqual(
+    validateTracks('https://frayle.bandcamp.com/track/the-white-witch')().then(res => {
+      expect(res).toStrictEqual(
+        Either.right(
           Either.right(
             NonEmptyArray.of(
               Track.of(
@@ -147,8 +127,7 @@ describe('validateTracks', () => {
               ),
             ),
           ),
-        )
-      }),
-      Future.runUnsafe,
-    ))
+        ),
+      )
+    }))
 })

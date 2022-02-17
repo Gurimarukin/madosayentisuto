@@ -8,7 +8,7 @@ import { Future } from '../shared/utils/fp'
 
 import type { Config } from './Config'
 import type { DiscordConnector } from './helpers/DiscordConnector'
-import { YoutubeDl } from './helpers/YoutubeDl'
+import { YtDlp } from './helpers/YtDlp'
 import type { MongoCollection } from './models/MongoCollection'
 import type { LoggerGetter, LoggerType } from './models/logger/LoggerType'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
@@ -21,7 +21,7 @@ import { startWebServer } from './webServer/startWebServer'
 
 export type Context = {
   readonly logger: LoggerType
-  readonly youtubeDl: YoutubeDl
+  readonly ytDlp: YtDlp
   readonly ensureIndexes: Future<void>
   readonly botStateService: BotStateService
   readonly guildStateService: GuildStateService
@@ -31,7 +31,7 @@ export type Context = {
 const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Context => {
   const logger = Logger('Application')
 
-  const youtubeDl = YoutubeDl(config.youtubeDlPath)
+  const ytDlp = YtDlp(config.ytDlpPath)
 
   const url = `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`
   const mongoCollection: MongoCollection =
@@ -64,7 +64,7 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
   )
 
   const botStateService = BotStateService(Logger, discord, botStatePersistence)
-  const guildStateService = GuildStateService(Logger, discord, youtubeDl, guildStatePersistence)
+  const guildStateService = GuildStateService(Logger, discord, ytDlp, guildStatePersistence)
 
   const discordClientController = DiscordClientController(discord)
 
@@ -73,7 +73,7 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
 
   return {
     logger,
-    youtubeDl,
+    ytDlp,
     ensureIndexes,
     botStateService,
     guildStateService,

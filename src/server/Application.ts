@@ -36,7 +36,7 @@ export const Application = (
   config: Config,
   discord: DiscordConnector,
 ): IO<void> => {
-  const { logger, youtubeDl, ensureIndexes, botStateService, guildStateService, startWebServer } =
+  const { logger, ytDlp, ensureIndexes, botStateService, guildStateService, startWebServer } =
     Context.of(Logger, config, discord)
 
   const madEventsPubSub = PubSub<MadEvent>()
@@ -51,7 +51,7 @@ export const Application = (
         or(MadEvent.is('InteractionCreate')),
       ),
       sub(
-        MusicCommandsObserver(Logger, youtubeDl, guildStateService),
+        MusicCommandsObserver(Logger, ytDlp, guildStateService),
         or(MadEvent.is('InteractionCreate')),
       ),
       sub(OtherCommandsObserver(), or(MadEvent.is('InteractionCreate'))),

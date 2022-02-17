@@ -1,42 +1,32 @@
 import type { AudioResource } from '@discordjs/voice'
 import { createAudioResource } from '@discordjs/voice'
 import { demuxProbe } from '@discordjs/voice'
-import { json } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
-import { create as createYoutubeDl } from 'youtube-dl-exec'
+import { create as createYtDlp } from 'youtube-dl-exec'
 
-import { Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
+import { Either, Future, IO } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import { VideosMetadata } from '../models/music/VideosMetadata'
 
-export type YoutubeDl = ReturnType<typeof YoutubeDl>
+export type YtDlp = ReturnType<typeof YtDlp>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const YoutubeDl = (binaryPath: string) => {
-  const youtubeDlExec = createYoutubeDl(binaryPath)
+export const YtDlp = (binaryPath: string) => {
+  const ytDlpExec = createYtDlp(binaryPath)
 
   return {
     metadata: (url: string): Future<VideosMetadata> =>
       pipe(
         Future.tryCatch<unknown>(() =>
-          youtubeDlExec(
+          ytDlpExec(
             url,
             {
               dumpSingleJson: true,
               defaultSearch: 'ytsearch',
-              ignoreErrors: true,
+              abortOnError: true,
             },
             { stdio: ['ignore', 'pipe', 'ignore'] },
-          ),
-        ),
-        Future.orElse(e =>
-          pipe(
-            e.message.split('\n', 2),
-            List.lookup(1),
-            Maybe.map(json.parse),
-            Maybe.chain(Maybe.fromEither),
-            Maybe.fold(() => Future.left(e), Future.right),
           ),
         ),
         Future.chain(u =>
@@ -51,15 +41,13 @@ export const YoutubeDl = (binaryPath: string) => {
     audioResource: (url: string): Future<AudioResource> =>
       pipe(
         IO.tryCatch(() =>
-          youtubeDlExec.exec(
+          ytDlpExec.exec(
             url,
             {
               output: '-',
               quiet: true,
-              format: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
+              format: 'bestaudio[acodec=opus]/bestaudio[ext=webm]/bestaudio', // ext=webm+acodec=opus+asr=48000
               limitRate: '100K',
-              // format: 'worstvideo+bestaudio[ext=webm+acodec=opus+asr=48000]/worstvideo+bestaudio',
-              // // limitRate: '100K',
             },
             { stdio: ['ignore', 'pipe', 'ignore'] },
           ),

@@ -18,7 +18,7 @@ import { TSnowflake } from './models/TSnowflake'
 import { LogLevelOrOff } from './models/logger/LogLevel'
 
 export type Config = {
-  readonly youtubeDlPath: string
+  readonly ytDlpPath: string
   readonly client: ClientConfig
   readonly admins: NonEmptyArray<TSnowflake>
   readonly logger: {
@@ -56,7 +56,7 @@ export type HttpConfig = {
 const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
   ConfigUtils.parseConfig(dict)(r =>
     ValidatedNea.sequenceS({
-      youtubeDlPath: r(D.string)('YOUTUBE_DL_PATH'),
+      ytDlpPath: r(D.string)('YTDLP_PATH'),
       client: parseClientConfig(r),
       admins: r(nonEmptyArrayFromString(TSnowflake.codec))('ADMINS'),
       logger: ValidatedNea.sequenceS({

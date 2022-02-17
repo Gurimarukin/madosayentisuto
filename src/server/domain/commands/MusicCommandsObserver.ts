@@ -15,7 +15,7 @@ import { Either, NonEmptyArray } from '../../../shared/utils/fp'
 import { Future, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
-import type { YoutubeDl } from '../../helpers/YoutubeDl'
+import type { YtDlp } from '../../helpers/YtDlp'
 import { musicButtons } from '../../helpers/getMusicStateMessage'
 import type { MusicSubscription } from '../../helpers/music/MusicSubscription'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
@@ -44,7 +44,7 @@ export type MusicCommandsObserver = TObserver<MadEventInteractionCreate> & {
 
 export const MusicCommandsObserver = (
   Logger: LoggerGetter,
-  youtubeDl: YoutubeDl,
+  ytDlp: YtDlp,
   guildStateService: GuildStateService,
 ): MusicCommandsObserver => {
   const logger = Logger('MusicCommandsObserver')
@@ -165,7 +165,7 @@ export const MusicCommandsObserver = (
 
   function validateTracks(url: string): Future<Either<string, NonEmptyArray<Track>>> {
     return pipe(
-      youtubeDl.metadata(url),
+      ytDlp.metadata(url),
       Future.map(({ videos }) =>
         pipe(
           videos,

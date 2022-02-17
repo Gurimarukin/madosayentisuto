@@ -34,7 +34,7 @@ import type { TObserver } from '../../models/rx/TObserver'
 import type { TSubject } from '../../models/rx/TSubject'
 import { PubSubUtils } from '../../utils/PubSubUtils'
 import { DiscordConnector } from '../DiscordConnector'
-import type { YoutubeDl } from '../YoutubeDl'
+import type { YtDlp } from '../YtDlp'
 import { getMusicStateMessage } from '../getMusicStateMessage'
 
 const { or } = PubSubUtils
@@ -44,7 +44,7 @@ type MusicChannel = VoiceChannel | StageChannel
 export type MusicSubscription = ReturnType<typeof MusicSubscription>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, guild: Guild) => {
+export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Guild) => {
   const logger = Logger(`MusicSubscription-${guild.name}`)
 
   const state = Store<MusicState>(MusicState.empty)
@@ -152,7 +152,9 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
     )
 
     return pipe(
-      DiscordConnector.sendMessage(stateChannel, getMusicStateMessage.connecting),
+      getMusicStateMessage.connecting,
+      Future.fromIOEither,
+      Future.chain(options => DiscordConnector.sendMessage(stateChannel, options)),
       Future.chainIOEitherK(message => state.update(MusicState.setMessage(message))),
       Future.chainIOEitherK(() =>
         pipe(
@@ -361,7 +363,7 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
 
   function playTrackNow(audioPlayer: AudioPlayer, track: Track): Future<void> {
     return pipe(
-      youtubeDl.audioResource(track.url),
+      ytDlp.audioResource(track.url),
       Future.map(audioResource =>
         DiscordConnector.audioPlayerPlayAudioResource(audioPlayer, audioResource),
       ),
@@ -379,13 +381,16 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
   }
 
   function refreshMessage(s: MusicState): Future<void> {
-    const { message, playing, queue } = s
+    const { message: maybeMessage, playing, queue } = s
     const isPlaying =
       MusicState.is('Connected')(s) && AudioPlayerState.is('Playing')(s.audioPlayerState)
     return pipe(
-      futureMaybe.fromOption(message),
-      futureMaybe.chainFuture(m =>
-        DiscordConnector.messageEdit(m, getMusicStateMessage.playing(playing, queue, isPlaying)),
+      apply.sequenceS(futureMaybe.ApplyPar)({
+        message: futureMaybe.fromOption(maybeMessage),
+        options: futureMaybe.fromIOEither(getMusicStateMessage.playing(playing, queue, isPlaying)),
+      }),
+      futureMaybe.chainFuture(({ message, options }) =>
+        DiscordConnector.messageEdit(message, options),
       ),
       Future.map(() => {}),
     )

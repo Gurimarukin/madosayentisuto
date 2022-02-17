@@ -1,9 +1,7 @@
 - webapp
 - safe `runFuture`/`runUnsafe`
 - full `debugLeft`
-- replace youtube-dl with yt-dlp
 - auteur de l'ajout d'une chanson
-- random gif jp play
 
 - Commands:
   - Say
