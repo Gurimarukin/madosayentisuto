@@ -93,7 +93,10 @@ const of = (client: Client<true>) => ({
    */
 
   fetchApplication: (): Future<ClientApplication> =>
-    Future.tryCatch(() => client.application.fetch()),
+    pipe(
+      Future.tryCatch(() => client.application.fetch()),
+      debugLeft('fetchApplication'),
+    ),
 
   fetchChannel: (channelId: TSnowflake): Future<Maybe<AnyChannel>> =>
     pipe(
@@ -151,6 +154,7 @@ const fetchAuditLogs = <A extends GuildAuditLogsResolvable = 'ALL'>(
   pipe(
     Future.tryCatch(() => guild.fetchAuditLogs<A>({ ...options, limit: constants.fetchLogsLimit })),
     Future.map(logs => logs.entries),
+    debugLeft('fetchAuditLogs'),
   )
 
 const fetchCommand = (guild: Guild, commandId: CommandId): Future<ApplicationCommand> =>
@@ -168,15 +172,22 @@ const fetchMessage = (guild: Guild, messageId: TSnowflake): Future<Maybe<Message
     guild.channels.cache.toJSON(),
     List.filter(ChannelUtils.isTextChannel),
     fetchMessageRec(TSnowflake.unwrap(messageId)),
+    debugLeft('fetchMessage'),
   )
 
 const fetchPartial = <A extends MyPartial<A>>(partial: A): Future<A> =>
-  partial.partial ? Future.tryCatch(() => partial.fetch()) : Future.right(partial)
+  partial.partial
+    ? pipe(
+        Future.tryCatch(() => partial.fetch()),
+        debugLeft('fetchPartial'),
+      )
+    : Future.right(partial)
 
 const fetchRole = (guild: Guild, roleId: TSnowflake): Future<Maybe<Role>> =>
   pipe(
     Future.tryCatch(() => guild.roles.fetch(TSnowflake.unwrap(roleId))),
     Future.map(Maybe.fromNullable),
+    debugLeft('fetchRole'),
   )
 
 const hasRole = (member: GuildMember, role: Role): boolean => member.roles.cache.has(role.id)
@@ -241,30 +252,48 @@ const guildCommandsPermissionsSet = (
   guild: Guild,
   fullPermissions: List<GuildApplicationCommandPermissionData>,
 ): Future<Collection<string, List<ApplicationCommandPermissions>>> =>
-  Future.tryCatch(() =>
-    guild.commands.permissions.set({
-      // eslint-disable-next-line functional/prefer-readonly-type
-      fullPermissions: fullPermissions as GuildApplicationCommandPermissionData[],
-    }),
+  pipe(
+    Future.tryCatch(() =>
+      guild.commands.permissions.set({
+        // eslint-disable-next-line functional/prefer-readonly-type
+        fullPermissions: fullPermissions as GuildApplicationCommandPermissionData[],
+      }),
+    ),
+    debugLeft('guildCommandsPermissionsSet'),
   )
 
 const interactionDeferReply = (
   interaction: MyInteraction,
   options?: InteractionDeferReplyOptions,
-): Future<void> => Future.tryCatch(() => interaction.deferReply(options))
+): Future<void> =>
+  pipe(
+    Future.tryCatch(() => interaction.deferReply(options)),
+    debugLeft('interactionDeferReply'),
+  )
 
 const interactionDeleteReply = (interaction: MyInteraction): Future<void> =>
-  Future.tryCatch(() => interaction.deleteReply())
+  pipe(
+    Future.tryCatch(() => interaction.deleteReply()),
+    debugLeft('interactionDeleteReply'),
+  )
 
 const interactionEditReply = (
   interaction: MyInteraction,
   options: string | MessagePayload | InteractionReplyOptions,
-): Future<APIMessage | Message> => Future.tryCatch(() => interaction.editReply(options))
+): Future<APIMessage | Message> =>
+  pipe(
+    Future.tryCatch(() => interaction.editReply(options)),
+    debugLeft('interactionEditReply'),
+  )
 
 const interactionFollowUp = (
   interaction: MyInteraction,
   options: string | MessagePayload | InteractionReplyOptions,
-): Future<APIMessage | Message> => Future.tryCatch(() => interaction.followUp(options))
+): Future<APIMessage | Message> =>
+  pipe(
+    Future.tryCatch(() => interaction.followUp(options)),
+    debugLeft('interactionFollowUp'),
+  )
 
 const interactionReply = (
   interaction: MyInteraction,
@@ -281,7 +310,11 @@ const interactionReply = (
 const interactionUpdate = (
   interaction: ButtonInteraction,
   options: string | MessagePayload | InteractionUpdateOptions = {},
-): Future<void> => Future.tryCatch(() => interaction.update(options))
+): Future<void> =>
+  pipe(
+    Future.tryCatch(() => interaction.update(options)),
+    debugLeft('interactionUpdate'),
+  )
 
 const messageDelete = (message: Message): Future<boolean> =>
   pipe(
@@ -298,10 +331,17 @@ const messageDelete = (message: Message): Future<boolean> =>
 const messageEdit = (
   message: Message,
   options: string | MessagePayload | MessageOptions,
-): Future<Message> => Future.tryCatch(() => message.edit(options))
+): Future<Message> =>
+  pipe(
+    Future.tryCatch(() => message.edit(options)),
+    debugLeft('messageEdit'),
+  )
 
 const messageStartThread = (message: Message, options: StartThreadOptions): Future<ThreadChannel> =>
-  Future.tryCatch(() => message.startThread(options))
+  pipe(
+    Future.tryCatch(() => message.startThread(options)),
+    debugLeft('messageStartThread'),
+  )
 
 const roleRemove = (
   member: GuildMember,
@@ -339,6 +379,7 @@ const restPutApplicationGuildCommands = (
         pipe(PutCommandResult.codec.decode(u), Either.mapLeft(decodeError('PutCommandResult')(u))),
       ),
     ),
+    debugLeft('restPutApplicationGuildCommands'),
   )
 
 const sendMessage = (
@@ -373,6 +414,7 @@ const threadsCreate = <A extends MyThreadChannelTypes>(
   pipe(
     Future.tryCatch(() => threads.create(options)),
     Future.map(Maybe.some),
+    debugLeft('threadsCreate'),
   )
 
 const threadDelete = (thread: ThreadChannel): Future<boolean> =>

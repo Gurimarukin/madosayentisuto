@@ -1,6 +1,5 @@
 - webapp
 - safe `runFuture`/`runUnsafe`
-- full `debugLeft`
 
 - Commands:
   - Say
