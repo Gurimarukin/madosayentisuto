@@ -15,9 +15,9 @@ import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { BotStateService } from './services/BotStateService'
 import { GuildStateService } from './services/GuildStateService'
-import { Routes } from './webServerrrr/Routes'
-import { DiscordClientController } from './webServerrrr/controllers/DiscordClientController'
-import { startWebServer } from './webServerrrr/startWebServer'
+import { Routes } from './webServer/Routes'
+import { DiscordClientController } from './webServer/controllers/DiscordClientController'
+import { startWebServer } from './webServer/startWebServer'
 
 export type Context = {
   readonly logger: LoggerType
