@@ -205,49 +205,6 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
     )
   }
 
-  function joinVoiceChannel(
-    subject: TSubject<MusicEvent>,
-    channel: MusicChannel,
-  ): IO<VoiceConnection> {
-    return pipe(
-      DiscordConnector.voiceConnectionJoin(channel),
-      IO.chainFirst(voiceConnection => {
-        const connectionPub = PubSubUtils.publishOn<VoiceConnectionEvents, MusicEvent>(
-          voiceConnection,
-          subject.next,
-        )
-        return apply.sequenceT(IO.ApplyPar)(
-          connectionPub('error', MusicEvent.ConnectionError),
-          connectionPub(VoiceConnectionStatus.Signalling, MusicEvent.ConnectionSignalling),
-          connectionPub(VoiceConnectionStatus.Connecting, MusicEvent.ConnectionConnecting),
-          connectionPub(VoiceConnectionStatus.Ready, MusicEvent.ConnectionReady),
-          connectionPub(VoiceConnectionStatus.Disconnected, MusicEvent.ConnectionDisconnected),
-          connectionPub(VoiceConnectionStatus.Destroyed, MusicEvent.ConnectionDestroyed),
-        )
-      }),
-    )
-  }
-
-  function createAudioPlayer(subject: TSubject<MusicEvent>): IO<AudioPlayer> {
-    return pipe(
-      DiscordConnector.audioPlayerCreate,
-      IO.chainFirst(audioPlayer => {
-        const playerPub = PubSubUtils.publishOn<AudioPlayerEvents, MusicEvent>(
-          audioPlayer,
-          subject.next,
-        )
-        return apply.sequenceT(IO.ApplyPar)(
-          playerPub('error', MusicEvent.PlayerError),
-          playerPub(AudioPlayerStatus.Idle, MusicEvent.PlayerIdle),
-          playerPub(AudioPlayerStatus.Buffering, MusicEvent.PlayerBuffering),
-          playerPub(AudioPlayerStatus.Paused, MusicEvent.PlayerPaused),
-          playerPub(AudioPlayerStatus.Playing, MusicEvent.PlayerPlaying),
-          playerPub(AudioPlayerStatus.AutoPaused, MusicEvent.PlayerAutoPaused),
-        )
-      }),
-    )
-  }
-
   function lifecycleObserver(): TObserver<
     | MusicEventConnectionReady
     | MusicEventConnectionDisconnected
@@ -425,24 +382,6 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
     return pipe(musicState.update(f), Future.fromIOEither, Future.chain(refreshMessage))
   }
 
-  function refreshMessage(s: MusicState): Future<void> {
-    const { message: maybeMessage, playing, queue } = s
-
-    const isPlaying =
-      MusicState.is('Connected')(s) && AudioPlayerState.is('Playing')(s.audioPlayerState)
-
-    return pipe(
-      apply.sequenceS(futureMaybe.ApplyPar)({
-        message: futureMaybe.fromOption(maybeMessage),
-        options: futureMaybe.fromIOEither(getMusicStateMessage.playing(playing, queue, isPlaying)),
-      }),
-      futureMaybe.chainFuture(({ message, options }) =>
-        DiscordConnector.messageEdit(message, options),
-      ),
-      Future.map(() => {}),
-    )
-  }
-
   function voiceConnectionDestroy(currentState: MusicState): Future<void> {
     return pipe(
       currentState,
@@ -522,6 +461,79 @@ const createStateThread = (maybeMessage: Maybe<Message>): Future<Maybe<ThreadCha
     ),
   )
 
+const joinVoiceChannel = (
+  subject: TSubject<MusicEvent>,
+  channel: MusicChannel,
+): IO<VoiceConnection> =>
+  pipe(
+    DiscordConnector.voiceConnectionJoin(channel),
+    IO.chainFirst(voiceConnection => {
+      const connectionPub = PubSubUtils.publishOn<VoiceConnectionEvents, MusicEvent>(
+        voiceConnection,
+        subject.next,
+      )
+      return apply.sequenceT(IO.ApplyPar)(
+        connectionPub('error', MusicEvent.ConnectionError),
+        connectionPub(VoiceConnectionStatus.Signalling, MusicEvent.ConnectionSignalling),
+        connectionPub(VoiceConnectionStatus.Connecting, MusicEvent.ConnectionConnecting),
+        connectionPub(VoiceConnectionStatus.Ready, MusicEvent.ConnectionReady),
+        connectionPub(VoiceConnectionStatus.Disconnected, MusicEvent.ConnectionDisconnected),
+        connectionPub(VoiceConnectionStatus.Destroyed, MusicEvent.ConnectionDestroyed),
+      )
+    }),
+  )
+
+const createAudioPlayer = (subject: TSubject<MusicEvent>): IO<AudioPlayer> =>
+  pipe(
+    DiscordConnector.audioPlayerCreate,
+    IO.chainFirst(audioPlayer => {
+      const playerPub = PubSubUtils.publishOn<AudioPlayerEvents, MusicEvent>(
+        audioPlayer,
+        subject.next,
+      )
+      return apply.sequenceT(IO.ApplyPar)(
+        playerPub('error', MusicEvent.PlayerError),
+        playerPub(AudioPlayerStatus.Idle, MusicEvent.PlayerIdle),
+        playerPub(AudioPlayerStatus.Buffering, MusicEvent.PlayerBuffering),
+        playerPub(AudioPlayerStatus.Paused, MusicEvent.PlayerPaused),
+        playerPub(AudioPlayerStatus.Playing, MusicEvent.PlayerPlaying),
+        playerPub(AudioPlayerStatus.AutoPaused, MusicEvent.PlayerAutoPaused),
+      )
+    }),
+  )
+
+const refreshMessage = (state: MusicState): Future<void> => {
+  const { message: maybeMessage, playing, queue } = state
+
+  const isPlaying =
+    MusicState.is('Connected')(state) && AudioPlayerState.is('Playing')(state.audioPlayerState)
+
+  return pipe(
+    apply.sequenceS(futureMaybe.ApplyPar)({
+      message: futureMaybe.fromOption(maybeMessage),
+      options: futureMaybe.fromIOEither(getMusicStateMessage.playing(playing, queue, isPlaying)),
+    }),
+    futureMaybe.chainFuture(({ message, options }) =>
+      DiscordConnector.messageEdit(message, options),
+    ),
+    Future.map(() => {}),
+  )
+}
+
+const logEventToThread = (state: MusicState, message: string): Future<void> =>
+  pipe(
+    state.message,
+    Maybe.chain(m => Maybe.fromNullable(m.thread)),
+    Maybe.fold(
+      () => Future.unit,
+      thread =>
+        pipe(
+          DiscordConnector.sendPrettyMessage(thread, message),
+          Future.map(() => {}),
+        ),
+    ),
+  )
+
 const addedTracksEvent = (author: User, tracks: NonEmptyArray<Track>): string => {
   const tracksStr = ((): string => {
     if (tracks.length === 1) {
@@ -547,20 +559,6 @@ const skippedTrackEvent = (author: User, state: MusicState): string => {
   )
   return `**${author}** est passé au morceau suivant${additional}`
 }
-
-const logEventToThread = (state: MusicState, message: string): Future<void> =>
-  pipe(
-    state.message,
-    Maybe.chain(m => Maybe.fromNullable(m.thread)),
-    Maybe.fold(
-      () => Future.unit,
-      thread =>
-        pipe(
-          DiscordConnector.sendPrettyMessage(thread, message),
-          Future.map(() => {}),
-        ),
-    ),
-  )
 
 const isAlreadyDestroyedError = (e: Error): boolean =>
   e.message === 'Cannot destroy VoiceConnection - it has already been destroyed'

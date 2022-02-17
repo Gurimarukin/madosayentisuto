@@ -1,7 +1,6 @@
 - webapp
 - safe `runFuture`/`runUnsafe`
 - full `debugLeft`
-- auteur de l'ajout d'une chanson
 
 - Commands:
   - Say
@@ -20,9 +19,3 @@ What if 'CronJob' arrives before 'DbReady' (for activity status)? There should b
 ---
 
 - watch together -> c mor (pour l'instant)
-
-
----
-
-- MusicSubscription
-  - move as much function outside as possible (as much stateless functions as possible)
