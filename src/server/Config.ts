@@ -1,11 +1,12 @@
 import type * as dotenv from 'dotenv'
+import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { ValidatedNea } from '../shared/models/ValidatedNea'
 import type { DecodeKey } from '../shared/utils/ConfigUtils'
 import { ConfigUtils } from '../shared/utils/ConfigUtils'
-import type { NonEmptyArray, Try } from '../shared/utils/fp'
-import type { List } from '../shared/utils/fp'
+import { IO } from '../shared/utils/fp'
+import type { List, NonEmptyArray, Try } from '../shared/utils/fp'
 import { Maybe } from '../shared/utils/fp'
 import {
   arrayFromString,
@@ -95,4 +96,6 @@ const parseHttpConfig = (r: DecodeKey): ValidatedNea<string, HttpConfig> =>
     allowedOrigins: r(Maybe.decoder(nonEmptyArrayFromString(D.string)))('HTTP_ALLOWED_ORIGINS'),
   })
 
-export const Config = { parse }
+const load = pipe(ConfigUtils.loadDotEnv, IO.map(parse), IO.chain(IO.fromEither))
+
+export const Config = { load }

@@ -6,7 +6,7 @@ import { Config } from './Config'
 
 const main: Future<void> = pipe(
   // check config
-  Config.load(),
+  Config.load,
   Future.fromIOEither,
   Future.map(() => {}),
 )

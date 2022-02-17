@@ -30,4 +30,4 @@ jobs:
     - name: test
       run: yarn run test
     - name: build
-      run: cp conf/local.example.conf.json conf/local.conf.json && yarn run build
+      run: cp .env.example .env && yarn run build
