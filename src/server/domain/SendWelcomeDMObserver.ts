@@ -21,7 +21,7 @@ export const SendWelcomeDMObserver = (Logger: LoggerGetter): TObserver<MadEventG
       const log = LogUtils.pretty(logger, member.guild)
 
       return pipe(
-        log('info', `${member.user.tag} joined the guild`),
+        log.info(`${member.user.tag} joined the guild`),
         Future.fromIOEither,
         Future.chain(() =>
           DiscordConnector.sendMessage(member, {
@@ -48,7 +48,7 @@ export const SendWelcomeDMObserver = (Logger: LoggerGetter): TObserver<MadEventG
           }),
         ),
         futureMaybe.matchE(
-          () => Future.fromIOEither(log('warn', `Couldn't send greeting DM to ${member.user.tag}`)),
+          () => Future.fromIOEither(log.warn(`Couldn't send greeting DM to ${member.user.tag}`)),
           () => Future.unit,
         ),
       )

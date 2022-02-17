@@ -5,6 +5,7 @@ import type { Functor1 } from 'fp-ts/Functor'
 import type { Lazy } from 'fp-ts/function'
 import { flow, identity, pipe } from 'fp-ts/function'
 
+import type { IO } from './fp'
 import { Future, Maybe } from './fp'
 
 const URI = 'TaskEitherOption' as const
@@ -27,7 +28,7 @@ const chainFuture = <A, B>(f: (a: A) => Future<B>): ((fa: Future<Maybe<A>>) => F
 const chainMaybe: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
   optionT.chainOptionK(Future.Monad)
 
-const fromFuture: <A>(ma: Future<A>) => Future<Maybe<A>> = optionT.fromF(Future.Functor)
+const fromFuture: <A>(fa: Future<A>) => Future<Maybe<A>> = optionT.fromF(Future.Functor)
 
 const fromNullable: <A>(a: A) => Future<Maybe<NonNullable<A>>> = optionT.fromNullable(
   Future.Pointed,
@@ -35,6 +36,11 @@ const fromNullable: <A>(a: A) => Future<Maybe<NonNullable<A>>> = optionT.fromNul
 
 const fromOption: <A>(a: Maybe<A>) => Future<Maybe<A>> = optionT.fromOptionK(Future.Pointed)(
   identity,
+)
+
+const fromIOEither: <A>(fa: IO<A>) => Future<Maybe<A>> = flow(
+  Future.fromIOEither,
+  Future.map(Maybe.some),
 )
 
 type GetOrElse = <A>(onNone: Lazy<Future<A>>) => (fa: Future<Maybe<A>>) => Future<A>
@@ -85,6 +91,7 @@ export const futureMaybe = {
   fromFuture,
   fromNullable,
   fromOption,
+  fromIOEither,
   getOrElse,
   map,
   match: optionT.match(Future.Functor),

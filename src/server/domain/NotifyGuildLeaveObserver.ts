@@ -1,7 +1,7 @@
 import { bold, userMention } from '@discordjs/builders'
-import type { Guild, GuildAuditLogsEntry, TextChannel } from 'discord.js'
-import { User } from 'discord.js'
-import { date, number, ord, random, semigroup, string } from 'fp-ts'
+import type { Collection, Guild, GuildAuditLogsEntry, TextChannel } from 'discord.js'
+import type { User } from 'discord.js'
+import { apply, date, number, ord, random, semigroup } from 'fp-ts'
 import type { Ord } from 'fp-ts/Ord'
 import { flow, pipe } from 'fp-ts/function'
 
@@ -18,6 +18,20 @@ import { ChannelUtils } from '../utils/ChannelUtils'
 import { DateUtils } from '../utils/DateUtils'
 import { LogUtils } from '../utils/LogUtils'
 
+type KickOrBanAction = 'MEMBER_KICK' | 'MEMBER_BAN_ADD'
+
+type ValidEntry<A extends KickOrBanAction> = {
+  readonly action: A
+  readonly createdAt: Date
+  readonly target: User
+  readonly executor: User
+  readonly reason: Maybe<string>
+}
+
+type CreatedAt = {
+  readonly createdAt: Date
+}
+
 export const NotifyGuildLeaveObserver = (
   Logger: LoggerGetter,
 ): TObserver<MadEventGuildMemberRemove> => {
@@ -32,18 +46,18 @@ export const NotifyGuildLeaveObserver = (
       return pipe(
         date.create,
         Future.fromIO,
-        Future.chain(now => getLastLog(now, guild, TSnowflake.wrap(user.id))),
+        Future.chain(getLastLog(guild, TSnowflake.wrap(user.id))),
         futureMaybe.match(
           () =>
             pipe(
-              log('info', `${user.tag} left the guild`),
+              log.info(`${user.tag} left the guild`),
               IO.chain(() => randomMessage(leaveMessages)(boldMember)),
             ),
           ({ action, executor, reason }) =>
             pipe(
-              log('info', logMessage(user.tag, executor.tag, action, reason)),
+              log.info(logMessage(user.tag, executor.tag, action, reason)),
               IO.chain(() =>
-                randomMessage(kickOrBanMessages(action))(boldMember, userMention(executor.id)),
+                randomMessage(kickOrBanMessages[action])(boldMember, userMention(executor.id)),
               ),
             ),
         ),
@@ -53,19 +67,13 @@ export const NotifyGuildLeaveObserver = (
     },
   }
 
-  function getLastLog(now: Date, guild: Guild, userId: TSnowflake): Future<Maybe<ValidLogsEntry>> {
-    return pipe(
-      DiscordConnector.fetchAuditLogs(guild),
-      Future.map(logs => Maybe.fromNullable(logs.find(isValidLog(now, userId)))),
-    )
-  }
-
   function sendMessage(guild: Guild): (futureMessage: Future<string>) => Future<void> {
     return futureMessage =>
       pipe(
-        futureMaybe.Do,
-        futureMaybe.apS('channel', futureMaybe.fromOption(goodbyeChannel(guild))),
-        futureMaybe.apS('message', futureMaybe.fromFuture(futureMessage)),
+        apply.sequenceS(futureMaybe.ApplyPar)({
+          channel: futureMaybe.fromOption(goodbyeChannel(guild)),
+          message: futureMaybe.fromFuture(futureMessage),
+        }),
         futureMaybe.chain(({ channel, message }) =>
           DiscordConnector.sendPrettyMessage(channel, message),
         ),
@@ -74,29 +82,71 @@ export const NotifyGuildLeaveObserver = (
   }
 }
 
-const validActions: List<ValidKeys['action']> = ['MEMBER_KICK', 'MEMBER_BAN_ADD']
-const isValidLog =
-  (now: Date, userId: TSnowflake) =>
-  (entry: GuildAuditLogsEntry): entry is ValidLogsEntry => {
+const getLastLog =
+  (guild: Guild, userId: TSnowflake) =>
+  (now: Date): Future<Maybe<ValidEntry<KickOrBanAction>>> => {
     const nowMinusNetworkTolerance = pipe(now, DateUtils.minusDuration(constants.networkTolerance))
-    return (
-      ord.leq(date.Ord)(nowMinusNetworkTolerance, entry.createdAt) &&
-      List.elem(string.Eq)(entry.action, validActions) &&
-      entry.target !== null &&
-      entry.target instanceof User &&
-      entry.target.id === TSnowflake.unwrap(userId) &&
-      entry.executor !== null &&
-      entry.executor instanceof User
+    return pipe(
+      apply.sequenceS(Future.ApplyPar)({
+        lastMemberKick: pipe(
+          DiscordConnector.fetchAuditLogs(guild, { type: 'MEMBER_KICK' }),
+          Future.map(validateLogs(nowMinusNetworkTolerance, userId)),
+        ),
+        lastMemberBan: pipe(
+          DiscordConnector.fetchAuditLogs(guild, { type: 'MEMBER_BAN_ADD' }),
+          Future.map(validateLogs(nowMinusNetworkTolerance, userId)),
+        ),
+      }),
+      Future.map(({ lastMemberKick, lastMemberBan }) =>
+        Maybe.isSome(lastMemberKick) && Maybe.isSome(lastMemberBan)
+          ? Maybe.some(
+              ord.max(ordByCreateAt<ValidEntry<KickOrBanAction>>())(
+                lastMemberKick.value,
+                lastMemberBan.value,
+              ),
+            )
+          : pipe(
+              lastMemberKick,
+              Maybe.altW(() => lastMemberBan),
+            ),
+      ),
     )
   }
 
-type ValidKeys = {
-  readonly createdAt: Date
-  readonly action: 'MEMBER_KICK' | 'MEMBER_BAN_ADD'
-  readonly target: User
-  readonly executor: User
-}
-type ValidLogsEntry = Omit<GuildAuditLogsEntry, keyof ValidKeys> & ValidKeys
+const ordByCreateAt = <A extends CreatedAt>(): Ord<A> =>
+  pipe(
+    date.Ord,
+    ord.contramap(a => a.createdAt),
+  )
+const validateLogs =
+  (nowMinusNetworkTolerance: Date, userId: TSnowflake) =>
+  <A extends KickOrBanAction>(
+    logs: Collection<string, GuildAuditLogsEntry<A>>,
+  ): Maybe<ValidEntry<A>> =>
+    pipe(
+      logs.toJSON(),
+      NonEmptyArray.fromArray,
+      Maybe.map(NonEmptyArray.max(ordByCreateAt<GuildAuditLogsEntry<A>>())),
+      Maybe.chain(validateEntry(nowMinusNetworkTolerance, userId)),
+    )
+
+const validateEntry =
+  <A extends KickOrBanAction>(nowMinusNetworkTolerance: Date, userId: TSnowflake) =>
+  (entry: GuildAuditLogsEntry<A>): Maybe<ValidEntry<A>> =>
+    pipe(
+      Maybe.some({
+        action: entry.action as A,
+        createdAt: entry.createdAt,
+        reason: Maybe.fromNullable(entry.reason),
+      }),
+      Maybe.apS('target', Maybe.fromNullable(entry.target)),
+      Maybe.apS('executor', Maybe.fromNullable(entry.executor)),
+      Maybe.filter(
+        ({ target }) =>
+          ord.leq(date.Ord)(nowMinusNetworkTolerance, entry.createdAt) &&
+          target.id === TSnowflake.unwrap(userId),
+      ),
+    )
 
 const minimum: <A>(ord_: Ord<A>) => (nea: NonEmptyArray<A>) => A = flow(
   semigroup.min,
@@ -121,24 +171,21 @@ const goodbyeChannel = (guild: Guild): Maybe<TextChannel> =>
 const logMessage = (
   targetTag: string,
   executorTag: string,
-  action: ValidKeys['action'],
-  reason: string | null,
+  action: KickOrBanAction,
+  reason: Maybe<string>,
 ): string => {
-  const reasonStr = reason !== null ? ` - ${JSON.stringify(reason)}` : ''
+  const reasonStr = pipe(
+    reason,
+    Maybe.fold(
+      () => '',
+      r => ` - ${JSON.stringify(r)}`,
+    ),
+  )
   switch (action) {
     case 'MEMBER_KICK':
       return `${targetTag} got kicked by ${executorTag}${reasonStr}`
     case 'MEMBER_BAN_ADD':
       return `${targetTag} got banned by ${executorTag}${reasonStr}`
-  }
-}
-
-const kickOrBanMessages = (action: ValidKeys['action']): KickOrBanMessageGetters => {
-  switch (action) {
-    case 'MEMBER_KICK':
-      return kickMessages
-    case 'MEMBER_BAN_ADD':
-      return banMessages
   }
 }
 
@@ -167,12 +214,13 @@ type KickOrBanMessageGetters = NonEmptyArray<
   MessageGetter<readonly [member: string, admin: string]>
 >
 
-const kickMessages: KickOrBanMessageGetters = [
-  // (m, a) => `${m} left the guild; kicked by ${a}.`,
-  (m, a) => `${m} s'en est allé, mis à la porte par ${a}.`,
-]
-
-const banMessages: KickOrBanMessageGetters = [
-  // (m, a) => `${m} got hit with the swift hammer of justice, wielded by the mighty ${a}.`,
-  (m, a) => `Le marteau de la justice, brandi par ${a}, a frappé ${m}.`,
-]
+const kickOrBanMessages: Record<KickOrBanAction, KickOrBanMessageGetters> = {
+  MEMBER_KICK: [
+    // (m, a) => `${m} left the guild; kicked by ${a}.`,
+    (m, a) => `${m} s'en est allé, mis à la porte par ${a}.`,
+  ],
+  MEMBER_BAN_ADD: [
+    // (m, a) => `${m} got hit with the swift hammer of justice, wielded by the mighty ${a}.`,
+    (m, a) => `Le marteau de la justice, brandi par ${a}, a frappé ${m}.`,
+  ],
+}

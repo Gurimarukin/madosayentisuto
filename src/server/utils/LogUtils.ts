@@ -10,9 +10,6 @@ import type {
   VoiceChannel,
 } from 'discord.js'
 
-import type { IO, List } from '../../shared/utils/fp'
-
-import type { LogLevel } from '../models/logger/LogLevel'
 import type { LoggerType } from '../models/logger/LoggerType'
 import { ChannelUtils } from './ChannelUtils'
 
@@ -39,9 +36,11 @@ const __testableFormat =
 
 const format = __testableFormat(ChannelUtils.isNamedChannel)
 
-const pretty =
-  (logger: LoggerType, ...args: Parameters<typeof format>) =>
-  (level: LogLevel, ...us: List<unknown>): IO<void> =>
-    logger[level](format(...args), ...us)
+const pretty = (logger: LoggerType, ...args: Parameters<typeof format>): LoggerType => ({
+  debug: (...us) => logger.debug(format(...args), ...us),
+  info: (...us) => logger.info(format(...args), ...us),
+  warn: (...us) => logger.warn(format(...args), ...us),
+  error: (...us) => logger.error(format(...args), ...us),
+})
 
 export const LogUtils = { __testableFormat, format, pretty }

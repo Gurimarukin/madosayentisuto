@@ -1,7 +1,9 @@
-import type { Guild, GuildChannel, GuildMember, StageChannel, VoiceChannel } from 'discord.js'
+import type { Guild, GuildBasedChannel, GuildMember, StageChannel, VoiceChannel } from 'discord.js'
+import { refinement } from 'fp-ts'
+import type { Refinement } from 'fp-ts/Refinement'
 import { pipe } from 'fp-ts/function'
 
-import { Future, IO, List, Maybe } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, refinementFromPredicate } from '../../shared/utils/fp'
 
 import type {
   MadEventPublicCallEnded,
@@ -63,8 +65,7 @@ export const VoiceStateUpdateTransformer = (
     channel: VoiceChannel | StageChannel,
   ): Future<void> {
     return pipe(
-      LogUtils.pretty(logger, channel.guild)(
-        'debug',
+      LogUtils.pretty(logger, channel.guild).debug(
         `${member.user.tag} joined the channel #${channel.name}`,
       ),
       IO.chain(() =>
@@ -84,8 +85,7 @@ export const VoiceStateUpdateTransformer = (
     to: VoiceChannel | StageChannel,
   ): Future<void> {
     return pipe(
-      LogUtils.pretty(logger, from.guild)(
-        'debug',
+      LogUtils.pretty(logger, from.guild).debug(
         `${member.user.tag} moved from channel #${from.name} to #${to.name}`,
       ),
       Future.fromIOEither,
@@ -118,8 +118,7 @@ export const VoiceStateUpdateTransformer = (
 
   function onLeftChannel(member: GuildMember, channel: VoiceChannel | StageChannel): Future<void> {
     return pipe(
-      LogUtils.pretty(logger, channel.guild)(
-        'debug',
+      LogUtils.pretty(logger, channel.guild).debug(
         `${member.user.tag} left the channel #${channel.name}`,
       ),
       IO.chain(() =>
@@ -136,17 +135,23 @@ export const VoiceStateUpdateTransformer = (
   function peopleInPublicVocalChans(guild: Guild): List<GuildMember> {
     return pipe(
       guild.channels.cache.toJSON(),
-      List.filter(
-        (c): c is GuildChannel =>
-          ChannelUtils.isGuildChannel(c) &&
-          ChannelUtils.isPublic(c) &&
-          ChannelUtils.isVoiceChannel(c),
-      ),
+      List.filter(isPublicVocal),
       List.chain(c => c.members.toJSON()),
       List.filter(m => m.id !== clientId), // don't count bot
     )
   }
 }
+
+type VocalChannel = StageChannel | VoiceChannel
+
+const isVocal: Refinement<GuildBasedChannel, VocalChannel> = pipe(
+  ChannelUtils.isStageChannel,
+  refinement.or(ChannelUtils.isVoiceChannel),
+)
+const isPublicVocal = pipe(
+  isVocal,
+  refinement.compose(refinementFromPredicate(ChannelUtils.isPublic)),
+)
 
 // ensures that we have the same id
 const getMember = ({ oldState, newState }: MadEventVoiceStateUpdate): Maybe<GuildMember> =>

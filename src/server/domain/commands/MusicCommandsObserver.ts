@@ -4,7 +4,7 @@ import type {
   CommandInteraction,
   Interaction,
   StageChannel,
-  TextBasedChannels,
+  TextBasedChannel,
   VoiceChannel,
 } from 'discord.js'
 import { GuildMember } from 'discord.js'
@@ -27,7 +27,7 @@ import type { GuildStateService } from '../../services/GuildStateService'
 
 type PlayCommand = {
   readonly musicChannel: VoiceChannel | StageChannel
-  readonly stateChannel: TextBasedChannels
+  readonly stateChannel: TextBasedChannel
   readonly tracks: NonEmptyArray<Track>
 }
 

@@ -12,17 +12,19 @@ import { entersState as discordEntersState } from '@discordjs/voice'
 import type { APIMessage, RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
 import { Routes } from 'discord-api-types/v9'
 import type {
+  AnyChannel,
   ApplicationCommand,
   ApplicationCommandPermissions,
   BaseCommandInteraction,
   ButtonInteraction,
-  Channel,
   ClientApplication,
   ClientPresence,
   Collection,
   Guild,
   GuildApplicationCommandPermissionData,
   GuildAuditLogsEntry,
+  GuildAuditLogsFetchOptions,
+  GuildAuditLogsResolvable,
   GuildMember,
   InteractionDeferReplyOptions,
   InteractionReplyOptions,
@@ -59,15 +61,10 @@ import { PutCommandResult } from '../models/commands/PutCommandResult'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { MessageUtils } from '../utils/MessageUtils'
 
-type NotPartial = {
-  readonly partial: false
+type MyPartial<A> = {
+  readonly partial: boolean
+  readonly fetch: () => Promise<A>
 }
-type MyPartial<A extends NotPartial> =
-  | {
-      readonly partial: true
-      readonly fetch: () => Promise<A>
-    }
-  | A
 
 type MyInteraction = BaseCommandInteraction | MessageComponentInteraction
 
@@ -84,7 +81,7 @@ const of = (client: Client<true>) => ({
   fetchApplication: (): Future<ClientApplication> =>
     Future.tryCatch(() => client.application.fetch()),
 
-  fetchChannel: (channelId: TSnowflake): Future<Maybe<Channel>> =>
+  fetchChannel: (channelId: TSnowflake): Future<Maybe<AnyChannel>> =>
     pipe(
       Future.tryCatch(() => client.channels.fetch(TSnowflake.unwrap(channelId))),
       Future.map(Maybe.fromNullable),
@@ -133,9 +130,12 @@ const of = (client: Client<true>) => ({
  * Read
  */
 
-const fetchAuditLogs = (guild: Guild): Future<Collection<string, GuildAuditLogsEntry>> =>
+const fetchAuditLogs = <A extends GuildAuditLogsResolvable = 'ALL'>(
+  guild: Guild,
+  options?: Omit<GuildAuditLogsFetchOptions<A>, 'limit'>,
+): Future<Collection<string, GuildAuditLogsEntry<A>>> =>
   pipe(
-    Future.tryCatch(() => guild.fetchAuditLogs({ limit: constants.fetchLogsLimit })),
+    Future.tryCatch(() => guild.fetchAuditLogs<A>({ ...options, limit: constants.fetchLogsLimit })),
     Future.map(logs => logs.entries),
   )
 
@@ -156,7 +156,7 @@ const fetchMessage = (guild: Guild, messageId: TSnowflake): Future<Maybe<Message
     fetchMessageRec(TSnowflake.unwrap(messageId)),
   )
 
-const fetchPartial = <A extends NotPartial>(partial: MyPartial<A>): Future<A> =>
+const fetchPartial = <A extends MyPartial<A>>(partial: A): Future<A> =>
   partial.partial ? Future.tryCatch(() => partial.fetch()) : Future.right(partial)
 
 const fetchRole = (guild: Guild, roleId: TSnowflake): Future<Maybe<Role>> =>

@@ -6,7 +6,7 @@ import type {
 } from '@discordjs/voice'
 import { AudioPlayerStatus } from '@discordjs/voice'
 import { VoiceConnectionStatus } from '@discordjs/voice'
-import type { Guild, StageChannel, TextBasedChannels, VoiceChannel } from 'discord.js'
+import type { Guild, StageChannel, TextBasedChannel, VoiceChannel } from 'discord.js'
 import { apply } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { flow, pipe } from 'fp-ts/function'
@@ -61,7 +61,7 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
 
   function queueTracks(
     musicChannel: MusicChannel,
-    stateChannel: TextBasedChannels,
+    stateChannel: TextBasedChannel,
     tracks: NonEmptyArray<Track>,
   ): Future<void> {
     if (musicChannel.guild.id !== guild.id) {
@@ -134,7 +134,7 @@ export const MusicSubscription = (Logger: LoggerGetter, youtubeDl: YoutubeDl, gu
     )
   }
 
-  function connect(musicChannel: MusicChannel, stateChannel: TextBasedChannels): Future<void> {
+  function connect(musicChannel: MusicChannel, stateChannel: TextBasedChannel): Future<void> {
     const { observable, subject } = PubSub<MusicEvent>()
 
     const sub = PubSubUtils.subscribe(logger, observable)

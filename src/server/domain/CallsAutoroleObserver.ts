@@ -54,8 +54,8 @@ export const CallsAutoroleObserver = (
             Future.map(success => {
               const log = LogUtils.pretty(logger, guild)
               return success
-                ? log('debug', `Added ${member.user.tag} to role @${calls.role.name}`)
-                : log('warn', `Couldn't add ${member.user.tag} to role @${calls.role.name}`)
+                ? log.debug(`Added ${member.user.tag} to role @${calls.role.name}`)
+                : log.warn(`Couldn't add ${member.user.tag} to role @${calls.role.name}`)
             }),
             Future.chain(Future.fromIOEither),
             Future.map(() => true),
@@ -72,8 +72,8 @@ export const CallsAutoroleObserver = (
             Future.map(success => {
               const log = LogUtils.pretty(logger, guild)
               return success
-                ? log('debug', `Removed ${member.user.tag} from role @${calls.role.name}`)
-                : log('warn', `Couldn't remove ${member.user.tag} to role @${calls.role.name}`)
+                ? log.debug(`Removed ${member.user.tag} from role @${calls.role.name}`)
+                : log.warn(`Couldn't remove ${member.user.tag} to role @${calls.role.name}`)
             }),
             Future.chain(Future.fromIOEither),
             Future.map(() => true),
@@ -89,9 +89,18 @@ export const CallsAutoroleObserver = (
       futureMaybe.Do,
       Future.chainFirst(() => DiscordConnector.interactionUpdate(interaction)),
       futureMaybe.apS('guild', futureMaybe.fromNullable(interaction.guild)),
-      futureMaybe.bind('callsAndMember', ({ guild }) =>
-        fetchCallsAndMember(guild, interaction.member),
+      futureMaybe.bind('member', ({ guild }) =>
+        pipe(
+          futureMaybe.fromNullable(interaction.member),
+          futureMaybe.chainFirst(() =>
+            pipe(
+              LogUtils.pretty(logger, guild).warn('interaction.member was null'),
+              futureMaybe.fromIOEither,
+            ),
+          ),
+        ),
       ),
+      futureMaybe.bind('callsAndMember', ({ guild, member }) => fetchCallsAndMember(guild, member)),
       futureMaybe.bind('success', ({ guild, callsAndMember }) =>
         pipe(f(guild, callsAndMember), Future.map(Maybe.some)),
       ),

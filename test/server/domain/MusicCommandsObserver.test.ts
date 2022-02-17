@@ -1,6 +1,7 @@
 import { pipe } from 'fp-ts/function'
 
 import { MsDuration } from '../../../src/shared/models/MsDuration'
+import { StringUtils } from '../../../src/shared/utils/StringUtils'
 import { Either, Future, Maybe, NonEmptyArray } from '../../../src/shared/utils/fp'
 
 import { MusicCommandsObserver } from '../../../src/server/domain/commands/MusicCommandsObserver'
@@ -8,7 +9,6 @@ import { YoutubeDl } from '../../../src/server/helpers/YoutubeDl'
 import type { LoggerType } from '../../../src/server/models/logger/LoggerType'
 import { Track } from '../../../src/server/models/music/Track'
 import type { GuildStateService } from '../../../src/server/services/GuildStateService'
-import { StringUtils } from '../../../src/server/utils/StringUtils'
 
 describe('validateTracks', () => {
   const { validateTracks } = MusicCommandsObserver(

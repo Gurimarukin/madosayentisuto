@@ -26,15 +26,15 @@ export const SetDefaultRoleObserver = (
         futureMaybe.matchE(
           () =>
             Future.fromIOEither(
-              log('warn', `No default role stored, couldn't add ${member.user.tag}`),
+              log.warn(`No default role stored, couldn't add ${member.user.tag}`),
             ),
           role =>
             pipe(
               DiscordConnector.addRole(member, role),
               Future.map(success =>
                 success
-                  ? log('debug', `Added ${member.user.tag} to role @${role.name}`)
-                  : log('warn', `Couldn't add ${member.user.tag} to role @${role.name}`),
+                  ? log.debug(`Added ${member.user.tag} to role @${role.name}`)
+                  : log.warn(`Couldn't add ${member.user.tag} to role @${role.name}`),
               ),
               Future.chain(Future.fromIOEither),
             ),

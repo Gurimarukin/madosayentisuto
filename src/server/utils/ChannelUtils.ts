@@ -19,7 +19,9 @@ const isNamedChannel = pipe(
   refinement.or(isVoiceChannel),
 )
 
-const isPublic = (channel: GuildChannel): boolean =>
+type VocalChannel = StageChannel | VoiceChannel
+
+const isPublic = (channel: VocalChannel): boolean =>
   channel.permissionOverwrites
     .valueOf()
     .filter(p => !(p.deny.bitfield === BigInt(0) && p.allow.bitfield === BigInt(0))).size === 0

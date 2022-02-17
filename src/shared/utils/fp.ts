@@ -11,7 +11,9 @@ import {
   taskEither,
 } from 'fp-ts'
 import type { Predicate } from 'fp-ts/Predicate'
+import type { Refinement } from 'fp-ts/Refinement'
 import type { Lazy } from 'fp-ts/function'
+import { identity } from 'fp-ts/function'
 import { flow, pipe } from 'fp-ts/function'
 import * as C_ from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
@@ -163,3 +165,5 @@ export const IO = {
     (io_: IO<void>): IO<NodeJS.Timeout> =>
       IO.tryCatch(() => setTimeout(() => pipe(io_, ioRunUnsafe), MsDuration.unwrap(delay))),
 }
+
+export const refinementFromPredicate = identity as <A>(pred: Predicate<A>) => Refinement<A, A>

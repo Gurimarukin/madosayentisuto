@@ -1,16 +1,17 @@
 import { SlashCommandBuilder, inlineCode } from '@discordjs/builders'
 import type {
   APIInteractionDataResolvedChannel,
+  APIInteractionGuildMember,
   APIRole,
-  APIUser,
 } from 'discord-api-types/payloads/v9'
 import { ChannelType } from 'discord-api-types/payloads/v9'
 import type {
   CommandInteraction,
   Guild,
   GuildChannel,
+  GuildMember,
   Message,
-  TextBasedChannels,
+  TextBasedChannel,
   ThreadChannel,
 } from 'discord.js'
 import { Role, TextChannel, User } from 'discord.js'
@@ -235,7 +236,7 @@ export const AdminCommandsObserver = (
       Future.chain(() =>
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: Future.right(maybeGuild),
-          author: fetchUser(interaction.member.user),
+          author: fetchUser(Maybe.fromNullable(interaction.member)),
           commandChannel: futureMaybe.fromNullable(interaction.channel),
           callsChannel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel('channel'))),
           role: fetchRole(maybeGuild, Maybe.fromNullable(interaction.options.getRole('role'))),
@@ -251,7 +252,7 @@ export const AdminCommandsObserver = (
   function sendInitMessageAndUpdateState(
     guild: Guild,
     author: User,
-    commandChannel: TextBasedChannels,
+    commandChannel: TextBasedChannel,
     channel: TextChannel,
     role: Role,
   ): Future<void> {
@@ -274,7 +275,7 @@ export const AdminCommandsObserver = (
   }
 
   function sendInitMessage(
-    commandChannel: TextBasedChannels,
+    commandChannel: TextBasedChannel,
     callsChannel: ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel,
     role: Role | APIRole,
   ): Future<Maybe<Message>> {
@@ -439,10 +440,17 @@ export const AdminCommandsObserver = (
       )
   }
 
-  function fetchUser(user: User | APIUser): Future<Maybe<User>> {
-    return user instanceof User
-      ? Future.right(Maybe.some(user))
-      : discord.fetchUser(TSnowflake.wrap(user.id))
+  function fetchUser(
+    maybeMember: Maybe<GuildMember | APIInteractionGuildMember>,
+  ): Future<Maybe<User>> {
+    return pipe(
+      futureMaybe.fromOption(maybeMember),
+      futureMaybe.chain(({ user }) =>
+        user instanceof User
+          ? Future.right(Maybe.some(user))
+          : discord.fetchUser(TSnowflake.wrap(user.id)),
+      ),
+    )
   }
 
   function fetchChannel(
@@ -482,12 +490,9 @@ export const AdminCommandsObserver = (
       Future.chainIOEitherK(deleted =>
         deleted
           ? IO.unit
-          : LogUtils.pretty(
-              logger,
-              message.guild,
-              message.author,
-              message.channel,
-            )('info', 'Not enough permissions to delete message'),
+          : LogUtils.pretty(logger, message.guild, message.author, message.channel).info(
+              'Not enough permissions to delete message',
+            ),
       ),
     )
   }

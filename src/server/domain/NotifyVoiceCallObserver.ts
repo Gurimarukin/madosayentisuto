@@ -35,7 +35,7 @@ export const NotifyVoiceCallObserver = (
   ): Future<void> {
     const log = LogUtils.pretty(logger, member.guild)
     return pipe(
-      log('info', `Call started in 📢${channel.name} by ${member.user.tag}`),
+      log.info(`Call started in 📢${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() => guildStateService.getCalls(member.guild)),
       futureMaybe.chainFuture(calls =>
@@ -45,7 +45,7 @@ export const NotifyVoiceCallObserver = (
             `Ha ha ! **@${member.displayName}** appelle ${channel}... ${calls.role} doit payer !`,
           ),
           futureMaybe.match(
-            () => log('warn', `Couldn't send call started notification in #${calls.channel.name}`),
+            () => log.warn(`Couldn't send call started notification in #${calls.channel.name}`),
             () => IO.unit,
           ),
           Future.chain(Future.fromIOEither),
@@ -61,14 +61,14 @@ export const NotifyVoiceCallObserver = (
   ): Future<void> {
     const log = LogUtils.pretty(logger, member.guild)
     return pipe(
-      log('info', `Call ended in 📢${channel.name} by ${member.user.tag}`),
+      log.info(`Call ended in 📢${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() => guildStateService.getCalls(member.guild)),
       futureMaybe.chainFuture(calls =>
         pipe(
           DiscordConnector.sendMessage(calls.channel, `Un appel s'est terminé.`),
           futureMaybe.match(
-            () => log('warn', `Couldn't send call ended notification in #${calls.channel.name}`),
+            () => log.warn(`Couldn't send call ended notification in #${calls.channel.name}`),
             () => IO.unit,
           ),
           Future.chain(Future.fromIOEither),

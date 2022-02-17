@@ -36,7 +36,7 @@ export const constants = {
   // thumbnail: https://cdn.discordapp.com/attachments/636626556734930948/909048276957945886/unknown.png
 
   fetchLogsLimit: 30,
-  networkTolerance: MsDuration.seconds(6),
+  networkTolerance: MsDuration.seconds(4),
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
