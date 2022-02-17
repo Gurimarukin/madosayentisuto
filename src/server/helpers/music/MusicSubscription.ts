@@ -112,13 +112,13 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
 
           case 'Connected':
             return pipe(
-              logEventToThread(state, skippedTrackEvent(author, state)),
-              Future.chain(() =>
-                List.isEmpty(state.queue)
-                  ? voiceConnectionDestroy(state)
-                  : playFirstTrackFromQueue(state),
-              ),
-              Future.map(() => true),
+              List.isEmpty(state.queue)
+                ? voiceConnectionDestroy(state)
+                : apply.sequenceT(Future.ApplyPar)(
+                    logEventToThread(state, skippedTrackEvent(author, state)),
+                    playFirstTrackFromQueue(state),
+                  ),
+              Future.map<unknown, boolean>(() => true),
             )
         }
       }),
