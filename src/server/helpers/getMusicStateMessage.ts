@@ -30,7 +30,7 @@ const queueDisplay = 5
 const messagesColor: ColorResolvable = Colors.darkred
 const images = {
   empty: 'https://cdn.discordapp.com/attachments/849299103362973777/914578024366747668/vide.png',
-  jpDjGifs: ['https://i.imgur.com/lBrj5I6.gif', 'https://i.imgur.com/4uEaD4A.gif'] as const,
+  jpDjGifs: ['https://i.imgur.com/lBrj5I6.gif', 'https://i.imgur.com/1m8X0mT.gif'] as const,
   jpPerdu:
     'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
 }
