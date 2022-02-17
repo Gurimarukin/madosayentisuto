@@ -12,6 +12,8 @@ import { entersState as discordEntersState } from '@discordjs/voice'
 import type { APIMessage, RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
 import { Routes } from 'discord-api-types/v9'
 import type {
+  AllowedThreadTypeForNewsChannel,
+  AllowedThreadTypeForTextChannel,
   AnyChannel,
   ApplicationCommand,
   ApplicationCommandPermissions,
@@ -37,7 +39,11 @@ import type {
   Role,
   RoleResolvable,
   StageChannel,
+  StartThreadOptions,
   TextChannel,
+  ThreadChannel,
+  ThreadCreateOptions,
+  ThreadManager,
   User,
   VoiceChannel,
 } from 'discord.js'
@@ -67,6 +73,14 @@ type MyPartial<A> = {
 }
 
 type MyInteraction = BaseCommandInteraction | MessageComponentInteraction
+
+type MyThreadChannelTypes = AllowedThreadTypeForNewsChannel | AllowedThreadTypeForTextChannel
+type MyThreadCreateOptions<A extends MyThreadChannelTypes> = Omit<
+  ThreadCreateOptions<A>,
+  'type'
+> & {
+  readonly type?: A
+}
 
 export type DiscordConnector = ReturnType<typeof of>
 
@@ -286,6 +300,9 @@ const messageEdit = (
   options: string | MessagePayload | MessageOptions,
 ): Future<Message> => Future.tryCatch(() => message.edit(options))
 
+const messageStartThread = (message: Message, options: StartThreadOptions): Future<ThreadChannel> =>
+  Future.tryCatch(() => message.startThread(options))
+
 const roleRemove = (
   member: GuildMember,
   roleOrRoles: RoleResolvable | List<RoleResolvable>,
@@ -349,6 +366,27 @@ const sendPrettyMessage = (
     embeds: [MessageUtils.safeEmbed({ color: Colors.darkred, description: message })],
   })
 
+const threadsCreate = <A extends MyThreadChannelTypes>(
+  threads: ThreadManager<A>,
+  options: MyThreadCreateOptions<A>,
+): Future<Maybe<ThreadChannel>> =>
+  pipe(
+    Future.tryCatch(() => threads.create(options)),
+    Future.map(Maybe.some),
+  )
+
+const threadDelete = (thread: ThreadChannel): Future<boolean> =>
+  pipe(
+    Future.tryCatch(() => thread.delete()),
+    Future.map(() => true),
+    Future.orElse(e =>
+      isMissingPermissionsError(e) || isUnknownMessageError(e)
+        ? Future.right(false)
+        : Future.left(e),
+    ),
+    debugLeft('threadDelete'),
+  )
+
 const voiceConnectionDestroy = (connection: VoiceConnection): IO<void> =>
   IO.tryCatch(() => connection.destroy())
 
@@ -401,10 +439,13 @@ export const DiscordConnector = {
   interactionUpdate,
   messageDelete,
   messageEdit,
+  messageStartThread,
   restPutApplicationGuildCommands,
   roleRemove,
   sendMessage,
   sendPrettyMessage,
+  threadsCreate,
+  threadDelete,
   voiceConnectionDestroy,
   voiceConnectionJoin,
   voiceConnectionSubscribe,

@@ -25,7 +25,7 @@ const chain = optionT.chain(Future.Monad)
 const chainFuture = <A, B>(f: (a: A) => Future<B>): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) =>
   chain(flow(f, Future.map(Maybe.some)))
 
-const chainMaybe: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
+const chainOption: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
   optionT.chainOptionK(Future.Monad)
 
 const fromFuture: <A>(fa: Future<A>) => Future<Maybe<A>> = optionT.fromF(Future.Functor)
@@ -87,7 +87,7 @@ export const futureMaybe = {
   chain,
   chainFirst: fpTsChain.chainFirst(Chain),
   chainFuture,
-  chainMaybe,
+  chainOption,
   fromFuture,
   fromNullable,
   fromOption,

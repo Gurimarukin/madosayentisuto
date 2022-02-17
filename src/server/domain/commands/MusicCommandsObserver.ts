@@ -18,6 +18,7 @@ import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordCo
 import type { YtDlp } from '../../helpers/YtDlp'
 import { musicButtons } from '../../helpers/getMusicStateMessage'
 import type { MusicSubscription } from '../../helpers/music/MusicSubscription'
+import { InteractionAuthor } from '../../models/InteractionAuthor'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import { MusicState } from '../../models/music/MusicState'
@@ -89,18 +90,13 @@ export const MusicCommandsObserver = (
           command,
           Either.fold(Future.right, ({ musicChannel, stateChannel, tracks }) =>
             pipe(
-              subscription.queueTracks(musicChannel, stateChannel, tracks),
-              Future.map(() =>
-                pipe(
-                  tracks,
-                  NonEmptyArray.map(t => `"${t.title}"`),
-                  StringUtils.mkString(
-                    '',
-                    ', ',
-                    ` ajouté${tracks.length === 1 ? '' : 's'} à la file d'attente.`,
-                  ),
-                ),
+              subscription.queueTracks(
+                InteractionAuthor.fromInteraction(interaction),
+                musicChannel,
+                stateChannel,
+                tracks,
               ),
+              Future.map(() => tracksAddedInteractionReply(tracks)),
             ),
           ),
         ),
@@ -117,7 +113,9 @@ export const MusicCommandsObserver = (
   }
 
   function onNextButton(interaction: ButtonInteraction): Future<void> {
-    return buttonCommon(interaction, subscription => subscription.nextTrack())
+    return buttonCommon(interaction, subscription =>
+      subscription.nextTrack(InteractionAuthor.fromInteraction(interaction)),
+    )
   }
 
   function validatePlayCommand(
@@ -255,4 +253,11 @@ const validateMusicChannel = (
         ),
       () => 'Haha ! Il faut être dans mon salon pour faire ça !',
     ),
+  )
+
+const tracksAddedInteractionReply = (tracks: NonEmptyArray<Track>): string =>
+  pipe(
+    tracks,
+    NonEmptyArray.map(t => `"${t.title}"`),
+    StringUtils.mkString('', ', ', ` ajouté${tracks.length === 1 ? '' : 's'} à la file d'attente.`),
   )

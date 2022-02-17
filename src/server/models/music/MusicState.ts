@@ -21,6 +21,7 @@ type CommonArgs = {
   readonly playing: Maybe<Track>
   readonly queue: List<Track>
   readonly message: Maybe<Message>
+  readonly pendingEvent: Maybe<string> // because when we call /play, message.thread doesn't exist yet
 }
 
 type DisconnectedArgs = CommonArgs
@@ -48,12 +49,13 @@ const empty: MusicState = u.Disconnected({
   playing: Maybe.none,
   queue: List.empty,
   message: Maybe.none,
+  pendingEvent: Maybe.none,
 })
 
 const connecting =
   (channel: MusicChannel, voiceConnection: VoiceConnection, audioPlayer: AudioPlayer) =>
-  ({ playing, queue, message }: MusicState): MusicStateConnecting =>
-    u.Connecting({ playing, queue, message, channel, voiceConnection, audioPlayer })
+  ({ playing, queue, message, pendingEvent }: MusicState): MusicStateConnecting =>
+    u.Connecting({ playing, queue, message, pendingEvent, channel, voiceConnection, audioPlayer })
 
 const connected =
   (
@@ -62,11 +64,12 @@ const connected =
     voiceConnection: VoiceConnection,
     subscription: Maybe<PlayerSubscription>,
   ) =>
-  ({ playing, queue, message }: MusicState): MusicStateConnected =>
+  ({ playing, queue, message, pendingEvent }: MusicState): MusicStateConnected =>
     u.Connected({
       playing,
       queue,
       message,
+      pendingEvent,
       audioPlayerState: AudioPlayerState.Playing(audioPlayer),
       channel,
       voiceConnection,
@@ -77,6 +80,7 @@ const getChannel = (state: MusicState): Maybe<MusicChannel> => {
   switch (state.type) {
     case 'Disconnected':
       return Maybe.none
+
     case 'Connecting':
     case 'Connected':
       return Maybe.some(state.channel)
@@ -87,6 +91,7 @@ const getVoiceConnection = (state: MusicState): Maybe<VoiceConnection> => {
   switch (state.type) {
     case 'Disconnected':
       return Maybe.none
+
     case 'Connecting':
     case 'Connected':
       return Maybe.some(state.voiceConnection)
@@ -97,8 +102,10 @@ const getAudioPlayer = (state: MusicState): Maybe<AudioPlayer> => {
   switch (state.type) {
     case 'Disconnected':
       return Maybe.none
+
     case 'Connecting':
       return Maybe.some(state.audioPlayer)
+
     case 'Connected':
       return Maybe.some(state.audioPlayerState.value)
   }
@@ -115,6 +122,10 @@ const setMessage =
   (message: Maybe<Message>) =>
   (state: MusicState): MusicState => ({ ...state, message })
 
+const setPendingEvent =
+  (pendingEvent: Maybe<string>) =>
+  (state: MusicState): MusicState => ({ ...state, pendingEvent })
+
 const setPlaying =
   (playing: Maybe<Track>) =>
   (state: MusicState): MusicState => ({ ...state, playing })
@@ -130,6 +141,7 @@ const updateAudioPlayerState =
       case 'Disconnected':
       case 'Connecting':
         return state
+
       case 'Connected':
         return { ...state, audioPlayerState: update(state.audioPlayerState) }
     }
@@ -147,6 +159,7 @@ export const MusicState = {
   getAudioPlayer,
   queueTracks,
   setMessage,
+  setPendingEvent,
   setPlaying,
   setQueue,
   setAudioPlayerStatePlaying,

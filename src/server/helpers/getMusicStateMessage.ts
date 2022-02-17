@@ -30,7 +30,7 @@ const queueDisplay = 5
 const messagesColor: ColorResolvable = Colors.darkred
 const images = {
   empty: 'https://cdn.discordapp.com/attachments/849299103362973777/914578024366747668/vide.png',
-  jpDjGifs: ['https://i.imgur.com/lBrj5I6.gif', 'https://i.imgur.com/1m8X0mT.gif'] as const,
+  jpDjGifs: ['https://i.imgur.com/xwfsgKH.gif', 'https://i.imgur.com/QVhHr0g.gif'] as const,
   jpPerdu:
     'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
 }
@@ -113,7 +113,7 @@ const playing_ = (
                   queue,
                   List.match(
                     () =>
-                      `*Aucun morceau dans la file d'attente.*\n\`/play <url>\` *pour en ajouter*`,
+                      `*Aucun morceau dans la file d'attente.*\n\n\`/play <url>\` pour en ajouter`,
                     flow(
                       List.takeLeft(queueDisplay),
                       List.map(t => `${maskedLink(constants.emojis.link, t.url)} ${t.title}`),

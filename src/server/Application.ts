@@ -9,6 +9,7 @@ import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
 import { CallsAutoroleObserver } from './domain/CallsAutoroleObserver'
 import { DisconnectVocalObserver } from './domain/DisconnectVocalObserver'
 import { ItsFridayObserver } from './domain/ItsFridayObserver'
+import { MusicThreadCleanObserver } from './domain/MusicThreadCleanObserver'
 import { NotifyGuildLeaveObserver } from './domain/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './domain/NotifyVoiceCallObserver'
 import { SendWelcomeDMObserver } from './domain/SendWelcomeDMObserver'
@@ -77,6 +78,10 @@ export const Application = (
         or(MadEvent.is('VoiceStateUpdate')),
       ),
       sub(ItsFridayObserver(Logger, guildStateService), or(MadEvent.is('CronJob'))),
+      sub(
+        MusicThreadCleanObserver(Logger, config.client.id, guildStateService),
+        or(MadEvent.is('MessageCreate')),
+      ),
       sub(NotifyGuildLeaveObserver(Logger), or(MadEvent.is('GuildMemberRemove'))),
       sub(
         NotifyVoiceCallObserver(Logger, guildStateService),
