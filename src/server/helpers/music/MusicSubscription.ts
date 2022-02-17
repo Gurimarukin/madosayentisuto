@@ -12,6 +12,7 @@ import type {
   StageChannel,
   TextBasedChannel,
   ThreadChannel,
+  User,
   VoiceChannel,
 } from 'discord.js'
 import { apply } from 'fp-ts'
@@ -24,7 +25,6 @@ import { NonEmptyArray } from '../../../shared/utils/fp'
 import { List } from '../../../shared/utils/fp'
 import { Future, IO, Maybe } from '../../../shared/utils/fp'
 
-import { InteractionAuthor } from '../../models/InteractionAuthor'
 import { Store } from '../../models/Store'
 import type {
   MusicEventConnectionDestroyed,
@@ -71,7 +71,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
   }
 
   function queueTracks(
-    author: InteractionAuthor,
+    author: User,
     musicChannel: MusicChannel,
     stateChannel: TextBasedChannel,
     tracks: NonEmptyArray<Track>,
@@ -100,7 +100,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
     )
   }
 
-  function nextTrack(author: InteractionAuthor): Future<boolean> {
+  function nextTrack(author: User): Future<boolean> {
     return pipe(
       musicState.get,
       Future.fromIOEither,
@@ -522,7 +522,7 @@ const createStateThread = (maybeMessage: Maybe<Message>): Future<Maybe<ThreadCha
     ),
   )
 
-const addedTracksEvent = (author: InteractionAuthor, tracks: NonEmptyArray<Track>): string => {
+const addedTracksEvent = (author: User, tracks: NonEmptyArray<Track>): string => {
   const tracksStr = ((): string => {
     if (tracks.length === 1) {
       const head = NonEmptyArray.head(tracks)
@@ -534,10 +534,10 @@ const addedTracksEvent = (author: InteractionAuthor, tracks: NonEmptyArray<Track
       StringUtils.mkString('\n', '\n', ''),
     )
   })()
-  return `**${InteractionAuthor.unwrap(author)}** a ajouté${tracksStr}`
+  return `**${author}** a ajouté${tracksStr}`
 }
 
-const skippedTrackEvent = (author: InteractionAuthor, state: MusicState): string => {
+const skippedTrackEvent = (author: User, state: MusicState): string => {
   const additional = pipe(
     state.playing,
     Maybe.fold(
@@ -545,7 +545,7 @@ const skippedTrackEvent = (author: InteractionAuthor, state: MusicState): string
       t => `...\n*...et a interrompu [${t.title}](${t.url})*`,
     ),
   )
-  return `**${InteractionAuthor.unwrap(author)}** est passé au morceau suivant${additional}`
+  return `**${author}** est passé au morceau suivant${additional}`
 }
 
 const logEventToThread = (state: MusicState, message: string): Future<void> =>
