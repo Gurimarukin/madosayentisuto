@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from 'react'
 import { Maybe } from '../../shared/utils/fp'
 import { Tuple } from '../../shared/utils/fp'
 
-import { AppRouter } from './AppRouter'
+import { appRouterParser } from './AppRouter'
 import { useHistory } from './HistoryContext'
 
 export const AppRouterComponent = (): JSX.Element => {
@@ -12,7 +12,7 @@ export const AppRouterComponent = (): JSX.Element => {
 
   const [title, node] = useMemo(() => {
     const [subTitle, node_] = parse(
-      AppRouter.parser,
+      appRouterParser,
       Route.parse(location.pathname),
       Tuple.of(Maybe.some('Page non trouvée'), <NotFound />),
     )
