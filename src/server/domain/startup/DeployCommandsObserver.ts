@@ -90,7 +90,8 @@ export const DeployCommandsObserver = (
     return results =>
       pipe(
         discord.getGuild(guildId),
-        Maybe.fold(() => Future.unit, guildCommandsPermissionsSet(results)),
+        Future.fromIOEither,
+        Future.chain(Maybe.fold(() => Future.unit, guildCommandsPermissionsSet(results))),
       )
   }
 

@@ -16,8 +16,7 @@ type MyOptions = Omit<Options, 'method'>
 
 // only changes of method and url will trigger revalidation
 export const useHttp = <A>(
-  method: HttpMethod,
-  url: string,
+  [method, url]: Tuple<HttpMethod, string>,
   options: MyOptions,
   [decoder, decoderName]: Tuple<Decoder<unknown, A>, string>,
 ): SWRResponse<A, unknown> =>

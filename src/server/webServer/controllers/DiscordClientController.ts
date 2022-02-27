@@ -7,8 +7,7 @@ import { GuildShortDAO } from '../../../shared/models/guild/GuildShortDAO'
 import { IO, List, Maybe } from '../../../shared/utils/fp'
 
 import type { DiscordConnector } from '../../helpers/DiscordConnector'
-import type { EndedMiddleware } from '../models/EndedMiddleware'
-import { EndendMiddleware } from '../models/EndedMiddleware'
+import { EndedMiddleware } from '../models/EndedMiddleware'
 
 export type DiscordClientController = ReturnType<typeof DiscordClientController>
 
@@ -17,9 +16,9 @@ export const DiscordClientController = (discord: DiscordConnector) => {
   const guilds: EndedMiddleware = pipe(
     discord.getGuilds,
     IO.map(List.map(GuildShortDAO.fromGuild)),
-    EndendMiddleware.fromIOEither,
-    EndendMiddleware.ichain(
-      EndendMiddleware.json(Status.OK, List.encoder(GuildShortDAO.codec).encode),
+    EndedMiddleware.fromIOEither,
+    EndedMiddleware.ichain(
+      EndedMiddleware.json(Status.OK, List.encoder(GuildShortDAO.codec).encode),
     ),
   )
 
@@ -27,11 +26,11 @@ export const DiscordClientController = (discord: DiscordConnector) => {
     pipe(
       discord.getGuild(guildId),
       IO.map(Maybe.map(GuildDetailDAO.fromGuild)),
-      EndendMiddleware.fromIOEither,
-      EndendMiddleware.ichain(
+      EndedMiddleware.fromIOEither,
+      EndedMiddleware.ichain(
         Maybe.fold(
-          () => EndendMiddleware.text(Status.NotFound)(),
-          EndendMiddleware.json(Status.OK, GuildDetailDAO.codec.encode),
+          () => EndedMiddleware.text(Status.NotFound)(),
+          EndedMiddleware.json(Status.OK, GuildDetailDAO.codec.encode),
         ),
       ),
     )

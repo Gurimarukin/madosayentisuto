@@ -1,21 +1,35 @@
+import type { Match, Parser } from 'fp-ts-routing'
 import { format, lit, str } from 'fp-ts-routing'
 
+import type { Method } from './models/Method'
 import type { GuildId } from './models/guild/GuildId'
 import { RouterUtils } from './utils/RouterUtils'
+import type { Tuple } from './utils/fp'
 
 const { codec } = RouterUtils
 
 /**
  * matches
  */
+
+// intermediate
 const api = lit('api')
 const apiGuilds = api.then(lit('guilds'))
 const apiGuild = api.then(lit('guild')).then(codec('guildId')<GuildId>(str))
 
-export const apiMatches = {
-  api: {
-    guilds: apiGuilds,
-    guild: apiGuild,
+// final
+const getApiGuilds = m('get', apiGuilds)
+const getApiGuild = m('get', apiGuild)
+
+/**
+ * parsers
+ */
+export const apiParsers = {
+  get: {
+    api: {
+      guilds: p(getApiGuilds),
+      guild: p(getApiGuild),
+    },
   },
 }
 
@@ -23,8 +37,30 @@ export const apiMatches = {
  * formats
  */
 export const apiRoutes = {
-  api: {
-    guilds: format(apiGuilds.formatter, {}),
-    guild: (guildId: GuildId) => format(apiGuild.formatter, { guildId }),
+  get: {
+    api: {
+      guilds: r(getApiGuilds, {}),
+      guild: (guildId: GuildId) => r(getApiGuild, { guildId }),
+    },
   },
+}
+
+type MethodWith<A> = Tuple<Method, A>
+type MethodWithMatch<A> = MethodWith<Match<A>>
+export type MethodWithParser<A> = MethodWith<Parser<A>>
+type MethodWithRoute = MethodWith<string>
+
+// Match with Method
+function m<A>(method: Method, match: Match<A>): MethodWithMatch<A> {
+  return [method, match]
+}
+
+// Parser with Method
+function p<A>([method, match]: MethodWithMatch<A>): MethodWithParser<A> {
+  return [method, match.parser]
+}
+
+// Route with Method
+function r<A>([method, match]: MethodWithMatch<A>, a: A): MethodWithRoute {
+  return [method, format(match.formatter, a)]
 }

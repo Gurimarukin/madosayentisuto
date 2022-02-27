@@ -1,8 +1,8 @@
-import type { Tuple3 } from '../../../shared/utils/fp'
+import type { Parser } from 'fp-ts-routing'
+
+import type { Method } from '../../../shared/models/Method'
+import type { Tuple } from '../../../shared/utils/fp'
 
 import type { EndedMiddleware } from './EndedMiddleware'
 
-type Method = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'options' | 'head'
-type Path = string
-
-export type Route = Tuple3<Method, Path, EndedMiddleware>
+export type Route = Tuple<Method, Parser<EndedMiddleware>>

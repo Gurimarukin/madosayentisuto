@@ -2,6 +2,9 @@ import type { ErrorRequestHandler } from 'express'
 import express from 'express'
 import { task } from 'fp-ts'
 import { list } from 'fp-ts-contrib'
+import type { Parser } from 'fp-ts-routing'
+import { parse } from 'fp-ts-routing'
+import { Route as FpTsRoute, zero } from 'fp-ts-routing'
 import type { Task } from 'fp-ts/Task'
 import { flow, pipe } from 'fp-ts/function'
 import type { ResponseEnded } from 'hyper-ts'
@@ -9,13 +12,13 @@ import { Status } from 'hyper-ts'
 import type { Action, ExpressConnection } from 'hyper-ts/lib/express'
 import { toRequestHandler } from 'hyper-ts/lib/express'
 
+import { Method } from '../../shared/models/Method'
 import type { NonEmptyArray } from '../../shared/utils/fp'
 import { Dict, Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import type { HttpConfig } from '../Config'
 import type { LoggerGetter, LoggerType } from '../models/logger/LoggerType'
-import type { EndedMiddleware } from './models/EndedMiddleware'
-import { EndendMiddleware } from './models/EndedMiddleware'
+import { EndedMiddleware } from './models/EndedMiddleware'
 import type { Route } from './models/Route'
 
 const allowedHeaders = ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
@@ -27,7 +30,7 @@ export const startWebServer = (
 ): IO<void> => {
   const logger = Logger('WebServer')
 
-  const withCors = pipe(
+  const withCors: IO<express.Express> = pipe(
     IO.tryCatch(() => express()),
     IO.chain(app =>
       pipe(
@@ -59,21 +62,29 @@ export const startWebServer = (
     ),
   )
 
+  const altedRoutes = getAltedRoutes(routes)
+
   return pipe(
-    routes,
-    List.reduce(withCors, (ioApp, [method, path, middleware]) =>
+    Method.values,
+    List.reduce(withCors, (ioApp, method) =>
       pipe(
         ioApp,
         IO.chain(app =>
           IO.tryCatch(() =>
-            app[method](path, pipe(middleware, withTry, withLog, toRequestHandler)),
+            app[method]('*', (req, res, next) =>
+              pipe(
+                parse(
+                  altedRoutes[method],
+                  FpTsRoute.parse(req.url),
+                  EndedMiddleware.text(Status.NotFound)(),
+                ),
+                withTry,
+                withLog,
+                toRequestHandler,
+              )(req, res, next),
+            ),
           ),
         ),
-      ),
-    ),
-    IO.chain(e =>
-      IO.tryCatch(() =>
-        e.use(pipe(EndendMiddleware.text(Status.NotFound)(), withLog, toRequestHandler)),
       ),
     ),
     IO.chain(e => IO.tryCatch(() => e.use(errorHandler(onError)))),
@@ -111,7 +122,7 @@ export const startWebServer = (
             flow(
               onError,
               task.fromIO,
-              task.chain(() => EndendMiddleware.text(Status.InternalServerError)()(conn)),
+              task.chain(() => EndedMiddleware.text(Status.InternalServerError)()(conn)),
             ),
             task.of,
           ),
@@ -123,6 +134,20 @@ export const startWebServer = (
   function onError(error: any): IO<void> {
     return error.stack === undefined ? logger.error(error) : logger.error(error.stack)
   }
+}
+
+const getAltedRoutes = (routes: List<Route>): Dict<Method, Parser<EndedMiddleware>> => {
+  const init: Dict<Method, Parser<EndedMiddleware>> = pipe(
+    Method.values,
+    List.reduce({} as Dict<Method, Parser<EndedMiddleware>>, (acc, method) => ({
+      ...acc,
+      [method]: zero<EndedMiddleware>(),
+    })),
+  )
+  return pipe(
+    routes,
+    List.reduce(init, (acc, [method, parser]) => ({ ...acc, [method]: acc[method].alt(parser) })),
+  )
 }
 
 const containedIn =
