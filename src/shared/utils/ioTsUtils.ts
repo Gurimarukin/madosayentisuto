@@ -1,12 +1,11 @@
-import { flow, pipe } from 'fp-ts/function'
-import * as C from 'io-ts/Codec'
+import { pipe } from 'fp-ts/function'
+import type * as C from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
 import type { AnyNewtype, CarrierOf } from 'newtype-ts'
-import { iso } from 'newtype-ts'
 
 import { StringUtils } from './StringUtils'
 import { List } from './fp'
-import { Either, NonEmptyArray } from './fp'
+import { NonEmptyArray } from './fp'
 
 const limit = 10000
 
@@ -26,13 +25,7 @@ export const decodeError =
 
 export const fromNewtype = <N extends AnyNewtype = never>(
   codec: C.Codec<unknown, CarrierOf<N>, CarrierOf<N>>,
-): C.Codec<unknown, CarrierOf<N>, N> => {
-  const { wrap, unwrap } = iso<N>()
-  return C.make(
-    { decode: flow(codec.decode, Either.map(wrap)) },
-    { encode: flow(unwrap, codec.encode) },
-  )
-}
+): C.Codec<unknown, CarrierOf<N>, N> => codec
 
 export const booleanFromString: D.Decoder<unknown, boolean> = pipe(
   D.string,
