@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.build.json && parcel build src/client/index.html --dist-dir dist/client",
     "checkEnv": "ts-node src/server/checkEnv.ts",
     "server": "ts-node src/server/index.ts",
-    "~server": "nodemon -e ts,tsx,js,json,env --ignore src/client/ -x \"yarn run server\"",
+    "~server": "nodemon -e ts,tsx,js,json,env --ignore dist/ --ignore src/client/ -x \"yarn run server\"",
     "~client": "parcel src/client/index.html --dist-dir dist/client",
     "prettier": "prettier --check src test",
     "prettierFix": "prettier --write src test",
