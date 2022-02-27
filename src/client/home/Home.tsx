@@ -13,7 +13,10 @@ import { appRoutes } from '../router/AppRouter'
 const guildsDecoder = List.decoder(GuildShortDAO.codec)
 
 export const Home = (): JSX.Element => {
-  const { data: guilds, error } = useHttp(apiRoutes.get.api.guilds, {}, [guildsDecoder, 'Guild[]'])
+  const { data: guilds, error } = useHttp(apiRoutes.get.api.guilds, {}, [
+    guildsDecoder,
+    'GuildShortDAO[]',
+  ])
 
   return (
     <>

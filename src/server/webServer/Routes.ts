@@ -10,7 +10,7 @@ const { get } = apiParsers
 
 export const Routes = (discordClientController: DiscordClientController): List<Route> => [
   r(get.api.guilds, () => discordClientController.guilds),
-  // ['get', p.api.guild.map(({ guildId }) => discordClientController.guild(guildId))],
+  r(get.api.guild, ({ guildId }) => discordClientController.guild(guildId)),
 
   // ['get', '/api/healthcheck', healthCheckController.index],
   // ['get', '/api/klk-posts', klkPostController.klkPosts],

@@ -6,6 +6,7 @@ import { RouterUtils } from '../../shared/utils/RouterUtils'
 import { Maybe } from '../../shared/utils/fp'
 import { Tuple } from '../../shared/utils/fp'
 
+import { GuildDetail } from '../guildDetail/GuildDetail'
 import { Home } from '../home/Home'
 
 const { codec } = RouterUtils
@@ -24,7 +25,7 @@ export const appRouterParser = zero<TitleWithElement>()
   .alt(end.parser.map(() => Tuple.of(Maybe.none, <Home />)))
   .alt(
     guildMatch.parser.map(({ guildId }) =>
-      Tuple.of(Maybe.some('Serveur'), <div>Serveur {guildId}</div>),
+      Tuple.of(Maybe.some('Serveur'), <GuildDetail guildId={guildId} />),
     ),
   )
 
