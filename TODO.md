@@ -15,6 +15,8 @@
 
 What if 'CronJob' arrives before 'DbReady' (for activity status)? There should be a way to check that 'DbReady' was sent, when 'CronJob' arrives.
 
+- remove `(): Future`?
+
 ---
 
 - watch together -> c mor (pour l'instant)

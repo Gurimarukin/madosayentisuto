@@ -85,63 +85,71 @@ type MyThreadCreateOptions<A extends MyThreadChannelTypes> = Omit<
 export type DiscordConnector = ReturnType<typeof of>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const of = (client: Client<true>) => ({
-  client,
+const of = (client: Client<true>) => {
+  const getGuilds: IO<List<Guild>> = () => Either.right(client.guilds.cache.toJSON())
 
-  /**
-   * Read
-   */
+  return {
+    client,
 
-  fetchApplication: (): Future<ClientApplication> =>
-    pipe(
-      Future.tryCatch(() => client.application.fetch()),
-      debugLeft('fetchApplication'),
-    ),
+    /**
+     * Read
+     */
 
-  fetchChannel: (channelId: TSnowflake): Future<Maybe<AnyChannel>> =>
-    pipe(
-      Future.tryCatch(() => client.channels.fetch(TSnowflake.unwrap(channelId))),
-      Future.map(Maybe.fromNullable),
-      // Future.orElse<Maybe<Channel>>(_ => Future.right(Maybe.none)),
-      debugLeft('fetchChannel'),
-      //   [
-      //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
-      //   Maybe.none
-      // ]
-    ),
-
-  fetchUser: (userId: TSnowflake): Future<Maybe<User>> =>
-    pipe(
-      IO.tryCatch(() => client.users.cache.get(TSnowflake.unwrap(userId))),
-      IO.map(Maybe.fromNullable),
-      Future.fromIOEither,
-      futureMaybe.alt(() =>
-        pipe(
-          Future.tryCatch(() => client.users.fetch(TSnowflake.unwrap(userId))),
-          Future.map(Maybe.some),
-        ),
-      ),
-      debugLeft('fetchUser'),
-    ),
-
-  getGuild: (guildId: GuildId): Maybe<Guild> =>
-    Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId))),
-
-  /**
-   * Write
-   */
-
-  setActivity: (activity: Maybe<Activity>): IO<ClientPresence> =>
-    IO.tryCatch(() =>
+    fetchApplication: (): Future<ClientApplication> =>
       pipe(
-        activity,
-        Maybe.fold(
-          () => client.user.setActivity(),
-          ({ name, type }) => client.user.setActivity(name, { type }),
+        Future.tryCatch(() => client.application.fetch()),
+        debugLeft('fetchApplication'),
+      ),
+
+    fetchChannel: (channelId: TSnowflake): Future<Maybe<AnyChannel>> =>
+      pipe(
+        Future.tryCatch(() => client.channels.fetch(TSnowflake.unwrap(channelId))),
+        Future.map(Maybe.fromNullable),
+        // Future.orElse<Maybe<Channel>>(_ => Future.right(Maybe.none)),
+        debugLeft('fetchChannel'),
+        //   [
+        //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
+        //   Maybe.none
+        // ]
+      ),
+
+    fetchUser: (userId: TSnowflake): Future<Maybe<User>> =>
+      pipe(
+        IO.tryCatch(() => client.users.cache.get(TSnowflake.unwrap(userId))),
+        IO.map(Maybe.fromNullable),
+        Future.fromIOEither,
+        futureMaybe.alt(() =>
+          pipe(
+            Future.tryCatch(() => client.users.fetch(TSnowflake.unwrap(userId))),
+            Future.map(Maybe.some),
+          ),
+        ),
+        debugLeft('fetchUser'),
+      ),
+
+    getGuild:
+      (guildId: GuildId): IO<Maybe<Guild>> =>
+      () =>
+        Either.right(Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId)))),
+
+    getGuilds,
+
+    /**
+     * Write
+     */
+
+    setActivity: (activity: Maybe<Activity>): IO<ClientPresence> =>
+      IO.tryCatch(() =>
+        pipe(
+          activity,
+          Maybe.fold(
+            () => client.user.setActivity(),
+            ({ name, type }) => client.user.setActivity(name, { type }),
+          ),
         ),
       ),
-    ),
-})
+  }
+}
 
 /**
  * Read

@@ -2,15 +2,15 @@ import { pipe } from 'fp-ts/function'
 import React from 'react'
 
 import { apiRoutes } from '../../shared/ApiRouter'
-import { GuildDAO } from '../../shared/models/guild/GuildDAO'
 import { GuildId } from '../../shared/models/guild/GuildId'
+import { GuildShortDAO } from '../../shared/models/guild/GuildShortDAO'
 import { List, Maybe } from '../../shared/utils/fp'
 
 import { Link } from '../components/Link'
 import { useHttp } from '../hooks/useHttp'
 import { appRoutes } from '../router/AppRouter'
 
-const guildsDecoder = List.decoder(GuildDAO.codec)
+const guildsDecoder = List.decoder(GuildShortDAO.codec)
 
 export const Home = (): JSX.Element => {
   const { data: guilds, error } = useHttp('get', apiRoutes.api.guilds, {}, [

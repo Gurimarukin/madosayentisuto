@@ -43,4 +43,4 @@ const reduceHeaders = (
     ),
   )
 
-export const EndendMiddleware = { text, json }
+export const EndendMiddleware = { ...M, text, json }
