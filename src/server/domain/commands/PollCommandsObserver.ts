@@ -107,24 +107,18 @@ const initPoll = (
         channel,
         pollMessage.base(question, withEmojis, interaction.user),
       ),
-      Future.chain(
-        Maybe.fold(
-          () => Future.unit,
-          message =>
-            pipe(
-              DiscordConnector.messageEdit(
-                message,
-                pollMessage.withButtons(
-                  TSnowflake.wrap(message.id),
-                  question,
-                  withEmojis,
-                  interaction.user,
-                ),
-              ),
-              Future.map(() => {}),
-            ),
+      futureMaybe.chainFuture(message =>
+        DiscordConnector.messageEdit(
+          message,
+          pollMessage.withButtons(
+            TSnowflake.wrap(message.id),
+            question,
+            withEmojis,
+            interaction.user,
+          ),
         ),
       ),
+      Future.map(() => {}),
     )
   }
 }
