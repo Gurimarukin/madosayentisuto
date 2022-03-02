@@ -7,12 +7,14 @@ import type {
   TextBasedChannel,
   User,
 } from 'discord.js'
-import { apply } from 'fp-ts'
+import { apply, string } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
+import { parse as shellQuoteParse } from 'shell-quote'
 
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { Tuple } from '../../../shared/utils/fp'
+import { Try } from '../../../shared/utils/fp'
 import { Either } from '../../../shared/utils/fp'
 import { List } from '../../../shared/utils/fp'
 import { Maybe } from '../../../shared/utils/fp'
@@ -22,7 +24,9 @@ import { Future } from '../../../shared/utils/fp'
 import { Colors, constants } from '../../constants'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
+import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { TObserver } from '../../models/rx/TObserver'
+import { LogUtils } from '../../utils/LogUtils'
 import { MessageUtils } from '../../utils/MessageUtils'
 
 type Emoji = string
@@ -38,94 +42,104 @@ export const pollCommand = new SlashCommandBuilder()
     option
       .setName('réponses')
       .setDescription(
-        'Réponses possibles, entre guillemets et séparées par des espaces ("Oui" "Non", si vide).',
+        'Réponses possibles.\nEntre guillemets et séparées par des espaces ("Oui" "Non", si vide).',
       ),
   )
 
-export const PollCommandsObserver = (): TObserver<MadEventInteractionCreate> => ({
-  next: event => {
-    const interaction = event.interaction
+export const PollCommandsObserver = (
+  Logger: LoggerGetter,
+): TObserver<MadEventInteractionCreate> => {
+  const logger = Logger('PollCommandsObserver')
 
-    if (interaction.isCommand()) {
-      switch (interaction.commandName) {
-        case 'poll':
-          return onPoll(interaction)
+  return {
+    next: event => {
+      const interaction = event.interaction
+
+      if (interaction.isCommand()) {
+        switch (interaction.commandName) {
+          case 'poll':
+            return onPoll(interaction)
+        }
       }
-    }
 
-    if (interaction.isButton()) {
-    }
+      if (interaction.isButton()) {
+      }
 
-    return Future.unit
-  },
-})
+      return Future.unit
+    },
+  }
 
-const onPoll = (interaction: CommandInteraction): Future<void> =>
+  function onPoll(interaction: CommandInteraction): Future<void> {
+    return pipe(
+      DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
+      Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
+      Future.map(() =>
+        apply.sequenceS(Maybe.Apply)({
+          channel: Maybe.fromNullable(interaction.channel),
+          question: Maybe.fromNullable(interaction.options.getString('question')),
+        }),
+      ),
+      futureMaybe.chainFuture(({ channel, question }) => initPoll(interaction, channel, question)),
+      Future.map(() => {}),
+    )
+  }
+
+  function initPoll(
+    interaction: CommandInteraction,
+    channel: TextBasedChannel,
+    question: string,
+  ): Future<void> {
+    const author = interaction.user
+    return pipe(
+      Maybe.fromNullable(interaction.options.getString('réponses')),
+      Maybe.fold(
+        () => Future.right(Either.right<string, NonEmptyArray<string>>(['Oui', 'Non'])),
+        rawAnswers =>
+          pipe(
+            parseAnswers(rawAnswers),
+            Try.fold(
+              e =>
+                pipe(
+                  LogUtils.pretty(logger, interaction.guild, author, interaction.channel).debug(
+                    `Failed to parse answers: ${rawAnswers}\nError:\n${e.stack}`,
+                  ),
+                  Future.fromIOEither,
+                  Future.map(() => Either.left('Erreur lors de lecture des réponses')),
+                ),
+              Future.right,
+            ),
+          ),
+      ),
+      Future.chain(
+        Either.foldW(
+          content =>
+            pipe(
+              DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+              Future.map(Maybe.some),
+            ),
+          flow(
+            NonEmptyArray.mapWithIndex((i, a): Answer => [getEmoji(i), a]),
+            answers =>
+              DiscordConnector.sendMessage(channel, getPollMessage({ question, answers, author })),
+          ),
+        ),
+      ),
+      Future.map<Maybe<Message | APIMessage>, void>(() => {}),
+    )
+  }
+}
+
+const parseAnswers = (rawAnswers: string): Try<Either<string, NonEmptyArray<string>>> =>
   pipe(
-    DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
-    Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
-    Future.map(() =>
-      apply.sequenceS(Maybe.Apply)({
-        channel: Maybe.fromNullable(interaction.channel),
-        question: Maybe.fromNullable(interaction.options.getString('question')),
-      }),
-    ),
-    futureMaybe.chainFuture(({ channel, question }) => initPoll(interaction, channel, question)),
-    Future.map(() => {}),
-  )
-
-const initPoll = (
-  interaction: CommandInteraction,
-  channel: TextBasedChannel,
-  question: string,
-): Future<void> => {
-  const author = interaction.user
-  return pipe(
-    Maybe.fromNullable(interaction.options.getString('réponses')),
-    Maybe.fold(() => Either.right<string, NonEmptyArray<string>>(['Oui', 'Non']), parseAnswers),
-    Either.foldW(
-      content => DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+    Try.tryCatch(() => shellQuoteParse(rawAnswers)),
+    Try.map(
       flow(
-        NonEmptyArray.mapWithIndex((i, a): Answer => [getEmoji(i), a]),
-        answers =>
-          DiscordConnector.sendMessage(channel, getPollMessage({ question, answers, author })),
-      ),
-    ),
-    Future.map<Maybe<Message> | Message | APIMessage, void>(() => {}),
-  )
-}
-
-const surroundedWithQuotesError = Either.left('Les réponses doivent être entourées de guillemets')
-export const parseAnswers = (rawAnswers: string): Either<string, NonEmptyArray<string>> => {
-  const split = rawAnswers.split('"')
-
-  if (!isOdd(split.length)) return surroundedWithQuotesError
-
-  return pipe(
-    split,
-    List.filterMapWithIndex((i, w) => {
-      const trimed = w.trim()
-      if (isOdd(i)) {
-        // it is a word between quotes
-        return Maybe.some(
-          trimed === '' ? Either.left('Une réponse ne peut être vide') : Either.right(w),
-        )
-      }
-      // it is some filling chars
-      return trimed === '' ? Maybe.none : Maybe.some(surroundedWithQuotesError)
-    }),
-    Either.sequenceArray,
-    Either.chain(
-      flow(
-        List.takeLeft(26),
+        List.filter(string.isString),
         NonEmptyArray.fromReadonlyArray,
-        Either.fromOption(() => 'Au moins une réponse est requise'),
+        Either.fromOption(() => 'Impossible de lire les réponses'),
       ),
     ),
   )
-}
-
-const isOdd = (n: number): boolean => n % 2 === 1
 
 type EmojiKey = keyof typeof constants.emojis.characters
 const emojis = pipe(
