@@ -14,7 +14,6 @@ import { parse as shellQuoteParse } from 'shell-quote'
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { Tuple } from '../../../shared/utils/fp'
-import { Try } from '../../../shared/utils/fp'
 import { Either } from '../../../shared/utils/fp'
 import { List } from '../../../shared/utils/fp'
 import { Maybe } from '../../../shared/utils/fp'
@@ -24,9 +23,7 @@ import { Future } from '../../../shared/utils/fp'
 import { Colors, constants } from '../../constants'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
-import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { TObserver } from '../../models/rx/TObserver'
-import { LogUtils } from '../../utils/LogUtils'
 import { MessageUtils } from '../../utils/MessageUtils'
 
 type Emoji = string
@@ -46,11 +43,7 @@ export const pollCommand = new SlashCommandBuilder()
       ),
   )
 
-export const PollCommandsObserver = (
-  Logger: LoggerGetter,
-): TObserver<MadEventInteractionCreate> => {
-  const logger = Logger('PollCommandsObserver')
-
+export const PollCommandsObserver = (): TObserver<MadEventInteractionCreate> => {
   return {
     next: event => {
       const interaction = event.interaction
@@ -92,36 +85,17 @@ export const PollCommandsObserver = (
     const author = interaction.user
     return pipe(
       Maybe.fromNullable(interaction.options.getString('réponses')),
-      Maybe.fold(
-        () => Future.right(Either.right<string, NonEmptyArray<string>>(['Oui', 'Non'])),
-        rawAnswers =>
+      Maybe.fold(() => Either.right<string, NonEmptyArray<string>>(['Oui', 'Non']), parseAnswers),
+      Either.foldW(
+        content =>
           pipe(
-            parseAnswers(rawAnswers),
-            Try.fold(
-              e =>
-                pipe(
-                  LogUtils.pretty(logger, interaction.guild, author, interaction.channel).debug(
-                    `Failed to parse answers: ${rawAnswers}\nError:\n${e.stack}`,
-                  ),
-                  Future.fromIOEither,
-                  Future.map(() => Either.left('Erreur lors de lecture des réponses')),
-                ),
-              Future.right,
-            ),
+            DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+            Future.map(Maybe.some),
           ),
-      ),
-      Future.chain(
-        Either.foldW(
-          content =>
-            pipe(
-              DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
-              Future.map(Maybe.some),
-            ),
-          flow(
-            NonEmptyArray.mapWithIndex((i, a): Answer => [getEmoji(i), a]),
-            answers =>
-              DiscordConnector.sendMessage(channel, getPollMessage({ question, answers, author })),
-          ),
+        flow(
+          NonEmptyArray.mapWithIndex((i, a): Answer => [getEmoji(i), a]),
+          answers =>
+            DiscordConnector.sendMessage(channel, getPollMessage({ question, answers, author })),
         ),
       ),
       Future.map<Maybe<Message | APIMessage>, void>(() => {}),
@@ -129,16 +103,12 @@ export const PollCommandsObserver = (
   }
 }
 
-const parseAnswers = (rawAnswers: string): Try<Either<string, NonEmptyArray<string>>> =>
+const parseAnswers = (rawAnswers: string): Either<string, NonEmptyArray<string>> =>
   pipe(
-    Try.tryCatch(() => shellQuoteParse(rawAnswers)),
-    Try.map(
-      flow(
-        List.filter(string.isString),
-        NonEmptyArray.fromReadonlyArray,
-        Either.fromOption(() => 'Impossible de lire les réponses'),
-      ),
-    ),
+    shellQuoteParse(rawAnswers),
+    List.filter(string.isString),
+    NonEmptyArray.fromReadonlyArray,
+    Either.fromOption(() => 'Impossible de lire les réponses'),
   )
 
 type EmojiKey = keyof typeof constants.emojis.characters
