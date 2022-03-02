@@ -108,7 +108,7 @@ const parseAnswers = (rawAnswers: string): Either<string, NonEmptyArray<string>>
     shellQuoteParse(rawAnswers),
     List.filter(string.isString),
     NonEmptyArray.fromReadonlyArray,
-    Either.fromOption(() => 'Impossible de lire les réponses'),
+    Either.fromOption(() => `Impossible de lire les réponses: ${rawAnswers}`),
   )
 
 type EmojiKey = keyof typeof constants.emojis.characters
