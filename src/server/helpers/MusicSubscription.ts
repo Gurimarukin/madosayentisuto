@@ -19,32 +19,32 @@ import { apply } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { flow, pipe } from 'fp-ts/function'
 
-import { futureMaybe } from '../../../shared/utils/FutureMaybe'
-import { StringUtils } from '../../../shared/utils/StringUtils'
-import { NonEmptyArray } from '../../../shared/utils/fp'
-import { List } from '../../../shared/utils/fp'
-import { Future, IO, Maybe } from '../../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/FutureMaybe'
+import { StringUtils } from '../../shared/utils/StringUtils'
+import { NonEmptyArray } from '../../shared/utils/fp'
+import { List } from '../../shared/utils/fp'
+import { Future, IO, Maybe } from '../../shared/utils/fp'
 
-import { Store } from '../../models/Store'
+import { Store } from '../models/Store'
 import type {
   MusicEventConnectionDestroyed,
   MusicEventConnectionDisconnected,
   MusicEventConnectionReady,
   MusicEventPlayerIdle,
-} from '../../models/events/MusicEvent'
-import { MusicEvent } from '../../models/events/MusicEvent'
-import type { LoggerGetter } from '../../models/logger/LoggerType'
-import { AudioPlayerState } from '../../models/music/AudioPlayerState'
-import type { MusicStateConnected } from '../../models/music/MusicState'
-import { MusicState } from '../../models/music/MusicState'
-import type { Track } from '../../models/music/Track'
-import { PubSub } from '../../models/rx/PubSub'
-import type { TObserver } from '../../models/rx/TObserver'
-import type { TSubject } from '../../models/rx/TSubject'
-import { PubSubUtils } from '../../utils/PubSubUtils'
-import { DiscordConnector } from '../DiscordConnector'
-import type { YtDlp } from '../YtDlp'
-import { musicStateMessage } from '../musicStateMessage'
+} from '../models/events/MusicEvent'
+import { MusicEvent } from '../models/events/MusicEvent'
+import type { LoggerGetter } from '../models/logger/LoggerType'
+import { AudioPlayerState } from '../models/music/AudioPlayerState'
+import type { MusicStateConnected } from '../models/music/MusicState'
+import { MusicState } from '../models/music/MusicState'
+import type { Track } from '../models/music/Track'
+import { PubSub } from '../models/rx/PubSub'
+import type { TObserver } from '../models/rx/TObserver'
+import type { TSubject } from '../models/rx/TSubject'
+import { PubSubUtils } from '../utils/PubSubUtils'
+import { DiscordConnector } from './DiscordConnector'
+import type { YtDlp } from './YtDlp'
+import { musicStateMessage } from './messages/musicStateMessage'
 
 const { or } = PubSubUtils
 

@@ -28,7 +28,7 @@ import { Either, NonEmptyArray } from '../../../shared/utils/fp'
 import { Future, List, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import { initCallsMessage } from '../../helpers/initCallsMessage'
+import { initCallsMessage } from '../../helpers/messages/initCallsMessage'
 import { TSnowflake } from '../../models/TSnowflake'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'

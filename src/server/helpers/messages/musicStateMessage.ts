@@ -10,13 +10,13 @@ import { MessageActionRow } from 'discord.js'
 import { random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
-import { StringUtils } from '../../shared/utils/StringUtils'
-import { IO } from '../../shared/utils/fp'
-import { List, Maybe } from '../../shared/utils/fp'
+import { StringUtils } from '../../../shared/utils/StringUtils'
+import { IO } from '../../../shared/utils/fp'
+import { List, Maybe } from '../../../shared/utils/fp'
 
-import { Colors, constants } from '../constants'
-import type { Track } from '../models/music/Track'
-import { MessageUtils } from '../utils/MessageUtils'
+import { Colors, constants } from '../../constants'
+import type { Track } from '../../models/music/Track'
+import { MessageUtils } from '../../utils/MessageUtils'
 
 type MyMessageOptions = string | MessagePayload | MessageOptions
 type MyButton = Required<BaseMessageComponentOptions> & MessageButtonOptions

@@ -8,7 +8,7 @@ import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import { initCallsButton, initCallsMessage } from '../helpers/initCallsMessage'
+import { initCallsButton, initCallsMessage } from '../helpers/messages/initCallsMessage'
 import { TSnowflake } from '../models/TSnowflake'
 import type { MadEventInteractionCreate } from '../models/events/MadEvent'
 import type { Calls } from '../models/guildState/Calls'
