@@ -23,6 +23,7 @@ import type { GuildStateService } from '../../services/GuildStateService'
 import { adminCommands } from '../commands/AdminCommandsObserver'
 import { playCommand } from '../commands/MusicCommandsObserver'
 import { otherCommands } from '../commands/OtherCommandsObserver'
+import { pollCommand } from '../commands/PollCommandsObserver'
 
 export const DeployCommandsObserver = (
   Logger: LoggerGetter,
@@ -35,7 +36,7 @@ export const DeployCommandsObserver = (
   const rest = new REST({ version: '9' }).setToken(config.client.secret)
 
   const commands = pipe(
-    [...adminCommands, playCommand, ...otherCommands],
+    [...adminCommands, playCommand, ...otherCommands, pollCommand],
     List.map(command => command.toJSON()),
   )
 

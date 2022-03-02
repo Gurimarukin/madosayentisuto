@@ -1,11 +1,11 @@
-import { MsDuration } from '../../../src/shared/models/MsDuration'
-import { Either, Maybe, NonEmptyArray } from '../../../src/shared/utils/fp'
+import { MsDuration } from '../../../../src/shared/models/MsDuration'
+import { Either, Maybe, NonEmptyArray } from '../../../../src/shared/utils/fp'
 
-import { MusicCommandsObserver } from '../../../src/server/domain/commands/MusicCommandsObserver'
-import { YtDlp } from '../../../src/server/helpers/YtDlp'
-import type { LoggerType } from '../../../src/server/models/logger/LoggerType'
-import { Track } from '../../../src/server/models/music/Track'
-import type { GuildStateService } from '../../../src/server/services/GuildStateService'
+import { MusicCommandsObserver } from '../../../../src/server/domain/commands/MusicCommandsObserver'
+import { YtDlp } from '../../../../src/server/helpers/YtDlp'
+import type { LoggerType } from '../../../../src/server/models/logger/LoggerType'
+import { Track } from '../../../../src/server/models/music/Track'
+import type { GuildStateService } from '../../../../src/server/services/GuildStateService'
 
 describe('validateTracks', () => {
   const { validateTracks } = MusicCommandsObserver(

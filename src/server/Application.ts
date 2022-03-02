@@ -18,6 +18,7 @@ import { TextInteractionsObserver } from './domain/TextInteractionsObserver'
 import { AdminCommandsObserver } from './domain/commands/AdminCommandsObserver'
 import { MusicCommandsObserver } from './domain/commands/MusicCommandsObserver'
 import { OtherCommandsObserver } from './domain/commands/OtherCommandsObserver'
+import { PollCommandsObserver } from './domain/commands/PollCommandsObserver'
 import { DeployCommandsObserver } from './domain/startup/DeployCommandsObserver'
 import { IndexesEnsureObserver } from './domain/startup/IndexesEnsureObserver'
 import type { DiscordConnector } from './helpers/DiscordConnector'
@@ -56,6 +57,7 @@ export const Application = (
         or(MadEvent.is('InteractionCreate')),
       ),
       sub(OtherCommandsObserver(), or(MadEvent.is('InteractionCreate'))),
+      sub(PollCommandsObserver(), or(MadEvent.is('InteractionCreate'))),
 
       // │  └ startup/
       sub(

@@ -45,7 +45,7 @@
     "fp-ts-routing": "0.5.4",
     "fp-ts-rxjs": "0.6.15",
     "history": "5.2.0",
-    "hyper-ts": "0.7.7",
+    "hyper-ts": "0.7.8",
     "io-ts": "2.2.16",
     "ky": "0.29.0",
     "mongodb": "4.1.3",
