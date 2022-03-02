@@ -57,7 +57,10 @@ export const Application = (
         or(MadEvent.is('InteractionCreate')),
       ),
       sub(OtherCommandsObserver(), or(MadEvent.is('InteractionCreate'))),
-      sub(PollCommandsObserver(), or(MadEvent.is('InteractionCreate'))),
+      sub(
+        PollCommandsObserver(),
+        or(MadEvent.is('InteractionCreate'), MadEvent.is('MessageDelete')),
+      ),
 
       // │  └ startup/
       sub(

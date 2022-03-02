@@ -50,6 +50,11 @@ export const LogMadEventsObserver = (logger: LoggerType): TObserver<MadEvent> =>
           return `${format(event.message.guild, event.message.author, event.message.channel)} ${
             event.message.content
           }`
+
+        case 'MessageDelete':
+          return `${format(event.messages[0]?.guild, null, event.messages[0]?.channel)} ${
+            event.messages.length
+          } message${event.messages.length < 2 ? '' : 's'}`
       }
     })()
     return Future.fromIOEither(logger.debug('✉️ ', event.type, message))

@@ -1,8 +1,8 @@
 import type { ClientEvents } from 'discord.js'
 import { apply } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 
-import { IO } from '../../shared/utils/fp'
+import { IO, List } from '../../shared/utils/fp'
 
 import { MadEvent } from '../models/events/MadEvent'
 import type { TSubject } from '../models/rx/TSubject'
@@ -22,6 +22,8 @@ export const publishDiscordEvents = (
       pub('guildMemberRemove', MadEvent.GuildMemberRemove),
       pub('interactionCreate', MadEvent.InteractionCreate),
       pub('messageCreate', MadEvent.MessageCreate),
+      pub('messageDelete', flow(List.of, MadEvent.MessageDelete)),
+      pub('messageDeleteBulk', coll => MadEvent.MessageDelete(coll.toJSON())),
       pub('voiceStateUpdate', MadEvent.VoiceStateUpdate),
 
       // pub('messageReactionAdd', MadEvent.MessageReactionAdd),

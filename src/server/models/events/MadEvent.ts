@@ -3,10 +3,13 @@ import type {
   Interaction,
   Message,
   PartialGuildMember,
+  PartialMessage,
   StageChannel,
   VoiceChannel,
   VoiceState,
 } from 'discord.js'
+
+import type { List } from '../../../shared/utils/fp'
 
 import { createUnion } from '../../utils/createUnion'
 
@@ -38,6 +41,8 @@ export const MadEvent = createUnion({
   }),
 
   MessageCreate: (message: Message) => ({ message }),
+
+  MessageDelete: (messages: List<Message | PartialMessage>) => ({ messages }),
 })
 
 export type MadEventAppStarted = typeof MadEvent.AppStarted.T
@@ -50,3 +55,4 @@ export type MadEventVoiceStateUpdate = typeof MadEvent.VoiceStateUpdate.T
 export type MadEventPublicCallStarted = typeof MadEvent.PublicCallStarted.T
 export type MadEventPublicCallEnded = typeof MadEvent.PublicCallEnded.T
 export type MadEventMessageCreate = typeof MadEvent.MessageCreate.T
+export type MadEventMessageDelete = typeof MadEvent.MessageDelete.T

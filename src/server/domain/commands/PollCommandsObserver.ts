@@ -2,8 +2,10 @@ import { SlashCommandBuilder } from '@discordjs/builders'
 import type { APIMessage } from 'discord-api-types'
 import type {
   CommandInteraction,
+  Interaction,
   Message,
   MessageOptions,
+  PartialMessage,
   TextBasedChannel,
   User,
 } from 'discord.js'
@@ -22,7 +24,7 @@ import { Future } from '../../../shared/utils/fp'
 
 import { Colors, constants } from '../../constants'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
+import type { MadEventInteractionCreate, MadEventMessageDelete } from '../../models/events/MadEvent'
 import type { TObserver } from '../../models/rx/TObserver'
 import { MessageUtils } from '../../utils/MessageUtils'
 
@@ -43,64 +45,71 @@ export const pollCommand = new SlashCommandBuilder()
       ),
   )
 
-export const PollCommandsObserver = (): TObserver<MadEventInteractionCreate> => {
-  return {
-    next: event => {
-      const interaction = event.interaction
+export const PollCommandsObserver = (): TObserver<
+  MadEventInteractionCreate | MadEventMessageDelete
+> => ({
+  next: event => {
+    switch (event.type) {
+      case 'InteractionCreate':
+        return onInteraction(event.interaction)
 
-      if (interaction.isCommand()) {
-        switch (interaction.commandName) {
-          case 'poll':
-            return onPoll(interaction)
-        }
-      }
+      case 'MessageDelete':
+        return onMessageDelete(event.messages)
+    }
+  },
+})
 
-      if (interaction.isButton()) {
-      }
-
-      return Future.unit
-    },
+const onInteraction = (interaction: Interaction): Future<void> => {
+  if (interaction.isCommand()) {
+    switch (interaction.commandName) {
+      case 'poll':
+        return onPoll(interaction)
+    }
   }
 
-  function onPoll(interaction: CommandInteraction): Future<void> {
-    return pipe(
-      DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
-      Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
-      Future.map(() =>
-        apply.sequenceS(Maybe.Apply)({
-          channel: Maybe.fromNullable(interaction.channel),
-          question: Maybe.fromNullable(interaction.options.getString('question')),
-        }),
-      ),
-      futureMaybe.chainFuture(({ channel, question }) => initPoll(interaction, channel, question)),
-      Future.map(() => {}),
-    )
+  if (interaction.isButton()) {
   }
 
-  function initPoll(
-    interaction: CommandInteraction,
-    channel: TextBasedChannel,
-    question: string,
-  ): Future<void> {
-    const author = interaction.user
-    return pipe(
-      Maybe.fromNullable(interaction.options.getString('réponses')),
-      Maybe.fold(() => Either.right<string, NonEmptyArray<string>>(['Oui', 'Non']), parseAnswers),
-      Either.foldW(
-        content =>
-          pipe(
-            DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
-            Future.map(Maybe.some),
-          ),
-        flow(
-          NonEmptyArray.mapWithIndex((i, a): Answer => [getEmoji(i), a]),
-          answers =>
-            DiscordConnector.sendMessage(channel, getPollMessage({ question, answers, author })),
+  return Future.unit
+}
+
+const onPoll = (interaction: CommandInteraction): Future<void> =>
+  pipe(
+    DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
+    Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
+    Future.map(() =>
+      apply.sequenceS(Maybe.Apply)({
+        channel: Maybe.fromNullable(interaction.channel),
+        question: Maybe.fromNullable(interaction.options.getString('question')),
+      }),
+    ),
+    futureMaybe.chainFuture(({ channel, question }) => initPoll(interaction, channel, question)),
+    Future.map(() => {}),
+  )
+
+const initPoll = (
+  interaction: CommandInteraction,
+  channel: TextBasedChannel,
+  question: string,
+): Future<void> => {
+  const author = interaction.user
+  return pipe(
+    Maybe.fromNullable(interaction.options.getString('réponses')),
+    Maybe.fold(() => Either.right<string, NonEmptyArray<string>>(['Oui', 'Non']), parseAnswers),
+    Either.foldW(
+      content =>
+        pipe(
+          DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+          Future.map(Maybe.some),
         ),
+      flow(
+        NonEmptyArray.mapWithIndex((i, a): Answer => [getEmoji(i), a]),
+        answers =>
+          DiscordConnector.sendMessage(channel, getPollMessage({ question, answers, author })),
       ),
-      Future.map<Maybe<Message | APIMessage>, void>(() => {}),
-    )
-  }
+    ),
+    Future.map<Maybe<Message | APIMessage>, void>(() => {}),
+  )
 }
 
 const parseAnswers = (rawAnswers: string): Either<string, NonEmptyArray<string>> =>
@@ -110,6 +119,11 @@ const parseAnswers = (rawAnswers: string): Either<string, NonEmptyArray<string>>
     NonEmptyArray.fromReadonlyArray,
     Either.fromOption(() => `Impossible de lire les réponses: ${rawAnswers}`),
   )
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const onMessageDelete = (messages: List<Message | PartialMessage>): Future<void> =>
+  // TODO
+  Future.unit
 
 type EmojiKey = keyof typeof constants.emojis.characters
 const emojis = pipe(

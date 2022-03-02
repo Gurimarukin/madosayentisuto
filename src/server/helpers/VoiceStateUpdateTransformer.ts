@@ -25,39 +25,35 @@ export const VoiceStateUpdateTransformer = (
   const logger = Logger('VoiceStateUpdateTransformer')
 
   return {
-    next: event => {
-      switch (event.type) {
-        case 'VoiceStateUpdate':
-          return pipe(
-            getMember(event),
-            Maybe.fold(
-              () => Future.unit,
-              member => {
-                const oldChan = Maybe.fromNullable(event.oldState.channel)
-                const newChan = Maybe.fromNullable(event.newState.channel)
+    next: event =>
+      pipe(
+        getMember(event),
+        Maybe.fold(
+          () => Future.unit,
+          member => {
+            const oldChan = Maybe.fromNullable(event.oldState.channel)
+            const newChan = Maybe.fromNullable(event.newState.channel)
 
-                if (Maybe.isNone(oldChan) && Maybe.isSome(newChan)) {
-                  return onJoinedChannel(member, newChan.value)
-                }
+            if (Maybe.isNone(oldChan) && Maybe.isSome(newChan)) {
+              return onJoinedChannel(member, newChan.value)
+            }
 
-                if (
-                  Maybe.isSome(oldChan) &&
-                  Maybe.isSome(newChan) &&
-                  oldChan.value.id !== newChan.value.id
-                ) {
-                  return onMovedChannel(member, oldChan.value, newChan.value)
-                }
+            if (
+              Maybe.isSome(oldChan) &&
+              Maybe.isSome(newChan) &&
+              oldChan.value.id !== newChan.value.id
+            ) {
+              return onMovedChannel(member, oldChan.value, newChan.value)
+            }
 
-                if (Maybe.isSome(oldChan) && Maybe.isNone(newChan)) {
-                  return onLeftChannel(member, oldChan.value)
-                }
+            if (Maybe.isSome(oldChan) && Maybe.isNone(newChan)) {
+              return onLeftChannel(member, oldChan.value)
+            }
 
-                return Future.unit
-              },
-            ),
-          )
-      }
-    },
+            return Future.unit
+          },
+        ),
+      ),
   }
 
   function onJoinedChannel(
