@@ -6,12 +6,12 @@ import { StringUtils } from '../../shared/utils/StringUtils'
 
 import { constants } from '../constants'
 
-export const callsButton = {
+export const initCallsButton = {
   subscribeId: 'callsSubscribe',
   unsubscribeId: 'callsUnsubscribe',
 }
 
-export const getInitCallsMessage = (
+export const initCallsMessage = (
   channel: ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel,
   role: Role | APIRole,
 ): MessageOptions => ({
@@ -23,12 +23,12 @@ export const getInitCallsMessage = (
   components: [
     new MessageActionRow().addComponents(
       new MessageButton()
-        .setCustomId(callsButton.subscribeId)
+        .setCustomId(initCallsButton.subscribeId)
         .setLabel("S'abonner aux appels")
         .setStyle('PRIMARY')
         .setEmoji(constants.emojis.calls),
       new MessageButton()
-        .setCustomId(callsButton.unsubscribeId)
+        .setCustomId(initCallsButton.unsubscribeId)
         .setLabel(' ̶S̶e̶ ̶d̶é̶s̶a̶b̶o̶n̶n̶e̶r̶    Je suis une victime')
         .setStyle('SECONDARY'),
     ),

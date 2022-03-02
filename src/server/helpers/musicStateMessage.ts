@@ -21,7 +21,7 @@ import { MessageUtils } from '../utils/MessageUtils'
 type MyMessageOptions = string | MessagePayload | MessageOptions
 type MyButton = Required<BaseMessageComponentOptions> & MessageButtonOptions
 
-export const musicButtons = {
+export const musicStateButtons = {
   playPauseId: 'musicPlayPause',
   nextId: 'musicNext',
 }
@@ -42,9 +42,9 @@ const button = (
   style: InteractionButtonOptions['style'] = 'SECONDARY',
 ): MyButton => ({ type: 'BUTTON', customId, label, emoji, style })
 
-const pauseButton = button(musicButtons.playPauseId, 'Pause', constants.emojis.pause)
-const playButton = button(musicButtons.playPauseId, 'Lecture', constants.emojis.play)
-const nextButton = button(musicButtons.nextId, 'Suivant', constants.emojis.next)
+const pauseButton = button(musicStateButtons.playPauseId, 'Pause', constants.emojis.pause)
+const playButton = button(musicStateButtons.playPauseId, 'Lecture', constants.emojis.play)
+const nextButton = button(musicStateButtons.nextId, 'Suivant', constants.emojis.next)
 
 const connecting: IO<MyMessageOptions> = pipe(
   random.randomElem(images.jpDjGifs),
@@ -139,4 +139,4 @@ const playing_ = (
 
 const maskedLink = (text: string, url: string): string => `[${text}](${url})`
 
-export const getMusicStateMessage = { connecting, playing: playing_ }
+export const musicStateMessage = { connecting, playing: playing_ }

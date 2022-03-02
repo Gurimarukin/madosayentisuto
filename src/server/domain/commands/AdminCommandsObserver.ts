@@ -28,7 +28,7 @@ import { Either, NonEmptyArray } from '../../../shared/utils/fp'
 import { Future, List, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import { getInitCallsMessage } from '../../helpers/getInitCallsMessage'
+import { initCallsMessage } from '../../helpers/initCallsMessage'
 import { TSnowflake } from '../../models/TSnowflake'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
@@ -279,7 +279,7 @@ export const AdminCommandsObserver = (
     callsChannel: ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel,
     role: Role | APIRole,
   ): Future<Maybe<Message>> {
-    return DiscordConnector.sendMessage(commandChannel, getInitCallsMessage(callsChannel, role))
+    return DiscordConnector.sendMessage(commandChannel, initCallsMessage(callsChannel, role))
   }
 
   function tryDeletePreviousMessageAndSetCalls(

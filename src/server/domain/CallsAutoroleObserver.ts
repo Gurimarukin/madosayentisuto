@@ -8,7 +8,7 @@ import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import { callsButton, getInitCallsMessage } from '../helpers/getInitCallsMessage'
+import { initCallsButton, initCallsMessage } from '../helpers/initCallsMessage'
 import { TSnowflake } from '../models/TSnowflake'
 import type { MadEventInteractionCreate } from '../models/events/MadEvent'
 import type { Calls } from '../models/guildState/Calls'
@@ -35,9 +35,9 @@ export const CallsAutoroleObserver = (
       if (!interaction.isButton()) return Future.unit
 
       switch (interaction.customId) {
-        case callsButton.subscribeId:
+        case initCallsButton.subscribeId:
           return onSubscribe(interaction)
-        case callsButton.unsubscribeId:
+        case initCallsButton.unsubscribeId:
           return onUnsubscribe(interaction)
       }
 
@@ -112,7 +112,7 @@ export const CallsAutoroleObserver = (
 
   function refreshCallsInitMessage(calls: Calls): Future<void> {
     return pipe(
-      DiscordConnector.messageEdit(calls.message, getInitCallsMessage(calls.channel, calls.role)),
+      DiscordConnector.messageEdit(calls.message, initCallsMessage(calls.channel, calls.role)),
       Future.map(() => {}),
     )
   }

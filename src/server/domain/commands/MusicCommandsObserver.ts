@@ -16,8 +16,8 @@ import { Future, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
 import type { YtDlp } from '../../helpers/YtDlp'
-import { musicButtons } from '../../helpers/getMusicStateMessage'
 import type { MusicSubscription } from '../../helpers/music/MusicSubscription'
+import { musicStateButtons } from '../../helpers/musicStateMessage'
 import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import { MusicState } from '../../models/music/MusicState'
@@ -62,9 +62,9 @@ export const MusicCommandsObserver = (
 
       if (interaction.isButton()) {
         switch (interaction.customId) {
-          case musicButtons.playPauseId:
+          case musicStateButtons.playPauseId:
             return onPlayPauseButton(interaction)
-          case musicButtons.nextId:
+          case musicStateButtons.nextId:
             return onNextButton(interaction)
         }
       }

@@ -44,7 +44,7 @@ import type { TSubject } from '../../models/rx/TSubject'
 import { PubSubUtils } from '../../utils/PubSubUtils'
 import { DiscordConnector } from '../DiscordConnector'
 import type { YtDlp } from '../YtDlp'
-import { getMusicStateMessage } from '../getMusicStateMessage'
+import { musicStateMessage } from '../musicStateMessage'
 
 const { or } = PubSubUtils
 
@@ -445,7 +445,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
 
 const sendStateMessage = (stateChannel: TextBasedChannel): Future<Maybe<Message>> =>
   pipe(
-    getMusicStateMessage.connecting,
+    musicStateMessage.connecting,
     Future.fromIOEither,
     Future.chain(options => DiscordConnector.sendMessage(stateChannel, options)),
   )
@@ -511,7 +511,7 @@ const refreshMessage = (state: MusicState): Future<void> => {
   return pipe(
     apply.sequenceS(futureMaybe.ApplyPar)({
       message: futureMaybe.fromOption(maybeMessage),
-      options: futureMaybe.fromIOEither(getMusicStateMessage.playing(playing, queue, isPlaying)),
+      options: futureMaybe.fromIOEither(musicStateMessage.playing(playing, queue, isPlaying)),
     }),
     futureMaybe.chainFuture(({ message, options }) =>
       DiscordConnector.messageEdit(message, options),
