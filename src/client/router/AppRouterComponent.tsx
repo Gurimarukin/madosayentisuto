@@ -1,18 +1,30 @@
-import { Route, parse } from 'fp-ts-routing'
+import { Route, parse, zero } from 'fp-ts-routing'
 import React, { useEffect, useMemo } from 'react'
 
 import { Maybe } from '../../shared/utils/fp'
 import { Tuple } from '../../shared/utils/fp'
 
-import { appRouterParser } from './AppRouter'
+import { GuildDetail } from '../guildDetail/GuildDetail'
+import { Home } from '../home/Home'
+import { appParsers } from './AppRouter'
 import { useHistory } from './HistoryContext'
+
+type TitleWithElement = Tuple<Maybe<string>, JSX.Element>
+
+const titleWithElementParser = zero<TitleWithElement>()
+  .alt(appParsers.home.map(() => Tuple.of(Maybe.none, <Home />)))
+  .alt(
+    appParsers.guild.map(({ guildId }) =>
+      Tuple.of(Maybe.some('Serveur'), <GuildDetail guildId={guildId} />),
+    ),
+  )
 
 export const AppRouterComponent = (): JSX.Element => {
   const { location } = useHistory()
 
   const [title, node] = useMemo(() => {
     const [subTitle, node_] = parse(
-      appRouterParser,
+      titleWithElementParser,
       Route.parse(location.pathname),
       Tuple.of(Maybe.some('Page non trouvée'), <NotFound />),
     )
