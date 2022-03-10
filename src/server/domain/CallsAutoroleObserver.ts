@@ -89,17 +89,7 @@ export const CallsAutoroleObserver = (
       futureMaybe.Do,
       Future.chainFirst(() => DiscordConnector.interactionUpdate(interaction)),
       futureMaybe.apS('guild', futureMaybe.fromNullable(interaction.guild)),
-      futureMaybe.bind('member', ({ guild }) =>
-        pipe(
-          futureMaybe.fromNullable(interaction.member),
-          futureMaybe.chainFirst(() =>
-            pipe(
-              LogUtils.pretty(logger, guild).warn('interaction.member was null'),
-              futureMaybe.fromIOEither,
-            ),
-          ),
-        ),
-      ),
+      futureMaybe.bind('member', ({ guild }) => interactionMember(guild, interaction)),
       futureMaybe.bind('callsAndMember', ({ guild, member }) => fetchCallsAndMember(guild, member)),
       futureMaybe.bind('success', ({ guild, callsAndMember }) =>
         pipe(f(guild, callsAndMember), Future.map(Maybe.some)),
@@ -107,6 +97,25 @@ export const CallsAutoroleObserver = (
       Future.map(Maybe.filter(({ success }) => success)),
       futureMaybe.chainFuture(({ callsAndMember: { calls } }) => refreshCallsInitMessage(calls)),
       Future.map(() => {}),
+    )
+  }
+
+  function interactionMember(
+    guild: Guild,
+    interaction: ButtonInteraction,
+  ): Future<Maybe<GuildMember | APIInteractionGuildMember>> {
+    return pipe(
+      futureMaybe.fromNullable(interaction.member),
+      Future.chainFirst(
+        Maybe.fold(
+          () =>
+            pipe(
+              LogUtils.pretty(logger, guild).warn('interaction.member was null'),
+              Future.fromIOEither,
+            ),
+          () => Future.unit,
+        ),
+      ),
     )
   }
 
