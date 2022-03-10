@@ -11,6 +11,7 @@ import type { TObserver } from '../models/rx/TObserver'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
 
+// We don't want any message (except bot) in the music logs thread
 export const MusicThreadCleanObserver = (
   Logger: LoggerGetter,
   clientId: string,
