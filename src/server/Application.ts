@@ -58,7 +58,7 @@ export const Application = (
       ),
       sub(OtherCommandsObserver(), or(MadEvent.is('InteractionCreate'))),
       sub(
-        PollCommandsObserver(),
+        PollCommandsObserver(Logger),
         or(MadEvent.is('InteractionCreate'), MadEvent.is('MessageDelete')),
       ),
 

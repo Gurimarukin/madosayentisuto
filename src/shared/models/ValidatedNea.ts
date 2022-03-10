@@ -23,10 +23,18 @@ const fromEmptyErrors: <A>(either: Either<List<string>, A>) => ValidatedNea<stri
   'Got empty Errors from codec',
 )
 
-const sequenceS = apply.sequenceS(
-  Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>()),
-)
+// ValidatedNea<string, A>
+const stringValidation = Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>())
+
+const sequenceS = apply.sequenceS(stringValidation)
 
 export type ValidatedNea<E, A> = Either<NonEmptyArray<E>, A>
 
-export const ValidatedNea = { fromEither, fromOption, fromEmptyE, fromEmptyErrors, sequenceS }
+export const ValidatedNea = {
+  fromEither,
+  fromOption,
+  fromEmptyE,
+  fromEmptyErrors,
+  stringValidation,
+  sequenceS,
+}
