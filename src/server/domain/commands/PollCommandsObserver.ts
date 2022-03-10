@@ -124,15 +124,18 @@ export const PollCommandsObserver = (
     function sendAndUpdateInitMessage(answers: NonEmptyArray<string>): Future<void> {
       return pipe(
         getWithEmojis(answers),
-        futureMaybe.chain(withEmojis =>
-          DiscordConnector.sendMessage(
-            channel,
-            pollMessage.format({
-              question,
-              answers: withEmojis,
-              author: interaction.user.toString(),
-            }),
-          ),
+        futureMaybe.map(withEmojis => ({
+          options: pollMessage.format({
+            question,
+            answers: withEmojis,
+            author: interaction.user.toString(),
+          }),
+        })),
+        futureMaybe.bind('message', ({ options }) =>
+          DiscordConnector.sendMessage(channel, options),
+        ),
+        futureMaybe.chainFuture(({ message, options }) =>
+          DiscordConnector.messageEdit(message, options),
         ),
         Future.map(() => {}),
       )
