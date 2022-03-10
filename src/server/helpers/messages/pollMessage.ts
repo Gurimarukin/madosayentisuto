@@ -72,7 +72,7 @@ const format = ({ question, answers, author }: Format): MessageOptions => {
     NonEmptyArray.map(({ emoji, answer, votesCount }) =>
       StringUtils.stripMargins(
         `${emoji}${splitWith}${answer}
-        |  ${graphBar(votesCount, total)}`,
+        |${graphBar(votesCount, total)}`,
       ),
     ),
     StringUtils.mkString('\n\n'),
@@ -111,24 +111,10 @@ const format = ({ question, answers, author }: Format): MessageOptions => {
 // What one block represents
 const blockUnit = Math.round(100 / graphWidth)
 
-// ▀ UPPER HALF BLOCK
-// ▁ LOWER ONE EIGHTH BLOCK
-// ▂ LOWER ONE QUARTER BLOCK
-// ▃ LOWER THREE EIGHTHS BLOCK
-// ▄ LOWER HALF BLOCK
-// ▅ LOWER FIVE EIGHTHS BLOCK
-// ▆ LOWER THREE QUARTERS BLOCK
-// ▇ LOWER SEVEN EIGHTHS BLOCK
-// █ FULL BLOCK
-const blockChar = '█'
-
-// │ LIGHT VERTICAL
-// ┃ HEAVY VERTICAL
-
 const graphBar = (votesCount: number, total: number): string => {
   const percents = total === 0 ? 0 : Math.round((votesCount / total) * 100)
-  const blocks = blockChar.repeat(blocksCount(percents))
-  return `┃${blocks}  ${percents}% (${votesCount})`
+  const blocks = '█'.repeat(blocksCount(percents))
+  return `${blocks}${blocks === '' ? '' : '  '}${percents}% (${votesCount})`
 }
 
 const blocksCount = (percents: number): number => {
