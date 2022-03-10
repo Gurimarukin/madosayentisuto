@@ -38,8 +38,15 @@ export const Application = (
   config: Config,
   discord: DiscordConnector,
 ): IO<void> => {
-  const { logger, ytDlp, ensureIndexes, botStateService, guildStateService, startWebServer } =
-    Context.of(Logger, config, discord)
+  const {
+    logger,
+    ytDlp,
+    ensureIndexes,
+    botStateService,
+    guildStateService,
+    pollResponseService,
+    startWebServer,
+  } = Context.of(Logger, config, discord)
 
   const madEventsPubSub = PubSub<MadEvent>()
   const sub = PubSubUtils.subscribe(logger, madEventsPubSub.observable)
@@ -58,7 +65,7 @@ export const Application = (
       ),
       sub(OtherCommandsObserver(), or(MadEvent.is('InteractionCreate'))),
       sub(
-        PollCommandsObserver(Logger),
+        PollCommandsObserver(Logger, pollResponseService),
         or(MadEvent.is('InteractionCreate'), MadEvent.is('MessageDelete')),
       ),
 

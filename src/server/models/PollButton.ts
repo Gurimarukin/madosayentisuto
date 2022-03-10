@@ -3,30 +3,25 @@ import { pipe } from 'fp-ts/function'
 
 import { List, Maybe } from '../../shared/utils/fp'
 
-import { TSnowflake } from './TSnowflake'
-
 export type PollButton = {
-  readonly messageId: TSnowflake
-  readonly index: number
+  readonly answerIndex: number
 }
 
 const pollButtonPrefix = 'poll'
 
-const of = (messageId: TSnowflake, index: number): PollButton => ({ messageId, index })
+const of = (answerIndex: number): PollButton => ({ answerIndex })
 
-const format = ({ messageId, index }: PollButton): string =>
-  `${pollButtonPrefix}-${TSnowflake.unwrap(messageId)}-${index}`
+const format = ({ answerIndex }: PollButton): string => `${pollButtonPrefix}-${answerIndex}`
 
 const parse = (raw: string): Maybe<PollButton> => {
-  const [rawPoll, rawMessageId, rawIndex, ...rest] = pipe(raw, string.split('-'))
+  const [rawPoll, rawIndex, ...rest] = pipe(raw, string.split('-'))
 
   return pipe(
     Maybe.Do,
     Maybe.filter(() => rawPoll === pollButtonPrefix && List.isEmpty(rest)),
-    Maybe.bind('messageId', () => nonEmptyString(rawMessageId)),
-    Maybe.bind('indexStr', () => nonEmptyString(rawIndex)),
-    Maybe.bind('index', ({ indexStr }) => numberFromString(indexStr)),
-    Maybe.map(({ messageId, index }) => of(TSnowflake.wrap(messageId), index)),
+    Maybe.chain(() => nonEmptyString(rawIndex)),
+    Maybe.chain(numberFromString),
+    Maybe.map(of),
   )
 }
 

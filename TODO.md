@@ -1,4 +1,5 @@
 - safe `runFuture`/`runUnsafe`
+- try to override declaration types to use GuildId, TSnowflake, ...
 
 - Commands:
   - Say

@@ -13,8 +13,10 @@ import type { MongoCollection } from './models/MongoCollection'
 import type { LoggerGetter, LoggerType } from './models/logger/LoggerType'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
+import { PollResponsePersistence } from './persistence/PollResponsePersistence'
 import { BotStateService } from './services/BotStateService'
 import { GuildStateService } from './services/GuildStateService'
+import { PollResponseService } from './services/PollResponseService'
 import { Routes } from './webServer/Routes'
 import { DiscordClientController } from './webServer/controllers/DiscordClientController'
 import { startWebServer } from './webServer/startWebServer'
@@ -25,6 +27,7 @@ export type Context = {
   readonly ensureIndexes: Future<void>
   readonly botStateService: BotStateService
   readonly guildStateService: GuildStateService
+  readonly pollResponseService: PollResponseService
   readonly startWebServer: IO<void>
 }
 
@@ -57,14 +60,19 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
 
   const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
+  const pollResponsePersistence = PollResponsePersistence(Logger, mongoCollection)
 
   const ensureIndexes = pipe(
-    Future.sequenceArray([guildStatePersistence.ensureIndexes]),
+    Future.sequenceArray([
+      guildStatePersistence.ensureIndexes,
+      pollResponsePersistence.ensureIndexes,
+    ]),
     Future.map(() => {}),
   )
 
   const botStateService = BotStateService(Logger, discord, botStatePersistence)
   const guildStateService = GuildStateService(Logger, discord, ytDlp, guildStatePersistence)
+  const pollResponseService = PollResponseService(pollResponsePersistence)
 
   const discordClientController = DiscordClientController(discord)
 
@@ -77,6 +85,7 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
     ensureIndexes,
     botStateService,
     guildStateService,
+    pollResponseService,
     startWebServer: startWebServer_,
   }
 }

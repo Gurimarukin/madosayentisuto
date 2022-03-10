@@ -1,15 +1,35 @@
 import { MessageActionRow, MessageButton } from 'discord.js'
-import type { MessageOptions, User } from 'discord.js'
-import { pipe } from 'fp-ts/function'
+import type { Message, MessageOptions } from 'discord.js'
+import { apply, string } from 'fp-ts'
+import { flow, pipe } from 'fp-ts/function'
 
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import { Either, List, NonEmptyArray } from '../../../shared/utils/fp'
+import { Either, List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import { Colors, constants } from '../../constants'
 import { PollButton } from '../../models/PollButton'
-import type { TSnowflake } from '../../models/TSnowflake'
 import { MessageUtils } from '../../utils/MessageUtils'
+
+const graphWidth = 20 // chars
+
+// emojis
+
+type EmojiKey = keyof typeof constants.emojis.characters
+
+const emojis = pipe(
+  NonEmptyArray.range(97, 122),
+  NonEmptyArray.map(i => constants.emojis.characters[String.fromCharCode(i) as EmojiKey]),
+)
+
+const getEmoji = (i: number): ValidatedNea<string, string> =>
+  pipe(
+    emojis,
+    List.lookup(i),
+    ValidatedNea.fromOption(() => `Couldn't find emoji with index ${i}`),
+  )
+
+// Answer
 
 export type Answer = {
   readonly emoji: string
@@ -31,9 +51,17 @@ const fromIndex = ({ answer, emojiIndex, votesCount }: FromIndex): ValidatedNea<
 
 export const Answer = { fromIndex }
 
-const graphWidth = 20 // chars
+// format
 
-const base = (question: string, answers: NonEmptyArray<Answer>, author: User): MessageOptions => {
+const splitWith = '  '
+
+type Format = {
+  readonly question: string
+  readonly answers: NonEmptyArray<Answer>
+  readonly author: string
+}
+
+const format = ({ question, answers, author }: Format): MessageOptions => {
   const total = pipe(
     answers,
     List.reduce(0, (acc, a) => acc + a.votesCount),
@@ -43,7 +71,7 @@ const base = (question: string, answers: NonEmptyArray<Answer>, author: User): M
     answers,
     NonEmptyArray.map(({ emoji, answer, votesCount }) =>
       StringUtils.stripMargins(
-        `${emoji}  ${answer}
+        `${emoji}${splitWith}${answer}
         |  ${graphBar(votesCount, total)}`,
       ),
     ),
@@ -62,6 +90,20 @@ const base = (question: string, answers: NonEmptyArray<Answer>, author: User): M
         ),
         color: Colors.darkred,
       }),
+    ],
+    components: [
+      new MessageActionRow().addComponents(
+        ...pipe(
+          answers,
+          List.mapWithIndex((i, { emoji, answer }) =>
+            new MessageButton()
+              .setCustomId(PollButton.format(PollButton.of(i)))
+              .setLabel(answer)
+              .setStyle('SECONDARY')
+              .setEmoji(emoji),
+          ),
+        ),
+      ),
     ],
   }
 }
@@ -86,7 +128,7 @@ const blockChar = '█'
 const graphBar = (votesCount: number, total: number): string => {
   const percents = total === 0 ? 0 : Math.round((votesCount / total) * 100)
   const blocks = blockChar.repeat(blocksCount(percents))
-  return `┃${blocks} ${percents}% (${votesCount})`
+  return `┃${blocks}  ${percents}% (${votesCount})`
 }
 
 const blocksCount = (percents: number): number => {
@@ -96,41 +138,71 @@ const blocksCount = (percents: number): number => {
     : Math.ceil(percents / blockUnit)
 }
 
-const withButtons = (
-  messageId: TSnowflake,
-  question: string,
-  answers: NonEmptyArray<Answer>,
-  author: User,
-): MessageOptions => ({
-  ...base(question, answers, author),
-  components: [
-    new MessageActionRow().addComponents(
-      ...pipe(
-        answers,
-        List.mapWithIndex((i, { emoji, answer }) =>
-          new MessageButton()
-            .setCustomId(PollButton.format(PollButton.of(messageId, i)))
-            .setLabel(answer)
-            .setStyle('SECONDARY')
-            .setEmoji(emoji),
-        ),
-      ),
-    ),
-  ],
-})
+// parse
 
-export const pollMessage = { base, withButtons }
+type ParseResult = {
+  readonly question: string
+  readonly answers: NonEmptyArray<EmojiWithAnswer>
+  readonly author: string
+}
 
-type EmojiKey = keyof typeof constants.emojis.characters
+export type EmojiWithAnswer = {
+  readonly emoji: string
+  readonly answer: string
+}
 
-const emojis = pipe(
-  NonEmptyArray.range(97, 122),
-  NonEmptyArray.map(i => constants.emojis.characters[String.fromCharCode(i) as EmojiKey]),
-)
-
-const getEmoji = (i: number): ValidatedNea<string, string> =>
+const parse = (message: Message): Maybe<ParseResult> =>
   pipe(
-    emojis,
-    List.lookup(i),
-    ValidatedNea.fromOption(() => `Couldn't find emoji with index ${i}`),
+    message.embeds,
+    List.lookup(0),
+    Maybe.chain(embed =>
+      apply.sequenceS(Maybe.Apply)({
+        question: Maybe.fromNullable(embed.title),
+        description: parseDescription(embed.description),
+      }),
+    ),
+    Maybe.map(
+      ({ question, description: { answers, author } }): ParseResult => ({
+        question,
+        answers,
+        author,
+      }),
+    ),
   )
+
+type DescriptionParseResult = {
+  readonly answers: NonEmptyArray<EmojiWithAnswer>
+  readonly author: string
+}
+
+const parseDescription = (description: string | null): Maybe<DescriptionParseResult> => {
+  if (description === null) return Maybe.none
+
+  const lines = pipe(description, string.split('\n'))
+
+  return apply.sequenceS(Maybe.Apply)({
+    author: pipe(
+      List.last(lines),
+      Maybe.map(last => last.slice(18, -1)),
+    ),
+    answers: pipe(
+      lines,
+      List.dropRight(3),
+      List.chunksOf(3),
+      List.traverse(Maybe.Applicative)(
+        flow(NonEmptyArray.head, line => {
+          const [emoji, tail] = pipe(line, string.split(splitWith), NonEmptyArray.unprepend)
+
+          if (!List.isNonEmpty(tail)) return Maybe.none
+
+          const answer = pipe(tail, StringUtils.mkString(splitWith))
+
+          return Maybe.some<EmojiWithAnswer>({ emoji, answer })
+        }),
+      ),
+      Maybe.chain(NonEmptyArray.fromReadonlyArray),
+    ),
+  })
+}
+
+export const pollMessage = { format, parse }
