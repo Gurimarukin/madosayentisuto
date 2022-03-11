@@ -4,7 +4,7 @@ export type PollResponseService = ReturnType<typeof PollResponseService>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollResponseService = (pollResponsePersistence: PollResponsePersistence) => {
-  const { lookupByUser, listForMessage, upsert } = pollResponsePersistence
+  const { lookupByUser, listForMessage, upsert, deleteByMessageIds } = pollResponsePersistence
 
-  return { lookupByUser, listForMessage, upsert }
+  return { lookupByUser, listForMessage, upsert, deleteByMessageIds }
 }

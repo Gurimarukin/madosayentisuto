@@ -20,6 +20,7 @@ import { GuildId } from '../../../shared/models/guild/GuildId'
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { IO } from '../../../shared/utils/fp'
+import { Dict } from '../../../shared/utils/fp'
 import { Either } from '../../../shared/utils/fp'
 import { List } from '../../../shared/utils/fp'
 import { Maybe } from '../../../shared/utils/fp'
@@ -55,6 +56,7 @@ export const pollCommand = new SlashCommandBuilder()
 
 export const PollCommandsObserver = (
   Logger: LoggerGetter,
+  clientId: string,
   pollResponseService: PollResponseService,
 ): TObserver<MadEventInteractionCreate | MadEventMessageDelete> => {
   const logger = Logger('PollCommandsObserver')
@@ -275,10 +277,37 @@ export const PollCommandsObserver = (
   }
 
   // onMessageDelete
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function onMessageDelete(messages: List<Message | PartialMessage>): Future<void> {
-    // TODO
-    return Future.unit
+    return pipe(
+      messages,
+      List.filterMap(m =>
+        m.guild !== null && m.author?.id === clientId
+          ? Maybe.some({ guild: m.guild, message: TSnowflake.wrap(m.id) })
+          : Maybe.none,
+      ),
+      NonEmptyArray.fromReadonlyArray,
+      Maybe.fold(
+        () => Future.unit,
+        flow(
+          NonEmptyArray.groupBy(({ guild }) => guild.id),
+          Dict.toReadonlyArray,
+          Future.traverseArray(([guildId, nea]) => {
+            const { guild } = NonEmptyArray.head(nea)
+            const toDelete = pipe(
+              nea,
+              NonEmptyArray.map(e => e.message),
+            )
+            return pipe(
+              pollResponseService.deleteByMessageIds(GuildId.wrap(guildId), toDelete),
+              Future.chainIOEitherK(n =>
+                LogUtils.pretty(logger, guild).info(`Deleted ${n} poll messages`),
+              ),
+            )
+          }),
+          Future.map<List<void>, void>(() => {}),
+        ),
+      ),
+    )
   }
 }
 

@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/function'
 import { GuildId } from '../../shared/models/guild/GuildId'
 import { Future } from '../../shared/utils/fp'
 import type { List, Maybe } from '../../shared/utils/fp'
+import { NonEmptyArray } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import type { MongoCollection } from '../models/MongoCollection'
@@ -69,5 +70,16 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
         }),
       )
     },
+
+    deleteByMessageIds: (guild: GuildId, messages: NonEmptyArray<TSnowflake>): Future<number> =>
+      pipe(
+        collection.collection(coll =>
+          coll.deleteMany({
+            guild: GuildId.unwrap(guild),
+            message: { $in: pipe(messages, NonEmptyArray.map(TSnowflake.unwrap)) },
+          }),
+        ),
+        Future.map(r => r.deletedCount),
+      ),
   }
 }

@@ -38,6 +38,7 @@ export const Application = (
   config: Config,
   discord: DiscordConnector,
 ): IO<void> => {
+  const clientId = config.client.id
   const {
     logger,
     ytDlp,
@@ -65,7 +66,7 @@ export const Application = (
       ),
       sub(OtherCommandsObserver(), or(MadEvent.is('InteractionCreate'))),
       sub(
-        PollCommandsObserver(Logger, pollResponseService),
+        PollCommandsObserver(Logger, clientId, pollResponseService),
         or(MadEvent.is('InteractionCreate'), MadEvent.is('MessageDelete')),
       ),
 
@@ -86,12 +87,12 @@ export const Application = (
       ),
       sub(CallsAutoroleObserver(Logger, guildStateService), or(MadEvent.is('InteractionCreate'))),
       sub(
-        DisconnectVocalObserver(config.client.id, guildStateService),
+        DisconnectVocalObserver(clientId, guildStateService),
         or(MadEvent.is('VoiceStateUpdate')),
       ),
       sub(ItsFridayObserver(Logger, guildStateService), or(MadEvent.is('CronJob'))),
       sub(
-        MusicThreadCleanObserver(Logger, config.client.id, guildStateService),
+        MusicThreadCleanObserver(Logger, clientId, guildStateService),
         or(MadEvent.is('MessageCreate')),
       ),
       sub(NotifyGuildLeaveObserver(Logger), or(MadEvent.is('GuildMemberRemove'))),
@@ -108,7 +109,7 @@ export const Application = (
       publishDiscordEvents(discord, madEventsPubSub.subject),
       scheduleCronJob(Logger, madEventsPubSub.subject),
       sub(
-        VoiceStateUpdateTransformer(Logger, config.client.id, madEventsPubSub.subject),
+        VoiceStateUpdateTransformer(Logger, clientId, madEventsPubSub.subject),
         or(MadEvent.is('VoiceStateUpdate')),
       ),
     ),
