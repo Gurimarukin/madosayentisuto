@@ -95,10 +95,9 @@ const format = ({ question, answers, author }: Format): MessageOptions => {
       new MessageActionRow().addComponents(
         ...pipe(
           answers,
-          List.mapWithIndex((i, { emoji, answer }) =>
+          List.mapWithIndex((i, { emoji }) =>
             new MessageButton()
               .setCustomId(PollButton.format(PollButton.of(i)))
-              .setLabel(answer)
               .setStyle('SECONDARY')
               .setEmoji(emoji),
           ),
