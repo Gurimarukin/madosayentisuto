@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
-import type { APIMessage } from 'discord-api-types'
+import type { APIMessage } from 'discord-api-types/payloads/v9'
 import { Message } from 'discord.js'
 import type {
   ButtonInteraction,
