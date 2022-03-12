@@ -119,11 +119,11 @@ export const PollCommandsObserver = (
             DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
             Future.map(() => {}),
           ),
-        sendAndUpdateInitMessage,
+        initMessage,
       ),
     )
 
-    function sendAndUpdateInitMessage(answers: NonEmptyArray<string>): Future<void> {
+    function initMessage(answers: NonEmptyArray<string>): Future<void> {
       return pipe(
         getWithEmojis(answers),
         futureMaybe.map(withEmojis => ({
@@ -317,6 +317,10 @@ const parseAnswers = (rawAnswers: string): Either<string, NonEmptyArray<string>>
     List.filter(string.isString),
     NonEmptyArray.fromReadonlyArray,
     Either.fromOption(() => `Impossible de lire les réponses: ${rawAnswers}`),
+    Either.filterOrElse(
+      nea => nea.length <= 5,
+      () => 'Impossible de lire les réponses: 5 réponses max',
+    ),
   )
 
 const answersWithCount = (
