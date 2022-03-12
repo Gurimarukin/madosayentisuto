@@ -1,3 +1,4 @@
+import { predicate, string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import type * as C from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
@@ -46,7 +47,13 @@ export const numberFromString: D.Decoder<unknown, number> = pipe(
   }),
 )
 
-const prepareArray = (i: string): List<string> => i.split(',').map(s => s.trim())
+const prepareArray = (i: string): List<string> =>
+  pipe(
+    i,
+    string.split(','),
+    NonEmptyArray.map(string.trim),
+    List.filter(predicate.not(string.isEmpty)),
+  )
 
 export const arrayFromString = <A>(decoder: D.Decoder<unknown, A>): D.Decoder<unknown, List<A>> =>
   pipe(D.string, D.map(prepareArray), D.compose(List.decoder(decoder)))
