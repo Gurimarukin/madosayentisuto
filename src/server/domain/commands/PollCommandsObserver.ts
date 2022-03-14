@@ -167,15 +167,19 @@ export const PollCommandsObserver = (
   // onButtonInteraction
   function onButtonInteraction(interaction: ButtonInteraction): Future<void> {
     return pipe(
-      apply.sequenceS(Maybe.Apply)({
-        guild: Maybe.fromNullable(interaction.guild),
-        button: PollButton.parse(interaction.customId),
-      }),
+      PollButton.parse(interaction.customId),
       Maybe.fold(
         () => Future.unit,
-        ({ guild, button }) => castVote(guild, interaction.message, interaction.user, button),
+        button =>
+          pipe(
+            DiscordConnector.interactionUpdate(interaction),
+            Future.chain(() => futureMaybe.fromNullable(interaction.guild)),
+            futureMaybe.chainFuture(guild =>
+              castVote(guild, interaction.message, interaction.user, button),
+            ),
+            Future.map<Maybe<void>, void>(() => {}),
+          ),
       ),
-      Future.chain(() => DiscordConnector.interactionUpdate(interaction)),
     )
   }
 

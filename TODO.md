@@ -1,5 +1,4 @@
 - safe `runFuture`/`runUnsafe`
-- try to override declaration types to use GuildId, TSnowflake, ...
 - poll:
   - remove own response
   - move to reactions?
@@ -22,6 +21,8 @@ What if 'CronJob' arrives before 'DbReady' (for activity status)? There should b
   - tier-list
   - logs?
   - state?
+
+- try to override declaration types to use GuildId, TSnowflake, ...
 
 ---
 
