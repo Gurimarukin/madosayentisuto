@@ -33,7 +33,7 @@ export const SetDefaultRoleObserver = (
               DiscordConnector.addRole(member, role),
               Future.map(success =>
                 success
-                  ? log.debug(`Added ${member.user.tag} to role @${role.name}`)
+                  ? log.info(`Added ${member.user.tag} to role @${role.name}`)
                   : log.warn(`Couldn't add ${member.user.tag} to role @${role.name}`),
               ),
               Future.chain(Future.fromIOEither),

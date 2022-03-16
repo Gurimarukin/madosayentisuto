@@ -57,7 +57,7 @@ export const LogMadEventsObserver = (logger: LoggerType): TObserver<MadEvent> =>
           } message${event.messages.length < 2 ? '' : 's'}`
       }
     })()
-    return Future.fromIOEither(logger.debug('✉️ ', event.type, message))
+    return Future.fromIOEither(logger.info('✉️ ', event.type, message))
   },
 })
 

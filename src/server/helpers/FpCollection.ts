@@ -41,7 +41,7 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
     options: { readonly session?: ClientSession } = {},
   ): Future<void> =>
     pipe(
-      logger.debug('Ensuring indexes'),
+      logger.info('Ensuring indexes'),
       Future.fromIOEither,
       Future.chain(() =>
         collection(c =>
@@ -144,6 +144,6 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
   drop: (): Future<boolean> =>
     pipe(
       collection(c => c.drop()),
-      Future.chainFirst(() => Future.fromIOEither(logger.info('dropped collection'))),
+      Future.chainFirst(() => Future.fromIOEither(logger.debug('dropped collection'))),
     ),
 })

@@ -108,13 +108,9 @@ export const GuildStateService = (
 
         // upsert new state, but don't wait until it's done; immediatly return state from cache
         return pipe(
-          log.debug('Upserting state'),
-          Future.fromIOEither,
-          Future.chain(() =>
-            guildStatePersistence.upsert(
-              GuildId.wrap(guild.id),
-              GuildStateDb.fromGuildState(newState),
-            ),
+          guildStatePersistence.upsert(
+            GuildId.wrap(guild.id),
+            GuildStateDb.fromGuildState(newState),
           ),
           Future.chain(success => (success ? Future.unit : error())),
           Future.orElse(e => error('-', e)),
@@ -180,13 +176,7 @@ export const GuildStateService = (
     return pipe(
       getFromCache(guildId),
       Future.fromIOEither,
-      futureMaybe.getOrElse(() =>
-        pipe(
-          LogUtils.pretty(logger, guild).debug("State wasn't found in cache, loading it from db"),
-          Future.fromIOEither,
-          Future.chain(() => addGuildToCacheFromDb(guild)),
-        ),
-      ),
+      futureMaybe.getOrElse(() => addGuildToCacheFromDb(guild)),
     )
   }
 

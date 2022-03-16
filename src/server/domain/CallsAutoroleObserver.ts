@@ -54,7 +54,7 @@ export const CallsAutoroleObserver = (
             Future.map(success => {
               const log = LogUtils.pretty(logger, guild)
               return success
-                ? log.debug(`Added ${member.user.tag} to role @${calls.role.name}`)
+                ? log.info(`Added ${member.user.tag} to role @${calls.role.name}`)
                 : log.warn(`Couldn't add ${member.user.tag} to role @${calls.role.name}`)
             }),
             Future.chain(Future.fromIOEither),
@@ -72,7 +72,7 @@ export const CallsAutoroleObserver = (
             Future.map(success => {
               const log = LogUtils.pretty(logger, guild)
               return success
-                ? log.debug(`Removed ${member.user.tag} from role @${calls.role.name}`)
+                ? log.info(`Removed ${member.user.tag} from role @${calls.role.name}`)
                 : log.warn(`Couldn't remove ${member.user.tag} to role @${calls.role.name}`)
             }),
             Future.chain(Future.fromIOEither),

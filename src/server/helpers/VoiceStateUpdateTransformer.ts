@@ -61,7 +61,7 @@ export const VoiceStateUpdateTransformer = (
     channel: VoiceChannel | StageChannel,
   ): Future<void> {
     return pipe(
-      LogUtils.pretty(logger, channel.guild).debug(
+      LogUtils.pretty(logger, channel.guild).info(
         `${member.user.tag} joined the channel #${channel.name}`,
       ),
       IO.chain(() =>
@@ -81,7 +81,7 @@ export const VoiceStateUpdateTransformer = (
     to: VoiceChannel | StageChannel,
   ): Future<void> {
     return pipe(
-      LogUtils.pretty(logger, from.guild).debug(
+      LogUtils.pretty(logger, from.guild).info(
         `${member.user.tag} moved from channel #${from.name} to #${to.name}`,
       ),
       Future.fromIOEither,
@@ -114,7 +114,7 @@ export const VoiceStateUpdateTransformer = (
 
   function onLeftChannel(member: GuildMember, channel: VoiceChannel | StageChannel): Future<void> {
     return pipe(
-      LogUtils.pretty(logger, channel.guild).debug(
+      LogUtils.pretty(logger, channel.guild).info(
         `${member.user.tag} left the channel #${channel.name}`,
       ),
       IO.chain(() =>

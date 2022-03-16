@@ -432,7 +432,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
   //         case 'PlayerPlaying':
   //         case 'PlayerAutoPaused':
   //           const { type, oldState, newState } = event
-  //           return logger.debug(`✉️  ${type} ${oldState.status} > ${newState.status}`)
+  //           return logger.info(`✉️  ${type} ${oldState.status} > ${newState.status}`)
   //       }
   //     }, Future.fromIOEither),
   //   }

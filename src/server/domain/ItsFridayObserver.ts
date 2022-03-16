@@ -49,7 +49,7 @@ export const ItsFridayObserver = (
         flow(
           List.map(c => LogUtils.format(c.guild, null, c)),
           StringUtils.mkString(' '),
-          str => logger.debug(`Sending "It's friday" in channels: ${str}`),
+          str => logger.info(`Sending "It's friday" in channels: ${str}`),
           Future.fromIOEither,
         ),
       ),
