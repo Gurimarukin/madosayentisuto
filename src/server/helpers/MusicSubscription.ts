@@ -33,7 +33,7 @@ import type {
   MusicEventPlayerIdle,
 } from '../models/events/MusicEvent'
 import { MusicEvent } from '../models/events/MusicEvent'
-import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { LoggerGetter, LoggerType } from '../models/logger/LoggerType'
 import { AudioPlayerState } from '../models/music/AudioPlayerState'
 import type { MusicStateConnected } from '../models/music/MusicState'
 import { MusicState } from '../models/music/MusicState'
@@ -41,6 +41,8 @@ import type { Track } from '../models/music/Track'
 import { PubSub } from '../models/rx/PubSub'
 import type { TObserver } from '../models/rx/TObserver'
 import type { TSubject } from '../models/rx/TSubject'
+import type { LoggableChannel } from '../utils/LogUtils'
+import { LogUtils } from '../utils/LogUtils'
 import { PubSubUtils } from '../utils/PubSubUtils'
 import { DiscordConnector } from './DiscordConnector'
 import type { YtDlp } from './YtDlp'
@@ -275,6 +277,8 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
   }
 
   function cleanMessageAndPlayer(currentState: MusicState): Future<void> {
+    const log = (chan?: LoggableChannel): LoggerType => LogUtils.pretty(logger, guild, null, chan)
+
     const orElse = Future.orElse((e: Error) => Future.fromIOEither(logger.warn(e.stack)))
 
     const threadDelete = pipe(
@@ -282,10 +286,15 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
       Maybe.chain(message => Maybe.fromNullable(message.thread)),
       Maybe.fold(
         () => Future.unit,
-        flow(
-          DiscordConnector.threadDelete,
-          Future.map(() => {}),
-        ),
+        thread =>
+          pipe(
+            DiscordConnector.threadDelete(thread),
+            Future.chain(success =>
+              success
+                ? Future.unit
+                : Future.fromIOEither(log(thread).warn("Couldn't delete music thread")),
+            ),
+          ),
       ),
     )
 
@@ -293,10 +302,15 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
       currentState.message,
       Maybe.fold(
         () => Future.unit,
-        flow(
-          DiscordConnector.messageDelete,
-          Future.map(() => {}),
-        ),
+        msg =>
+          pipe(
+            DiscordConnector.messageDelete(msg),
+            Future.chain(success =>
+              success
+                ? Future.unit
+                : Future.fromIOEither(log(msg.channel).warn("Couldn't delete music message")),
+            ),
+          ),
       ),
       orElse,
     )
@@ -307,7 +321,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
         () => IO.unit,
         flow(
           DiscordConnector.audioPlayerStop,
-          IO.map(() => {}),
+          IO.chain(success => (success ? IO.unit : log().warn("Couldn't stop audio player"))),
         ),
       ),
       Future.fromIOEither,

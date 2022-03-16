@@ -13,7 +13,7 @@ import type {
 import type { LoggerType } from '../models/logger/LoggerType'
 import { ChannelUtils } from './ChannelUtils'
 
-type Chan =
+export type LoggableChannel =
   | PartialDMChannel
   | DMChannel
   | TextChannel
@@ -27,7 +27,11 @@ type Chan =
  */
 const __testableFormat =
   (refinement: typeof ChannelUtils.isNamedChannel) =>
-  (guild: Guild | null = null, author: User | null = null, channel: Chan | null = null): string => {
+  (
+    guild: Guild | null = null,
+    author: User | null = null,
+    channel: LoggableChannel | null = null,
+  ): string => {
     const chanName = channel !== null && refinement(channel) ? `#${channel.name}` : ''
     const guildAndChan = guild === null ? chanName : `[${guild.name}${chanName}]`
     const authorStr = author !== null ? `${guildAndChan !== '' ? ' ' : ''}${author.tag}:` : ''
