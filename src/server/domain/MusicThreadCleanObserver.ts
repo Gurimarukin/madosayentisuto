@@ -30,7 +30,7 @@ export const MusicThreadCleanObserver = (
             success
               ? Future.unit
               : Future.fromIOEither(
-                  LogUtils.pretty(logger, message.guild, message.author, message.channel).warn(
+                  LogUtils.pretty(logger, message.guild, message.author, message.channel).info(
                     "Couldn't delete message in music thread",
                   ),
                 ),

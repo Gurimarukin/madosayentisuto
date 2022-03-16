@@ -292,7 +292,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
             Future.chain(success =>
               success
                 ? Future.unit
-                : Future.fromIOEither(log(thread).warn("Couldn't delete music thread")),
+                : Future.fromIOEither(log(thread).info("Couldn't delete music thread")),
             ),
           ),
       ),
@@ -321,7 +321,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
         () => IO.unit,
         flow(
           DiscordConnector.audioPlayerStop,
-          IO.chain(success => (success ? IO.unit : log().warn("Couldn't stop audio player"))),
+          IO.map(() => {}),
         ),
       ),
       Future.fromIOEither,
