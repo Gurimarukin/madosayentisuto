@@ -1,4 +1,5 @@
 - birthdays
+- deploy: on guild join
 - Remind
 - poll:
   - remove own response
