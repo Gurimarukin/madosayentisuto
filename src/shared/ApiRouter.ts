@@ -14,10 +14,12 @@ const { codec } = RouterUtils
 
 // intermediate
 const api = lit('api')
+const apiHealthcheck = api.then(lit('healthcheck'))
 const apiGuilds = api.then(lit('guilds'))
 const apiGuild = api.then(lit('guild')).then(codec('guildId')<GuildId>(str))
 
 // final
+const getApiHealthcheck = m('get', apiHealthcheck)
 const getApiGuilds = m('get', apiGuilds)
 const getApiGuild = m('get', apiGuild)
 
@@ -27,6 +29,7 @@ const getApiGuild = m('get', apiGuild)
 export const apiParsers = {
   get: {
     api: {
+      healthcheck: p(getApiHealthcheck),
       guilds: p(getApiGuilds),
       guild: p(getApiGuild),
     },

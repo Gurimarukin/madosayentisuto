@@ -13,16 +13,17 @@ export type DiscordClientController = ReturnType<typeof DiscordClientController>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const DiscordClientController = (discord: DiscordConnector) => {
-  const guilds: EndedMiddleware = pipe(
-    discord.getGuilds,
-    IO.map(List.map(GuildShortDAO.fromGuild)),
-    EndedMiddleware.fromIOEither,
-    EndedMiddleware.ichain(
-      EndedMiddleware.json(Status.OK, List.encoder(GuildShortDAO.codec).encode),
-    ),
-  )
+  const guilds = (/* user: User */): EndedMiddleware =>
+    pipe(
+      discord.getGuilds,
+      IO.map(List.map(GuildShortDAO.fromGuild)),
+      EndedMiddleware.fromIOEither,
+      EndedMiddleware.ichain(
+        EndedMiddleware.json(Status.OK, List.encoder(GuildShortDAO.codec).encode),
+      ),
+    )
 
-  const guild = (guildId: GuildId): EndedMiddleware =>
+  const guild = (guildId: GuildId) => (/* user: User */): EndedMiddleware =>
     pipe(
       discord.getGuild(guildId),
       IO.map(Maybe.map(GuildDetailDAO.fromGuild)),
