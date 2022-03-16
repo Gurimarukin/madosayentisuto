@@ -8,16 +8,8 @@ import { TSnowflake } from '../../TSnowflake'
 import type { GuildState } from '../GuildState'
 import { CallsDb } from './CallsDb'
 
-const onlyIdProperties = {
-  id: GuildId.codec,
-}
-
-const onlyIdCodec = C.struct(onlyIdProperties)
-
-export type GuildStateDbOnlyId = C.TypeOf<typeof onlyIdCodec>
-export const GuildStateDbOnlyId = { codec: onlyIdCodec }
-
 const properties = {
+  id: GuildId.codec,
   calls: Maybe.codec(CallsDb.codec),
   defaultRole: Maybe.codec(TSnowflake.codec),
   itsFridayChannel: Maybe.codec(TSnowflake.codec),
@@ -25,7 +17,7 @@ const properties = {
 
 const keys = Dict.keys(properties)
 
-const codec = pipe(onlyIdCodec, C.intersect(C.struct(properties)))
+const codec = C.struct(properties)
 
 const empty = (id: GuildId): GuildStateDb => ({
   id,

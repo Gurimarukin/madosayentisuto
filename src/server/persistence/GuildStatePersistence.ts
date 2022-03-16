@@ -10,7 +10,6 @@ import type { TSnowflake } from '../models/TSnowflake'
 import type { GuildStateDbOutput } from '../models/guildState/db/GuildStateDb'
 import {
   GuildStateDb,
-  GuildStateDbOnlyId,
   GuildStateDbOnlyItsFridayChannel,
 } from '../models/guildState/db/GuildStateDb'
 import type { LoggerGetter } from '../models/logger/LoggerType'
@@ -35,14 +34,6 @@ export const GuildStatePersistence = (Logger: LoggerGetter, mongoCollection: Mon
 
     find: (id: GuildId): Future<Maybe<GuildStateDb>> =>
       collection.findOne({ id: GuildId.unwrap(id) }),
-
-    findAllIds: (): Future<List<GuildId>> => {
-      const projection: Projection = { id: 1 }
-      return pipe(
-        collection.findAll([GuildStateDbOnlyId.codec, 'GuildStateDbOnlyId'])({}, { projection }),
-        Future.map(List.map(({ id }) => id)),
-      )
-    },
 
     findAllItsFridayChannels: (): Future<List<TSnowflake>> => {
       const projection: Projection = { itsFridayChannel: 1 }

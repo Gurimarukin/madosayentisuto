@@ -39,8 +39,6 @@ export const GuildStateService = (
   const cache = new Map<GuildId, GuildState>()
 
   return {
-    findAllIds: guildStatePersistence.findAllIds,
-
     findAllItsFridayChannels: (): Future<List<TextChannel>> =>
       pipe(
         guildStatePersistence.findAllItsFridayChannels(),

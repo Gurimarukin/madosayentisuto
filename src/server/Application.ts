@@ -71,10 +71,7 @@ export const Application = (
       ),
 
       // │  └ startup/
-      sub(
-        DeployCommandsObserver(Logger, config, discord, guildStateService),
-        or(MadEvent.is('DbReady')),
-      ),
+      sub(DeployCommandsObserver(Logger, config, discord), or(MadEvent.is('DbReady'))),
       sub(
         IndexesEnsureObserver(Logger, madEventsPubSub.subject, ensureIndexes),
         or(MadEvent.is('AppStarted')),
