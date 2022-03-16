@@ -10,7 +10,7 @@ import type { Tuple } from '../../shared/utils/fp'
 import { Either } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
-import { Config } from '../Config'
+import { config } from '../config/unsafe'
 
 type MyOptions = Omit<Options, 'method'>
 
@@ -21,7 +21,7 @@ export const useHttp = <A>(
   [decoder, decoderName]: Tuple<Decoder<unknown, A>, string>,
 ): SWRResponse<A, unknown> =>
   useSWR<A, unknown, Tuple<HttpMethod, string>>([method, url], (method_, url_) =>
-    ky(new URL(url_, Config.apiHost), { ...options, method: method_ })
+    ky(new URL(url_, config.apiHost), { ...options, method: method_ })
       .json()
       .then(u =>
         pipe(

@@ -3,8 +3,9 @@ import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { ValidatedNea } from '../shared/models/ValidatedNea'
-import type { DecodeKey } from '../shared/utils/ConfigUtils'
-import { ConfigUtils } from '../shared/utils/ConfigUtils'
+import { loadDotEnv } from '../shared/utils/config/loadDotEnv'
+import type { DecodeKey } from '../shared/utils/config/parseConfig'
+import { parseConfig } from '../shared/utils/config/parseConfig'
 import { IO } from '../shared/utils/fp'
 import type { List, NonEmptyArray, Try } from '../shared/utils/fp'
 import { Maybe } from '../shared/utils/fp'
@@ -55,7 +56,7 @@ export type HttpConfig = {
 }
 
 const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
-  ConfigUtils.parseConfig(dict)(r =>
+  parseConfig(dict)(r =>
     ValidatedNea.sequenceS({
       ytDlpPath: r(D.string)('YTDLP_PATH'),
       client: parseClientConfig(r),
@@ -96,6 +97,6 @@ const parseHttpConfig = (r: DecodeKey): ValidatedNea<string, HttpConfig> =>
     allowedOrigins: r(Maybe.decoder(nonEmptyArrayFromString(D.string)))('HTTP_ALLOWED_ORIGINS'),
   })
 
-const load = pipe(ConfigUtils.loadDotEnv, IO.map(parse), IO.chain(IO.fromEither))
+const load = pipe(loadDotEnv, IO.map(parse), IO.chain(IO.fromEither))
 
 export const Config = { load }
