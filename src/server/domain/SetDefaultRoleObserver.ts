@@ -26,7 +26,7 @@ export const SetDefaultRoleObserver = (
         futureMaybe.matchE(
           () =>
             Future.fromIOEither(
-              log.warn(`No default role stored, couldn't add ${member.user.tag}`),
+              log.info(`No default role stored, couldn't add ${member.user.tag}`),
             ),
           role =>
             pipe(

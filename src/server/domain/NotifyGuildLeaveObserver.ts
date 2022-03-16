@@ -90,11 +90,11 @@ const getLastLog =
       apply.sequenceS(Future.ApplyPar)({
         lastMemberKick: pipe(
           DiscordConnector.fetchAuditLogs(guild, { type: 'MEMBER_KICK' }),
-          Future.map(validateLogs(nowMinusNetworkTolerance, userId)),
+          futureMaybe.chainOption(validateLogs(nowMinusNetworkTolerance, userId)),
         ),
         lastMemberBan: pipe(
           DiscordConnector.fetchAuditLogs(guild, { type: 'MEMBER_BAN_ADD' }),
-          Future.map(validateLogs(nowMinusNetworkTolerance, userId)),
+          futureMaybe.chainOption(validateLogs(nowMinusNetworkTolerance, userId)),
         ),
       }),
       Future.map(({ lastMemberKick, lastMemberBan }) =>

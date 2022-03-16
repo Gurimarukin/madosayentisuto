@@ -158,10 +158,11 @@ const of = (client: Client<true>) => {
 const fetchAuditLogs = <A extends GuildAuditLogsResolvable = 'ALL'>(
   guild: Guild,
   options?: Omit<GuildAuditLogsFetchOptions<A>, 'limit'>,
-): Future<Collection<string, GuildAuditLogsEntry<A>>> =>
+): Future<Maybe<Collection<string, GuildAuditLogsEntry<A>>>> =>
   pipe(
     Future.tryCatch(() => guild.fetchAuditLogs<A>({ ...options, limit: constants.fetchLogsLimit })),
-    Future.map(logs => logs.entries),
+    Future.map(logs => Maybe.some(logs.entries)),
+    Future.orElse(e => (isMissingPermissionsError(e) ? Future.right(Maybe.none) : Future.left(e))),
     debugLeft('fetchAuditLogs'),
   )
 
