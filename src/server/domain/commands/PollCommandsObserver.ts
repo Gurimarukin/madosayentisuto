@@ -251,16 +251,7 @@ export const PollCommandsObserver = (
         pipe(
           message_ instanceof Message
             ? Future.right(Maybe.some(message_))
-            : pipe(
-                LogUtils.pretty(logger, guild).info(
-                  'fetchMessage in refreshMessageFromDb:',
-                  message_.id,
-                ),
-                Future.fromIOEither,
-                Future.chain(() =>
-                  DiscordConnector.fetchMessage(guild, TSnowflake.wrap(message_.id)),
-                ),
-              ),
+            : DiscordConnector.fetchMessage(guild, TSnowflake.wrap(message_.id)),
           onNone(() => log.warn(`Couldn't fetch message ${message_.id}`)),
         ),
       ),
