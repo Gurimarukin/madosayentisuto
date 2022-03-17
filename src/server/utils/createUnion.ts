@@ -7,9 +7,8 @@
 /**
  * source: https://github.com/AlexGalays/spacelift/blob/be302c4807b23114de27dda6a90b315c3af56631/src/union.ts
  */
+import type { EnforceNonEmptyDict } from '../../shared/models/EnforceNonEmptyDict'
 import type { Dict, List } from '../../shared/utils/fp'
-
-type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R
 
 type UnionDescription = Dict<string, (...args: List<any>) => any>
 
@@ -41,7 +40,7 @@ type Union<T extends UnionDescription> = {
  * Creates a type-safe union, providing: derived types, factories and type-guards in a single declaration.
  */
 export function createUnion<D extends UnionDescription>(
-  description: EnforceNonEmptyRecord<D>,
+  description: EnforceNonEmptyDict<D>,
 ): UnionResult<D> {
   const factories = Object.keys(description).reduce((acc, key) => {
     const factory = description[key] as (...args: List<any>) => any
