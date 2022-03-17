@@ -6,14 +6,14 @@ import type { Parser } from 'fp-ts-routing'
 import { parse } from 'fp-ts-routing'
 import { Route as FpTsRoute, zero } from 'fp-ts-routing'
 import type { Task } from 'fp-ts/Task'
-import { flow, pipe } from 'fp-ts/function'
+import { flow, identity, pipe } from 'fp-ts/function'
 import type { ResponseEnded } from 'hyper-ts'
 import { Status } from 'hyper-ts'
 import type { Action, ExpressConnection } from 'hyper-ts/lib/express'
 import { toRequestHandler } from 'hyper-ts/lib/express'
 
 import { Method } from '../../shared/models/Method'
-import type { NonEmptyArray } from '../../shared/utils/fp'
+import { StringUtils } from '../../shared/utils/StringUtils'
 import { Dict, Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import type { HttpConfig } from '../Config'
@@ -23,6 +23,9 @@ import type { Route } from './models/Route'
 
 const allowedHeaders = ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 
+// eslint-disable-next-line functional/prefer-readonly-type
+type Header = string | string[] | undefined
+
 export const startWebServer = (
   Logger: LoggerGetter,
   config: HttpConfig,
@@ -30,33 +33,50 @@ export const startWebServer = (
 ): IO<void> => {
   const logger = Logger('WebServer')
 
+  const filterOrigin: (fa: Maybe<Header>) => Maybe<Header> = pipe(
+    config.allowedOrigins,
+    Maybe.fold(
+      () => identity,
+      allowedOrigins =>
+        Maybe.filter(origin =>
+          pipe(
+            allowedOrigins,
+            List.some(allowedOrigin => allowedOrigin === origin),
+          ),
+        ),
+    ),
+  )
+
   const withCors: IO<express.Express> = pipe(
     IO.tryCatch(() => express()),
+    IO.chainFirst(() =>
+      logger.debug(
+        `HTTP_ALLOWED_ORIGINS: ${pipe(
+          config.allowedOrigins,
+          Maybe.map(StringUtils.mkString(', ')),
+          Maybe.toNullable,
+        )}`,
+      ),
+    ),
     IO.chain(app =>
-      pipe(
-        config.allowedOrigins,
-        Maybe.fold(
-          () => IO.tryCatch(() => app),
-          allowedOrigins =>
-            IO.tryCatch(() =>
-              app.use((req, res, next) =>
-                pipe(
-                  Dict.lookup('origin', req.headers),
-                  Maybe.filter(containedIn(allowedOrigins)),
-                  Maybe.fold(
-                    () => next(),
-                    origin => {
-                      /* eslint-disable functional/no-expression-statement */
-                      res.append('Access-Control-Allow-Origin', origin)
-                      res.header('Access-Control-Allow-Headers', allowedHeaders.join(', '))
-                      if (req.method === 'OPTIONS') res.send()
-                      else next()
-                      /* eslint-enable functional/no-expression-statement */
-                    },
-                  ),
-                ),
-              ),
-            ),
+      IO.tryCatch(() =>
+        app.use((req, res, next) =>
+          pipe(
+            req.headers,
+            Dict.lookup('origin'),
+            u => filterOrigin(u),
+            Maybe.fold(next, origin => {
+              /* eslint-disable functional/no-expression-statement */
+              res.append('Access-Control-Allow-Origin', origin)
+              res.header(
+                'Access-Control-Allow-Headers',
+                pipe(allowedHeaders, StringUtils.mkString(', ')),
+              )
+              if (req.method === 'OPTIONS') res.send()
+              else next()
+              /* eslint-enable functional/no-expression-statement */
+            }),
+          ),
         ),
       ),
     ),
@@ -149,14 +169,6 @@ const getAltedRoutes = (routes: List<Route>): Dict<Method, Parser<EndedMiddlewar
     List.reduce(init, (acc, [method, parser]) => ({ ...acc, [method]: acc[method].alt(parser) })),
   )
 }
-
-const containedIn =
-  <A>(allowedOrigins: NonEmptyArray<A>) =>
-  <B>(elem: A | B): elem is A =>
-    pipe(
-      allowedOrigins,
-      List.some(a => a === elem),
-    )
 
 const logConnection = (
   logger: LoggerType,
