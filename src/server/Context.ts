@@ -83,7 +83,7 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
   const healthCheckController = HealthCheckController(healthCheckService)
   const discordClientController = DiscordClientController(discord)
 
-  const withAuth = WithAuth()
+  const withAuth = WithAuth({ isDisabled: config.http.disableAuth })
 
   const routes = Routes(withAuth, healthCheckController, discordClientController)
   const startWebServer_ = startWebServer(Logger, config.http, routes)

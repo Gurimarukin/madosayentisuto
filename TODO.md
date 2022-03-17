@@ -1,3 +1,5 @@
+- decouple autorole and call mention
+- select leave message chan
 - birthdays
 - deploy: on guild join
 - Remind

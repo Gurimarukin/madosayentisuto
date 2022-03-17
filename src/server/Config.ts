@@ -4,9 +4,8 @@ import * as D from 'io-ts/Decoder'
 
 import { ValidatedNea } from '../shared/models/ValidatedNea'
 import { loadDotEnv } from '../shared/utils/config/loadDotEnv'
-import type { DecodeKey } from '../shared/utils/config/parseConfig'
 import { parseConfig } from '../shared/utils/config/parseConfig'
-import { IO } from '../shared/utils/fp'
+import { Either, IO } from '../shared/utils/fp'
 import type { List, NonEmptyArray, Try } from '../shared/utils/fp'
 import { Maybe } from '../shared/utils/fp'
 import {
@@ -19,23 +18,14 @@ import {
 import { TSnowflake } from './models/TSnowflake'
 import { LogLevelOrOff } from './models/logger/LogLevel'
 
+const { seqS } = ValidatedNea
+
 export type Config = {
   readonly ytDlpPath: string
   readonly client: ClientConfig
   readonly admins: NonEmptyArray<TSnowflake>
-  readonly logger: {
-    readonly consoleLevel: LogLevelOrOff
-    readonly discordDm: {
-      readonly level: LogLevelOrOff
-      readonly compact: boolean
-    }
-  }
-  readonly db: {
-    readonly host: string
-    readonly dbName: string
-    readonly user: string
-    readonly password: string
-  }
+  readonly logger: LoggerConfig
+  readonly db: DbConfig
   readonly captain: CaptainConfig
   readonly http: HttpConfig
 }
@@ -43,6 +33,23 @@ export type Config = {
 export type ClientConfig = {
   readonly id: string
   readonly secret: string
+}
+
+type LoggerConfig = {
+  readonly consoleLevel: LogLevelOrOff
+  readonly discordDm: LoggerDiscordDmConfig
+}
+
+type LoggerDiscordDmConfig = {
+  readonly level: LogLevelOrOff
+  readonly compact: boolean
+}
+
+type DbConfig = {
+  readonly host: string
+  readonly dbName: string
+  readonly user: string
+  readonly password: string
 }
 
 export type CaptainConfig = {
@@ -53,49 +60,45 @@ export type CaptainConfig = {
 export type HttpConfig = {
   readonly port: number
   readonly allowedOrigins: Maybe<NonEmptyArray<string>>
+  readonly disableAuth: boolean
 }
 
 const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
   parseConfig(dict)(r =>
-    ValidatedNea.sequenceS({
+    seqS<Config>({
       ytDlpPath: r(D.string)('YTDLP_PATH'),
-      client: parseClientConfig(r),
+      client: seqS<ClientConfig>({
+        id: r(D.string)('CLIENT_ID'),
+        secret: r(D.string)('CLIENT_SECRET'),
+      }),
       admins: r(nonEmptyArrayFromString(TSnowflake.codec))('ADMINS'),
-      logger: ValidatedNea.sequenceS({
+      logger: seqS<LoggerConfig>({
         consoleLevel: r(LogLevelOrOff.codec)('LOGGER_CONSOLE_LEVEL'),
-        discordDm: ValidatedNea.sequenceS({
+        discordDm: seqS<LoggerDiscordDmConfig>({
           level: r(LogLevelOrOff.codec)('LOGGER_DISCORD_DM_LEVEL'),
           compact: r(booleanFromString)('LOGGER_DISCORD_DM_COMPACT'),
         }),
       }),
-      db: ValidatedNea.sequenceS({
+      db: seqS<DbConfig>({
         host: r(D.string)('DB_HOST'),
         dbName: r(D.string)('DB_NAME'),
         user: r(D.string)('DB_USER'),
         password: r(D.string)('DB_PASSWORD'),
       }),
-      captain: parseCaptainConfig(r),
-      http: parseHttpConfig(r),
+      captain: seqS<CaptainConfig>({
+        mentions: r(arrayFromString(D.string))('CAPTAIN_MENTIONS'),
+        thanks: r(arrayFromString(D.string))('CAPTAIN_THANKS'),
+      }),
+      http: seqS<HttpConfig>({
+        port: r(numberFromString)('HTTP_PORT'),
+        allowedOrigins: r(Maybe.decoder(nonEmptyArrayFromString(D.string)))('HTTP_ALLOWED_ORIGINS'),
+        disableAuth: pipe(
+          r(Maybe.decoder(booleanFromString))('HTTP_DISABLE_AUTH'),
+          Either.map(Maybe.getOrElseW(() => false)),
+        ),
+      }),
     }),
   )
-
-const parseClientConfig = (r: DecodeKey): ValidatedNea<string, ClientConfig> =>
-  ValidatedNea.sequenceS({
-    id: r(D.string)('CLIENT_ID'),
-    secret: r(D.string)('CLIENT_SECRET'),
-  })
-
-const parseCaptainConfig = (r: DecodeKey): ValidatedNea<string, CaptainConfig> =>
-  ValidatedNea.sequenceS({
-    mentions: r(arrayFromString(D.string))('CAPTAIN_MENTIONS'),
-    thanks: r(arrayFromString(D.string))('CAPTAIN_THANKS'),
-  })
-
-const parseHttpConfig = (r: DecodeKey): ValidatedNea<string, HttpConfig> =>
-  ValidatedNea.sequenceS({
-    port: r(numberFromString)('HTTP_PORT'),
-    allowedOrigins: r(Maybe.decoder(nonEmptyArrayFromString(D.string)))('HTTP_ALLOWED_ORIGINS'),
-  })
 
 const load = pipe(loadDotEnv, IO.map(parse), IO.chain(IO.fromEither))
 
