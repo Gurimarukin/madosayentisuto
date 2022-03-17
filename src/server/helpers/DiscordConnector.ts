@@ -48,6 +48,7 @@ import type {
   VoiceChannel,
 } from 'discord.js'
 import { Client, DiscordAPIError, Intents } from 'discord.js'
+import { refinement } from 'fp-ts'
 import type { Separated } from 'fp-ts/Separated'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
@@ -533,6 +534,7 @@ const isDiscordAPIError =
   (e: Error): e is DiscordAPIError =>
     e instanceof DiscordAPIError && e.message === message
 
+const isMissingAccessError = isDiscordAPIError('Missing Access')
 export const isMissingPermissionsError = isDiscordAPIError('Missing Permissions')
 export const isUnknownMessageError = isDiscordAPIError('Unknown Message')
 
@@ -545,6 +547,7 @@ const debugLeft = <A>(functionName: string): ((f: Future<A>) => Future<A>) =>
   })
 const nl = (str: string | undefined): string => (str !== undefined ? `${str}\n` : '')
 
+const isFetchMessageError = pipe(isMissingAccessError, refinement.or(isUnknownMessageError))
 const fetchMessageRec =
   (message: string) =>
   (channels: List<TextChannel>): Future<Maybe<Message>> => {
@@ -554,13 +557,7 @@ const fetchMessageRec =
         Future.tryCatch(() => head.messages.fetch(message)),
         Future.map(Maybe.some),
         Future.orElse(e =>
-          isUnknownMessageError(e)
-            ? Future.right<Maybe<Message>>(Maybe.none)
-            : (() => {
-                console.log('channel =', head)
-                console.log('message =', message)
-                return Future.left(e)
-              })(),
+          isFetchMessageError(e) ? Future.right<Maybe<Message>>(Maybe.none) : Future.left(e),
         ),
         futureMaybe.matchE(() => fetchMessageRec(message)(tail), flow(Maybe.some, Future.right)),
       )
