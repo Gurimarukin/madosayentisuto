@@ -554,7 +554,13 @@ const fetchMessageRec =
         Future.tryCatch(() => head.messages.fetch(message)),
         Future.map(Maybe.some),
         Future.orElse(e =>
-          isUnknownMessageError(e) ? Future.right<Maybe<Message>>(Maybe.none) : Future.left(e),
+          isUnknownMessageError(e)
+            ? Future.right<Maybe<Message>>(Maybe.none)
+            : (() => {
+                console.log('channel =', head)
+                console.log('message =', message)
+                return Future.left(e)
+              })(),
         ),
         futureMaybe.matchE(() => fetchMessageRec(message)(tail), flow(Maybe.some, Future.right)),
       )
