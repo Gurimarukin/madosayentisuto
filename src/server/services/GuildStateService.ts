@@ -216,11 +216,17 @@ export const GuildStateService = (
 
   function fetchCalls(guild: Guild): (calls: CallsDb) => Future<Maybe<Calls>> {
     return ({ message, channel, role }) =>
-      apply.sequenceS(futureMaybe.ApplyPar)({
-        message: DiscordConnector.fetchMessage(guild, message),
-        channel: fetchTextChannel(channel),
-        role: DiscordConnector.fetchRole(guild, role),
-      })
+      pipe(
+        LogUtils.pretty(logger, guild).info('fetchMessage in fetchCalls:', message),
+        Future.fromIOEither,
+        Future.chain(() =>
+          apply.sequenceS(futureMaybe.ApplyPar)({
+            message: DiscordConnector.fetchMessage(guild, message),
+            channel: fetchTextChannel(channel),
+            role: DiscordConnector.fetchRole(guild, role),
+          }),
+        ),
+      )
   }
 
   function fetchTextChannel(channelId: TSnowflake): Future<Maybe<TextChannel>> {
