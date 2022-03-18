@@ -30,7 +30,7 @@ export const SetDefaultRoleObserver = (
             ),
           role =>
             pipe(
-              DiscordConnector.addRole(member, role),
+              DiscordConnector.roleAdd(member, role),
               Future.map(success =>
                 success
                   ? log.info(`Added ${member.user.tag} to role @${role.name}`)
