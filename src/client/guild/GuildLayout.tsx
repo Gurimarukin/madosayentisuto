@@ -23,56 +23,48 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
     GuildDetailDAO.codec,
     'GuildDetailDAO',
   ])
+  const { data: guild } = response
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="grow flex flex-col">
-        {basicAsyncRenderer(response)(guild => (
-          <>
-            <div className="flex items-center border-b border-gray1 shadow-lg bg-gray2">
-              <div className="p-3">
-                <Link to={appRoutes.index}>← Retour à la liste des serveurs</Link>
-              </div>
-              <div className="grow flex justify-center items-center gap-x-4 p-2">
-                {pipe(
-                  guild.icon,
-                  Maybe.fold(
-                    () => null,
-                    icon => (
-                      <Link
-                        to={appRoutes.guild.index(guildId)}
-                        className="w-12 h-12 rounded-lg overflow-hidden"
-                      >
-                        <img src={icon} alt={`Icône du serveur ${guild.name}`} />
-                      </Link>
-                    ),
+      <div className="flex items-center border-b border-gray1 shadow-lg pr-5 bg-gray2">
+        <div className="grow flex items-center gap-x-4 p-2">
+          {guild !== undefined ? (
+            <>
+              {pipe(
+                guild.icon,
+                Maybe.fold(
+                  () => null,
+                  icon => (
+                    <Link
+                      to={appRoutes.guild.index(guildId)}
+                      className="w-12 h-12 rounded-lg overflow-hidden"
+                    >
+                      <img src={icon} alt={`Icône du serveur ${guild.name}`} />
+                    </Link>
                   ),
-                )}
-                <Link
-                  to={appRoutes.guild.index(guildId)}
-                  className={cssClasses('text-3xl border-gray4', [
-                    'border-b',
-                    selected === undefined,
-                  ])}
-                >
-                  {guild.name}
-                </Link>
-                <span>•</span>
-                <Link
-                  to={appRoutes.guild.emojis(guildId)}
-                  className={cssClasses('text-xl border-gray4 pt-2 pb-1', [
-                    'border-b',
-                    selected === 'emojis',
-                  ])}
-                >
-                  Émojis
-                </Link>
-              </div>
-            </div>
-            <div className="grow">{children?.(guild)}</div>
-          </>
-        ))}
+                ),
+              )}
+              <Link to={appRoutes.guild.index(guildId)} className="text-3xl border-gray4">
+                {guild.name}
+              </Link>
+              <span>•</span>
+              <Link
+                to={appRoutes.guild.emojis(guildId)}
+                className={`text-xl border-b ${
+                  selected === 'emojis' ? 'border-gray4' : 'border-transparent'
+                } pt-2 pb-1`}
+              >
+                Émojis
+              </Link>
+            </>
+          ) : null}
+        </div>
+        <Link to={appRoutes.index}>↑  Retour à la liste des serveurs</Link>
       </div>
+      {basicAsyncRenderer(response)(g => (
+        <div className="grow">{children?.(g)}</div>
+      ))}
     </div>
   )
 }
