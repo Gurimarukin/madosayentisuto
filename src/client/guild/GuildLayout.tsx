@@ -10,11 +10,10 @@ import { Link } from '../components/Link'
 import { useHttp } from '../hooks/useHttp'
 import { appRoutes } from '../router/AppRouter'
 import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
-import { cssClasses } from '../utils/cssClasses'
 
 type Props = {
   readonly guildId: GuildId
-  readonly selected: 'emojis' | undefined
+  readonly selected: 'emojis' | 'members' | undefined
   readonly children?: (guild: GuildDetailDAO) => React.ReactNode
 }
 
@@ -47,6 +46,15 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
               )}
               <Link to={appRoutes.guild.index(guildId)} className="text-3xl border-gray4">
                 {guild.name}
+              </Link>
+              <span>•</span>
+              <Link
+                to={appRoutes.guild.members(guildId)}
+                className={`text-xl border-b ${
+                  selected === 'members' ? 'border-gray4' : 'border-transparent'
+                } pt-2 pb-1`}
+              >
+                Membres
               </Link>
               <span>•</span>
               <Link

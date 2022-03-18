@@ -11,7 +11,7 @@ type Props = {
   readonly guildId: GuildId
 }
 
-export const GuildEmoji = ({ guildId }: Props): JSX.Element => (
+export const GuildEmojis = ({ guildId }: Props): JSX.Element => (
   <GuildLayout guildId={guildId} selected="emojis">
     {guild => (
       <ul>

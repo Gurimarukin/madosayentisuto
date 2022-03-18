@@ -7,7 +7,8 @@ import { Tuple } from '../../shared/utils/fp'
 
 import { Guilds } from '../Guilds'
 import { Guild } from '../guild/Guild'
-import { GuildEmoji } from '../guild/GuildEmojis'
+import { GuildEmojis } from '../guild/GuildEmojis'
+import { GuildMembers } from '../guild/GuildMembers'
 import { appParsers } from './AppRouter'
 import { useHistory } from './HistoryContext'
 
@@ -20,8 +21,13 @@ const titleWithElementParser = zero<ElementWithTitle>()
   .alt(appParsers.index.map(() => t(<Guilds />)))
   .alt(appParsers.guild.index.map(({ guildId }) => t(<Guild guildId={guildId} />, 'Serveur')))
   .alt(
+    appParsers.guild.members.map(({ guildId }) =>
+      t(<GuildMembers guildId={guildId} />, 'Serveur - membres'),
+    ),
+  )
+  .alt(
     appParsers.guild.emojis.map(({ guildId }) =>
-      t(<GuildEmoji guildId={guildId} />, 'Serveur - émojis'),
+      t(<GuildEmojis guildId={guildId} />, 'Serveur - émojis'),
     ),
   )
 
