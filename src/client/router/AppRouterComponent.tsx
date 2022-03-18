@@ -1,35 +1,47 @@
 import { Route, parse, zero } from 'fp-ts-routing'
+import { pipe } from 'fp-ts/function'
 import React, { useEffect, useMemo } from 'react'
 
 import { Maybe } from '../../shared/utils/fp'
 import { Tuple } from '../../shared/utils/fp'
 
-import { GuildDetail } from '../guildDetail/GuildDetail'
-import { Home } from '../home/Home'
+import { Guilds } from '../Guilds'
+import { Guild } from '../guild/Guild'
+import { GuildEmoji } from '../guild/GuildEmojis'
 import { appParsers } from './AppRouter'
 import { useHistory } from './HistoryContext'
 
-type TitleWithElement = Tuple<Maybe<string>, JSX.Element>
+type ElementWithTitle = Tuple<JSX.Element, Maybe<string>>
 
-const titleWithElementParser = zero<TitleWithElement>()
-  .alt(appParsers.home.map(() => Tuple.of(Maybe.none, <Home />)))
+const t = (element: JSX.Element, title?: string): ElementWithTitle =>
+  Tuple.of(element, Maybe.fromNullable(title))
+
+const titleWithElementParser = zero<ElementWithTitle>()
+  .alt(appParsers.index.map(() => t(<Guilds />)))
+  .alt(appParsers.guild.index.map(({ guildId }) => t(<Guild guildId={guildId} />, 'Serveur')))
   .alt(
-    appParsers.guild.map(({ guildId }) =>
-      Tuple.of(Maybe.some('Serveur'), <GuildDetail guildId={guildId} />),
+    appParsers.guild.emojis.map(({ guildId }) =>
+      t(<GuildEmoji guildId={guildId} />, 'Serveur - émojis'),
     ),
   )
 
 export const AppRouterComponent = (): JSX.Element => {
   const { location } = useHistory()
 
-  const [title, node] = useMemo(() => {
-    const [subTitle, node_] = parse(
+  const [node, title] = useMemo(() => {
+    const [node_, subTitle] = parse(
       titleWithElementParser,
       Route.parse(location.pathname),
-      Tuple.of(Maybe.some('Page non trouvée'), <NotFound />),
+      t(<NotFound />, 'Page non trouvée'),
     )
-    const title_ = ['Jean Plank Bot', ...Maybe.toArray(subTitle)].join(' | ')
-    return [title_, node_]
+    const title_ = `Jean Plank Bot${pipe(
+      subTitle,
+      Maybe.fold(
+        () => '',
+        s => ` | ${s}`,
+      ),
+    )}`
+    return [node_, title_]
   }, [location.pathname])
 
   useEffect(() => {

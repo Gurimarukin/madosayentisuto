@@ -7,9 +7,10 @@ type Props = {
   readonly to: string
   readonly target?: string
   readonly className?: string
+  readonly children?: React.ReactNode
 }
 
-export const Link: React.FC<Props> = ({ to, target, className, children }) => {
+export const Link = ({ to, target, className, children }: Props): JSX.Element => {
   const { navigate } = useHistory()
 
   const onClick = useCallback(

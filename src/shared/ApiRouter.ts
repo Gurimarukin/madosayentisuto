@@ -1,4 +1,5 @@
 import type { Match, Parser } from 'fp-ts-routing'
+import { end } from 'fp-ts-routing'
 import { format, lit, str } from 'fp-ts-routing'
 
 import type { Method } from './models/Method'
@@ -19,9 +20,9 @@ const apiGuilds = api.then(lit('guilds'))
 const apiGuild = api.then(lit('guild')).then(codec('guildId')<GuildId>(str))
 
 // final
-const getApiHealthcheck = m('get', apiHealthcheck)
-const getApiGuilds = m('get', apiGuilds)
-const getApiGuild = m('get', apiGuild)
+const getApiHealthcheck = m('get', apiHealthcheck.then(end))
+const getApiGuilds = m('get', apiGuilds.then(end))
+const getApiGuild = m('get', apiGuild.then(end))
 
 /**
  * parsers

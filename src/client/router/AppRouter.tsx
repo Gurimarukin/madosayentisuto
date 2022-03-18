@@ -9,19 +9,26 @@ const { codec } = RouterUtils
  * matches
  */
 const guildMatch = lit('guild').then(codec('guildId')<GuildId>(str))
+const guildEmojisMatch = guildMatch.then(lit('emojis'))
 
 /**
  * parser
  */
 export const appParsers = {
-  home: end.parser,
-  guild: guildMatch.parser,
+  index: end.parser,
+  guild: {
+    index: guildMatch.then(end).parser,
+    emojis: guildEmojisMatch.then(end).parser,
+  },
 }
 
 /**
  * routes
  */
 export const appRoutes = {
-  home: format(end.formatter, {}),
-  guild: (guildId: GuildId) => format(guildMatch.formatter, { guildId }),
+  index: format(end.formatter, {}),
+  guild: {
+    index: (guildId: GuildId) => format(guildMatch.formatter, { guildId }),
+    emojis: (guildId: GuildId) => format(guildEmojisMatch.formatter, { guildId }),
+  },
 }

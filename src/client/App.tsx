@@ -5,6 +5,8 @@ import { HistoryContextProvider } from './router/HistoryContext'
 
 export const App = (): JSX.Element => (
   <HistoryContextProvider>
-    <AppRouterComponent />
+    <div className="w-[100vw] h-[100vh] font-[baloopaaji2] bg-gray3 text-gray4 overflow-auto">
+      <AppRouterComponent />
+    </div>
   </HistoryContextProvider>
 )

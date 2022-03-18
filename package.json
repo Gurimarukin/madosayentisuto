@@ -86,7 +86,7 @@
     "os-browserify": "^0.3.0",
     "parcel": "2.3.1",
     "path-browserify": "^1.0.1",
-    "postcss": "8.4.7",
+    "postcss": "8.4.8",
     "prettier": "2.5.1",
     "querystring-es3": "0.2.1",
     "sodium": "3.0.2",
