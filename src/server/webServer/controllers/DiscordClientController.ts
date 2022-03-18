@@ -1,9 +1,9 @@
 import { pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 
-import { GuildDetailDAO } from '../../../shared/models/guild/GuildDetailDAO'
 import type { GuildId } from '../../../shared/models/guild/GuildId'
-import { GuildShortDAO } from '../../../shared/models/guild/GuildShortDAO'
+import { GuildView } from '../../../shared/models/guild/GuildView'
+import { GuildViewShort } from '../../../shared/models/guild/GuildViewShort'
 import { IO, List, Maybe } from '../../../shared/utils/fp'
 
 import type { DiscordConnector } from '../../helpers/DiscordConnector'
@@ -16,22 +16,22 @@ export const DiscordClientController = (discord: DiscordConnector) => {
   const guilds = (/* user: User */): EndedMiddleware =>
     pipe(
       discord.getGuilds,
-      IO.map(List.map(GuildShortDAO.fromGuild)),
+      IO.map(List.map(GuildViewShort.fromGuild)),
       EndedMiddleware.fromIOEither,
       EndedMiddleware.ichain(
-        EndedMiddleware.json(Status.OK, List.encoder(GuildShortDAO.codec).encode),
+        EndedMiddleware.json(Status.OK, List.encoder(GuildViewShort.codec).encode),
       ),
     )
 
   const guild = (guildId: GuildId) => (/* user: User */): EndedMiddleware =>
     pipe(
       discord.getGuild(guildId),
-      IO.map(Maybe.map(GuildDetailDAO.fromGuild)),
+      IO.map(Maybe.map(GuildView.fromGuild)),
       EndedMiddleware.fromIOEither,
       EndedMiddleware.ichain(
         Maybe.fold(
           () => EndedMiddleware.text(Status.NotFound)(),
-          EndedMiddleware.json(Status.OK, GuildDetailDAO.codec.encode),
+          EndedMiddleware.json(Status.OK, GuildView.codec.encode),
         ),
       ),
     )

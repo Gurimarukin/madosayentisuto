@@ -10,11 +10,11 @@ const codec = C.struct({
   url: C.string,
 })
 
-const fromGuildEmoji = (e: GuildEmoji): GuildEmojiDAO => ({
+const fromGuildEmoji = (e: GuildEmoji): GuildEmojiView => ({
   id: GuildEmojiId.wrap(e.id),
   name: Maybe.fromNullable(e.name),
   url: e.url,
 })
 
-export type GuildEmojiDAO = C.TypeOf<typeof codec>
-export const GuildEmojiDAO = { codec, fromGuildEmoji }
+export type GuildEmojiView = C.TypeOf<typeof codec>
+export const GuildEmojiView = { codec, fromGuildEmoji }

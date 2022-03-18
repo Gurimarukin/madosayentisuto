@@ -2,8 +2,8 @@ import { pipe } from 'fp-ts/function'
 import React from 'react'
 
 import { apiRoutes } from '../../shared/ApiRouter'
-import { GuildDetailDAO } from '../../shared/models/guild/GuildDetailDAO'
 import type { GuildId } from '../../shared/models/guild/GuildId'
+import { GuildView } from '../../shared/models/guild/GuildView'
 import { Maybe } from '../../shared/utils/fp'
 
 import { Link } from '../components/Link'
@@ -14,14 +14,11 @@ import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
 type Props = {
   readonly guildId: GuildId
   readonly selected: 'emojis' | 'members' | undefined
-  readonly children?: (guild: GuildDetailDAO) => React.ReactNode
+  readonly children?: (guild: GuildView) => React.ReactNode
 }
 
 export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element => {
-  const response = useHttp(apiRoutes.get.api.guild(guildId), {}, [
-    GuildDetailDAO.codec,
-    'GuildDetailDAO',
-  ])
+  const response = useHttp(apiRoutes.get.api.guild(guildId), {}, [GuildView.codec, 'GuildView'])
   const { data: guild } = response
 
   return (

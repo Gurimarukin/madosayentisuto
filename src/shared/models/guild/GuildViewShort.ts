@@ -10,11 +10,11 @@ const codec = C.struct({
   icon: Maybe.codec(C.string),
 })
 
-const fromGuild = (g: Guild): GuildShortDAO => ({
+const fromGuild = (g: Guild): GuildViewShort => ({
   id: GuildId.wrap(g.id),
   name: g.name,
   icon: Maybe.fromNullable(g.iconURL()),
 })
 
-export type GuildShortDAO = C.TypeOf<typeof codec>
-export const GuildShortDAO = { codec, fromGuild }
+export type GuildViewShort = C.TypeOf<typeof codec>
+export const GuildViewShort = { codec, fromGuild }
