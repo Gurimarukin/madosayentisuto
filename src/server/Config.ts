@@ -9,10 +9,10 @@ import { Either, IO } from '../shared/utils/fp'
 import type { List, NonEmptyArray, Try } from '../shared/utils/fp'
 import { Maybe } from '../shared/utils/fp'
 import {
-  arrayFromString,
-  booleanFromString,
-  nonEmptyArrayFromString,
-  numberFromString,
+  ArrayFromString,
+  BooleanFromString,
+  NonEmptyArrayFromString,
+  NumberFromString,
 } from '../shared/utils/ioTsUtils'
 
 import { TSnowflake } from './models/TSnowflake'
@@ -71,12 +71,12 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
         id: r(D.string)('CLIENT_ID'),
         secret: r(D.string)('CLIENT_SECRET'),
       }),
-      admins: r(nonEmptyArrayFromString(TSnowflake.codec))('ADMINS'),
+      admins: r(NonEmptyArrayFromString.decoder(TSnowflake.codec))('ADMINS'),
       logger: seqS<LoggerConfig>({
         consoleLevel: r(LogLevelOrOff.codec)('LOGGER_CONSOLE_LEVEL'),
         discordDm: seqS<LoggerDiscordDmConfig>({
           level: r(LogLevelOrOff.codec)('LOGGER_DISCORD_DM_LEVEL'),
-          compact: r(booleanFromString)('LOGGER_DISCORD_DM_COMPACT'),
+          compact: r(BooleanFromString.decoder)('LOGGER_DISCORD_DM_COMPACT'),
         }),
       }),
       db: seqS<DbConfig>({
@@ -86,14 +86,16 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
         password: r(D.string)('DB_PASSWORD'),
       }),
       captain: seqS<CaptainConfig>({
-        mentions: r(arrayFromString(D.string))('CAPTAIN_MENTIONS'),
-        thanks: r(arrayFromString(D.string))('CAPTAIN_THANKS'),
+        mentions: r(ArrayFromString.decoder(D.string))('CAPTAIN_MENTIONS'),
+        thanks: r(ArrayFromString.decoder(D.string))('CAPTAIN_THANKS'),
       }),
       http: seqS<HttpConfig>({
-        port: r(numberFromString)('HTTP_PORT'),
-        allowedOrigins: r(Maybe.decoder(nonEmptyArrayFromString(D.string)))('HTTP_ALLOWED_ORIGINS'),
+        port: r(NumberFromString.decoder)('HTTP_PORT'),
+        allowedOrigins: r(Maybe.decoder(NonEmptyArrayFromString.decoder(D.string)))(
+          'HTTP_ALLOWED_ORIGINS',
+        ),
         disableAuth: pipe(
-          r(Maybe.decoder(booleanFromString))('HTTP_DISABLE_AUTH'),
+          r(Maybe.decoder(BooleanFromString.decoder))('HTTP_DISABLE_AUTH'),
           Either.map(Maybe.getOrElseW(() => false)),
         ),
       }),

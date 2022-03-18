@@ -69,9 +69,9 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
           ↑  Retour à la liste des serveurs
         </Link>
       </div>
-      {basicAsyncRenderer(response)(g => (
-        <div className="grow">{children?.(g)}</div>
-      ))}
+      <div className="grow flex justify-center">
+        {basicAsyncRenderer(response)(g => children?.(g))}
+      </div>
     </div>
   )
 }

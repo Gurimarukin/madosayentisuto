@@ -50,7 +50,7 @@ const map = optionT.map(Future.Functor)
 
 const none: Future<Maybe<never>> = optionT.zero(Future.Pointed)()
 
-const some = optionT.some(Future.Pointed)
+const some: <A>(a: A) => Future<Maybe<A>> = optionT.some(Future.Pointed)
 
 const apPar_: Apply1<URI>['ap'] = (fab, fa) => pipe(fab, ap(fa))
 const chain_: Chain1<URI>['chain'] = (ma, f) => pipe(ma, chain(f))

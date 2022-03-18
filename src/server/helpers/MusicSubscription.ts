@@ -52,7 +52,7 @@ const { or } = PubSubUtils
 
 type MusicChannel = VoiceChannel | StageChannel
 
-const threadName = 'DJean Plank'
+const threadName = 'D-Jean Plank'
 
 export type MusicSubscription = ReturnType<typeof MusicSubscription>
 

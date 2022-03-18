@@ -34,6 +34,9 @@ export const inspect =
     return a
   }
 
+// eslint-disable-next-line functional/no-return-void
+export const noop = (): void => {}
+
 export type Dict<K extends string, A> = readonlyRecord.ReadonlyRecord<K, A>
 export const Dict = readonlyRecord
 

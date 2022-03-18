@@ -21,7 +21,7 @@ export const Guilds = (): JSX.Element => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-center p-6">
-        <h1 className="text-6xl">Jean Plank Bot</h1>
+        <h1 className="text-6xl">Bot Jean Plank</h1>
       </div>
       <div className="grow flex justify-center items-center flex-wrap">
         {error !== undefined ? (

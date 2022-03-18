@@ -40,7 +40,7 @@ export const AppRouterComponent = (): JSX.Element => {
       Route.parse(location.pathname),
       t(<NotFound />, 'Page non trouvée'),
     )
-    const title_ = `Jean Plank Bot${pipe(
+    const title_ = `Bot Jean Plank${pipe(
       subTitle,
       Maybe.fold(
         () => '',

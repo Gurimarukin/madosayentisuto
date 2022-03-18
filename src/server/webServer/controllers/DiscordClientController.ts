@@ -4,7 +4,9 @@ import { Status } from 'hyper-ts'
 import type { GuildId } from '../../../shared/models/guild/GuildId'
 import { GuildView } from '../../../shared/models/guild/GuildView'
 import { GuildViewShort } from '../../../shared/models/guild/GuildViewShort'
+import { UserId } from '../../../shared/models/guild/UserId'
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
+import { Tuple } from '../../../shared/utils/fp'
 import { Future, IO, List, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
@@ -31,7 +33,14 @@ export const DiscordClientController = (discord: DiscordConnector) => ({
       futureMaybe.bind('members', ({ guild }) =>
         futureMaybe.fromFuture(DiscordConnector.fetchMembers(guild)),
       ),
-      futureMaybe.map(({ guild, members }) => GuildView.fromGuild(guild, members.toJSON())),
+      futureMaybe.bind('birthdays', () =>
+        futureMaybe.some<List<Tuple<UserId, Date>>>([
+          Tuple.of(UserId.wrap('694894023357235211'), new Date('2020-04-01')),
+        ]),
+      ),
+      futureMaybe.map(({ guild, members, birthdays }) =>
+        GuildView.fromGuild(guild, members.toJSON(), birthdays),
+      ),
       EndedMiddleware.fromTaskEither,
       EndedMiddleware.ichain(
         Maybe.fold(
