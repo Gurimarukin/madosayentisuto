@@ -206,18 +206,6 @@ const hasRole = (member: GuildMember, role: Role): boolean => member.roles.cache
  * Write
  */
 
-const addRole = (
-  member: GuildMember,
-  roleOrRoles: RoleResolvable | List<RoleResolvable>,
-  reason?: string,
-): Future<boolean> =>
-  pipe(
-    Future.tryCatch(() => member.roles.add(roleOrRoles, reason)),
-    Future.map(() => true),
-    Future.orElse(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
-    debugLeft('addRole'),
-  )
-
 const audioPlayerCreate: IO<AudioPlayer> = IO.tryCatch(() => createAudioPlayer())
 
 const audioPlayerPause = (audioPlayer: AudioPlayer): IO<boolean> =>
@@ -353,6 +341,20 @@ const messageStartThread = (message: Message, options: StartThreadOptions): Futu
     debugLeft('messageStartThread'),
   )
 
+const roleAdd = (
+  member: GuildMember,
+  roleOrRoles: RoleResolvable | List<RoleResolvable>,
+  reason?: string,
+): Future<boolean> =>
+  pipe(
+    Future.tryCatch(() => member.roles.add(roleOrRoles, reason)),
+    Future.map(() => true),
+    Future.orElse(e =>
+      isMissingAccessOrMissingPermissionError(e) ? Future.right(false) : Future.left(e),
+    ),
+    debugLeft('roleAdd'),
+  )
+
 const roleRemove = (
   member: GuildMember,
   roleOrRoles: RoleResolvable | List<RoleResolvable>,
@@ -361,8 +363,10 @@ const roleRemove = (
   pipe(
     Future.tryCatch(() => member.roles.remove(roleOrRoles, reason)),
     Future.map(() => true),
-    Future.orElse(e => (isMissingPermissionsError(e) ? Future.right(false) : Future.left(e))),
-    debugLeft('removeRole'),
+    Future.orElse(e =>
+      isMissingAccessOrMissingPermissionError(e) ? Future.right(false) : Future.left(e),
+    ),
+    debugLeft('roleRemove'),
   )
 
 const restPutApplicationGuildCommands = (
@@ -417,16 +421,6 @@ const sendPrettyMessage = (
     embeds: [MessageUtils.safeEmbed({ color: Colors.darkred, description: message })],
   })
 
-const threadsCreate = <A extends MyThreadChannelTypes>(
-  threads: ThreadManager<A>,
-  options: MyThreadCreateOptions<A>,
-): Future<Maybe<ThreadChannel>> =>
-  pipe(
-    Future.tryCatch(() => threads.create(options)),
-    Future.map(Maybe.some),
-    debugLeft('threadsCreate'),
-  )
-
 const threadDelete = (thread: ThreadChannel): Future<boolean> =>
   pipe(
     Future.tryCatch(() => thread.delete()),
@@ -437,6 +431,16 @@ const threadDelete = (thread: ThreadChannel): Future<boolean> =>
         : Future.left(e),
     ),
     debugLeft('threadDelete'),
+  )
+
+const threadsCreate = <A extends MyThreadChannelTypes>(
+  threads: ThreadManager<A>,
+  options: MyThreadCreateOptions<A>,
+): Future<Maybe<ThreadChannel>> =>
+  pipe(
+    Future.tryCatch(() => threads.create(options)),
+    Future.map(Maybe.some),
+    debugLeft('threadsCreate'),
   )
 
 const voiceConnectionDestroy = (connection: VoiceConnection): IO<void> =>
@@ -475,7 +479,6 @@ export const DiscordConnector = {
   fetchRole,
   hasRole,
 
-  addRole,
   audioPlayerCreate,
   audioPlayerPause,
   audioPlayerPlayAudioResource,
@@ -493,11 +496,12 @@ export const DiscordConnector = {
   messageEdit,
   messageStartThread,
   restPutApplicationGuildCommands,
+  roleAdd,
   roleRemove,
   sendMessage,
   sendPrettyMessage,
-  threadsCreate,
   threadDelete,
+  threadsCreate,
   voiceConnectionDestroy,
   voiceConnectionJoin,
   voiceConnectionSubscribe,
@@ -538,6 +542,15 @@ const isMissingAccessError = isDiscordAPIError('Missing Access')
 export const isMissingPermissionsError = isDiscordAPIError('Missing Permissions')
 export const isUnknownMessageError = isDiscordAPIError('Unknown Message')
 
+const isMissingAccessOrMissingPermissionError = pipe(
+  isMissingAccessError,
+  refinement.or(isMissingPermissionsError),
+)
+const isMissingAccessOrUnknownMessageError = pipe(
+  isMissingAccessError,
+  refinement.or(isUnknownMessageError),
+)
+
 const debugLeft = <A>(functionName: string): ((f: Future<A>) => Future<A>) =>
   Future.mapLeft(e => {
     const constr = Object.getPrototypeOf(e).contructor
@@ -547,7 +560,6 @@ const debugLeft = <A>(functionName: string): ((f: Future<A>) => Future<A>) =>
   })
 const nl = (str: string | undefined): string => (str !== undefined ? `${str}\n` : '')
 
-const isFetchMessageError = pipe(isMissingAccessError, refinement.or(isUnknownMessageError))
 const fetchMessageRec =
   (message: string) =>
   (channels: List<TextChannel>): Future<Maybe<Message>> => {
@@ -557,7 +569,9 @@ const fetchMessageRec =
         Future.tryCatch(() => head.messages.fetch(message)),
         Future.map(Maybe.some),
         Future.orElse(e =>
-          isFetchMessageError(e) ? Future.right<Maybe<Message>>(Maybe.none) : Future.left(e),
+          isMissingAccessOrUnknownMessageError(e)
+            ? Future.right<Maybe<Message>>(Maybe.none)
+            : Future.left(e),
         ),
         futureMaybe.matchE(() => fetchMessageRec(message)(tail), flow(Maybe.some, Future.right)),
       )

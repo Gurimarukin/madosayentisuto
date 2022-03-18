@@ -5,7 +5,8 @@
 - Remind
 - poll:
   - remove own response
-  - move to reactions?
+  - multiple choice option
+  - anonymous option
 - Say
 - Img
 - ensure indexes: unsubscribe when done?
