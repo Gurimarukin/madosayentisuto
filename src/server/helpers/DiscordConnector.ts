@@ -10,6 +10,7 @@ import type {
 import { createAudioPlayer, joinVoiceChannel } from '@discordjs/voice'
 import { entersState as discordEntersState } from '@discordjs/voice'
 import type { APIMessage, RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
+import { GuildDefaultMessageNotifications } from 'discord-api-types/v9'
 import { Routes } from 'discord-api-types/v9'
 import type {
   AllowedThreadTypeForNewsChannel,
@@ -175,6 +176,12 @@ const fetchMember = (guild: Guild, memberId: TSnowflake): Future<Maybe<GuildMemb
     Future.tryCatch(() => guild.members.fetch(TSnowflake.unwrap(memberId))),
     Future.map(Maybe.some),
     debugLeft('fetchMember'),
+  )
+
+const fetchMembers = (guild: Guild): Future<Collection<string, GuildMember>> =>
+  pipe(
+    Future.tryCatch(() => guild.members.fetch()),
+    debugLeft('fetchMembers'),
   )
 
 const fetchMessage = (guild: Guild, messageId: TSnowflake): Future<Maybe<Message>> =>
@@ -474,6 +481,7 @@ export const DiscordConnector = {
   fetchAuditLogs,
   fetchCommand,
   fetchMember,
+  fetchMembers,
   fetchMessage,
   fetchPartial,
   fetchRole,

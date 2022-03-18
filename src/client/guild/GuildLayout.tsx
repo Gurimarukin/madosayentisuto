@@ -65,7 +65,9 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
             </>
           ) : null}
         </div>
-        <Link to={appRoutes.index}>↑  Retour à la liste des serveurs</Link>
+        <Link to={appRoutes.index} className="my-5">
+          ↑  Retour à la liste des serveurs
+        </Link>
       </div>
       {basicAsyncRenderer(response)(g => (
         <div className="grow">{children?.(g)}</div>
