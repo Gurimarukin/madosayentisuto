@@ -73,7 +73,7 @@ export const CallsAutoroleObserver = (
               const log = LogUtils.pretty(logger, guild)
               return success
                 ? log.info(`Removed ${member.user.tag} from role @${calls.role.name}`)
-                : log.info(`Couldn't remove ${member.user.tag} to role @${calls.role.name}`)
+                : log.info(`Couldn't remove ${member.user.tag} from role @${calls.role.name}`)
             }),
             Future.chain(Future.fromIOEither),
             Future.map(() => true),
