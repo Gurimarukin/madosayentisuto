@@ -4,7 +4,7 @@
   "description": "Hey, mister... I am mad scientist! It's so cool! Sonuvabitch.",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
-    "clean": "rm -fr dist/*",
+    "clean": "rm -fr .parcel-cache dist",
     "prebuild": "yarn run checkEnv && yarn run clean",
     "build": "tsc -p tsconfig.build.json && parcel build src/client/index.html --dist-dir dist/client",
     "checkEnv": "ts-node src/server/checkEnv.ts && ts-node src/client/checkEnv.ts",

@@ -1,7 +1,12 @@
+import type { Lazy } from 'fp-ts/function'
 import { pipe } from 'fp-ts/function'
+import { optional } from 'monocle-ts'
 import React from 'react'
+import type { KeyedMutator } from 'swr'
 
 import type { GuildId } from '../../shared/models/guild/GuildId'
+import { GuildView } from '../../shared/models/guild/GuildView'
+import { MemberView } from '../../shared/models/guild/MemberView'
 import { UserId } from '../../shared/models/guild/UserId'
 import { List, Maybe } from '../../shared/utils/fp'
 
@@ -14,7 +19,7 @@ type Props = {
 
 export const GuildMembers = ({ guildId }: Props): JSX.Element => (
   <GuildLayout guildId={guildId} selected="members">
-    {guild => (
+    {(guild, response) => (
       <div className="w-full">
         <ul className="grid grid-cols-[auto_auto_1fr]">
           <li className="contents text-lg font-bold">
@@ -41,7 +46,11 @@ export const GuildMembers = ({ guildId }: Props): JSX.Element => (
                   <span style={{ color: member.color }}>{member.name}</span>
                 </div>
                 <div className="px-6 group-odd:bg-gray2">
-                  <BirthdayForm initialBirthday={member.birthday} />
+                  <BirthdayForm
+                    userId={member.id}
+                    initialBirthday={member.birthday}
+                    updateBirthday={updateBirthday(response.mutate, member.id)}
+                  />
                 </div>
                 <span className="group-odd:bg-gray2" />
               </li>
@@ -52,3 +61,18 @@ export const GuildMembers = ({ guildId }: Props): JSX.Element => (
     )}
   </GuildLayout>
 )
+
+const updateBirthday = (mutate: KeyedMutator<GuildView>, userId: UserId) => (birthday: Date) =>
+  mutate(
+    ifDefined(() =>
+      pipe(
+        GuildView.Lens.member(userId),
+        optional.modify(MemberView.Lens.birthday.set(Maybe.some(birthday))),
+      ),
+    ),
+    false,
+  )
+
+function ifDefined<A, B>(f: Lazy<(a: A) => B>): (a: A | undefined) => B | undefined {
+  return a => (a === undefined ? undefined : f()(a))
+}

@@ -1,18 +1,23 @@
-/* eslint-disable functional/no-expression-statement */
+/* eslint-disable functional/no-expression-statement, functional/no-return-void */
 import { pipe } from 'fp-ts/function'
 import React, { useCallback, useState } from 'react'
 
-import { MsDuration } from '../../shared/models/MsDuration'
+import { apiRoutes } from '../../shared/ApiRouter'
+import type { UserId } from '../../shared/models/guild/UserId'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import { Future, Maybe } from '../../shared/utils/fp'
+import { Maybe } from '../../shared/utils/fp'
+import { DateFromISOString } from '../../shared/utils/ioTsUtils'
 
 import { Cancel, Check, EditPencil } from '../components/svgs'
+import { http } from '../utils/http'
 
 type Props = {
+  readonly userId: UserId
   readonly initialBirthday: Maybe<Date>
+  readonly updateBirthday: (birthday: Date) => void
 }
 
-export const BirthdayForm = ({ initialBirthday: birthday }: Props): JSX.Element => {
+export const BirthdayForm = ({ userId, initialBirthday, updateBirthday }: Props): JSX.Element => {
   const [isEditing, setIsEditing] = useState(false)
   const [value, setValue] = useState('')
   const [error, setError] = useState<Maybe<string>>(Maybe.none)
@@ -24,14 +29,13 @@ export const BirthdayForm = ({ initialBirthday: birthday }: Props): JSX.Element 
       setIsEditing(true)
       setValue(
         pipe(
-          birthday,
+          initialBirthday,
           Maybe.fold(() => '', StringUtils.formatDate),
         ),
       )
     },
-    [birthday],
+    [initialBirthday],
   )
-
   const stopEditing = useCallback(() => setIsEditing(false), [])
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setValue(e.target.value)
@@ -40,21 +44,15 @@ export const BirthdayForm = ({ initialBirthday: birthday }: Props): JSX.Element 
   const handleFormSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault()
-      console.log('handleFormSubmit')
       pipe(
         validateDate(value),
         Maybe.fold(
           () => setError(Maybe.some('Date invalide')),
-          d => {
+          birthday => {
             setError(Maybe.none)
             setIsLoading(true)
-
-            // TODO: api call
-            Promise.resolve(d)
-              .then(() => pipe(Future.unit, Future.delay(MsDuration.seconds(3)))())
-              .then(() => {
-                // TODO: mutate state
-              })
+            postForm(userId, birthday)
+              .then(() => updateBirthday(birthday))
               .catch(() => setError(Maybe.some("Erreur lors de l'envoi")))
               .finally(() => {
                 setIsEditing(false)
@@ -64,7 +62,7 @@ export const BirthdayForm = ({ initialBirthday: birthday }: Props): JSX.Element 
         ),
       )
     },
-    [value],
+    [userId, updateBirthday, value],
   )
 
   return (
@@ -80,7 +78,7 @@ export const BirthdayForm = ({ initialBirthday: birthday }: Props): JSX.Element 
           />
         ) : (
           pipe(
-            birthday,
+            initialBirthday,
             Maybe.fold(
               () => <span className="w-full text-center">-</span>,
               d => <span>{StringUtils.formatDate(d)}</span>,
@@ -115,3 +113,6 @@ const validateDate = (value: string): Maybe<Date> => {
   const d = new Date(value)
   return isNaN(Number(d)) ? Maybe.none : Maybe.some(d)
 }
+
+const postForm = (member: UserId, birthday: Date): Promise<unknown> =>
+  http(apiRoutes.post.api.member.birthday(member), { json: [DateFromISOString.encoder, birthday] })

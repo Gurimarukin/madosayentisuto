@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/function'
 import React from 'react'
+import type { SWRResponse } from 'swr'
 
 import { apiRoutes } from '../../shared/ApiRouter'
 import type { GuildId } from '../../shared/models/guild/GuildId'
@@ -14,12 +15,15 @@ import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
 type Props = {
   readonly guildId: GuildId
   readonly selected: 'emojis' | 'members' | undefined
-  readonly children?: (guild: GuildView) => React.ReactNode
+  readonly children?: (
+    guild: GuildView,
+    response: Omit<SWRResponse<GuildView, unknown>, 'data'>,
+  ) => React.ReactNode
 }
 
 export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element => {
   const response = useHttp(apiRoutes.get.api.guild(guildId), {}, [GuildView.codec, 'GuildView'])
-  const { data: guild } = response
+  const { data: guild, ...rest } = response
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -70,7 +74,7 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
         </Link>
       </div>
       <div className="grow flex justify-center">
-        {basicAsyncRenderer(response)(g => children?.(g))}
+        {basicAsyncRenderer(response)(g => children?.(g, rest))}
       </div>
     </div>
   )

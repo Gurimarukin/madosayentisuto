@@ -99,4 +99,7 @@ const dateFromISOStringCodec: C.Codec<unknown, string, Date> = C.make(
   dateFromISOStringEncoder,
 )
 
-export const DateFromISOString = { codec: dateFromISOStringCodec }
+export const DateFromISOString = {
+  encoder: dateFromISOStringEncoder,
+  codec: dateFromISOStringCodec,
+}

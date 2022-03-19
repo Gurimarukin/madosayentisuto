@@ -17,6 +17,7 @@ import { parse as shellQuoteParse } from 'shell-quote'
 
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { GuildId } from '../../../shared/models/guild/GuildId'
+import { UserId } from '../../../shared/models/guild/UserId'
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { IO } from '../../../shared/utils/fp'
@@ -193,7 +194,7 @@ export const PollCommandsObserver = (
       pollResponseService.lookupByUser({
         guild: GuildId.wrap(guild.id),
         message: TSnowflake.wrap(message.id),
-        user: TSnowflake.wrap(user.id),
+        user: UserId.wrap(user.id),
       }),
       Future.chain(
         Maybe.fold(
@@ -225,7 +226,7 @@ export const PollCommandsObserver = (
     const response: PollResponse = {
       guild: GuildId.wrap(guild.id),
       message: TSnowflake.wrap(message.id),
-      user: TSnowflake.wrap(user.id),
+      user: UserId.wrap(user.id),
       answerIndex,
     }
 

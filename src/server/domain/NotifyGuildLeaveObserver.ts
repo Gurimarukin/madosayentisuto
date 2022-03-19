@@ -5,12 +5,12 @@ import { apply, date, number, ord, random, semigroup } from 'fp-ts'
 import type { Ord } from 'fp-ts/Ord'
 import { flow, pipe } from 'fp-ts/function'
 
+import { UserId } from '../../shared/models/guild/UserId'
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import { TSnowflake } from '../models/TSnowflake'
 import type { MadEventGuildMemberRemove } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
@@ -46,7 +46,7 @@ export const NotifyGuildLeaveObserver = (
       return pipe(
         date.create,
         Future.fromIO,
-        Future.chain(getLastLog(guild, TSnowflake.wrap(user.id))),
+        Future.chain(getLastLog(guild, UserId.wrap(user.id))),
         futureMaybe.match(
           () =>
             pipe(
@@ -83,7 +83,7 @@ export const NotifyGuildLeaveObserver = (
 }
 
 const getLastLog =
-  (guild: Guild, userId: TSnowflake) =>
+  (guild: Guild, userId: UserId) =>
   (now: Date): Future<Maybe<ValidEntry<KickOrBanAction>>> => {
     const nowMinusNetworkTolerance = pipe(now, DateUtils.minusDuration(constants.networkTolerance))
     return pipe(
@@ -119,7 +119,7 @@ const ordByCreateAt = <A extends CreatedAt>(): Ord<A> =>
     ord.contramap(a => a.createdAt),
   )
 const validateLogs =
-  (nowMinusNetworkTolerance: Date, userId: TSnowflake) =>
+  (nowMinusNetworkTolerance: Date, userId: UserId) =>
   <A extends KickOrBanAction>(
     logs: Collection<string, GuildAuditLogsEntry<A>>,
   ): Maybe<ValidEntry<A>> =>
@@ -131,7 +131,7 @@ const validateLogs =
     )
 
 const validateEntry =
-  <A extends KickOrBanAction>(nowMinusNetworkTolerance: Date, userId: TSnowflake) =>
+  <A extends KickOrBanAction>(nowMinusNetworkTolerance: Date, userId: UserId) =>
   (entry: GuildAuditLogsEntry<A>): Maybe<ValidEntry<A>> =>
     pipe(
       Maybe.some({
@@ -144,7 +144,7 @@ const validateEntry =
       Maybe.filter(
         ({ target }) =>
           ord.leq(date.Ord)(nowMinusNetworkTolerance, entry.createdAt) &&
-          target.id === TSnowflake.unwrap(userId),
+          UserId.wrap(target.id) === userId,
       ),
     )
 

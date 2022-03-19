@@ -4,6 +4,7 @@ import { format, lit, str } from 'fp-ts-routing'
 
 import type { Method } from './models/Method'
 import type { GuildId } from './models/guild/GuildId'
+import type { UserId } from './models/guild/UserId'
 import { RouterUtils } from './utils/RouterUtils'
 import type { Tuple } from './utils/fp'
 
@@ -18,11 +19,15 @@ const api = lit('api')
 const apiHealthcheck = api.then(lit('healthcheck'))
 const apiGuilds = api.then(lit('guilds'))
 const apiGuild = api.then(lit('guild')).then(codec('guildId')<GuildId>(str))
+const apiMember = api.then(lit('member')).then(codec('userId')<UserId>(str))
+const apiMemberBirthday = apiMember.then(lit('birthday'))
 
 // final
 const getApiHealthcheck = m('get', apiHealthcheck.then(end))
 const getApiGuilds = m('get', apiGuilds.then(end))
 const getApiGuild = m('get', apiGuild.then(end))
+
+const postApiMemberBirthday = m('post', apiMemberBirthday)
 
 /**
  * parsers
@@ -35,6 +40,13 @@ export const apiParsers = {
       guild: p(getApiGuild),
     },
   },
+  post: {
+    api: {
+      member: {
+        birthday: p(postApiMemberBirthday),
+      },
+    },
+  },
 }
 
 /**
@@ -45,6 +57,13 @@ export const apiRoutes = {
     api: {
       guilds: r(getApiGuilds, {}),
       guild: (guildId: GuildId) => r(getApiGuild, { guildId }),
+    },
+  },
+  post: {
+    api: {
+      member: {
+        birthday: (userId: UserId) => r(postApiMemberBirthday, { userId }),
+      },
     },
   },
 }

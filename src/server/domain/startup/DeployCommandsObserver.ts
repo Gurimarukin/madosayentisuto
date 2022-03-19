@@ -9,11 +9,11 @@ import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
 
 import { GuildId } from '../../../shared/models/guild/GuildId'
+import { UserId } from '../../../shared/models/guild/UserId'
 import { Future, IO, List, NonEmptyArray } from '../../../shared/utils/fp'
 
 import type { Config } from '../../Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import { TSnowflake } from '../../models/TSnowflake'
 import { CommandId } from '../../models/commands/CommandId'
 import type { PutCommandResult } from '../../models/commands/PutCommandResult'
 import type { MadEventDbReady } from '../../models/events/MadEvent'
@@ -42,7 +42,7 @@ export const DeployCommandsObserver = (
     config.admins,
     NonEmptyArray.map(
       (id): ApplicationCommandPermissionData => ({
-        id: TSnowflake.unwrap(id),
+        id: UserId.unwrap(id),
         type: ApplicationCommandPermissionTypes.USER,
         permission: true,
       }),

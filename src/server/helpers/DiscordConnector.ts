@@ -10,7 +10,6 @@ import type {
 import { createAudioPlayer, joinVoiceChannel } from '@discordjs/voice'
 import { entersState as discordEntersState } from '@discordjs/voice'
 import type { APIMessage, RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
-import { GuildDefaultMessageNotifications } from 'discord-api-types/v9'
 import { Routes } from 'discord-api-types/v9'
 import type {
   AllowedThreadTypeForNewsChannel,
@@ -56,6 +55,7 @@ import * as D from 'io-ts/Decoder'
 
 import { MsDuration } from '../../shared/models/MsDuration'
 import { GuildId } from '../../shared/models/guild/GuildId'
+import { UserId } from '../../shared/models/guild/UserId'
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
@@ -115,14 +115,14 @@ const of = (client: Client<true>) => {
         // ]
       ),
 
-    fetchUser: (userId: TSnowflake): Future<Maybe<User>> =>
+    fetchUser: (userId: UserId): Future<Maybe<User>> =>
       pipe(
-        IO.tryCatch(() => client.users.cache.get(TSnowflake.unwrap(userId))),
+        IO.tryCatch(() => client.users.cache.get(UserId.unwrap(userId))),
         IO.map(Maybe.fromNullable),
         Future.fromIOEither,
         futureMaybe.alt(() =>
           pipe(
-            Future.tryCatch(() => client.users.fetch(TSnowflake.unwrap(userId))),
+            Future.tryCatch(() => client.users.fetch(UserId.unwrap(userId))),
             Future.map(Maybe.some),
           ),
         ),

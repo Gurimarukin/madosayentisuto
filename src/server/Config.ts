@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { ValidatedNea } from '../shared/models/ValidatedNea'
+import { UserId } from '../shared/models/guild/UserId'
 import { loadDotEnv } from '../shared/utils/config/loadDotEnv'
 import { parseConfig } from '../shared/utils/config/parseConfig'
 import { Either, IO } from '../shared/utils/fp'
@@ -15,7 +16,6 @@ import {
   NumberFromString,
 } from '../shared/utils/ioTsUtils'
 
-import { TSnowflake } from './models/TSnowflake'
 import { LogLevelOrOff } from './models/logger/LogLevel'
 
 const { seqS } = ValidatedNea
@@ -23,7 +23,7 @@ const { seqS } = ValidatedNea
 export type Config = {
   readonly ytDlpPath: string
   readonly client: ClientConfig
-  readonly admins: NonEmptyArray<TSnowflake>
+  readonly admins: NonEmptyArray<UserId>
   readonly logger: LoggerConfig
   readonly db: DbConfig
   readonly captain: CaptainConfig
@@ -71,7 +71,7 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
         id: r(D.string)('CLIENT_ID'),
         secret: r(D.string)('CLIENT_SECRET'),
       }),
-      admins: r(NonEmptyArrayFromString.decoder(TSnowflake.codec))('ADMINS'),
+      admins: r(NonEmptyArrayFromString.decoder(UserId.codec))('ADMINS'),
       logger: seqS<LoggerConfig>({
         consoleLevel: r(LogLevelOrOff.codec)('LOGGER_CONSOLE_LEVEL'),
         discordDm: seqS<LoggerDiscordDmConfig>({

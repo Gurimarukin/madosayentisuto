@@ -1,6 +1,7 @@
 import { pipe } from 'fp-ts/function'
 
 import { GuildId } from '../../shared/models/guild/GuildId'
+import { UserId } from '../../shared/models/guild/UserId'
 import { Future } from '../../shared/utils/fp'
 import type { List, Maybe } from '../../shared/utils/fp'
 import { NonEmptyArray } from '../../shared/utils/fp'
@@ -18,7 +19,7 @@ type FindAll = {
 }
 
 type Find = FindAll & {
-  readonly user: TSnowflake
+  readonly user: UserId
 }
 
 export type PollResponsePersistence = ReturnType<typeof PollResponsePersistence>
@@ -43,7 +44,7 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
       collection.findOne({
         guild: GuildId.unwrap(guild),
         message: TSnowflake.unwrap(message),
-        user: TSnowflake.unwrap(user),
+        user: UserId.unwrap(user),
       }),
 
     listForMessage: ({ guild, message }: FindAll): Future<List<PollResponse>> =>
@@ -59,7 +60,7 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
           {
             guild: GuildId.unwrap(guild),
             message: TSnowflake.unwrap(message),
-            user: TSnowflake.unwrap(user),
+            user: UserId.unwrap(user),
           },
           response,
           { upsert: true },
@@ -71,11 +72,11 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
       )
     },
 
-    deleteByMessageIds: (guild: GuildId, messages: NonEmptyArray<TSnowflake>): Future<number> =>
+    deleteByMessageIds: (guildId: GuildId, messages: NonEmptyArray<TSnowflake>): Future<number> =>
       pipe(
         collection.collection(coll =>
           coll.deleteMany({
-            guild: GuildId.unwrap(guild),
+            guild: GuildId.unwrap(guildId),
             message: { $in: pipe(messages, NonEmptyArray.map(TSnowflake.unwrap)) },
           }),
         ),

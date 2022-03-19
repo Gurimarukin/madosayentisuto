@@ -1,4 +1,5 @@
 - decouple autorole and call mention
+- migrate `guild: GuildId` and `user: UserId` in `PollResponse`
 - select leave message chan
 - birthdays
 - deploy: on guild join

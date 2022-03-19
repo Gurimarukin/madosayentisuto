@@ -20,6 +20,7 @@ import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
+import { UserId } from '../../../shared/models/guild/UserId'
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { Tuple } from '../../../shared/utils/fp'
@@ -448,7 +449,7 @@ export const AdminCommandsObserver = (
       futureMaybe.chain(({ user }) =>
         user instanceof User
           ? Future.right(Maybe.some(user))
-          : discord.fetchUser(TSnowflake.wrap(user.id)),
+          : discord.fetchUser(UserId.wrap(user.id)),
       ),
     )
   }

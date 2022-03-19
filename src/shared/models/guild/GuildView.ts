@@ -1,6 +1,8 @@
 import type { Guild, GuildMember } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
+import { lens } from 'monocle-ts'
+import type { Optional } from 'monocle-ts/Optional'
 
 import type { Tuple } from '../../utils/fp'
 import { List, Maybe } from '../../utils/fp'
@@ -29,5 +31,14 @@ const fromGuild = (
   emojis: guild.emojis.cache.toJSON().map(GuildEmojiView.fromGuildEmoji),
 })
 
+const Lens = {
+  member: (member: UserId): Optional<GuildView, MemberView> =>
+    pipe(
+      lens.id<GuildView>(),
+      lens.prop('members'),
+      lens.findFirst(m => m.id === member),
+    ),
+}
+
 export type GuildView = C.TypeOf<typeof codec>
-export const GuildView = { codec, fromGuild }
+export const GuildView = { codec, fromGuild, Lens }

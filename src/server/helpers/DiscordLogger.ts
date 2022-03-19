@@ -1,5 +1,5 @@
 import type { MessageOptions } from 'discord.js'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 import util from 'util'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
@@ -33,9 +33,9 @@ export const DiscordLogger =
           ? formatDMCompact(name, level, rawMsg)
           : formatDMEmbed(name, level, rawMsg)
 
-        const futures = config.admins.map(userId =>
-          pipe(
-            discord.fetchUser(userId),
+        const futures = config.admins.map(
+          flow(
+            discord.fetchUser,
             futureMaybe.chain(user => DiscordConnector.sendMessage(user, msg)),
             Future.map(() => {}),
           ),
