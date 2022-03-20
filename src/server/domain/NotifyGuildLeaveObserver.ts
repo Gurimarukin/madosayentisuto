@@ -1,6 +1,5 @@
 import { bold, userMention } from '@discordjs/builders'
 import type { Dayjs } from 'dayjs'
-import dayjs from 'dayjs'
 import type { Collection, Guild, GuildAuditLogsEntry, TextChannel } from 'discord.js'
 import type { User } from 'discord.js'
 import { apply, date, number, ord, random, semigroup } from 'fp-ts'
@@ -8,6 +7,7 @@ import type { Ord } from 'fp-ts/Ord'
 import { flow, pipe } from 'fp-ts/function'
 
 import { UserId } from '../../shared/models/guild/UserId'
+import { DateUtils } from '../../shared/utils/DateUtils'
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
@@ -17,7 +17,6 @@ import type { MadEventGuildMemberRemove } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import { ChannelUtils } from '../utils/ChannelUtils'
-import { DateUtils } from '../utils/DateUtils'
 import { LogUtils } from '../utils/LogUtils'
 
 type KickOrBanAction = 'MEMBER_KICK' | 'MEMBER_BAN_ADD'
@@ -145,7 +144,7 @@ const validateEntry =
       Maybe.apS('executor', Maybe.fromNullable(entry.executor)),
       Maybe.filter(
         ({ target }) =>
-          ord.leq(DateUtils.Ord)(nowMinusNetworkTolerance, dayjs(entry.createdAt)) &&
+          ord.leq(DateUtils.Ord)(nowMinusNetworkTolerance, DateUtils.of(entry.createdAt)) &&
           UserId.wrap(target.id) === userId,
       ),
     )

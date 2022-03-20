@@ -1,6 +1,7 @@
 import { pipe } from 'fp-ts/function'
 
 import { MsDuration } from '../../shared/models/MsDuration'
+import { DateUtils } from '../../shared/utils/DateUtils'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future, IO } from '../../shared/utils/fp'
 
@@ -8,7 +9,6 @@ import type { MadEventCronJob } from '../models/events/MadEvent'
 import { MadEvent } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TSubject } from '../models/rx/TSubject'
-import { DateUtils } from '../utils/DateUtils'
 
 const cronJobInterval = MsDuration.minutes(1)
 

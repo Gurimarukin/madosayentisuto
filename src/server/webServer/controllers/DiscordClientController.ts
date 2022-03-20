@@ -62,7 +62,7 @@ export const DiscordClientController = (
         () => M.text(Status.BadRequest)(),
         birthdate =>
           pipe(
-            memberBirthdateService.upsert(userId, birthdate),
+            memberBirthdateService.upsert(userId, birthdate.startOf('day')),
             M.fromTaskEither,
             M.ichain(success =>
               success ? M.text(Status.NoContent)() : M.text(Status.BadRequest)(),

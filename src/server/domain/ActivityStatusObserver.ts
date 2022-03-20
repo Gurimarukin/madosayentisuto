@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/function'
 
+import { DateUtils } from '../../shared/utils/DateUtils'
 import { Future, Maybe } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
@@ -10,7 +11,6 @@ import type {
 } from '../models/events/MadEvent'
 import type { TObserver } from '../models/rx/TObserver'
 import type { BotStateService } from '../services/BotStateService'
-import { DateUtils } from '../utils/DateUtils'
 
 export const ActivityStatusObserver = (
   botStateService: BotStateService,

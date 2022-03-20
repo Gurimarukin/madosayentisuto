@@ -1,11 +1,11 @@
 import { pipe } from 'fp-ts/function'
 
+import type { MemberBirthdateOutput } from '../../shared/models/MemberBirthdate'
+import { MemberBirthdate } from '../../shared/models/MemberBirthdate'
 import { UserId } from '../../shared/models/guild/UserId'
 import { Future, List, Tuple } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { MemberBirthdateOutput } from '../models/MemberBirthdate'
-import { MemberBirthdate } from '../models/MemberBirthdate'
 import type { MongoCollection } from '../models/MongoCollection'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 

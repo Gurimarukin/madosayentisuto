@@ -1,3 +1,4 @@
+import type { Dayjs } from 'dayjs'
 import type { Lazy } from 'fp-ts/function'
 import { pipe } from 'fp-ts/function'
 import { optional } from 'monocle-ts'
@@ -63,7 +64,7 @@ export const GuildMembers = ({ guildId }: Props): JSX.Element => (
   </GuildLayout>
 )
 
-const onPostBirthdate = (mutate: KeyedMutator<GuildView>, userId: UserId) => (birthdate: Date) =>
+const onPostBirthdate = (mutate: KeyedMutator<GuildView>, userId: UserId) => (birthdate: Dayjs) =>
   setBirthdate(mutate, userId, Maybe.some(birthdate))
 
 const onDeleteBirthdate = (mutate: KeyedMutator<GuildView>, userId: UserId) => () =>
@@ -72,7 +73,7 @@ const onDeleteBirthdate = (mutate: KeyedMutator<GuildView>, userId: UserId) => (
 const setBirthdate = (
   mutate: KeyedMutator<GuildView>,
   userId: UserId,
-  birthdate: Maybe<Date>,
+  birthdate: Maybe<Dayjs>,
 ): Promise<GuildView | undefined> =>
   mutate(
     ifDefined(() =>

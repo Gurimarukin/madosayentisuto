@@ -4,9 +4,8 @@ import * as C from 'io-ts/Codec'
 import { lens, optional } from 'monocle-ts'
 import type { Optional } from 'monocle-ts/Optional'
 
-import type { MemberBirthdate } from '../../../server/models/MemberBirthdate'
-
 import { List, Maybe } from '../../utils/fp'
+import type { MemberBirthdate } from '../MemberBirthdate'
 import { GuildEmojiView } from './GuildEmojiView'
 import { GuildId } from './GuildId'
 import { MemberView } from './MemberView'

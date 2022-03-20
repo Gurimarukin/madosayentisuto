@@ -1,7 +1,7 @@
 import * as C from 'io-ts/Codec'
 
-import { UserId } from '../../shared/models/guild/UserId'
-import { DateFromISOString } from '../../shared/utils/ioTsUtils'
+import { DateFromISOString } from '../utils/ioTsUtils'
+import { UserId } from './guild/UserId'
 
 const codec = C.struct({
   id: UserId.codec,

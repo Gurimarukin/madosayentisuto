@@ -1,23 +1,27 @@
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import 'dayjs/locale/fr'
-import customParseFormat from 'dayjs/plugin/customParseFormat'
-import utc from 'dayjs/plugin/utc'
+import customParseFormatPlugin from 'dayjs/plugin/customParseFormat'
+import utcPlugin from 'dayjs/plugin/utc'
 import { ord } from 'fp-ts'
 import type { IO } from 'fp-ts/IO'
 import type { Ord } from 'fp-ts/Ord'
 
-import { MsDuration } from '../../shared/models/MsDuration'
+import { MsDuration } from '../models/MsDuration'
 
 /* eslint-disable functional/no-expression-statement */
-dayjs.extend(customParseFormat)
-dayjs.extend(utc)
+dayjs.extend(customParseFormatPlugin)
+dayjs.extend(utcPlugin)
 dayjs.locale('fr')
 /* eslint-enable functional/no-expression-statement */
 
+const of = dayjs
+
 const now: IO<Dayjs> = dayjs
 
-const parse = (value: string, format: string): Dayjs => dayjs(value, format, 'fr', true)
+const utc = dayjs.utc
+
+const parse = (value: string, format: string): Dayjs => utc(value, format, true)
 
 const add =
   (ms: MsDuration) =>
@@ -42,4 +46,4 @@ const Ord_: Ord<Dayjs> = ord.fromCompare((first, second) => {
 
 const is8am = (d: Dayjs): boolean => d.hour() === 8 && d.minute() === 0
 
-export const DateUtils = { now, parse, add, subtract, diff, Ord: Ord_, is8am }
+export const DateUtils = { of, now, utc, parse, add, subtract, diff, Ord: Ord_, is8am }

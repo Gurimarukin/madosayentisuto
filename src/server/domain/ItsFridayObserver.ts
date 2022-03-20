@@ -5,6 +5,7 @@ import { random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import { MsDuration } from '../../shared/models/MsDuration'
+import { DateUtils } from '../../shared/utils/DateUtils'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 
@@ -14,7 +15,6 @@ import type { MadEventCronJob } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import type { GuildStateService } from '../services/GuildStateService'
-import { DateUtils } from '../utils/DateUtils'
 import { LogUtils } from '../utils/LogUtils'
 
 export const ItsFridayObserver = (
