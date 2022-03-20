@@ -45,12 +45,11 @@ export const ItsFridayObserver = (
   function sendAllMessages(): Future<void> {
     return pipe(
       guildStateService.findAllItsFridayChannels(),
-      Future.chainFirst(
+      Future.chainFirstIOEitherK(
         flow(
           List.map(c => LogUtils.format(c.guild, null, c)),
           StringUtils.mkString(' '),
           str => logger.info(`Sending "It's friday" in channels: ${str}`),
-          Future.fromIOEither,
         ),
       ),
       Future.chain(Future.traverseArray(sendMessage)),

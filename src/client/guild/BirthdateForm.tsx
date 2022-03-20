@@ -1,23 +1,31 @@
 /* eslint-disable functional/no-expression-statement, functional/no-return-void */
+import dayjs from 'dayjs'
 import { pipe } from 'fp-ts/function'
 import React, { useCallback, useState } from 'react'
 
 import { apiRoutes } from '../../shared/ApiRouter'
 import type { UserId } from '../../shared/models/guild/UserId'
-import { StringUtils } from '../../shared/utils/StringUtils'
 import { Maybe } from '../../shared/utils/fp'
 import { DateFromISOString } from '../../shared/utils/ioTsUtils'
 
-import { Cancel, Check, EditPencil } from '../components/svgs'
+import { DateUtils } from '../../server/utils/DateUtils'
+
+import { Cancel, Check, EditPencil, Prohibition } from '../components/svgs'
 import { http } from '../utils/http'
 
 type Props = {
   readonly userId: UserId
-  readonly initialBirthday: Maybe<Date>
-  readonly updateBirthday: (birthday: Date) => void
+  readonly initialBirthdate: Maybe<Date>
+  readonly onPostBirthdate: (birthdate: Date) => void
+  readonly onDeleteBirthdate: () => void
 }
 
-export const BirthdayForm = ({ userId, initialBirthday, updateBirthday }: Props): JSX.Element => {
+export const BirthdateForm = ({
+  userId,
+  initialBirthdate,
+  onPostBirthdate,
+  onDeleteBirthdate,
+}: Props): JSX.Element => {
   const [isEditing, setIsEditing] = useState(false)
   const [value, setValue] = useState('')
   const [error, setError] = useState<Maybe<string>>(Maybe.none)
@@ -29,30 +37,37 @@ export const BirthdayForm = ({ userId, initialBirthday, updateBirthday }: Props)
       setIsEditing(true)
       setValue(
         pipe(
-          initialBirthday,
-          Maybe.fold(() => '', StringUtils.formatDate),
+          initialBirthdate,
+          Maybe.fold(
+            () => '',
+            d => dayjs(d).format(dateFormat),
+          ),
         ),
       )
     },
-    [initialBirthday],
+    [initialBirthdate],
   )
-  const stopEditing = useCallback(() => setIsEditing(false), [])
+  const stopEditing = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsEditing(false)
+    setError(Maybe.none)
+  }, [])
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setValue(e.target.value)
     setError(Maybe.none)
   }, [])
   const handleFormSubmit = useCallback(
-    (e: React.FormEvent<HTMLFormElement>) => {
+    (e: React.FormEvent) => {
       e.preventDefault()
       pipe(
         validateDate(value),
         Maybe.fold(
           () => setError(Maybe.some('Date invalide')),
-          birthday => {
+          birthdate => {
             setError(Maybe.none)
             setIsLoading(true)
-            postForm(userId, birthday)
-              .then(() => updateBirthday(birthday))
+            postBirthdate(userId, birthdate)
+              .then(() => onPostBirthdate(birthdate))
               .catch(() => setError(Maybe.some("Erreur lors de l'envoi")))
               .finally(() => {
                 setIsEditing(false)
@@ -62,7 +77,20 @@ export const BirthdayForm = ({ userId, initialBirthday, updateBirthday }: Props)
         ),
       )
     },
-    [userId, updateBirthday, value],
+    [userId, onPostBirthdate, value],
+  )
+  const handleRemoveBirthdate = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      setError(Maybe.none)
+      setIsLoading(true)
+      deleteBirthdate(userId)
+        .then(() => onDeleteBirthdate())
+        .catch(() => setError(Maybe.some("Erreur lors de l'envoi")))
+        .finally(() => setIsLoading(false))
+      onDeleteBirthdate()
+    },
+    [onDeleteBirthdate, userId],
   )
 
   return (
@@ -70,6 +98,7 @@ export const BirthdayForm = ({ userId, initialBirthday, updateBirthday }: Props)
       <div className="w-[12ch] flex justify-center">
         {isEditing ? (
           <input
+            ref={onInputMount}
             type="text"
             value={value}
             onChange={handleInputChange}
@@ -78,15 +107,15 @@ export const BirthdayForm = ({ userId, initialBirthday, updateBirthday }: Props)
           />
         ) : (
           pipe(
-            initialBirthday,
+            initialBirthdate,
             Maybe.fold(
               () => <span className="w-full text-center">-</span>,
-              d => <span>{StringUtils.formatDate(d)}</span>,
+              d => <span>{dayjs(d).format(dateFormat)}</span>,
             ),
           )
         )}
       </div>
-      <div className="w-16 flex justify-center gap-x-1">
+      <div className="w-16 flex justify-between gap-x-1">
         {isLoading ? (
           <pre>loading...</pre>
         ) : isEditing ? (
@@ -94,14 +123,21 @@ export const BirthdayForm = ({ userId, initialBirthday, updateBirthday }: Props)
             <button type="submit" className="text-3xl">
               <Check />
             </button>
-            <button type="button" onClick={stopEditing} className="text-3xl">
+            <button onClick={stopEditing} className="text-3xl">
               <Cancel />
             </button>
           </>
         ) : (
-          <button onClick={startEditing} className="text-xl">
-            <EditPencil />
-          </button>
+          <>
+            <button onClick={startEditing} className="text-xl">
+              <EditPencil />
+            </button>
+            {Maybe.isSome(initialBirthdate) ? (
+              <button onClick={handleRemoveBirthdate} className="text-xl">
+                <Prohibition />
+              </button>
+            ) : null}
+          </>
         )}
       </div>
       <span className="grow text-red-700 text-sm">{Maybe.toNullable(error)}</span>
@@ -109,10 +145,18 @@ export const BirthdayForm = ({ userId, initialBirthday, updateBirthday }: Props)
   )
 }
 
+const onInputMount = (e: HTMLInputElement | null): void => e?.select()
+
+const dateFormat = 'DD/MM/YYYY'
 const validateDate = (value: string): Maybe<Date> => {
-  const d = new Date(value)
-  return isNaN(Number(d)) ? Maybe.none : Maybe.some(d)
+  const d = DateUtils.parse(value, dateFormat)
+  return d.isValid() ? Maybe.some(d.toDate()) : Maybe.none
 }
 
-const postForm = (member: UserId, birthday: Date): Promise<unknown> =>
-  http(apiRoutes.post.api.member.birthday(member), { json: [DateFromISOString.encoder, birthday] })
+const postBirthdate = (member: UserId, birthdate: Date): Promise<unknown> =>
+  http(apiRoutes.post.api.member.birthdate(member), {
+    json: [DateFromISOString.encoder, birthdate],
+  })
+
+const deleteBirthdate = (member: UserId): Promise<unknown> =>
+  http(apiRoutes.delete_.api.member.birthdate(member))

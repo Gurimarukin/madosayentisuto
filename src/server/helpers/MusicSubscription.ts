@@ -279,7 +279,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
   function cleanMessageAndPlayer(currentState: MusicState): Future<void> {
     const log = (chan?: LoggableChannel): LoggerType => LogUtils.pretty(logger, guild, null, chan)
 
-    const orElse = Future.orElse((e: Error) => Future.fromIOEither(logger.warn(e.stack)))
+    const orElse = Future.orElseIOEitherK(e => logger.warn(e.stack))
 
     const threadDelete = pipe(
       currentState.message,
@@ -402,9 +402,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
       MusicState.getVoiceConnection,
       Maybe.fold(() => IO.unit, DiscordConnector.voiceConnectionDestroy),
       Future.fromIOEither,
-      Future.orElse(e =>
-        isAlreadyDestroyedError(e) ? Future.unit : Future.fromIOEither(logger.warn(e.stack)),
-      ),
+      Future.orElseIOEitherK(e => (isAlreadyDestroyedError(e) ? IO.unit : logger.warn(e.stack))),
     )
   }
 

@@ -2,13 +2,13 @@ import type { MethodWithParser } from '../../shared/ApiRouter'
 import { apiParsers } from '../../shared/ApiRouter'
 import type { List } from '../../shared/utils/fp'
 
-import type { EndedMiddleware } from '../webServer/models/EndedMiddleware'
 import type { DiscordClientController } from './controllers/DiscordClientController'
 import type { HealthCheckController } from './controllers/HealthCheckController'
-import type { WithAuth } from './controllers/WithAuth'
+import type { EndedMiddleware } from './models/MyMiddleware'
 import type { Route } from './models/Route'
+import type { WithAuth } from './utils/WithAuth'
 
-const { get } = apiParsers
+const { get, post, delete_ } = apiParsers
 
 export const Routes = (
   withAuth: WithAuth,
@@ -17,8 +17,15 @@ export const Routes = (
 ): List<Route> => [
   r(get.api.healthcheck, () => healthCheckController.check),
 
-  r(get.api.guilds, () => withAuth(discordClientController.guilds)),
-  r(get.api.guild, ({ guildId }) => withAuth(discordClientController.guild(guildId))),
+  r(get.api.guilds, () => withAuth(discordClientController.listGuilds)),
+  r(get.api.guild, ({ guildId }) => withAuth(discordClientController.findGuild(guildId))),
+
+  r(post.api.member.birthdate, ({ userId }) =>
+    withAuth(discordClientController.updateMemberBirthdate(userId)),
+  ),
+  r(delete_.api.member.birthdate, ({ userId }) =>
+    withAuth(discordClientController.deleteMemberBirthdate(userId)),
+  ),
 ]
 
 // get Route

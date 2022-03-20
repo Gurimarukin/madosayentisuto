@@ -18,6 +18,7 @@ import { Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
+import type { Decoder } from 'io-ts/Decoder'
 
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { UserId } from '../../../shared/models/guild/UserId'
@@ -515,5 +516,5 @@ const formatCalls = ({ message, channel, role }: Calls): string =>
 
 const formatActivity = ({ type, name }: Activity): string => inlineCode(`${type} ${name}`)
 
-const decode = <A>(decoder: D.Decoder<unknown, A>, u: unknown): ValidatedNea<string, A> =>
+const decode = <A>(decoder: Decoder<unknown, A>, u: unknown): ValidatedNea<string, A> =>
   pipe(decoder.decode(u), Either.mapLeft(flow(D.draw, NonEmptyArray.of)))

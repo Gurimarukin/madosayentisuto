@@ -25,7 +25,7 @@ export const BotStatePersistence = (Logger: LoggerGetter, mongoCollection: Mongo
     upsert: (state: BotState): Future<boolean> =>
       pipe(
         collection.updateOne({}, state, { upsert: true }),
-        Future.map(r => r.modifiedCount + r.upsertedCount === 1),
+        Future.map(r => r.modifiedCount + r.upsertedCount <= 1),
       ),
   }
 }

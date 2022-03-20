@@ -5,7 +5,7 @@ import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
-import { Future, Maybe } from '../../shared/utils/fp'
+import { Future, IO, Maybe } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { initCallsButton, initCallsMessage } from '../helpers/messages/initCallsMessage'
@@ -106,14 +106,10 @@ export const CallsAutoroleObserver = (
   ): Future<Maybe<GuildMember | APIInteractionGuildMember>> {
     return pipe(
       futureMaybe.fromNullable(interaction.member),
-      Future.chainFirst(
+      Future.chainFirstIOEitherK(
         Maybe.fold(
-          () =>
-            pipe(
-              LogUtils.pretty(logger, guild).warn('interaction.member was null'),
-              Future.fromIOEither,
-            ),
-          () => Future.unit,
+          () => LogUtils.pretty(logger, guild).warn('interaction.member was null'),
+          () => IO.unit,
         ),
       ),
     )

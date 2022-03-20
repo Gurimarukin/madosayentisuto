@@ -54,7 +54,7 @@ const subscribe =
       TObservable.subscribe({
         next: flow(
           next,
-          Future.orElse(e => Future.fromIOEither(logger.error(e.stack))),
+          Future.orElseIOEitherK(e => logger.error(e.stack)),
         ),
       }),
     )

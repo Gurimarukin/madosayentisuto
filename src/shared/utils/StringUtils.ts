@@ -80,17 +80,8 @@ const randomCase = (str: string): string =>
     }),
   )
 
-// yyyy/MM/dd
-const formatDate = (date: Date): string => {
-  const year = date.getFullYear()
-  const month = pad10(date.getMonth() + 1)
-  const day = pad10(date.getDate())
-  return `${year}/${month}/${day} `
-}
-
 export const StringUtils = {
   ellipse,
-  formatDate,
   isEmpty,
   isString,
   matcher1,

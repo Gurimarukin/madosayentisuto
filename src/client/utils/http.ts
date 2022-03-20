@@ -1,6 +1,6 @@
 import { flow, pipe } from 'fp-ts/function'
-import type * as D from 'io-ts/Decoder'
-import type * as E from 'io-ts/Encoder'
+import type { Decoder } from 'io-ts/Decoder'
+import type { Encoder } from 'io-ts/Encoder'
 import ky from 'ky'
 import type { HttpMethod, Options } from 'ky/distribution/types/options'
 
@@ -11,22 +11,22 @@ import { decodeError } from '../../shared/utils/ioTsUtils'
 import { config } from '../config/unsafe'
 
 export type HttpOptions<O, B> = Omit<Options, 'method' | 'json'> & {
-  readonly json?: Tuple<E.Encoder<O, B>, B>
+  readonly json?: Tuple<Encoder<O, B>, B>
 }
 
 export function http<O, B>(
   methodWithUrl: Tuple<HttpMethod, string>,
-  options: HttpOptions<O, B>,
+  options?: HttpOptions<O, B>,
 ): Promise<unknown>
 export function http<A, O, B>(
   methodWithUrl: Tuple<HttpMethod, string>,
   options: HttpOptions<O, B>,
-  decoderWithName: Tuple<D.Decoder<unknown, A>, string>,
+  decoderWithName: Tuple<Decoder<unknown, A>, string>,
 ): Promise<A>
 export function http<A, O, B>(
   [method, url]: Tuple<HttpMethod, string>,
-  options: HttpOptions<O, B>,
-  decoderWithName?: Tuple<D.Decoder<unknown, A>, string>,
+  options: HttpOptions<O, B> = {},
+  decoderWithName?: Tuple<Decoder<unknown, A>, string>,
 ): Promise<A> {
   const json = ((): O | undefined => {
     if (options.json === undefined) return undefined

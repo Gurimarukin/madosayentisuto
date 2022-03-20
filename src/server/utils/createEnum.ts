@@ -1,15 +1,18 @@
 import * as C from 'io-ts/Codec'
+import type { Codec } from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
+import type { Decoder } from 'io-ts/Decoder'
 import * as E from 'io-ts/Encoder'
+import type { Encoder } from 'io-ts/Encoder'
 import type { Literal } from 'io-ts/Schemable'
 
 import type { List } from '../../shared/utils/fp'
 
 type Res<A> = {
   readonly values: List<A>
-  readonly decoder: D.Decoder<unknown, A>
-  readonly encoder: E.Encoder<A, A>
-  readonly codec: C.Codec<unknown, A, A>
+  readonly decoder: Decoder<unknown, A>
+  readonly encoder: Encoder<A, A>
+  readonly codec: Codec<unknown, A, A>
   readonly T: A
 }
 

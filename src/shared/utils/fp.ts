@@ -16,8 +16,9 @@ import type { Lazy } from 'fp-ts/function'
 import { identity } from 'fp-ts/function'
 import { flow, pipe } from 'fp-ts/function'
 import * as C_ from 'io-ts/Codec'
+import type { Codec } from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
-import type * as E_ from 'io-ts/Encoder'
+import type { Decoder } from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
 
 import { MsDuration } from '../models/MsDuration'
@@ -50,13 +51,13 @@ const maybeToArray: <A>(fa: Maybe<A>) => List<A> = option.fold(
   () => [],
   a => [a],
 )
-const maybeDecoder = <I, A>(decoder: D.Decoder<I, A>): D.Decoder<I, Maybe<A>> => ({
+const maybeDecoder = <I, A>(decoder: Decoder<I, A>): Decoder<I, Maybe<A>> => ({
   decode: (u: I) =>
     u === null || u === undefined
       ? D.success(option.none)
       : pipe(decoder.decode(u), either.map(option.some)),
 })
-const maybeEncoder = <O, A>(encoder: E_.Encoder<O, A>): E_.Encoder<O | null, Maybe<A>> => ({
+const maybeEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<O | null, Maybe<A>> => ({
   encode: flow(option.map(encoder.encode), option.toNullable),
 })
 export const Maybe = {
@@ -66,12 +67,12 @@ export const Maybe = {
   toArray: maybeToArray,
   decoder: maybeDecoder,
   encoder: maybeEncoder,
-  codec: <O, A>(codec: C_.Codec<unknown, O, A>): C_.Codec<unknown, O | null, Maybe<A>> =>
+  codec: <O, A>(codec: Codec<unknown, O, A>): Codec<unknown, O | null, Maybe<A>> =>
     C_.make(maybeDecoder(codec), maybeEncoder(codec)),
 }
 
 export type NonEmptyArray<A> = readonlyNonEmptyArray.ReadonlyNonEmptyArray<A>
-const neaDecoder = <A>(decoder: D.Decoder<unknown, A>): D.Decoder<unknown, NonEmptyArray<A>> =>
+const neaDecoder = <A>(decoder: Decoder<unknown, A>): Decoder<unknown, NonEmptyArray<A>> =>
   pipe(D.array(decoder), D.refine<List<A>, NonEmptyArray<A>>(List.isNonEmpty, 'NonEmptyArray'))
 const neaEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<NonEmptyArray<O>, NonEmptyArray<A>> => ({
   encode: NonEmptyArray.map(encoder.encode),
@@ -80,15 +81,13 @@ export const NonEmptyArray = {
   ...readonlyNonEmptyArray,
   decoder: neaDecoder,
   encoder: neaEncoder,
-  codec: <O, A>(
-    codec: C_.Codec<unknown, O, A>,
-  ): C_.Codec<unknown, NonEmptyArray<O>, NonEmptyArray<A>> =>
+  codec: <O, A>(codec: Codec<unknown, O, A>): Codec<unknown, NonEmptyArray<O>, NonEmptyArray<A>> =>
     C_.make(neaDecoder(codec), neaEncoder(codec)),
 }
 
 // can't just alias it to `Array`
 export type List<A> = ReadonlyArray<A>
-const listDecoder: <A>(decoder: D.Decoder<unknown, A>) => D.Decoder<unknown, List<A>> = D.array
+const listDecoder: <A>(decoder: Decoder<unknown, A>) => Decoder<unknown, List<A>> = D.array
 const listEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<List<O>, List<A>> => ({
   encode: readonlyArray.map(encoder.encode),
 })
@@ -99,7 +98,7 @@ export const List = {
   concat: <A>(a: List<A>, b: List<A>): List<A> => [...a, ...b],
   decoder: listDecoder,
   encoder: listEncoder,
-  codec: <O, A>(codec: C_.Codec<unknown, O, A>): C_.Codec<unknown, List<O>, List<A>> =>
+  codec: <O, A>(codec: Codec<unknown, O, A>): Codec<unknown, List<O>, List<A>> =>
     C_.make(listDecoder(codec), listEncoder(codec)),
 }
 
@@ -136,6 +135,14 @@ export const Future = {
   ...taskEither,
   right: futureRight,
   left: <A = never>(e: Error): Future<A> => taskEither.left(e),
+  chainFirstIOEitherK:
+    <A, B>(f: (a: A) => IO<B>) =>
+    (fa: Future<A>): Future<A> =>
+      pipe(fa, taskEither.chainFirst(flow(f, taskEither.fromIOEither))),
+  orElseIOEitherK:
+    <A>(f: (e: Error) => IO<A>) =>
+    (fa: Future<A>): Future<A> =>
+      pipe(fa, taskEither.orElse(flow(f, Future.fromIOEither))),
   fromIO: futureFromIO,
   tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, unknownAsError),
   unit: futureRight<void>(undefined),

@@ -1,6 +1,6 @@
-import type * as E from 'io-ts/Encoder'
+import type { Encoder } from 'io-ts/Encoder'
 
 export const jsonStringify =
-  <O, A>(encoder: E.Encoder<O, A>) =>
+  <O, A>(encoder: Encoder<O, A>) =>
   (a: A): string =>
     JSON.stringify(encoder.encode(a))

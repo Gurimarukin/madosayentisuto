@@ -74,12 +74,10 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
 
     deleteByMessageIds: (guildId: GuildId, messages: NonEmptyArray<TSnowflake>): Future<number> =>
       pipe(
-        collection.collection(coll =>
-          coll.deleteMany({
-            guild: GuildId.unwrap(guildId),
-            message: { $in: pipe(messages, NonEmptyArray.map(TSnowflake.unwrap)) },
-          }),
-        ),
+        collection.deleteMany({
+          guild: GuildId.unwrap(guildId),
+          message: { $in: pipe(messages, NonEmptyArray.map(TSnowflake.unwrap)) },
+        }),
         Future.map(r => r.deletedCount),
       ),
   }

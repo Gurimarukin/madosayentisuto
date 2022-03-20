@@ -10,7 +10,7 @@ import { MemberView } from '../../shared/models/guild/MemberView'
 import { UserId } from '../../shared/models/guild/UserId'
 import { List, Maybe } from '../../shared/utils/fp'
 
-import { BirthdayForm } from './BirthdayForm'
+import { BirthdateForm } from './BirthdateForm'
 import { GuildLayout } from './GuildLayout'
 
 type Props = {
@@ -46,10 +46,11 @@ export const GuildMembers = ({ guildId }: Props): JSX.Element => (
                   <span style={{ color: member.color }}>{member.name}</span>
                 </div>
                 <div className="px-6 group-odd:bg-gray2">
-                  <BirthdayForm
+                  <BirthdateForm
                     userId={member.id}
-                    initialBirthday={member.birthday}
-                    updateBirthday={updateBirthday(response.mutate, member.id)}
+                    initialBirthdate={member.birthdate}
+                    onPostBirthdate={onPostBirthdate(response.mutate, member.id)}
+                    onDeleteBirthdate={onDeleteBirthdate(response.mutate, member.id)}
                   />
                 </div>
                 <span className="group-odd:bg-gray2" />
@@ -62,12 +63,22 @@ export const GuildMembers = ({ guildId }: Props): JSX.Element => (
   </GuildLayout>
 )
 
-const updateBirthday = (mutate: KeyedMutator<GuildView>, userId: UserId) => (birthday: Date) =>
+const onPostBirthdate = (mutate: KeyedMutator<GuildView>, userId: UserId) => (birthdate: Date) =>
+  setBirthdate(mutate, userId, Maybe.some(birthdate))
+
+const onDeleteBirthdate = (mutate: KeyedMutator<GuildView>, userId: UserId) => () =>
+  setBirthdate(mutate, userId, Maybe.none)
+
+const setBirthdate = (
+  mutate: KeyedMutator<GuildView>,
+  userId: UserId,
+  birthdate: Maybe<Date>,
+): Promise<GuildView | undefined> =>
   mutate(
     ifDefined(() =>
       pipe(
         GuildView.Lens.member(userId),
-        optional.modify(MemberView.Lens.birthday.set(Maybe.some(birthday))),
+        optional.modify(MemberView.Lens.birthdate.set(birthdate)),
       ),
     ),
     false,

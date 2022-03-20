@@ -101,23 +101,19 @@ export const GuildStateService = (
   ): Future<GuildState> {
     return pipe(
       cacheUpdateAt(guild, update),
-      Future.chainFirst(newState => {
+      Future.chainFirstIOEitherK(newState => {
         const log = LogUtils.pretty(logger, guild)
 
         // upsert new state, but don't wait until it's done; immediatly return state from cache
         return pipe(
-          guildStatePersistence.upsert(
-            GuildId.wrap(guild.id),
-            GuildStateDb.fromGuildState(newState),
-          ),
-          Future.chain(success => (success ? Future.unit : error())),
-          Future.orElse(e => error('-', e)),
+          guildStatePersistence.upsert(GuildStateDb.fromGuildState(newState)),
+          Future.chainIOEitherK(success => (success ? IO.unit : logError())),
+          Future.orElseIOEitherK(e => logError('-', e)),
           IO.runFutureUnsafe,
-          Future.fromIOEither,
         )
 
-        function error(...u: List<unknown>): Future<void> {
-          return Future.fromIOEither(log.error('Failed to upsert state', ...u))
+        function logError(...u: List<unknown>): IO<void> {
+          return log.error('Failed to upsert state', ...u)
         }
       }),
     )
@@ -130,9 +126,7 @@ export const GuildStateService = (
     return pipe(
       getShouldLoadFromDb(guild),
       Future.map(update),
-      Future.chainFirst(newState =>
-        Future.fromIOEither(cacheSet(GuildId.wrap(guild.id), newState)),
-      ),
+      Future.chainFirstIOEitherK(newState => cacheSet(GuildId.wrap(guild.id), newState)),
     )
   }
 
@@ -197,7 +191,7 @@ export const GuildStateService = (
           ),
         ),
       ),
-      Future.chainFirst(state => pipe(cacheSet(guildId, state), Future.fromIOEither)),
+      Future.chainFirstIOEitherK(state => cacheSet(guildId, state)),
     )
   }
 

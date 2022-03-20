@@ -14,16 +14,18 @@ import type { LoggerGetter, LoggerType } from './models/logger/LoggerType'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { HealthCheckPersistence } from './persistence/HealthCheckPersistence'
+import { MemberBirthdatePersistence } from './persistence/MemberBirthdatePersistence'
 import { PollResponsePersistence } from './persistence/PollResponsePersistence'
 import { BotStateService } from './services/BotStateService'
 import { GuildStateService } from './services/GuildStateService'
 import { HealthCheckService } from './services/HealthCheckService'
+import { MemberBirthdateService } from './services/MemberBirthdateService'
 import { PollResponseService } from './services/PollResponseService'
 import { Routes } from './webServer/Routes'
 import { DiscordClientController } from './webServer/controllers/DiscordClientController'
 import { HealthCheckController } from './webServer/controllers/HealthCheckController'
-import { WithAuth } from './webServer/controllers/WithAuth'
 import { startWebServer } from './webServer/startWebServer'
+import { WithAuth } from './webServer/utils/WithAuth'
 
 export type Context = {
   readonly logger: LoggerType
@@ -65,11 +67,13 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
   const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
   const healthCheckPersistence = HealthCheckPersistence(withDb)
+  const memberBirthdatePersistence = MemberBirthdatePersistence(Logger, mongoCollection)
   const pollResponsePersistence = PollResponsePersistence(Logger, mongoCollection)
 
   const ensureIndexes = pipe(
     Future.sequenceArray([
       guildStatePersistence.ensureIndexes,
+      memberBirthdatePersistence.ensureIndexes,
       pollResponsePersistence.ensureIndexes,
     ]),
     Future.map(() => {}),
@@ -78,10 +82,11 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
   const botStateService = BotStateService(Logger, discord, botStatePersistence)
   const guildStateService = GuildStateService(Logger, discord, ytDlp, guildStatePersistence)
   const healthCheckService = HealthCheckService(healthCheckPersistence)
+  const memberBirthdateService = MemberBirthdateService(memberBirthdatePersistence)
   const pollResponseService = PollResponseService(pollResponsePersistence)
 
   const healthCheckController = HealthCheckController(healthCheckService)
-  const discordClientController = DiscordClientController(discord)
+  const discordClientController = DiscordClientController(discord, memberBirthdateService)
 
   const withAuth = WithAuth({ isDisabled: config.http.disableAuth })
 

@@ -5,6 +5,8 @@ import type {
   BulkWriteOptions,
   ClientSession,
   Collection,
+  DeleteOptions,
+  DeleteResult,
   Document,
   Filter,
   FindOptions,
@@ -56,7 +58,7 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
     const encoded = codec.encode(doc)
     return pipe(
       collection(c => c.insertOne(encoded, options)),
-      Future.chainFirst(() => Future.fromIOEither(logger.debug('inserted', encoded))),
+      Future.chainFirstIOEitherK(() => logger.debug('inserted', encoded)),
     )
   },
 
@@ -64,9 +66,7 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
     const encoded = docs.map(codec.encode)
     return pipe(
       collection(c => c.insertMany(encoded, options)),
-      Future.chainFirst(res =>
-        Future.fromIOEither(logger.debug(`inserted ${res.insertedCount} documents`)),
-      ),
+      Future.chainFirstIOEitherK(res => logger.debug(`inserted ${res.insertedCount} documents`)),
     )
   },
 
@@ -74,7 +74,7 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
     const encoded = codec.encode(doc)
     return pipe(
       collection(c => c.updateOne(filter, { $set: encoded as MatchKeysAndValues<O> }, options)),
-      Future.chainFirst(() => Future.fromIOEither(logger.debug('updated', encoded))),
+      Future.chainFirstIOEitherK(() => logger.debug('updated', encoded)),
     )
   },
 
@@ -86,7 +86,7 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
     const encoded = codec.encode(doc)
     return pipe(
       collection(c => c.replaceOne(filter, encoded as O, options)),
-      Future.chainFirst(() => Future.fromIOEither(logger.debug('upserted', encoded))),
+      Future.chainFirstIOEitherK(() => logger.debug('replaced', encoded)),
     )
   },
 
@@ -104,18 +104,6 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
         ),
       ),
     ),
-
-  // find: (
-  //   query: Filter<O>,
-  //   options?: WithoutProjection<FindOptions<O>>,
-  // ): Future<FindCursor<Either<Error, A>>> =>
-  //   collection(c =>
-  //     Promise.resolve(
-  //       c
-  //         .find(query, options)
-  //         .map(u => pipe(codec.decode(u), Either.mapLeft(decodeError(codecName)(u)))),
-  //     ),
-  //   ),
 
   findAll:
     <B>([decoder, decoderName]: Tuple<Decoder<O, B>, string>) =>
@@ -141,9 +129,21 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
         Future.map(List.compact),
       ),
 
+  deleteOne: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
+    pipe(
+      collection(c => c.deleteOne(filter, options)),
+      Future.chainFirstIOEitherK(res => logger.debug(`deleted ${res.deletedCount} documents`)),
+    ),
+
+  deleteMany: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
+    pipe(
+      collection(c => c.deleteMany(filter, options)),
+      Future.chainFirstIOEitherK(res => logger.debug(`deleted ${res.deletedCount} documents`)),
+    ),
+
   drop: (): Future<boolean> =>
     pipe(
       collection(c => c.drop()),
-      Future.chainFirst(() => Future.fromIOEither(logger.debug('dropped collection'))),
+      Future.chainFirstIOEitherK(() => logger.debug('dropped collection')),
     ),
 })

@@ -1,27 +1,25 @@
 import type { ErrorRequestHandler } from 'express'
 import express from 'express'
-import { task } from 'fp-ts'
 import { list } from 'fp-ts-contrib'
 import type { Parser } from 'fp-ts-routing'
 import { parse } from 'fp-ts-routing'
 import { Route as FpTsRoute, zero } from 'fp-ts-routing'
-import type { Task } from 'fp-ts/Task'
-import { flow, identity, pipe } from 'fp-ts/function'
-import type { ResponseEnded } from 'hyper-ts'
+import { identity, pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
-import type { Action, ExpressConnection } from 'hyper-ts/lib/express'
-import { toRequestHandler } from 'hyper-ts/lib/express'
+import type { ExpressConnection } from 'hyper-ts/lib/express'
 
 import { Method } from '../../shared/models/Method'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import { Dict, Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
+import { Dict, Future, IO, List, Maybe } from '../../shared/utils/fp'
 
 import type { HttpConfig } from '../Config'
-import type { LoggerGetter, LoggerType } from '../models/logger/LoggerType'
-import { EndedMiddleware } from './models/EndedMiddleware'
+import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { EndedMiddleware, MyMiddleware } from './models/MyMiddleware'
+import { MyMiddleware as M } from './models/MyMiddleware'
 import type { Route } from './models/Route'
 
 const allowedHeaders = ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+const allowedMethods = ['GET', 'POST', 'DELETE']
 
 // eslint-disable-next-line functional/prefer-readonly-type
 type Header = string | string[] | undefined
@@ -67,13 +65,23 @@ export const startWebServer = (
             u => filterOrigin(u),
             Maybe.fold(next, origin => {
               /* eslint-disable functional/no-expression-statement */
-              res.append('Access-Control-Allow-Origin', origin)
-              res.header(
-                'Access-Control-Allow-Headers',
-                pipe(allowedHeaders, StringUtils.mkString(', ')),
-              )
-              if (req.method === 'OPTIONS') res.send()
-              else next()
+              res.header('Access-Control-Allow-Origin', origin)
+              if (req.method === 'OPTIONS') {
+                res
+                  .header({
+                    'Access-Control-Allow-Headers': pipe(
+                      allowedHeaders,
+                      StringUtils.mkString(', '),
+                    ),
+                    'Access-Control-Allow-Methods': pipe(
+                      allowedMethods,
+                      StringUtils.mkString(', '),
+                    ),
+                  })
+                  .send()
+              } else {
+                next()
+              }
               /* eslint-enable functional/no-expression-statement */
             }),
           ),
@@ -93,14 +101,14 @@ export const startWebServer = (
           IO.tryCatch(() =>
             app[method]('*', (req, res, next) =>
               pipe(
-                parse(
+                parse<EndedMiddleware>(
                   altedRoutes[method],
                   FpTsRoute.parse(req.url),
-                  EndedMiddleware.text(Status.NotFound)(),
+                  M.text(Status.NotFound)(),
                 ),
-                withTry,
-                withLog,
-                toRequestHandler,
+                M.orElse(handleError),
+                logMiddleware,
+                M.toRequestHandler,
               )(req, res, next),
             ),
           ),
@@ -116,38 +124,32 @@ export const startWebServer = (
     IO.map(() => {}),
   )
 
-  function withLog(middleware: EndedMiddleware): EndedMiddleware {
+  function handleError(e: Error): EndedMiddleware {
+    return pipe(
+      logger.error(e),
+      M.fromIOEither,
+      M.ichain(() => M.text(Status.InternalServerError)()),
+    )
+  }
+
+  function logMiddleware<I, O>(middleware: MyMiddleware<I, O, void>): MyMiddleware<I, O, void> {
     return conn =>
       pipe(
         middleware(conn),
-        task.chain(res =>
-          pipe(
-            res,
-            Either.fold(
-              () => task.of(undefined),
-              ([, c]) => logConnection(logger, c as ExpressConnection<ResponseEnded>),
-            ),
-            task.map(() => res),
-          ),
-        ),
+        Future.chainFirstIOEitherK(([, c]) => logConnection(c as ExpressConnection<O>)),
       )
   }
 
-  function withTry(middleware: EndedMiddleware): EndedMiddleware {
-    return conn =>
-      pipe(
-        Future.tryCatch(() => middleware(conn)()),
-        task.chain(
-          Either.fold(
-            flow(
-              onError,
-              task.fromIO,
-              task.chain(() => EndedMiddleware.text(Status.InternalServerError)()(conn)),
-            ),
-            task.of,
-          ),
-        ),
-      )
+  function logConnection<A>(conn: ExpressConnection<A>): IO<void> {
+    const method = conn.getMethod()
+    const uri = conn.getOriginalUrl()
+    const status = pipe(
+      conn,
+      getStatus,
+      Maybe.map(s => s.toString()),
+      Maybe.toUndefined,
+    )
+    return logger.debug(method, uri, '-', status)
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -170,35 +172,12 @@ const getAltedRoutes = (routes: List<Route>): Dict<Method, Parser<EndedMiddlewar
   )
 }
 
-const logConnection = (
-  logger: LoggerType,
-  conn: ExpressConnection<ResponseEnded>,
-): Task<unknown> => {
-  const method = conn.getMethod()
-  const uri = conn.getOriginalUrl()
-  const status = pipe(
-    conn,
-    getStatus,
-    Maybe.map(s => s.toString()),
-    Maybe.toArray,
-  )
-  return task.fromIO(logger.debug(method, uri, '-', ...status))
-}
-
-const getStatus = (conn: ExpressConnection<ResponseEnded>): Maybe<Status> =>
+const getStatus = <A>(conn: ExpressConnection<A>): Maybe<Status> =>
   pipe(
     conn.actions,
     list.toArray,
-    List.findLast(isSetStatus),
-    Maybe.map(({ status }) => status),
+    List.findLastMap(a => (a.type === 'setStatus' ? Maybe.some(a.status) : Maybe.none)),
   )
-
-type SetStatus = {
-  readonly type: 'setStatus'
-  readonly status: Status
-}
-
-const isSetStatus = (a: Action): a is SetStatus => a.type === 'setStatus'
 
 const errorHandler =
   (onError: (error: unknown) => IO<unknown>): ErrorRequestHandler =>

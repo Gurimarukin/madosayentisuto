@@ -1,4 +1,5 @@
 import { pipe } from 'fp-ts/function'
+import type { Decoder } from 'io-ts/Decoder'
 import * as D from 'io-ts/Decoder'
 
 import { List, NonEmptyArray } from '../../../shared/utils/fp'
@@ -55,7 +56,7 @@ const playlistDecoder = pipe(
   }),
 )
 
-const decoder: D.Decoder<unknown, VideosMetadata> = D.sum('_type')({
+const decoder: Decoder<unknown, VideosMetadata> = D.sum('_type')({
   video: videoDecoder,
   playlist: playlistDecoder,
 })

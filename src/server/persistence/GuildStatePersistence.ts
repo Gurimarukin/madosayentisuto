@@ -49,10 +49,10 @@ export const GuildStatePersistence = (Logger: LoggerGetter, mongoCollection: Mon
       )
     },
 
-    upsert: (id: GuildId, state: GuildStateDb): Future<boolean> =>
+    upsert: (state: GuildStateDb): Future<boolean> =>
       pipe(
-        collection.updateOne({ id: GuildId.unwrap(id) }, state, { upsert: true }),
-        Future.map(r => r.modifiedCount + r.upsertedCount === 1),
+        collection.updateOne({ id: GuildId.unwrap(state.id) }, state, { upsert: true }),
+        Future.map(r => r.modifiedCount + r.upsertedCount <= 1),
       ),
   }
 }

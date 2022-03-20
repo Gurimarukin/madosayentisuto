@@ -20,14 +20,16 @@ const apiHealthcheck = api.then(lit('healthcheck'))
 const apiGuilds = api.then(lit('guilds'))
 const apiGuild = api.then(lit('guild')).then(codec('guildId')<GuildId>(str))
 const apiMember = api.then(lit('member')).then(codec('userId')<UserId>(str))
-const apiMemberBirthday = apiMember.then(lit('birthday'))
+const apiMemberBirthdate = apiMember.then(lit('birthdate'))
 
 // final
 const getApiHealthcheck = m('get', apiHealthcheck.then(end))
 const getApiGuilds = m('get', apiGuilds.then(end))
 const getApiGuild = m('get', apiGuild.then(end))
 
-const postApiMemberBirthday = m('post', apiMemberBirthday)
+const postApiMemberBirthdate = m('post', apiMemberBirthdate)
+
+const deleteApiMemberBirthdate = m('delete', apiMemberBirthdate)
 
 /**
  * parsers
@@ -43,7 +45,14 @@ export const apiParsers = {
   post: {
     api: {
       member: {
-        birthday: p(postApiMemberBirthday),
+        birthdate: p(postApiMemberBirthdate),
+      },
+    },
+  },
+  delete_: {
+    api: {
+      member: {
+        birthdate: p(deleteApiMemberBirthdate),
       },
     },
   },
@@ -62,7 +71,14 @@ export const apiRoutes = {
   post: {
     api: {
       member: {
-        birthday: (userId: UserId) => r(postApiMemberBirthday, { userId }),
+        birthdate: (userId: UserId) => r(postApiMemberBirthdate, { userId }),
+      },
+    },
+  },
+  delete_: {
+    api: {
+      member: {
+        birthdate: (userId: UserId) => r(deleteApiMemberBirthdate, { userId }),
       },
     },
   },
