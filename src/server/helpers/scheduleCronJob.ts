@@ -1,4 +1,3 @@
-import { date } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { MsDuration } from '../../shared/models/MsDuration'
@@ -11,7 +10,7 @@ import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TSubject } from '../models/rx/TSubject'
 import { DateUtils } from '../utils/DateUtils'
 
-const cronJobInterval = MsDuration.days(1)
+const cronJobInterval = MsDuration.minutes(1)
 
 export const scheduleCronJob = (
   Logger: LoggerGetter,
@@ -20,28 +19,24 @@ export const scheduleCronJob = (
   const logger = Logger('scheduleCronJob')
 
   return pipe(
-    date.create,
+    DateUtils.now,
     IO.fromIO,
     IO.map(now => {
-      const tomorrow8am = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 8, 0, 0, 0)
-      return pipe(
-        tomorrow8am,
-        DateUtils.minusDuration(MsDuration.fromDate(now)),
-        MsDuration.fromDate,
-      )
+      const nextMinute = now.startOf('minute').add(1, 'minute')
+      return pipe(nextMinute, DateUtils.diff(now))
     }),
-    IO.chainFirst(untilTomorrow8am =>
+    IO.chainFirst(untilNextMinute =>
       logger.info(
-        `Scheduling activity refresh - 8am is in ${StringUtils.prettyMs(
-          untilTomorrow8am,
+        `Scheduling; next minute is in ${StringUtils.prettyMs(
+          untilNextMinute,
         )} (interval: ${StringUtils.prettyMs(cronJobInterval)})`,
       ),
     ),
-    IO.chain(untilTomorrow8am =>
+    IO.chain(untilNextMinute =>
       pipe(
         setCronJobInterval(),
         Future.fromIOEither,
-        Future.delay(untilTomorrow8am),
+        Future.delay(untilNextMinute),
         IO.runFutureUnsafe,
       ),
     ),
@@ -60,6 +55,10 @@ export const scheduleCronJob = (
   }
 
   function publishEvent(): IO<void> {
-    return subject.next(MadEvent.CronJob())
+    return pipe(
+      DateUtils.now,
+      IO.fromIO,
+      IO.chain(now => subject.next(MadEvent.CronJob(now.second(0).millisecond(0)))), // assuming interval is 1 minute
+    )
   }
 }

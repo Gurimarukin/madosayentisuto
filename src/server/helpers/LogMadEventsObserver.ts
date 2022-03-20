@@ -12,12 +12,14 @@ const { format } = LogUtils
 
 export const LogMadEventsObserver = (logger: LoggerType): TObserver<MadEvent> => ({
   next: event => {
-    const message = ((): string => {
+    const message = ((): string | undefined => {
       switch (event.type) {
         case 'AppStarted':
         case 'DbReady':
-        case 'CronJob':
           return ''
+
+        case 'CronJob':
+          return
 
         case 'InteractionCreate':
           return `${format(
@@ -57,7 +59,8 @@ export const LogMadEventsObserver = (logger: LoggerType): TObserver<MadEvent> =>
           } message${event.messages.length < 2 ? '' : 's'}`
       }
     })()
-    return Future.fromIOEither(logger.info('✉️ ', event.type, message))
+    if (message !== undefined) return Future.fromIOEither(logger.info('✉️ ', event.type, message))
+    return Future.unit
   },
 })
 

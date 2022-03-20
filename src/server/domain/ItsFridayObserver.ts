@@ -1,6 +1,7 @@
+import type { Dayjs } from 'dayjs'
 import type { TextChannel } from 'discord.js'
 import { MessageAttachment } from 'discord.js'
-import { date, random } from 'fp-ts'
+import { random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import { MsDuration } from '../../shared/models/MsDuration'
@@ -23,18 +24,13 @@ export const ItsFridayObserver = (
   const logger = Logger('ItsFridayObserver')
 
   return {
-    next: () =>
-      pipe(
-        date.create,
-        Future.fromIO,
-        Future.chain(now => {
-          const isFriday = now.getDay() === 5
-          return isFriday ? delaySendAllMessages(now) : Future.unit
-        }),
-      ),
+    next: ({ date }) => {
+      const isFriday = date.day() === 5
+      return isFriday && DateUtils.is8am(date) ? delaySendAllMessages(date) : Future.unit
+    },
   }
 
-  function delaySendAllMessages(now: Date): Future<void> {
+  function delaySendAllMessages(now: Dayjs): Future<void> {
     return pipe(
       randomDelay(now),
       Future.fromIOEither,
@@ -84,13 +80,9 @@ export const ItsFridayObserver = (
 const rangeStart = 14
 const rangeEnd = 17
 const range = MsDuration.hours(rangeEnd - rangeStart)
-function randomDelay(now: Date): IO<MsDuration> {
-  const today2Pm = new Date(now.getFullYear(), now.getMonth(), now.getDate(), rangeStart, 0, 0, 0)
-  const untilToday2Pm = pipe(
-    today2Pm,
-    DateUtils.minusDuration(MsDuration.fromDate(now)),
-    MsDuration.fromDate,
-  )
+function randomDelay(now: Dayjs): IO<MsDuration> {
+  const today2Pm = now.startOf('hour').hour(rangeStart)
+  const untilToday2Pm = pipe(today2Pm, DateUtils.diff(now))
   return pipe(
     random.randomRange(
       MsDuration.unwrap(untilToday2Pm),
@@ -100,7 +92,7 @@ function randomDelay(now: Date): IO<MsDuration> {
     IO.map(MsDuration.wrap),
     IO.filterOrElse(
       n => 0 <= MsDuration.unwrap(n),
-      n => Error(`Got a negative delay until today, 2 pm: ${StringUtils.prettyMs(n)}`),
+      n => Error(`Got a negative delay until today 2pm: ${StringUtils.prettyMs(n)}`),
     ),
   )
 }

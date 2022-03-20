@@ -88,7 +88,7 @@ export type DiscordConnector = ReturnType<typeof of>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const of = (client: Client<true>) => {
-  const getGuilds: IO<List<Guild>> = () => Either.right(client.guilds.cache.toJSON())
+  const getGuilds: IO<List<Guild>> = IO.tryCatch(() => client.guilds.cache.toJSON())
 
   return {
     client,

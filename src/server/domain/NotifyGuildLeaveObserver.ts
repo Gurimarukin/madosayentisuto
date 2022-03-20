@@ -1,4 +1,6 @@
 import { bold, userMention } from '@discordjs/builders'
+import type { Dayjs } from 'dayjs'
+import dayjs from 'dayjs'
 import type { Collection, Guild, GuildAuditLogsEntry, TextChannel } from 'discord.js'
 import type { User } from 'discord.js'
 import { apply, date, number, ord, random, semigroup } from 'fp-ts'
@@ -44,7 +46,7 @@ export const NotifyGuildLeaveObserver = (
       const log = LogUtils.pretty(logger, guild)
       const boldMember = bold(user.tag)
       return pipe(
-        date.create,
+        DateUtils.now,
         Future.fromIO,
         Future.chain(getLastLog(guild, UserId.wrap(user.id))),
         futureMaybe.match(
@@ -84,8 +86,8 @@ export const NotifyGuildLeaveObserver = (
 
 const getLastLog =
   (guild: Guild, userId: UserId) =>
-  (now: Date): Future<Maybe<ValidEntry<KickOrBanAction>>> => {
-    const nowMinusNetworkTolerance = pipe(now, DateUtils.minusDuration(constants.networkTolerance))
+  (now: Dayjs): Future<Maybe<ValidEntry<KickOrBanAction>>> => {
+    const nowMinusNetworkTolerance = pipe(now, DateUtils.subtract(constants.networkTolerance))
     return pipe(
       apply.sequenceS(Future.ApplyPar)({
         lastMemberKick: pipe(
@@ -119,7 +121,7 @@ const ordByCreateAt = <A extends CreatedAt>(): Ord<A> =>
     ord.contramap(a => a.createdAt),
   )
 const validateLogs =
-  (nowMinusNetworkTolerance: Date, userId: UserId) =>
+  (nowMinusNetworkTolerance: Dayjs, userId: UserId) =>
   <A extends KickOrBanAction>(
     logs: Collection<string, GuildAuditLogsEntry<A>>,
   ): Maybe<ValidEntry<A>> =>
@@ -131,7 +133,7 @@ const validateLogs =
     )
 
 const validateEntry =
-  <A extends KickOrBanAction>(nowMinusNetworkTolerance: Date, userId: UserId) =>
+  <A extends KickOrBanAction>(nowMinusNetworkTolerance: Dayjs, userId: UserId) =>
   (entry: GuildAuditLogsEntry<A>): Maybe<ValidEntry<A>> =>
     pipe(
       Maybe.some({
@@ -143,7 +145,7 @@ const validateEntry =
       Maybe.apS('executor', Maybe.fromNullable(entry.executor)),
       Maybe.filter(
         ({ target }) =>
-          ord.leq(date.Ord)(nowMinusNetworkTolerance, entry.createdAt) &&
+          ord.leq(DateUtils.Ord)(nowMinusNetworkTolerance, dayjs(entry.createdAt)) &&
           UserId.wrap(target.id) === userId,
       ),
     )

@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { random } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
@@ -38,12 +39,19 @@ function mkString(startOrSep: string, sep?: string, end?: string): (list: List<s
 }
 
 const prettyMs = (ms: MsDuration): string => {
-  const d = new Date(Date.UTC(0, 0, 0, 0, 0, 0, MsDuration.unwrap(ms)))
-  const h = Math.floor(MsDuration.unwrap(ms) / (1000 * 60 * 60))
-  const m = d.getUTCMinutes()
-  const s = d.getUTCSeconds()
-  const ms_ = d.getUTCMilliseconds()
-  return `${pad10(h)}:${pad10(m)}:${pad10(s)}.${pad100(ms_)}`
+  const date = dayjs.utc(MsDuration.unwrap(ms))
+  const zero = dayjs.utc(0)
+
+  const d = date.diff(zero, 'day')
+  const h = date.hour()
+  const m = date.minute()
+  const s = date.second()
+  const ms_ = date.millisecond()
+
+  if (d !== 0) return `${d}d${pad10(h)}h${pad10(m)}'${pad10(s)}.${pad100(ms_)}"`
+  if (h !== 0) return `${pad10(h)}h${pad10(m)}'${pad10(s)}.${pad100(ms_)}"`
+  if (m !== 0) return `${pad10(m)}'${pad10(s)}.${pad100(ms_)}"`
+  return `${pad10(s)}.${pad100(ms_)}"`
 }
 
 const pad10 = (n: number): string => (n < 10 ? `0${n}` : `${n}`)

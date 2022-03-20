@@ -1,3 +1,4 @@
+import type { Dayjs } from 'dayjs'
 import type {
   GuildMember,
   Interaction,
@@ -20,7 +21,7 @@ export const MadEvent = createUnion({
 
   DbReady: () => ({}),
 
-  CronJob: () => ({}),
+  CronJob: (date: Dayjs) => ({ date }),
 
   InteractionCreate: (interaction: Interaction) => ({ interaction }),
 
