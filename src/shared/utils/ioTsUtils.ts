@@ -1,4 +1,4 @@
-import { predicate, string } from 'fp-ts'
+import { json, predicate, string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
@@ -6,7 +6,7 @@ import type * as E from 'io-ts/Encoder'
 import type { AnyNewtype, CarrierOf } from 'newtype-ts'
 
 import { StringUtils } from './StringUtils'
-import { List } from './fp'
+import { Either, List } from './fp'
 import { NonEmptyArray } from './fp'
 
 const limit = 10000
@@ -21,7 +21,11 @@ export const decodeError =
         |Error:
         |${pipe(D.draw(error), StringUtils.ellipse(limit))}
         |
-        |Value: ${pipe(JSON.stringify(value), StringUtils.ellipse(limit))}`,
+        |Value: ${pipe(
+          json.stringify(value),
+          Either.getOrElse(() => `${value}`),
+          StringUtils.ellipse(limit),
+        )}`,
       ),
     )
 
@@ -100,6 +104,7 @@ const dateFromISOStringCodec: C.Codec<unknown, string, Date> = C.make(
 )
 
 export const DateFromISOString = {
+  decoder: dateFromISOStringDecoder,
   encoder: dateFromISOStringEncoder,
   codec: dateFromISOStringCodec,
 }
