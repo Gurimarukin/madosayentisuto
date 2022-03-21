@@ -21,6 +21,7 @@ import { UserId } from '../../../shared/models/guild/UserId'
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { IO } from '../../../shared/utils/fp'
+import { toUnit } from '../../../shared/utils/fp'
 import { Dict } from '../../../shared/utils/fp'
 import { Either } from '../../../shared/utils/fp'
 import { List } from '../../../shared/utils/fp'
@@ -31,11 +32,11 @@ import { Future } from '../../../shared/utils/fp'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { EmojiWithAnswer } from '../../helpers/messages/pollMessage'
 import { Answer, pollMessage } from '../../helpers/messages/pollMessage'
-import { PollButton } from '../../models/PollButton'
-import { PollResponse } from '../../models/PollResponse'
 import { TSnowflake } from '../../models/TSnowflake'
-import type { MadEventInteractionCreate, MadEventMessageDelete } from '../../models/events/MadEvent'
+import type { MadEventInteractionCreate, MadEventMessageDelete } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
+import { PollButton } from '../../models/poll/PollButton'
+import { PollResponse } from '../../models/poll/PollResponse'
 import type { TObserver } from '../../models/rx/TObserver'
 import type { PollResponseService } from '../../services/PollResponseService'
 import { LogUtils } from '../../utils/LogUtils'
@@ -102,7 +103,8 @@ export const PollCommandsObserver = (
         }),
       ),
       futureMaybe.chainFuture(({ channel, question }) => initPoll(interaction, channel, question)),
-      Future.map(() => {}),
+
+      Future.map(toUnit),
     )
   }
 
@@ -118,7 +120,7 @@ export const PollCommandsObserver = (
         content =>
           pipe(
             DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
-            Future.map(() => {}),
+            Future.map(toUnit),
           ),
         initMessage,
       ),
@@ -140,7 +142,7 @@ export const PollCommandsObserver = (
         futureMaybe.chainFuture(({ message, options }) =>
           DiscordConnector.messageEdit(message, options),
         ),
-        Future.map(() => {}),
+        Future.map(toUnit),
       )
     }
   }
@@ -178,7 +180,7 @@ export const PollCommandsObserver = (
             futureMaybe.chainFuture(guild =>
               castVote(guild, interaction.message, interaction.user, button),
             ),
-            Future.map<Maybe<void>, void>(() => {}),
+            Future.map(toUnit),
           ),
       ),
     )
@@ -277,7 +279,7 @@ export const PollCommandsObserver = (
           pollMessage.format({ question, answers: answersWithCount(answers, responses), author }),
         ),
       ),
-      Future.map(() => {}),
+      Future.map(toUnit),
     )
   }
 
@@ -309,7 +311,7 @@ export const PollCommandsObserver = (
               ),
             )
           }),
-          Future.map<List<void>, void>(() => {}),
+          Future.map(toUnit),
         ),
       ),
     )

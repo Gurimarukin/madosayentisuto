@@ -6,6 +6,7 @@ import { apiRoutes } from '../../shared/ApiRouter'
 import { DayJs } from '../../shared/models/DayJs'
 import type { UserId } from '../../shared/models/guild/UserId'
 import { Maybe } from '../../shared/utils/fp'
+import { DateFromISOString } from '../../shared/utils/ioTsUtils'
 
 import { Cancel, Check, EditPencil, Prohibition } from '../components/svgs'
 import { http } from '../utils/http'
@@ -149,7 +150,7 @@ const validateDate = (value: string): Maybe<DayJs> => {
 
 const postBirthdate = (member: UserId, birthdate: DayJs): Promise<unknown> =>
   http(apiRoutes.post.api.member.birthdate(member), {
-    json: [DayJs.encoder, birthdate],
+    json: [DateFromISOString.encoder, birthdate],
   })
 
 const deleteBirthdate = (member: UserId): Promise<unknown> =>

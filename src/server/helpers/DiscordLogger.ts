@@ -5,6 +5,7 @@ import util from 'util'
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import type { List } from '../../shared/utils/fp'
+import { toUnit } from '../../shared/utils/fp'
 import { Future, IO } from '../../shared/utils/fp'
 
 import type { Config } from '../Config'
@@ -37,14 +38,11 @@ export const DiscordLogger =
           flow(
             discord.fetchUser,
             futureMaybe.chain(user => DiscordConnector.sendMessage(user, msg)),
-            Future.map(() => {}),
+            Future.map(toUnit),
           ),
         )
 
-        return pipe(
-          Future.sequenceArray(futures),
-          Future.map(() => {}),
-        )
+        return pipe(Future.sequenceArray(futures), Future.map(toUnit))
       }
       return Future.unit
     }

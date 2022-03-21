@@ -4,7 +4,7 @@ import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventGuildMemberAdd } from '../models/events/MadEvent'
+import type { MadEventGuildMemberAdd } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import type { GuildStateService } from '../services/GuildStateService'

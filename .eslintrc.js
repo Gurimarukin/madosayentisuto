@@ -50,7 +50,7 @@ module.exports = {
         ],
       },
     ],
-    '@typescript-eslint/no-empty-function': 'off',
+    '@typescript-eslint/no-empty-function': 'warn',
     '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-namespace': 'warn',
     '@typescript-eslint/no-restricted-imports': 'off',

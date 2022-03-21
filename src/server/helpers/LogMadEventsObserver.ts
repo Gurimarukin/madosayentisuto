@@ -3,7 +3,7 @@ import util from 'util'
 
 import { Future } from '../../shared/utils/fp'
 
-import type { MadEvent } from '../models/events/MadEvent'
+import type { MadEvent } from '../models/event/MadEvent'
 import type { LoggerType } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import { LogUtils } from '../utils/LogUtils'

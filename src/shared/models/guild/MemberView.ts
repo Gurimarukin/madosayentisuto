@@ -4,7 +4,7 @@ import * as C from 'io-ts/Codec'
 import { lens } from 'monocle-ts'
 
 import { Maybe } from '../../utils/fp'
-import { DayJs } from '../DayJs'
+import { DateFromISOString } from '../../utils/ioTsUtils'
 import { UserId } from './UserId'
 
 const codec = C.struct({
@@ -12,7 +12,7 @@ const codec = C.struct({
   name: C.string,
   color: C.string,
   avatar: Maybe.codec(C.string),
-  birthdate: Maybe.codec(DayJs.codec),
+  birthdate: Maybe.codec(DateFromISOString.codec),
 })
 
 const fromGuildMember = (member: GuildMember): MemberView => ({

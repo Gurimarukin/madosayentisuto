@@ -1,11 +1,12 @@
 import * as C from 'io-ts/Codec'
 
-import { DayJs } from './DayJs'
-import { UserId } from './guild/UserId'
+import { UserId } from '../../../shared/models/guild/UserId'
+
+import { Birthdate } from './Birthdate'
 
 const codec = C.struct({
   id: UserId.codec,
-  birthdate: DayJs.codec,
+  birthdate: Birthdate.codec,
 })
 
 export type MemberBirthdate = C.TypeOf<typeof codec>

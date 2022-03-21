@@ -7,7 +7,7 @@ import { StringUtils } from '../../../shared/utils/StringUtils'
 import { Either, Future } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
+import type { MadEventInteractionCreate } from '../../models/event/MadEvent'
 import type { TObserver } from '../../models/rx/TObserver'
 
 const pingCommand = new SlashCommandBuilder()

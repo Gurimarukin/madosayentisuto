@@ -19,9 +19,9 @@ import type {
   ApplicationCommandPermissions,
   BaseCommandInteraction,
   ButtonInteraction,
-  ClientApplication,
   ClientPresence,
   Collection,
+  EmojiIdentifierResolvable,
   Guild,
   GuildApplicationCommandPermissionData,
   GuildAuditLogsEntry,
@@ -35,6 +35,7 @@ import type {
   MessageComponentInteraction,
   MessageOptions,
   MessagePayload,
+  MessageReaction,
   PartialTextBasedChannelFields,
   Role,
   RoleResolvable,
@@ -64,8 +65,8 @@ import type { ClientConfig } from '../Config'
 import { Colors, constants } from '../constants'
 import { TSnowflake } from '../models/TSnowflake'
 import type { Activity } from '../models/botState/Activity'
-import { CommandId } from '../models/commands/CommandId'
-import { PutCommandResult } from '../models/commands/PutCommandResult'
+import { CommandId } from '../models/command/CommandId'
+import { PutCommandResult } from '../models/command/PutCommandResult'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { MessageUtils } from '../utils/MessageUtils'
 
@@ -88,7 +89,7 @@ export type DiscordConnector = ReturnType<typeof of>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const of = (client: Client<true>) => {
-  const getGuilds: IO<List<Guild>> = IO.tryCatch(() => client.guilds.cache.toJSON())
+  const listGuilds: IO<List<Guild>> = IO.tryCatch(() => client.guilds.cache.toJSON())
 
   return {
     client,
@@ -96,12 +97,6 @@ const of = (client: Client<true>) => {
     /**
      * Read
      */
-
-    fetchApplication: (): Future<ClientApplication> =>
-      pipe(
-        Future.tryCatch(() => client.application.fetch()),
-        debugLeft('fetchApplication'),
-      ),
 
     fetchChannel: (channelId: TSnowflake): Future<Maybe<AnyChannel>> =>
       pipe(
@@ -129,12 +124,10 @@ const of = (client: Client<true>) => {
         debugLeft('fetchUser'),
       ),
 
-    getGuild:
-      (guildId: GuildId): IO<Maybe<Guild>> =>
-      () =>
-        Either.right(Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId)))),
+    getGuild: (guildId: GuildId): IO<Maybe<Guild>> =>
+      IO.tryCatch(() => Maybe.fromNullable(client.guilds.cache.get(GuildId.unwrap(guildId)))),
 
-    getGuilds,
+    listGuilds,
 
     /**
      * Write
@@ -342,6 +335,15 @@ const messageEdit = (
     debugLeft('messageEdit'),
   )
 
+const messageReact = (
+  message: Message,
+  emoji: EmojiIdentifierResolvable,
+): Future<MessageReaction> =>
+  pipe(
+    Future.tryCatch(() => message.react(emoji)),
+    debugLeft('messageReact'),
+  )
+
 const messageStartThread = (message: Message, options: StartThreadOptions): Future<ThreadChannel> =>
   pipe(
     Future.tryCatch(() => message.startThread(options)),
@@ -502,6 +504,7 @@ export const DiscordConnector = {
   interactionUpdate,
   messageDelete,
   messageEdit,
+  messageReact,
   messageStartThread,
   restPutApplicationGuildCommands,
   roleAdd,
@@ -521,11 +524,12 @@ export const DiscordConnector = {
           const client = new Client({
             intents: [
               Intents.FLAGS.DIRECT_MESSAGES,
-              Intents.FLAGS.GUILDS,
               Intents.FLAGS.GUILD_BANS,
               Intents.FLAGS.GUILD_MEMBERS,
+              Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
               Intents.FLAGS.GUILD_MESSAGES,
               Intents.FLAGS.GUILD_VOICE_STATES,
+              Intents.FLAGS.GUILDS,
             ],
             partials: ['USER', 'CHANNEL', 'GUILD_MEMBER', 'MESSAGE', 'REACTION'],
           })

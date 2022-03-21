@@ -38,16 +38,13 @@ export const GuildStateService = (
 
   const cache = new Map<GuildId, GuildState>()
 
-  return {
-    findAllItsFridayChannels: (): Future<List<TextChannel>> =>
-      pipe(
-        guildStatePersistence.findAllItsFridayChannels(),
-        Future.chain(
-          Future.traverseArray(itsFridayChannel => discord.fetchChannel(itsFridayChannel)),
-        ),
-        Future.map(flow(List.compact, List.filter(ChannelUtils.isTextChannel))),
-      ),
+  const listAllItsFridayChannels = pipe(
+    guildStatePersistence.listAllItsFridayChannels(),
+    Future.chain(Future.traverseArray(itsFridayChannel => discord.fetchChannel(itsFridayChannel))),
+    Future.map(flow(List.compact, List.filter(ChannelUtils.isTextChannel))),
+  )
 
+  return {
     getState: (guild: Guild): Future<GuildState> => getShouldLoadFromDb(guild),
 
     setCalls: (guild: Guild, calls: Calls): Future<GuildState> =>
@@ -60,8 +57,15 @@ export const GuildStateService = (
 
     getDefaultRole: (guild: Guild): Future<Maybe<Role>> => get(guild, 'defaultRole'),
 
+    listAllItsFridayChannels,
+
     setItsFridayChannel: (guild: Guild, channel: TextChannel): Future<GuildState> =>
       setLens(guild, 'itsFridayChannel', Maybe.some(channel)),
+
+    getBirthdayChannel: (guild: Guild): Future<Maybe<TextChannel>> => get(guild, 'birthdayChannel'),
+
+    setBirthdayChannel: (guild: Guild, channel: TextChannel): Future<GuildState> =>
+      setLens(guild, 'birthdayChannel', Maybe.some(channel)),
 
     getSubscription: (guild: Guild): Future<MusicSubscription> =>
       pipe(
@@ -181,11 +185,12 @@ export const GuildStateService = (
         flow(
           fetchDbProperties(guild),
           Future.map(
-            ({ calls, defaultRole, itsFridayChannel }): GuildState => ({
+            ({ calls, defaultRole, itsFridayChannel, birthdayChannel }): GuildState => ({
               id: guildId,
               calls,
               defaultRole,
               itsFridayChannel,
+              birthdayChannel,
               subscription: Maybe.none,
             }),
           ),
@@ -197,14 +202,13 @@ export const GuildStateService = (
 
   function fetchDbProperties(
     guild: Guild,
-  ): (
-    state: GuildStateDb,
-  ) => Future<Pick<GuildState, 'calls' | 'defaultRole' | 'itsFridayChannel'>> {
-    return ({ calls, defaultRole, itsFridayChannel }) =>
+  ): (state: GuildStateDb) => Future<Pick<GuildState, Exclude<keyof GuildStateDb, 'id'>>> {
+    return ({ calls, defaultRole, itsFridayChannel, birthdayChannel }) =>
       apply.sequenceS(Future.ApplyPar)({
         calls: chainFutureT(calls, fetchCalls(guild)),
         defaultRole: chainFutureT(defaultRole, id => DiscordConnector.fetchRole(guild, id)),
-        itsFridayChannel: chainFutureT(itsFridayChannel, id => fetchTextChannel(id)),
+        itsFridayChannel: chainFutureT(itsFridayChannel, fetchTextChannel),
+        birthdayChannel: chainFutureT(birthdayChannel, fetchTextChannel),
       })
   }
 

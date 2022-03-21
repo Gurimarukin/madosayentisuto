@@ -2,10 +2,10 @@ import type { GuildMember, StageChannel, VoiceChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
-import { Future, IO } from '../../shared/utils/fp'
+import { Future, IO, toUnit } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventPublicCallEnded, MadEventPublicCallStarted } from '../models/events/MadEvent'
+import type { MadEventPublicCallEnded, MadEventPublicCallStarted } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import type { GuildStateService } from '../services/GuildStateService'
@@ -51,7 +51,7 @@ export const NotifyVoiceCallObserver = (
           Future.chain(Future.fromIOEither),
         ),
       ),
-      Future.map(() => {}),
+      Future.map(toUnit),
     )
   }
 
@@ -74,7 +74,7 @@ export const NotifyVoiceCallObserver = (
           Future.chain(Future.fromIOEither),
         ),
       ),
-      Future.map(() => {}),
+      Future.map(toUnit),
     )
   }
 }

@@ -1,10 +1,13 @@
 import { json, predicate, string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
+import * as C from 'io-ts/Codec'
 import type { Codec } from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
 import type { Decoder } from 'io-ts/Decoder'
+import type { Encoder } from 'io-ts/Encoder'
 import type { AnyNewtype, CarrierOf } from 'newtype-ts'
 
+import { DayJs } from '../models/DayJs'
 import { StringUtils } from './StringUtils'
 import { Either, List } from './fp'
 import { NonEmptyArray } from './fp'
@@ -32,6 +35,31 @@ export const decodeError =
 export const fromNewtype = <N extends AnyNewtype = never>(
   codec: Codec<unknown, CarrierOf<N>, CarrierOf<N>>,
 ): Codec<unknown, CarrierOf<N>, N> => codec
+
+// DateFromISOString
+
+const dateFromISOStringDecoder: Decoder<unknown, DayJs> = pipe(
+  D.string,
+  D.parse(str => {
+    const d = DayJs.of(str)
+    return DayJs.isValid(d) ? D.success(d) : D.failure(str, 'DateFromISOString')
+  }),
+)
+
+const dateFromISOStringEncoder: Encoder<string, DayJs> = {
+  encode: d => DayJs.unwrap(d).toISOString(),
+}
+
+const dateFromISOStringCodec: Codec<unknown, string, DayJs> = C.make(
+  dateFromISOStringDecoder,
+  dateFromISOStringEncoder,
+)
+
+export const DateFromISOString = {
+  decoder: dateFromISOStringDecoder,
+  encoder: dateFromISOStringEncoder,
+  codec: dateFromISOStringCodec,
+}
 
 // BooleanFromString
 

@@ -2,10 +2,10 @@ import type { Guild, Message, ThreadChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
-import { Future, Maybe } from '../../shared/utils/fp'
+import { Future, Maybe, toUnit } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventMessageCreate } from '../models/events/MadEvent'
+import type { MadEventMessageCreate } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import type { GuildStateService } from '../services/GuildStateService'
@@ -35,7 +35,7 @@ export const MusicThreadCleanObserver = (
                   ),
                 ),
           ),
-          Future.map(() => {}),
+          Future.map(toUnit),
         )
       }
 

@@ -3,10 +3,10 @@ import { pipe } from 'fp-ts/function'
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import { Future, IO } from '../../shared/utils/fp'
+import { Future, IO, toUnit } from '../../shared/utils/fp'
 
-import type { MadEventCronJob } from '../models/events/MadEvent'
-import { MadEvent } from '../models/events/MadEvent'
+import type { MadEventCronJob } from '../models/event/MadEvent'
+import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TSubject } from '../models/rx/TSubject'
 
@@ -50,7 +50,7 @@ export const scheduleCronJob = (
           setInterval(() => pipe(publishEvent(), IO.runUnsafe), MsDuration.unwrap(cronJobInterval)),
         ),
       ),
-      IO.map(() => {}),
+      IO.map(toUnit),
     )
   }
 

@@ -6,11 +6,11 @@ import { flow, pipe } from 'fp-ts/function'
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import { Future, IO, List, Maybe } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, toUnit } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventCronJob } from '../models/events/MadEvent'
+import type { MadEventCronJob } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import type { GuildStateService } from '../services/GuildStateService'
@@ -39,7 +39,7 @@ export const ItsFridayObserver = (
 
   function sendAllMessages(): Future<void> {
     return pipe(
-      guildStateService.findAllItsFridayChannels(),
+      guildStateService.listAllItsFridayChannels,
       Future.chainFirstIOEitherK(
         flow(
           List.map(c => LogUtils.format(c.guild, null, c)),
@@ -48,7 +48,7 @@ export const ItsFridayObserver = (
         ),
       ),
       Future.chain(Future.traverseArray(sendMessage)),
-      Future.map(() => {}),
+      Future.map(toUnit),
     )
   }
 

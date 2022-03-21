@@ -21,7 +21,7 @@ import { flow, pipe } from 'fp-ts/function'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import { NonEmptyArray } from '../../shared/utils/fp'
+import { NonEmptyArray, toUnit } from '../../shared/utils/fp'
 import { List } from '../../shared/utils/fp'
 import { Future, IO, Maybe } from '../../shared/utils/fp'
 
@@ -31,8 +31,8 @@ import type {
   MusicEventConnectionDisconnected,
   MusicEventConnectionReady,
   MusicEventPlayerIdle,
-} from '../models/events/MusicEvent'
-import { MusicEvent } from '../models/events/MusicEvent'
+} from '../models/event/MusicEvent'
+import { MusicEvent } from '../models/event/MusicEvent'
 import type { LoggerGetter, LoggerType } from '../models/logger/LoggerType'
 import { AudioPlayerState } from '../models/music/AudioPlayerState'
 import type { MusicStateConnected } from '../models/music/MusicState'
@@ -203,7 +203,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
           ),
         ),
       ),
-      Future.map(() => {}),
+      Future.map(toUnit),
     )
   }
 
@@ -317,13 +317,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
     const audioPlayerStop = pipe(
       currentState,
       MusicState.getAudioPlayer,
-      Maybe.fold(
-        () => IO.unit,
-        flow(
-          DiscordConnector.audioPlayerStop,
-          IO.map(() => {}),
-        ),
-      ),
+      Maybe.fold(() => IO.unit, flow(DiscordConnector.audioPlayerStop, IO.map(toUnit))),
       Future.fromIOEither,
       orElse,
     )
@@ -331,7 +325,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
     return pipe(
       apply.sequenceT(Future.ApplyPar)(threadDelete, messageDelete, audioPlayerStop),
       Future.chainIOEitherK(() => musicState.set(MusicState.empty)),
-      Future.map(() => {}),
+      Future.map(toUnit),
     )
   }
 
@@ -528,7 +522,7 @@ const refreshMessage = (state: MusicState): Future<void> => {
     futureMaybe.chainFuture(({ message, options }) =>
       DiscordConnector.messageEdit(message, options),
     ),
-    Future.map(() => {}),
+    Future.map(toUnit),
   )
 }
 
@@ -538,11 +532,7 @@ const logEventToThread = (state: MusicState, message: string): Future<void> =>
     Maybe.chain(m => Maybe.fromNullable(m.thread)),
     Maybe.fold(
       () => Future.unit,
-      thread =>
-        pipe(
-          DiscordConnector.sendPrettyMessage(thread, message),
-          Future.map(() => {}),
-        ),
+      thread => pipe(DiscordConnector.sendPrettyMessage(thread, message), Future.map(toUnit)),
     ),
   )
 

@@ -5,11 +5,16 @@ import { lens, optional } from 'monocle-ts'
 import type { Optional } from 'monocle-ts/Optional'
 
 import { List, Maybe } from '../../utils/fp'
-import type { MemberBirthdate } from '../MemberBirthdate'
+import type { DayJs } from '../DayJs'
 import { GuildEmojiView } from './GuildEmojiView'
 import { GuildId } from './GuildId'
 import { MemberView } from './MemberView'
 import type { UserId } from './UserId'
+
+type MemberIdWithBirthdate = {
+  readonly id: UserId
+  readonly birthdate: DayJs
+}
 
 const codec = C.struct({
   id: GuildId.codec,
@@ -28,7 +33,7 @@ const fromGuild = (guild: Guild, members: List<GuildMember>): GuildView => ({
 })
 
 const updateBirthdates =
-  (birthdates: List<MemberBirthdate>) =>
+  (birthdates: List<MemberIdWithBirthdate>) =>
   (guild: GuildView): GuildView =>
     pipe(
       birthdates,

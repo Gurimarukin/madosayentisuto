@@ -2,9 +2,9 @@ import type { ClientEvents } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
-import { IO, List } from '../../shared/utils/fp'
+import { IO, List, toUnit } from '../../shared/utils/fp'
 
-import { MadEvent } from '../models/events/MadEvent'
+import { MadEvent } from '../models/event/MadEvent'
 import type { TSubject } from '../models/rx/TSubject'
 import type { ToTiny } from '../utils/PubSubUtils'
 import { PubSubUtils } from '../utils/PubSubUtils'
@@ -29,6 +29,6 @@ export const publishDiscordEvents = (
       // pub('messageReactionAdd', MadEvent.MessageReactionAdd),
       // pub('messageReactionRemove', MadEvent.MessageReactionRemove),
     ),
-    IO.map(() => {}),
+    IO.map(toUnit),
   )
 }

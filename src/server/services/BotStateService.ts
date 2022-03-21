@@ -1,7 +1,7 @@
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { Future, IO, Maybe } from '../../shared/utils/fp'
+import { Future, IO, Maybe, toUnit } from '../../shared/utils/fp'
 
 import type { DiscordConnector } from '../helpers/DiscordConnector'
 import type { Activity } from '../models/botState/Activity'
@@ -45,7 +45,7 @@ export const BotStateService = (
         activity => logger.info(`Setting activity: ${activity.type} ${activity.name}`),
       ),
       IO.chain(() => discord.setActivity(maybeActivity)),
-      IO.map(() => {}),
+      IO.map(toUnit),
       Future.fromIOEither,
     )
   }

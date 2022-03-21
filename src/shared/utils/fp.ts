@@ -36,7 +36,13 @@ export const inspect =
   }
 
 // eslint-disable-next-line functional/no-return-void
-export const noop = (): void => {}
+export const noop = (): void => undefined
+
+// a Future is an IO
+type NonIO<A> = A extends io.IO<unknown> ? never : A
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, functional/no-return-void
+export const toUnit = <A>(_: NonIO<A>): void => undefined
 
 export type Dict<K extends string, A> = readonlyRecord.ReadonlyRecord<K, A>
 export const Dict = readonlyRecord

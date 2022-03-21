@@ -42,7 +42,7 @@ const prettyMs = (ms: MsDuration): string => {
   const date = DayJs.of(MsDuration.unwrap(ms))
   const zero = DayJs.of(0)
 
-  const d = pipe(date, DayJs.diff(zero, 'day'))
+  const d = pipe(date, DayJs.diff(zero, 'days'))
   const h = DayJs.hour.get(date)
   const m = DayJs.minute.get(date)
   const s = DayJs.second.get(date)

@@ -1,14 +1,15 @@
 import { pipe } from 'fp-ts/function'
 
-import { DayJs } from '../../shared/models/DayJs'
-import type { MemberBirthdateOutput } from '../../shared/models/MemberBirthdate'
-import { MemberBirthdate } from '../../shared/models/MemberBirthdate'
+import type { DayJs } from '../../shared/models/DayJs'
 import { UserId } from '../../shared/models/guild/UserId'
-import { Future, List, Tuple } from '../../shared/utils/fp'
+import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { MongoCollection } from '../models/MongoCollection'
 import type { LoggerGetter } from '../models/logger/LoggerType'
+import { Birthdate } from '../models/member/Birthdate'
+import type { MemberBirthdateOutput } from '../models/member/MemberBirthdate'
+import { MemberBirthdate } from '../models/member/MemberBirthdate'
+import type { MongoCollection } from '../models/mongo/MongoCollection'
 
 export type MemberBirthdatePersistence = ReturnType<typeof MemberBirthdatePersistence>
 
@@ -18,23 +19,29 @@ export const MemberBirthdatePersistence = (
   mongoCollection: MongoCollection,
 ) => {
   const logger = Logger('MemberBirthdatePersistence')
-  const decoderWithName = Tuple.of(MemberBirthdate.codec, 'MemberBirthdate')
   const collection = FpCollection<MemberBirthdate, MemberBirthdateOutput>(
     logger,
     mongoCollection('memberBirthdate'),
-    decoderWithName,
+    [MemberBirthdate.codec, 'MemberBirthdate'],
   )
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { id: -1 }, unique: true }])
 
+  const Keys = {
+    month: collection.path(['birthdate', 'month']),
+    date: collection.path(['birthdate', 'date']),
+  }
+
   return {
     ensureIndexes,
 
-    lookupByDate: (date: DayJs) =>
-      pipe(collection.findAll(decoderWithName)({ birthdate: DayJs.encoder.encode(date) })),
+    listForDate: (d: DayJs): Future<List<MemberBirthdate>> => {
+      const { month, date } = Birthdate.fromDate(d)
+      return collection.findAll()({ [Keys.month]: month, [Keys.date]: date })
+    },
 
     listForMembers: (ids: List<UserId>): Future<List<MemberBirthdate>> =>
-      collection.findAll(decoderWithName)({ id: { $in: pipe(ids, List.map(UserId.unwrap)) } }),
+      collection.findAll()({ id: { $in: pipe(ids, List.map(UserId.unwrap)) } }),
 
     upsert: (state: MemberBirthdate): Future<boolean> =>
       pipe(

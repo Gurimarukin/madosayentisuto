@@ -13,6 +13,7 @@ const properties = {
   calls: Maybe.codec(CallsDb.codec),
   defaultRole: Maybe.codec(TSnowflake.codec),
   itsFridayChannel: Maybe.codec(TSnowflake.codec),
+  birthdayChannel: Maybe.codec(TSnowflake.codec),
 }
 
 const keys = Dict.keys(properties)
@@ -24,6 +25,7 @@ const empty = (id: GuildId): GuildStateDb => ({
   calls: Maybe.none,
   defaultRole: Maybe.none,
   itsFridayChannel: Maybe.none,
+  birthdayChannel: Maybe.none,
 })
 
 const fromGuildState = ({
@@ -31,6 +33,7 @@ const fromGuildState = ({
   calls,
   defaultRole,
   itsFridayChannel,
+  birthdayChannel,
 }: GuildState): GuildStateDb => ({
   id,
   calls: pipe(calls, Maybe.map(CallsDb.fromCalls)),
@@ -40,6 +43,10 @@ const fromGuildState = ({
   ),
   itsFridayChannel: pipe(
     itsFridayChannel,
+    Maybe.map(c => TSnowflake.wrap(c.id)),
+  ),
+  birthdayChannel: pipe(
+    birthdayChannel,
     Maybe.map(c => TSnowflake.wrap(c.id)),
   ),
 })

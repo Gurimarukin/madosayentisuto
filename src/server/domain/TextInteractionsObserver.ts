@@ -11,12 +11,12 @@ import type {
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { List } from '../../shared/utils/fp'
+import { List, toUnit } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
 import type { CaptainConfig } from '../Config'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventMessageCreate } from '../models/events/MadEvent'
+import type { MadEventMessageCreate } from '../models/event/MadEvent'
 import type { TObserver } from '../models/rx/TObserver'
 import { MessageUtils } from '../utils/MessageUtils'
 
@@ -79,10 +79,7 @@ export const TextInteractionsObserver = (
 const send =
   (message: string | MessagePayload | MessageOptions) =>
   (channel: MyChannel): Future<void> =>
-    pipe(
-      DiscordConnector.sendMessage(channel, message),
-      Future.map(() => {}),
-    )
+    pipe(DiscordConnector.sendMessage(channel, message), Future.map(toUnit))
 
 const sendIDontLikeThieves = send(
   MessageUtils.singleSafeEmbed({

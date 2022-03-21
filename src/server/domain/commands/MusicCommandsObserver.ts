@@ -11,14 +11,14 @@ import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import { Either, NonEmptyArray } from '../../../shared/utils/fp'
+import { Either, NonEmptyArray, toUnit } from '../../../shared/utils/fp'
 import { Future, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
 import type { MusicSubscription } from '../../helpers/MusicSubscription'
 import type { YtDlp } from '../../helpers/YtDlp'
 import { musicStateButtons } from '../../helpers/messages/musicStateMessage'
-import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
+import type { MadEventInteractionCreate } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import { MusicState } from '../../models/music/MusicState'
 import { Track } from '../../models/music/Track'
@@ -98,7 +98,7 @@ export const MusicCommandsObserver = (
       Future.chain(content =>
         DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
       ),
-      Future.map(() => {}),
+      Future.map(toUnit),
     )
   }
 

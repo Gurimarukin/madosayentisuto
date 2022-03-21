@@ -8,11 +8,11 @@ import { flow, pipe } from 'fp-ts/function'
 import { DayJs } from '../../shared/models/DayJs'
 import { UserId } from '../../shared/models/guild/UserId'
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
-import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventGuildMemberRemove } from '../models/events/MadEvent'
+import type { MadEventGuildMemberRemove } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import { ChannelUtils } from '../utils/ChannelUtils'
@@ -77,7 +77,7 @@ export const NotifyGuildLeaveObserver = (
         futureMaybe.chain(({ channel, message }) =>
           DiscordConnector.sendPrettyMessage(channel, message),
         ),
-        Future.map(() => {}),
+        Future.map(toUnit),
       )
   }
 }

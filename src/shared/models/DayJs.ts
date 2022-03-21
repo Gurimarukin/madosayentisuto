@@ -7,11 +7,6 @@ import type { Endomorphism } from 'fp-ts/Endomorphism'
 import type { IO } from 'fp-ts/IO'
 import type { Ord } from 'fp-ts/Ord'
 import { identity, pipe } from 'fp-ts/function'
-import * as C from 'io-ts/Codec'
-import type { Codec } from 'io-ts/Codec'
-import type { Decoder } from 'io-ts/Decoder'
-import * as D from 'io-ts/Decoder'
-import type { Encoder } from 'io-ts/Encoder'
 import type { Lens } from 'monocle-ts/Lens'
 import type { Newtype } from 'newtype-ts'
 import { iso } from 'newtype-ts'
@@ -32,7 +27,7 @@ const modify = identity as (f: Endomorphism<dayjs.Dayjs>) => Endomorphism<DayJs>
 // constructors
 
 const of = (date: string | number | Date, format?: string): DayJs =>
-  wrap(dayjs(date, { format, locale: 'fr', utc: true }, true))
+  wrap(dayjs.utc(date, format, true))
 
 const now: IO<DayJs> = pipe(dayjs, io.map(wrap))
 
@@ -74,20 +69,6 @@ function diff(
       : unwrap(a).diff(unwrap(b), unit)
 }
 
-// codec
-
-const decoder: Decoder<unknown, DayJs> = pipe(
-  D.string,
-  D.parse(str => {
-    const d = of(str)
-    return unwrap(d).isValid() ? D.success(d) : D.failure(str, 'DayJsFromISOString')
-  }),
-)
-
-const encoder: Encoder<string, DayJs> = { encode: format() }
-
-const codec: Codec<unknown, string, DayJs> = C.make(decoder, encoder)
-
 // Ord
 
 const Ord_: Ord<DayJs> = ord.fromCompare((first, second) => {
@@ -100,6 +81,23 @@ const Ord_: Ord<DayJs> = ord.fromCompare((first, second) => {
 
 // Lens
 
+const year: Lens<DayJs, number> = {
+  get: d => unwrap(d).year(),
+  set: n => modify(d => d.year(n)),
+}
+
+const month: Lens<DayJs, number> = {
+  get: d => unwrap(d).month(),
+  set: n => modify(d => d.month(n)),
+}
+
+// date of month
+const date: Lens<DayJs, number> = {
+  get: d => unwrap(d).date(),
+  set: n => modify(d => d.date(n)),
+}
+
+// day of week
 const day: Lens<DayJs, number> = {
   get: d => unwrap(d).day(),
   set: n => modify(d => d.day(n)),
@@ -140,12 +138,11 @@ export const DayJs = {
   diff,
   unwrap,
 
-  decoder,
-  encoder,
-  codec,
-
   Ord: Ord_,
 
+  year,
+  month,
+  date,
   day,
   hour,
   minute,

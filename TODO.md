@@ -4,6 +4,7 @@
 - birthdays
 - deploy: on guild join
 - Remind
+- improve PubSubUtils.or
 - poll:
   - remove own response
   - multiple choice option

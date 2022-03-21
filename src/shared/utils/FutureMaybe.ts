@@ -18,38 +18,6 @@ declare module 'fp-ts/HKT' {
   }
 }
 
-const ap = optionT.ap(Future.ApplyPar)
-
-const chain = optionT.chain(Future.Monad)
-
-const chainFuture = <A, B>(f: (a: A) => Future<B>): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) =>
-  chain(flow(f, Future.map(Maybe.some)))
-
-const chainOption: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
-  optionT.chainOptionK(Future.Monad)
-
-const fromFuture: <A>(fa: Future<A>) => Future<Maybe<A>> = optionT.fromF(Future.Functor)
-
-const fromNullable: <A>(a: A) => Future<Maybe<NonNullable<A>>> = optionT.fromNullable(
-  Future.Pointed,
-)
-
-const fromOption: <A>(a: Maybe<A>) => Future<Maybe<A>> = optionT.fromOptionK(Future.Pointed)(
-  identity,
-)
-
-const fromIOEither: <A>(fa: IO<A>) => Future<Maybe<A>> = flow(
-  Future.fromIOEither,
-  Future.map(Maybe.some),
-)
-
-type GetOrElse = <A>(onNone: Lazy<Future<A>>) => (fa: Future<Maybe<A>>) => Future<A>
-const getOrElse: GetOrElse = optionT.getOrElse(Future.Monad)
-
-const map = optionT.map(Future.Functor)
-
-const none: Future<Maybe<never>> = optionT.zero(Future.Pointed)()
-
 const some: <A>(a: A) => Future<Maybe<A>> = optionT.some(Future.Pointed)
 
 const apPar_: Apply1<URI>['ap'] = (fab, fa) => pipe(fab, ap(fa))
@@ -77,6 +45,44 @@ const Functor: Functor1<URI> = {
   map: map_,
 }
 
+const ap = optionT.ap(Future.ApplyPar)
+
+const chain = optionT.chain(Future.Monad)
+
+const chainFirst = fpTsChain.chainFirst(Chain)
+
+const chainFuture = <A, B>(f: (a: A) => Future<B>): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) =>
+  chain(flow(f, Future.map(Maybe.some)))
+
+const chainFirstFuture = <A, B>(
+  f: (a: A) => Future<B>,
+): ((fa: Future<Maybe<A>>) => Future<Maybe<A>>) => chainFirst(flow(f, Future.map(Maybe.some)))
+
+const chainOption: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
+  optionT.chainOptionK(Future.Monad)
+
+const fromFuture: <A>(fa: Future<A>) => Future<Maybe<A>> = optionT.fromF(Future.Functor)
+
+const fromNullable: <A>(a: A) => Future<Maybe<NonNullable<A>>> = optionT.fromNullable(
+  Future.Pointed,
+)
+
+const fromOption: <A>(a: Maybe<A>) => Future<Maybe<A>> = optionT.fromOptionK(Future.Pointed)(
+  identity,
+)
+
+const fromIOEither: <A>(fa: IO<A>) => Future<Maybe<A>> = flow(
+  Future.fromIOEither,
+  Future.map(Maybe.some),
+)
+
+type GetOrElse = <A>(onNone: Lazy<Future<A>>) => (fa: Future<Maybe<A>>) => Future<A>
+const getOrElse: GetOrElse = optionT.getOrElse(Future.Monad)
+
+const map = optionT.map(Future.Functor)
+
+const none: Future<Maybe<never>> = optionT.zero(Future.Pointed)()
+
 export const futureMaybe = {
   Do,
   ApplyPar,
@@ -85,8 +91,9 @@ export const futureMaybe = {
   apS: apply.apS(ApplyPar),
   bind: fpTsChain.bind(Chain),
   chain,
-  chainFirst: fpTsChain.chainFirst(Chain),
+  chainFirst,
   chainFuture,
+  chainFirstFuture,
   chainOption,
   fromFuture,
   fromNullable,

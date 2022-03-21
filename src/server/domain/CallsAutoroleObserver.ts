@@ -5,12 +5,12 @@ import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
-import { Future, IO, Maybe } from '../../shared/utils/fp'
+import { Future, IO, Maybe, toUnit } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { initCallsButton, initCallsMessage } from '../helpers/messages/initCallsMessage'
 import { TSnowflake } from '../models/TSnowflake'
-import type { MadEventInteractionCreate } from '../models/events/MadEvent'
+import type { MadEventInteractionCreate } from '../models/event/MadEvent'
 import type { Calls } from '../models/guildState/Calls'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
@@ -96,7 +96,7 @@ export const CallsAutoroleObserver = (
       ),
       Future.map(Maybe.filter(({ success }) => success)),
       futureMaybe.chainFuture(({ callsAndMember: { calls } }) => refreshCallsInitMessage(calls)),
-      Future.map(() => {}),
+      Future.map(toUnit),
     )
   }
 
@@ -118,7 +118,7 @@ export const CallsAutoroleObserver = (
   function refreshCallsInitMessage(calls: Calls): Future<void> {
     return pipe(
       DiscordConnector.messageEdit(calls.message, initCallsMessage(calls.channel, calls.role)),
-      Future.map(() => {}),
+      Future.map(toUnit),
     )
   }
 

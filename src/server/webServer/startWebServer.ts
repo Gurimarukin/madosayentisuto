@@ -10,7 +10,7 @@ import type { ExpressConnection } from 'hyper-ts/lib/express'
 
 import { Method } from '../../shared/models/Method'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import { Dict, Future, IO, List, Maybe } from '../../shared/utils/fp'
+import { Dict, Future, IO, List, Maybe, toUnit } from '../../shared/utils/fp'
 
 import type { HttpConfig } from '../Config'
 import type { LoggerGetter } from '../models/logger/LoggerType'
@@ -121,7 +121,7 @@ export const startWebServer = (
         e.listen(config.port, logger.info(`Server listening on port ${config.port}`)),
       ),
     ),
-    IO.map(() => {}),
+    IO.map(toUnit),
   )
 
   function handleError(e: Error): EndedMiddleware {

@@ -4,13 +4,14 @@ import type { Collection, Db } from 'mongodb'
 import { MongoClient } from 'mongodb'
 
 import type { IO } from '../shared/utils/fp'
+import { toUnit } from '../shared/utils/fp'
 import { Future } from '../shared/utils/fp'
 
 import type { Config } from './Config'
 import type { DiscordConnector } from './helpers/DiscordConnector'
 import { YtDlp } from './helpers/YtDlp'
-import type { MongoCollection } from './models/MongoCollection'
 import type { LoggerGetter, LoggerType } from './models/logger/LoggerType'
+import type { MongoCollection } from './models/mongo/MongoCollection'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { HealthCheckPersistence } from './persistence/HealthCheckPersistence'
@@ -33,6 +34,7 @@ export type Context = {
   readonly ensureIndexes: Future<void>
   readonly botStateService: BotStateService
   readonly guildStateService: GuildStateService
+  readonly memberBirthdateService: MemberBirthdateService
   readonly pollResponseService: PollResponseService
   readonly startWebServer: IO<void>
 }
@@ -76,7 +78,7 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
       memberBirthdatePersistence.ensureIndexes,
       pollResponsePersistence.ensureIndexes,
     ]),
-    Future.map(() => {}),
+    Future.map(toUnit),
   )
 
   const botStateService = BotStateService(Logger, discord, botStatePersistence)
@@ -99,6 +101,7 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
     ensureIndexes,
     botStateService,
     guildStateService,
+    memberBirthdateService,
     pollResponseService,
     startWebServer: startWebServer_,
   }

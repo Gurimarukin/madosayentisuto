@@ -13,6 +13,7 @@ export type GuildState = {
   readonly calls: Maybe<Calls>
   readonly defaultRole: Maybe<Role>
   readonly itsFridayChannel: Maybe<TextChannel>
+  readonly birthdayChannel: Maybe<TextChannel>
   readonly subscription: Maybe<MusicSubscription>
 }
 
@@ -21,6 +22,7 @@ const empty = (id: GuildId): GuildState => ({
   calls: Maybe.none,
   defaultRole: Maybe.none,
   itsFridayChannel: Maybe.none,
+  birthdayChannel: Maybe.none,
   subscription: Maybe.none,
 })
 
@@ -28,6 +30,7 @@ const Lens_ = {
   calls: pipe(lens.id<GuildState>(), lens.prop('calls')),
   defaultRole: pipe(lens.id<GuildState>(), lens.prop('defaultRole')),
   itsFridayChannel: pipe(lens.id<GuildState>(), lens.prop('itsFridayChannel')),
+  birthdayChannel: pipe(lens.id<GuildState>(), lens.prop('birthdayChannel')),
   subscription: pipe(lens.id<GuildState>(), lens.prop('subscription')),
 }
 

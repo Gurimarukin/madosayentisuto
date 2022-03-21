@@ -25,6 +25,7 @@ import { UserId } from '../../../shared/models/guild/UserId'
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { Tuple } from '../../../shared/utils/fp'
+import { toUnit } from '../../../shared/utils/fp'
 import { IO } from '../../../shared/utils/fp'
 import { Either, NonEmptyArray } from '../../../shared/utils/fp'
 import { Future, List, Maybe } from '../../../shared/utils/fp'
@@ -34,7 +35,7 @@ import { initCallsMessage } from '../../helpers/messages/initCallsMessage'
 import { TSnowflake } from '../../models/TSnowflake'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
-import type { MadEventInteractionCreate } from '../../models/events/MadEvent'
+import type { MadEventInteractionCreate } from '../../models/event/MadEvent'
 import type { Calls } from '../../models/guildState/Calls'
 import type { GuildState } from '../../models/guildState/GuildState'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
@@ -109,6 +110,23 @@ const itsFridayCommand = new SlashCommandBuilder()
       ),
   )
 
+const birthdayCommand = new SlashCommandBuilder()
+  .setDefaultPermission(false)
+  .setName('birthday')
+  .setDescription("Jean Plank vous informe que c'est l'anniversaire de bidule")
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('set')
+      .setDescription('Jean Plank veut bien changer le salon pour cette information vitale')
+      .addChannelOption(option =>
+        option
+          .setName('channel')
+          .setDescription('Le nouveau salon pour cette information vitale')
+          .addChannelTypes([ChannelType.GuildText])
+          .setRequired(true),
+      ),
+  )
+
 const activityTypeBotChoices: List<Tuple<ActivityTypeBot, ActivityTypeBot>> = pipe(
   ActivityTypeBot.values,
   List.map(a => [a, a]),
@@ -159,6 +177,7 @@ export const adminCommands = [
   callsCommand,
   defaultRoleCommand,
   itsFridayCommand,
+  birthdayCommand,
   activityCommand,
 ]
 
@@ -185,6 +204,8 @@ export const AdminCommandsObserver = (
           return onDefaultRole(interaction)
         case 'itsfriday':
           return onItsFriday(interaction)
+        case 'birthday':
+          return onBirthday(interaction)
         case 'activity':
           return onActivity(interaction)
       }
@@ -214,7 +235,7 @@ export const AdminCommandsObserver = (
       Future.chain(content =>
         DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
       ),
-      Future.map(() => {}),
+      Future.map(toUnit),
     )
   }
 
@@ -247,7 +268,7 @@ export const AdminCommandsObserver = (
       futureMaybe.chainFuture(({ guild, author, commandChannel, callsChannel, role }) =>
         sendInitMessageAndUpdateState(guild, author, commandChannel, callsChannel, role),
       ),
-      Future.map(() => {}),
+      Future.map(toUnit),
     )
   }
 
@@ -268,7 +289,7 @@ export const AdminCommandsObserver = (
                   author,
                   `Impossible d'envoyer le message d'abonnement dans le salon **#${commandChannel.name}**.`,
                 ),
-                Future.map(() => {}),
+                Future.map(toUnit),
               )
             : Future.unit,
         tryDeletePreviousMessageAndSetCalls(guild, channel, role),
@@ -294,7 +315,7 @@ export const AdminCommandsObserver = (
         guildStateService.getCalls(guild),
         futureMaybe.chainFuture(previous => deleteMessage(previous.message)),
         Future.chain(() => guildStateService.setCalls(guild, { message, channel, role })),
-        Future.map(() => {}),
+        Future.map(toUnit),
       )
   }
 
@@ -355,6 +376,37 @@ export const AdminCommandsObserver = (
           () => 'Erreur',
           ({ itsFridayChannel }) =>
             `Nouveau salon pour "C'est vendredi" : ${Maybe.toNullable(itsFridayChannel)}`,
+        ),
+      ),
+    )
+  }
+
+  /**
+   * birthday
+   */
+
+  function onBirthday(interaction: CommandInteraction): Future<void> {
+    switch (interaction.options.getSubcommand(false)) {
+      case 'set':
+        return onBirthdaySet(interaction)
+    }
+    return Future.unit
+  }
+
+  function onBirthdaySet(interaction: CommandInteraction): Future<void> {
+    return withFollowUp(interaction)(
+      pipe(
+        apply.sequenceS(futureMaybe.ApplyPar)({
+          guild: Future.right(Maybe.fromNullable(interaction.guild)),
+          channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel('channel'))),
+        }),
+        futureMaybe.chainFuture(({ guild, channel }) =>
+          guildStateService.setBirthdayChannel(guild, channel),
+        ),
+        futureMaybe.match(
+          () => 'Erreur',
+          ({ birthdayChannel }) =>
+            `Nouveau salon pour les anniversaires : ${Maybe.toNullable(birthdayChannel)}`,
         ),
       ),
     )
@@ -438,7 +490,7 @@ export const AdminCommandsObserver = (
         Future.chain(content =>
           DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
         ),
-        Future.map(() => {}),
+        Future.map(toUnit),
       )
   }
 
@@ -503,11 +555,18 @@ export const AdminCommandsObserver = (
 const maybeStr = <A>(fa: Maybe<A>, str: (a: A) => string = String): string =>
   pipe(fa, Maybe.map(str), Maybe.toNullable, String)
 
-const formatState = ({ calls, defaultRole, itsFridayChannel, subscription }: GuildState): string =>
+const formatState = ({
+  calls,
+  defaultRole,
+  itsFridayChannel,
+  birthdayChannel,
+  subscription,
+}: GuildState): string =>
   StringUtils.stripMargins(
     `- **calls**: ${maybeStr(calls, formatCalls)}
     |- **defaultRole**: ${maybeStr(defaultRole)}
     |- **itsFridayChannel**: ${maybeStr(itsFridayChannel)}
+    |- **birthdayChannel**: ${maybeStr(birthdayChannel)}
     |- **subscription**: ${maybeStr(subscription, s => s.stringify())}`,
   )
 

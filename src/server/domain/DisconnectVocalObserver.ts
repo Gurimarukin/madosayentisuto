@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/function'
 
 import { Future, List, Maybe } from '../../shared/utils/fp'
 
-import type { MadEventVoiceStateUpdate } from '../models/events/MadEvent'
+import type { MadEventVoiceStateUpdate } from '../models/event/MadEvent'
 import type { MusicChannel } from '../models/music/MusicState'
 import { MusicState } from '../models/music/MusicState'
 import type { TObserver } from '../models/rx/TObserver'

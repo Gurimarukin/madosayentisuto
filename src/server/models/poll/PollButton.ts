@@ -1,7 +1,7 @@
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { List, Maybe } from '../../shared/utils/fp'
+import { List, Maybe } from '../../../shared/utils/fp'
 
 export type PollButton = {
   readonly answerIndex: number

@@ -8,7 +8,7 @@ import { StringUtils } from '../../../shared/utils/StringUtils'
 import { Either, List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import { Colors, constants } from '../../constants'
-import { PollButton } from '../../models/PollButton'
+import { PollButton } from '../../models/poll/PollButton'
 import { MessageUtils } from '../../utils/MessageUtils'
 
 const graphWidth = 20 // chars

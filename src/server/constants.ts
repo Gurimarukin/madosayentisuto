@@ -22,6 +22,8 @@ export const constants = {
     play: '▶️', // :arrow_forward:
     pause: '⏸️', // :pause_button:
     next: '⏩', // :fast_forward:
+    birthday: '🎂', // :birthday:
+    tada: '🎉', // :tada:
 
     characters: emojiCharacters(),
   } as const,

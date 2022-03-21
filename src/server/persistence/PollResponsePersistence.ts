@@ -7,11 +7,11 @@ import type { List, Maybe } from '../../shared/utils/fp'
 import { NonEmptyArray } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { MongoCollection } from '../models/MongoCollection'
-import type { PollResponseOutput } from '../models/PollResponse'
-import { PollResponse } from '../models/PollResponse'
 import { TSnowflake } from '../models/TSnowflake'
 import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { MongoCollection } from '../models/mongo/MongoCollection'
+import type { PollResponseOutput } from '../models/poll/PollResponse'
+import { PollResponse } from '../models/poll/PollResponse'
 
 type FindAll = {
   readonly guild: GuildId
@@ -48,7 +48,7 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
       }),
 
     listForMessage: ({ guild, message }: FindAll): Future<List<PollResponse>> =>
-      collection.findAll([PollResponse.codec, 'PollResponse'])({
+      collection.findAll()({
         guild: GuildId.unwrap(guild),
         message: TSnowflake.unwrap(message),
       }),

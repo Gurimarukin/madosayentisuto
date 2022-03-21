@@ -1,13 +1,13 @@
 import { pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 
-import { DayJs } from '../../../shared/models/DayJs'
 import type { GuildId } from '../../../shared/models/guild/GuildId'
 import { GuildView } from '../../../shared/models/guild/GuildView'
 import { GuildViewShort } from '../../../shared/models/guild/GuildViewShort'
 import type { UserId } from '../../../shared/models/guild/UserId'
 import { futureMaybe } from '../../../shared/utils/FutureMaybe'
 import { Future, IO, List, Maybe } from '../../../shared/utils/fp'
+import { DateFromISOString } from '../../../shared/utils/ioTsUtils'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { MemberBirthdateService } from '../../services/MemberBirthdateService'
@@ -23,7 +23,7 @@ export const DiscordClientController = (
 ) => ({
   listGuilds: (/* user: User */): EndedMiddleware =>
     pipe(
-      discord.getGuilds,
+      discord.listGuilds,
       IO.map(List.map(GuildViewShort.fromGuild)),
       M.fromIOEither,
       M.ichain(M.json(Status.OK, List.encoder(GuildViewShort.codec).encode)),
@@ -57,12 +57,12 @@ export const DiscordClientController = (
   updateMemberBirthdate: (userId: UserId) => (/* user: User */): EndedMiddleware =>
     /* User.canUpdateMember(user) */
     pipe(
-      M.decodeBody([DayJs.decoder, 'DayJs']),
+      M.decodeBody([DateFromISOString.decoder, 'DateFromISOString']),
       M.matchE(
         () => M.text(Status.BadRequest)(),
         birthdate =>
           pipe(
-            memberBirthdateService.upsert(userId, pipe(birthdate, DayJs.startOf('day'))),
+            memberBirthdateService.upsert(userId, birthdate),
             M.fromTaskEither,
             M.ichain(success =>
               success ? M.text(Status.NoContent)() : M.text(Status.BadRequest)(),

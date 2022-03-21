@@ -10,13 +10,13 @@ import { pipe } from 'fp-ts/function'
 
 import { GuildId } from '../../../shared/models/guild/GuildId'
 import { UserId } from '../../../shared/models/guild/UserId'
-import { Future, IO, List, NonEmptyArray } from '../../../shared/utils/fp'
+import { Future, IO, List, NonEmptyArray, toUnit } from '../../../shared/utils/fp'
 
 import type { Config } from '../../Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import { CommandId } from '../../models/commands/CommandId'
-import type { PutCommandResult } from '../../models/commands/PutCommandResult'
-import type { MadEventDbReady } from '../../models/events/MadEvent'
+import { CommandId } from '../../models/command/CommandId'
+import type { PutCommandResult } from '../../models/command/PutCommandResult'
+import type { MadEventDbReady } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import type { TObserver } from '../../models/rx/TObserver'
 import { adminCommands } from '../commands/AdminCommandsObserver'
@@ -52,7 +52,7 @@ export const DeployCommandsObserver = (
   return {
     next: () =>
       pipe(
-        Future.fromIOEither(discord.getGuilds),
+        Future.fromIOEither(discord.listGuilds),
         Future.chain(Future.traverseArray(putCommandsForGuild)),
         Future.chainIOEitherK(() => logger.info('Ensured commands')),
       ),
@@ -88,7 +88,7 @@ export const DeployCommandsObserver = (
     return results =>
       pipe(
         DiscordConnector.guildCommandsPermissionsSet(guild, getFullPermission(results)),
-        Future.map(() => {}),
+        Future.map(toUnit),
       )
   }
 

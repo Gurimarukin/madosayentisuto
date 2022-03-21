@@ -5,7 +5,6 @@ import type { Dict, Maybe } from '../../shared/utils/fp'
 import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { MongoCollection } from '../models/MongoCollection'
 import type { TSnowflake } from '../models/TSnowflake'
 import type { GuildStateDbOutput } from '../models/guildState/db/GuildStateDb'
 import {
@@ -13,6 +12,7 @@ import {
   GuildStateDbOnlyItsFridayChannel,
 } from '../models/guildState/db/GuildStateDb'
 import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { MongoCollection } from '../models/mongo/MongoCollection'
 
 type Projection = Partial<Dict<keyof GuildStateDbOutput, 1>>
 
@@ -35,7 +35,7 @@ export const GuildStatePersistence = (Logger: LoggerGetter, mongoCollection: Mon
     find: (id: GuildId): Future<Maybe<GuildStateDb>> =>
       collection.findOne({ id: GuildId.unwrap(id) }),
 
-    findAllItsFridayChannels: (): Future<List<TSnowflake>> => {
+    listAllItsFridayChannels: (): Future<List<TSnowflake>> => {
       const projection: Projection = { itsFridayChannel: 1 }
       return pipe(
         collection.findAll([

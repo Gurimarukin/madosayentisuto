@@ -9,8 +9,8 @@ import type {
   MadEventPublicCallEnded,
   MadEventPublicCallStarted,
   MadEventVoiceStateUpdate,
-} from '../models/events/MadEvent'
-import { MadEvent } from '../models/events/MadEvent'
+} from '../models/event/MadEvent'
+import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import type { TSubject } from '../models/rx/TSubject'

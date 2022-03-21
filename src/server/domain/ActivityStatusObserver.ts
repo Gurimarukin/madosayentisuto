@@ -1,14 +1,10 @@
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
-import { Future, Maybe } from '../../shared/utils/fp'
+import { Future, Maybe, toUnit } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
-import type {
-  MadEventAppStarted,
-  MadEventCronJob,
-  MadEventDbReady,
-} from '../models/events/MadEvent'
+import type { MadEventAppStarted, MadEventCronJob, MadEventDbReady } from '../models/event/MadEvent'
 import type { TObserver } from '../models/rx/TObserver'
 import type { BotStateService } from '../services/BotStateService'
 
@@ -32,9 +28,6 @@ export const ActivityStatusObserver = (
   }
 
   function discordSetActivityFromDb(): Future<void> {
-    return pipe(
-      botStateService.discordSetActivityFromDb(),
-      Future.map(() => {}),
-    )
+    return pipe(botStateService.discordSetActivityFromDb(), Future.map(toUnit))
   }
 }

@@ -1,9 +1,9 @@
 import * as C from 'io-ts/Codec'
 
-import { GuildId } from '../../shared/models/guild/GuildId'
-import { UserId } from '../../shared/models/guild/UserId'
+import { GuildId } from '../../../shared/models/guild/GuildId'
+import { UserId } from '../../../shared/models/guild/UserId'
 
-import { TSnowflake } from './TSnowflake'
+import { TSnowflake } from '../TSnowflake'
 
 const codec = C.struct({
   guild: GuildId.codec,

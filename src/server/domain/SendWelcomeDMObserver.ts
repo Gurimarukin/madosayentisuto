@@ -6,7 +6,7 @@ import { Future } from '../../shared/utils/fp'
 
 import { Colors } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventGuildMemberAdd } from '../models/events/MadEvent'
+import type { MadEventGuildMemberAdd } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TObserver } from '../models/rx/TObserver'
 import { LogUtils } from '../utils/LogUtils'
