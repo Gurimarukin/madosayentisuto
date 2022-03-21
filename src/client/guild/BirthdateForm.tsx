@@ -1,21 +1,19 @@
 /* eslint-disable functional/no-expression-statement, functional/no-return-void */
-import type { Dayjs } from 'dayjs'
 import { pipe } from 'fp-ts/function'
 import React, { useCallback, useState } from 'react'
 
 import { apiRoutes } from '../../shared/ApiRouter'
+import { DayJs } from '../../shared/models/DayJs'
 import type { UserId } from '../../shared/models/guild/UserId'
-import { DateUtils } from '../../shared/utils/DateUtils'
 import { Maybe } from '../../shared/utils/fp'
-import { DateFromISOString } from '../../shared/utils/ioTsUtils'
 
 import { Cancel, Check, EditPencil, Prohibition } from '../components/svgs'
 import { http } from '../utils/http'
 
 type Props = {
   readonly userId: UserId
-  readonly initialBirthdate: Maybe<Dayjs>
-  readonly onPostBirthdate: (birthdate: Dayjs) => void
+  readonly initialBirthdate: Maybe<DayJs>
+  readonly onPostBirthdate: (birthdate: DayJs) => void
   readonly onDeleteBirthdate: () => void
 }
 
@@ -37,10 +35,7 @@ export const BirthdateForm = ({
       setValue(
         pipe(
           initialBirthdate,
-          Maybe.fold(
-            () => '',
-            d => d.format(dateFormat),
-          ),
+          Maybe.fold(() => '', DayJs.format(dateFormat)),
         ),
       )
     },
@@ -109,7 +104,7 @@ export const BirthdateForm = ({
             initialBirthdate,
             Maybe.fold(
               () => <span className="w-full text-center">-</span>,
-              d => <span>{d.format(dateFormat)}</span>,
+              d => <span>{pipe(d, DayJs.format(dateFormat))}</span>,
             ),
           )
         )}
@@ -147,14 +142,14 @@ export const BirthdateForm = ({
 const onInputMount = (e: HTMLInputElement | null): void => e?.select()
 
 const dateFormat = 'DD/MM/YYYY'
-const validateDate = (value: string): Maybe<Dayjs> => {
-  const d = DateUtils.parse(value, dateFormat)
-  return d.isValid() ? Maybe.some(d) : Maybe.none
+const validateDate = (value: string): Maybe<DayJs> => {
+  const d = DayJs.of(value, dateFormat)
+  return DayJs.isValid(d) ? Maybe.some(d) : Maybe.none
 }
 
-const postBirthdate = (member: UserId, birthdate: Dayjs): Promise<unknown> =>
+const postBirthdate = (member: UserId, birthdate: DayJs): Promise<unknown> =>
   http(apiRoutes.post.api.member.birthdate(member), {
-    json: [DateFromISOString.encoder, birthdate],
+    json: [DayJs.encoder, birthdate],
   })
 
 const deleteBirthdate = (member: UserId): Promise<unknown> =>

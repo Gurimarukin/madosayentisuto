@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/function'
 
-import { DateUtils } from '../../shared/utils/DateUtils'
+import { DayJs } from '../../shared/models/DayJs'
 import { Future, Maybe } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
@@ -25,7 +25,7 @@ export const ActivityStatusObserver = (
           return discordSetActivityFromDb()
 
         case 'CronJob':
-          if (DateUtils.is8am(event.date)) return discordSetActivityFromDb()
+          if (DayJs.is8am(event.date)) return discordSetActivityFromDb()
           return Future.unit
       }
     },

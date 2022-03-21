@@ -17,4 +17,17 @@ const add =
   (a: MsDuration): MsDuration =>
     wrap(unwrap(a) + unwrap(b))
 
-export const MsDuration = { wrap, unwrap, seconds, minutes, hours, days, fromDate, add }
+export const MsDuration = {
+  wrap,
+  unwrap,
+  seconds,
+  second: seconds,
+  minutes,
+  minute: minutes,
+  hours,
+  hour: hours,
+  days,
+  day: days,
+  fromDate,
+  add,
+}

@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/function'
 
+import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
-import { DateUtils } from '../../shared/utils/DateUtils'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future, IO } from '../../shared/utils/fp'
 
@@ -10,7 +10,7 @@ import { MadEvent } from '../models/events/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
 import type { TSubject } from '../models/rx/TSubject'
 
-const cronJobInterval = MsDuration.minutes(1)
+const cronJobInterval = MsDuration.minute(1)
 
 export const scheduleCronJob = (
   Logger: LoggerGetter,
@@ -19,11 +19,11 @@ export const scheduleCronJob = (
   const logger = Logger('scheduleCronJob')
 
   return pipe(
-    DateUtils.now,
+    DayJs.now,
     IO.fromIO,
     IO.map(now => {
-      const nextMinute = now.startOf('minute').add(1, 'minute')
-      return pipe(nextMinute, DateUtils.diff(now))
+      const nextMinute = pipe(now, DayJs.startOf('minute'), DayJs.add(MsDuration.minute(1)))
+      return pipe(nextMinute, DayJs.diff(now))
     }),
     IO.chainFirst(untilNextMinute =>
       logger.info(
@@ -56,9 +56,11 @@ export const scheduleCronJob = (
 
   function publishEvent(): IO<void> {
     return pipe(
-      DateUtils.now,
+      DayJs.now,
       IO.fromIO,
-      IO.chain(now => subject.next(MadEvent.CronJob(now.second(0).millisecond(0)))), // assuming interval is 1 minute
+      IO.chain(now =>
+        subject.next(MadEvent.CronJob(pipe(now, DayJs.second.set(0), DayJs.millisecond.set(0)))),
+      ), // assuming interval is 1 minute
     )
   }
 }

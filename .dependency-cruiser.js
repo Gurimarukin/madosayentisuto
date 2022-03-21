@@ -229,6 +229,17 @@ module.exports = {
         path: '^src',
       },
     },
+    {
+      name: 'not-to-dayjs',
+      severity: 'error',
+      from: {
+        path: '^src',
+        pathNot: '^src/shared/models/DayJs.ts',
+      },
+      to: {
+        path: 'dayjs',
+      },
+    },
   ],
   options: {
     /* conditions specifying which files not to follow further when encountered:

@@ -1,7 +1,7 @@
 import type { Guild, Role, TextChannel } from 'discord.js'
 import { apply, readonlyMap } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
-import type { Lens as MonocleLens } from 'monocle-ts'
+import type { Lens } from 'monocle-ts/Lens'
 
 import { GuildId } from '../../shared/models/guild/GuildId'
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
@@ -21,7 +21,7 @@ import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type LensInner<A extends MonocleLens<any, any>> = A extends MonocleLens<any, infer B> ? B : never
+type LensInner<A extends Lens<any, any>> = A extends Lens<any, infer B> ? B : never
 type GuildStateLens = typeof GuildState.Lens
 type WithouId<A> = Exclude<A, 'id'>
 

@@ -1,14 +1,10 @@
-import type { Dayjs } from 'dayjs'
 import { json, predicate, string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
-import * as C from 'io-ts/Codec'
 import type { Codec } from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
 import type { Decoder } from 'io-ts/Decoder'
-import type { Encoder } from 'io-ts/Encoder'
 import type { AnyNewtype, CarrierOf } from 'newtype-ts'
 
-import { DateUtils } from './DateUtils'
 import { StringUtils } from './StringUtils'
 import { Either, List } from './fp'
 import { NonEmptyArray } from './fp'
@@ -87,28 +83,3 @@ const nonEmptyArrayFromStringDecoder = <A>(
   pipe(D.string, D.map(prepareArray), D.compose(NonEmptyArray.decoder(decoder)))
 
 export const NonEmptyArrayFromString = { decoder: nonEmptyArrayFromStringDecoder }
-
-// DateFromISOString
-
-const dateFromISOStringDecoder: Decoder<unknown, Dayjs> = pipe(
-  D.string,
-  D.parse(str => {
-    const d = DateUtils.utc(str)
-    return d.isValid() ? D.success(d) : D.failure(str, 'DateFromISOString')
-  }),
-)
-
-const dateFromISOStringEncoder: Encoder<string, Dayjs> = {
-  encode: d => d.format(),
-}
-
-const dateFromISOStringCodec: Codec<unknown, string, Dayjs> = C.make(
-  dateFromISOStringDecoder,
-  dateFromISOStringEncoder,
-)
-
-export const DateFromISOString = {
-  decoder: dateFromISOStringDecoder,
-  encoder: dateFromISOStringEncoder,
-  codec: dateFromISOStringCodec,
-}

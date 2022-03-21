@@ -1,11 +1,10 @@
-import type { Dayjs } from 'dayjs'
 import type { TextChannel } from 'discord.js'
 import { MessageAttachment } from 'discord.js'
 import { random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
+import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
-import { DateUtils } from '../../shared/utils/DateUtils'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 
@@ -25,12 +24,12 @@ export const ItsFridayObserver = (
 
   return {
     next: ({ date }) => {
-      const isFriday = date.day() === 5
-      return isFriday && DateUtils.is8am(date) ? delaySendAllMessages(date) : Future.unit
+      const isFriday = DayJs.day.get(date) === 5
+      return isFriday && DayJs.is8am(date) ? delaySendAllMessages(date) : Future.unit
     },
   }
 
-  function delaySendAllMessages(now: Dayjs): Future<void> {
+  function delaySendAllMessages(now: DayJs): Future<void> {
     return pipe(
       randomDelay(now),
       Future.fromIOEither,
@@ -80,19 +79,20 @@ export const ItsFridayObserver = (
 const rangeStart = 14
 const rangeEnd = 17
 const range = MsDuration.hours(rangeEnd - rangeStart)
-function randomDelay(now: Dayjs): IO<MsDuration> {
-  const today2Pm = now.startOf('hour').hour(rangeStart)
-  const untilToday2Pm = pipe(today2Pm, DateUtils.diff(now))
+function randomDelay(now: DayJs): IO<MsDuration> {
+  const today2Pm = pipe(now, DayJs.startOf('hour'), DayJs.hour.set(rangeStart))
+  const untilToday2Pm = pipe(today2Pm, DayJs.diff(now))
   return pipe(
     random.randomRange(
       MsDuration.unwrap(untilToday2Pm),
       pipe(untilToday2Pm, MsDuration.add(range), MsDuration.unwrap),
     ),
     IO.fromIO,
-    IO.map(MsDuration.wrap),
     IO.filterOrElse(
-      n => 0 <= MsDuration.unwrap(n),
-      n => Error(`Got a negative delay until today 2pm: ${StringUtils.prettyMs(n)}`),
+      n => 0 <= n,
+      n =>
+        Error(`Got a negative delay until today 2pm: ${StringUtils.prettyMs(MsDuration.wrap(n))}`),
     ),
+    IO.map(MsDuration.wrap),
   )
 }

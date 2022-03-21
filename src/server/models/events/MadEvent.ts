@@ -1,4 +1,3 @@
-import type { Dayjs } from 'dayjs'
 import type {
   GuildMember,
   Interaction,
@@ -10,6 +9,7 @@ import type {
   VoiceState,
 } from 'discord.js'
 
+import type { DayJs } from '../../../shared/models/DayJs'
 import type { List } from '../../../shared/utils/fp'
 
 import { createUnion } from '../../utils/createUnion'
@@ -21,7 +21,7 @@ export const MadEvent = createUnion({
 
   DbReady: () => ({}),
 
-  CronJob: (date: Dayjs) => ({ date }),
+  CronJob: (date: DayJs) => ({ date }),
 
   InteractionCreate: (interaction: Interaction) => ({ interaction }),
 

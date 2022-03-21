@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/function'
 
+import { DayJs } from '../../shared/models/DayJs'
 import type { MemberBirthdateOutput } from '../../shared/models/MemberBirthdate'
 import { MemberBirthdate } from '../../shared/models/MemberBirthdate'
 import { UserId } from '../../shared/models/guild/UserId'
@@ -29,10 +30,11 @@ export const MemberBirthdatePersistence = (
   return {
     ensureIndexes,
 
+    lookupByDate: (date: DayJs) =>
+      pipe(collection.findAll(decoderWithName)({ birthdate: DayJs.encoder.encode(date) })),
+
     listForMembers: (ids: List<UserId>): Future<List<MemberBirthdate>> =>
-      pipe(
-        collection.findAll(decoderWithName)({ id: { $in: pipe(ids, List.map(UserId.unwrap)) } }),
-      ),
+      collection.findAll(decoderWithName)({ id: { $in: pipe(ids, List.map(UserId.unwrap)) } }),
 
     upsert: (state: MemberBirthdate): Future<boolean> =>
       pipe(

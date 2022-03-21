@@ -1,5 +1,4 @@
-import type { Dayjs } from 'dayjs'
-
+import type { DayJs } from '../../shared/models/DayJs'
 import type { UserId } from '../../shared/models/guild/UserId'
 import type { Future } from '../../shared/utils/fp'
 
@@ -15,7 +14,7 @@ export const MemberBirthdateService = ({
 }: MemberBirthdatePersistence) => ({
   listForMembers,
 
-  upsert: (id: UserId, birthdate: Dayjs): Future<boolean> =>
+  upsert: (id: UserId, birthdate: DayJs): Future<boolean> =>
     memberBirthdatePersistence.upsert({ id, birthdate }),
 
   remove,

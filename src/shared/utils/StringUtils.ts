@@ -1,7 +1,7 @@
-import dayjs from 'dayjs'
 import { random } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
+import { DayJs } from '../models/DayJs'
 import { MsDuration } from '../models/MsDuration'
 import type { NonEmptyArray, Tuple } from './fp'
 import { List, Maybe } from './fp'
@@ -39,14 +39,14 @@ function mkString(startOrSep: string, sep?: string, end?: string): (list: List<s
 }
 
 const prettyMs = (ms: MsDuration): string => {
-  const date = dayjs.utc(MsDuration.unwrap(ms))
-  const zero = dayjs.utc(0)
+  const date = DayJs.of(MsDuration.unwrap(ms))
+  const zero = DayJs.of(0)
 
-  const d = date.diff(zero, 'day')
-  const h = date.hour()
-  const m = date.minute()
-  const s = date.second()
-  const ms_ = date.millisecond()
+  const d = pipe(date, DayJs.diff(zero, 'day'))
+  const h = DayJs.hour.get(date)
+  const m = DayJs.minute.get(date)
+  const s = DayJs.second.get(date)
+  const ms_ = DayJs.millisecond.get(date)
 
   if (d !== 0) return `${d}d${pad10(h)}h${pad10(m)}'${pad10(s)}.${pad100(ms_)}"`
   if (h !== 0) return `${pad10(h)}h${pad10(m)}'${pad10(s)}.${pad100(ms_)}"`

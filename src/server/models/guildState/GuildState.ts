@@ -1,5 +1,6 @@
 import type { Role, TextChannel } from 'discord.js'
-import { Lens as MonocleLens } from 'monocle-ts'
+import { pipe } from 'fp-ts/function'
+import { lens } from 'monocle-ts'
 
 import type { GuildId } from '../../../shared/models/guild/GuildId'
 import { Maybe } from '../../../shared/utils/fp'
@@ -23,11 +24,11 @@ const empty = (id: GuildId): GuildState => ({
   subscription: Maybe.none,
 })
 
-const Lens = {
-  calls: MonocleLens.fromPath<GuildState>()(['calls']),
-  defaultRole: MonocleLens.fromPath<GuildState>()(['defaultRole']),
-  itsFridayChannel: MonocleLens.fromPath<GuildState>()(['itsFridayChannel']),
-  subscription: MonocleLens.fromPath<GuildState>()(['subscription']),
+const Lens_ = {
+  calls: pipe(lens.id<GuildState>(), lens.prop('calls')),
+  defaultRole: pipe(lens.id<GuildState>(), lens.prop('defaultRole')),
+  itsFridayChannel: pipe(lens.id<GuildState>(), lens.prop('itsFridayChannel')),
+  subscription: pipe(lens.id<GuildState>(), lens.prop('subscription')),
 }
 
-export const GuildState = { empty, Lens }
+export const GuildState = { empty, Lens: Lens_ }

@@ -1,13 +1,12 @@
 import { bold, userMention } from '@discordjs/builders'
-import type { Dayjs } from 'dayjs'
 import type { Collection, Guild, GuildAuditLogsEntry, TextChannel } from 'discord.js'
 import type { User } from 'discord.js'
 import { apply, date, number, ord, random, semigroup } from 'fp-ts'
 import type { Ord } from 'fp-ts/Ord'
 import { flow, pipe } from 'fp-ts/function'
 
+import { DayJs } from '../../shared/models/DayJs'
 import { UserId } from '../../shared/models/guild/UserId'
-import { DateUtils } from '../../shared/utils/DateUtils'
 import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
@@ -45,7 +44,7 @@ export const NotifyGuildLeaveObserver = (
       const log = LogUtils.pretty(logger, guild)
       const boldMember = bold(user.tag)
       return pipe(
-        DateUtils.now,
+        DayJs.now,
         Future.fromIO,
         Future.chain(getLastLog(guild, UserId.wrap(user.id))),
         futureMaybe.match(
@@ -85,8 +84,8 @@ export const NotifyGuildLeaveObserver = (
 
 const getLastLog =
   (guild: Guild, userId: UserId) =>
-  (now: Dayjs): Future<Maybe<ValidEntry<KickOrBanAction>>> => {
-    const nowMinusNetworkTolerance = pipe(now, DateUtils.subtract(constants.networkTolerance))
+  (now: DayJs): Future<Maybe<ValidEntry<KickOrBanAction>>> => {
+    const nowMinusNetworkTolerance = pipe(now, DayJs.subtract(constants.networkTolerance))
     return pipe(
       apply.sequenceS(Future.ApplyPar)({
         lastMemberKick: pipe(
@@ -120,7 +119,7 @@ const ordByCreateAt = <A extends CreatedAt>(): Ord<A> =>
     ord.contramap(a => a.createdAt),
   )
 const validateLogs =
-  (nowMinusNetworkTolerance: Dayjs, userId: UserId) =>
+  (nowMinusNetworkTolerance: DayJs, userId: UserId) =>
   <A extends KickOrBanAction>(
     logs: Collection<string, GuildAuditLogsEntry<A>>,
   ): Maybe<ValidEntry<A>> =>
@@ -132,7 +131,7 @@ const validateLogs =
     )
 
 const validateEntry =
-  <A extends KickOrBanAction>(nowMinusNetworkTolerance: Dayjs, userId: UserId) =>
+  <A extends KickOrBanAction>(nowMinusNetworkTolerance: DayJs, userId: UserId) =>
   (entry: GuildAuditLogsEntry<A>): Maybe<ValidEntry<A>> =>
     pipe(
       Maybe.some({
@@ -144,7 +143,7 @@ const validateEntry =
       Maybe.apS('executor', Maybe.fromNullable(entry.executor)),
       Maybe.filter(
         ({ target }) =>
-          ord.leq(DateUtils.Ord)(nowMinusNetworkTolerance, DateUtils.of(entry.createdAt)) &&
+          ord.leq(DayJs.Ord)(nowMinusNetworkTolerance, DayJs.of(entry.createdAt)) &&
           UserId.wrap(target.id) === userId,
       ),
     )
