@@ -18,11 +18,11 @@ import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordCo
 import type { MusicSubscription } from '../../helpers/MusicSubscription'
 import type { YtDlp } from '../../helpers/YtDlp'
 import { musicStateButtons } from '../../helpers/messages/musicStateMessage'
-import type { MadEventInteractionCreate } from '../../models/event/MadEvent'
+import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import { MusicState } from '../../models/music/MusicState'
 import { Track } from '../../models/music/Track'
-import type { TObserver } from '../../models/rx/TObserver'
+import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../../services/GuildStateService'
 
 type PlayCommand = {
@@ -38,19 +38,19 @@ export const playCommand = new SlashCommandBuilder()
     option.setName('url').setDescription('Lien YouTube, Bandcamp, fichier, ...').setRequired(true),
   )
 
-export type MusicCommandsObserver = TObserver<MadEventInteractionCreate> & {
-  readonly validateTracks: (url: string) => Future<Either<string, NonEmptyArray<Track>>>
-}
-
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const MusicCommandsObserver = (
   Logger: LoggerGetter,
   ytDlp: YtDlp,
   guildStateService: GuildStateService,
-): MusicCommandsObserver => {
+) => {
   const logger = Logger('MusicCommandsObserver')
 
   return {
-    next: event => {
+    ...ObserverWithRefinement.fromNext(
+      MadEvent,
+      'InteractionCreate',
+    )(event => {
       const interaction = event.interaction
 
       if (interaction.isCommand()) {
@@ -70,7 +70,8 @@ export const MusicCommandsObserver = (
       }
 
       return Future.unit
-    },
+    }),
+
     validateTracks,
   }
 

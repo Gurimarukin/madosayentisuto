@@ -33,11 +33,11 @@ import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { EmojiWithAnswer } from '../../helpers/messages/pollMessage'
 import { Answer, pollMessage } from '../../helpers/messages/pollMessage'
 import { TSnowflake } from '../../models/TSnowflake'
-import type { MadEventInteractionCreate, MadEventMessageDelete } from '../../models/event/MadEvent'
+import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import { PollButton } from '../../models/poll/PollButton'
 import { PollResponse } from '../../models/poll/PollResponse'
-import type { TObserver } from '../../models/rx/TObserver'
+import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 import type { PollResponseService } from '../../services/PollResponseService'
 import { LogUtils } from '../../utils/LogUtils'
 import { jsonStringify } from '../../utils/jsonStringify'
@@ -56,24 +56,27 @@ export const pollCommand = new SlashCommandBuilder()
       ),
   )
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollCommandsObserver = (
   Logger: LoggerGetter,
   clientId: string,
   pollResponseService: PollResponseService,
-): TObserver<MadEventInteractionCreate | MadEventMessageDelete> => {
+) => {
   const logger = Logger('PollCommandsObserver')
 
-  return {
-    next: event => {
-      switch (event.type) {
-        case 'InteractionCreate':
-          return onInteraction(event.interaction)
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'InteractionCreate',
+    'MessageDelete',
+  )(event => {
+    switch (event.type) {
+      case 'InteractionCreate':
+        return onInteraction(event.interaction)
 
-        case 'MessageDelete':
-          return onMessageDelete(event.messages)
-      }
-    },
-  }
+      case 'MessageDelete':
+        return onMessageDelete(event.messages)
+    }
+  })
 
   // onInteraction
   function onInteraction(interaction: Interaction): Future<void> {

@@ -35,11 +35,11 @@ import { initCallsMessage } from '../../helpers/messages/initCallsMessage'
 import { TSnowflake } from '../../models/TSnowflake'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
-import type { MadEventInteractionCreate } from '../../models/event/MadEvent'
+import { MadEvent } from '../../models/event/MadEvent'
 import type { Calls } from '../../models/guildState/Calls'
 import type { GuildState } from '../../models/guildState/GuildState'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
-import type { TObserver } from '../../models/rx/TObserver'
+import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 import type { BotStateService } from '../../services/BotStateService'
 import type { GuildStateService } from '../../services/GuildStateService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
@@ -181,38 +181,40 @@ export const adminCommands = [
   activityCommand,
 ]
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const AdminCommandsObserver = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
   botStateService: BotStateService,
   guildStateService: GuildStateService,
-): TObserver<MadEventInteractionCreate> => {
+) => {
   const logger = Logger('AdminCommandsObserver')
 
-  return {
-    next: event => {
-      const interaction = event.interaction
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'InteractionCreate',
+  )(event => {
+    const interaction = event.interaction
 
-      if (!interaction.isCommand()) return Future.unit
+    if (!interaction.isCommand()) return Future.unit
 
-      switch (interaction.commandName) {
-        case 'state':
-          return onState(interaction)
-        case 'calls':
-          return onCalls(interaction)
-        case 'defaultrole':
-          return onDefaultRole(interaction)
-        case 'itsfriday':
-          return onItsFriday(interaction)
-        case 'birthday':
-          return onBirthday(interaction)
-        case 'activity':
-          return onActivity(interaction)
-      }
+    switch (interaction.commandName) {
+      case 'state':
+        return onState(interaction)
+      case 'calls':
+        return onCalls(interaction)
+      case 'defaultrole':
+        return onDefaultRole(interaction)
+      case 'itsfriday':
+        return onItsFriday(interaction)
+      case 'birthday':
+        return onBirthday(interaction)
+      case 'activity':
+        return onActivity(interaction)
+    }
 
-      return Future.unit
-    },
-  }
+    return Future.unit
+  })
 
   /**
    * state

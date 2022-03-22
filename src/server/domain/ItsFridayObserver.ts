@@ -10,24 +10,23 @@ import { Future, IO, List, Maybe, toUnit } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventCronJob } from '../models/event/MadEvent'
+import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
-import type { TObserver } from '../models/rx/TObserver'
+import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
 
-export const ItsFridayObserver = (
-  Logger: LoggerGetter,
-  guildStateService: GuildStateService,
-): TObserver<MadEventCronJob> => {
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export const ItsFridayObserver = (Logger: LoggerGetter, guildStateService: GuildStateService) => {
   const logger = Logger('ItsFridayObserver')
 
-  return {
-    next: ({ date }) => {
-      const isFriday = DayJs.day.get(date) === 5
-      return isFriday && DayJs.is8am(date) ? delaySendAllMessages(date) : Future.unit
-    },
-  }
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'CronJob',
+  )(({ date }) => {
+    const isFriday = DayJs.day.get(date) === 5
+    return isFriday && DayJs.is8am(date) ? delaySendAllMessages(date) : Future.unit
+  })
 
   function delaySendAllMessages(now: DayJs): Future<void> {
     return pipe(

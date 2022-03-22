@@ -12,9 +12,9 @@ import { Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/uti
 
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventGuildMemberRemove } from '../models/event/MadEvent'
+import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
-import type { TObserver } from '../models/rx/TObserver'
+import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
@@ -32,40 +32,40 @@ type CreatedAt = {
   readonly createdAt: Date
 }
 
-export const NotifyGuildLeaveObserver = (
-  Logger: LoggerGetter,
-): TObserver<MadEventGuildMemberRemove> => {
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
   const logger = Logger('NotifyGuildLeave')
 
-  return {
-    next: event => {
-      const guild = event.member.guild
-      const user = event.member.user
-      const log = LogUtils.pretty(logger, guild)
-      const boldMember = bold(user.tag)
-      return pipe(
-        DayJs.now,
-        Future.fromIO,
-        Future.chain(getLastLog(guild, UserId.wrap(user.id))),
-        futureMaybe.match(
-          () =>
-            pipe(
-              log.info(`${user.tag} left the guild`),
-              IO.chain(() => randomMessage(leaveMessages)(boldMember)),
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'GuildMemberRemove',
+  )(event => {
+    const guild = event.member.guild
+    const user = event.member.user
+    const log = LogUtils.pretty(logger, guild)
+    const boldMember = bold(user.tag)
+    return pipe(
+      DayJs.now,
+      Future.fromIO,
+      Future.chain(getLastLog(guild, UserId.wrap(user.id))),
+      futureMaybe.match(
+        () =>
+          pipe(
+            log.info(`${user.tag} left the guild`),
+            IO.chain(() => randomMessage(leaveMessages)(boldMember)),
+          ),
+        ({ action, executor, reason }) =>
+          pipe(
+            log.info(logMessage(user.tag, executor.tag, action, reason)),
+            IO.chain(() =>
+              randomMessage(kickOrBanMessages[action])(boldMember, userMention(executor.id)),
             ),
-          ({ action, executor, reason }) =>
-            pipe(
-              log.info(logMessage(user.tag, executor.tag, action, reason)),
-              IO.chain(() =>
-                randomMessage(kickOrBanMessages[action])(boldMember, userMention(executor.id)),
-              ),
-            ),
-        ),
-        Future.chain(Future.fromIOEither),
-        sendMessage(event.member.guild),
-      )
-    },
-  }
+          ),
+      ),
+      Future.chain(Future.fromIOEither),
+      sendMessage(event.member.guild),
+    )
+  })
 
   function sendMessage(guild: Guild): (futureMessage: Future<string>) => Future<void> {
     return futureMessage =>

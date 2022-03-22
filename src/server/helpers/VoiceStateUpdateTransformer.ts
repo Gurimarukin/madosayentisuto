@@ -12,49 +12,52 @@ import type {
 } from '../models/event/MadEvent'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
-import type { TObserver } from '../models/rx/TObserver'
+import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { TSubject } from '../models/rx/TSubject'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const VoiceStateUpdateTransformer = (
   Logger: LoggerGetter,
   clientId: string,
   subject: TSubject<MadEventPublicCallStarted | MadEventPublicCallEnded>,
-): TObserver<MadEventVoiceStateUpdate> => {
+) => {
   const logger = Logger('VoiceStateUpdateTransformer')
 
-  return {
-    next: event =>
-      pipe(
-        getMember(event),
-        Maybe.fold(
-          () => Future.unit,
-          member => {
-            const oldChan = Maybe.fromNullable(event.oldState.channel)
-            const newChan = Maybe.fromNullable(event.newState.channel)
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'VoiceStateUpdate',
+  )(event =>
+    pipe(
+      getMember(event),
+      Maybe.fold(
+        () => Future.unit,
+        member => {
+          const oldChan = Maybe.fromNullable(event.oldState.channel)
+          const newChan = Maybe.fromNullable(event.newState.channel)
 
-            if (Maybe.isNone(oldChan) && Maybe.isSome(newChan)) {
-              return onJoinedChannel(member, newChan.value)
-            }
+          if (Maybe.isNone(oldChan) && Maybe.isSome(newChan)) {
+            return onJoinedChannel(member, newChan.value)
+          }
 
-            if (
-              Maybe.isSome(oldChan) &&
-              Maybe.isSome(newChan) &&
-              oldChan.value.id !== newChan.value.id
-            ) {
-              return onMovedChannel(member, oldChan.value, newChan.value)
-            }
+          if (
+            Maybe.isSome(oldChan) &&
+            Maybe.isSome(newChan) &&
+            oldChan.value.id !== newChan.value.id
+          ) {
+            return onMovedChannel(member, oldChan.value, newChan.value)
+          }
 
-            if (Maybe.isSome(oldChan) && Maybe.isNone(newChan)) {
-              return onLeftChannel(member, oldChan.value)
-            }
+          if (Maybe.isSome(oldChan) && Maybe.isNone(newChan)) {
+            return onLeftChannel(member, oldChan.value)
+          }
 
-            return Future.unit
-          },
-        ),
+          return Future.unit
+        },
       ),
-  }
+    ),
+  )
 
   function onJoinedChannel(
     member: GuildMember,

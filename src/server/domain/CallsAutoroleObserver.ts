@@ -10,10 +10,10 @@ import { Future, IO, Maybe, toUnit } from '../../shared/utils/fp'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { initCallsButton, initCallsMessage } from '../helpers/messages/initCallsMessage'
 import { TSnowflake } from '../models/TSnowflake'
-import type { MadEventInteractionCreate } from '../models/event/MadEvent'
+import { MadEvent } from '../models/event/MadEvent'
 import type { Calls } from '../models/guildState/Calls'
 import type { LoggerGetter } from '../models/logger/LoggerType'
-import type { TObserver } from '../models/rx/TObserver'
+import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
 
@@ -22,28 +22,30 @@ type CallsAndMember = {
   readonly member: GuildMember
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const CallsAutoroleObserver = (
   Logger: LoggerGetter,
   guildStateService: GuildStateService,
-): TObserver<MadEventInteractionCreate> => {
+) => {
   const logger = Logger('CallsAutoroleObserver')
 
-  return {
-    next: event => {
-      const interaction = event.interaction
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'InteractionCreate',
+  )(event => {
+    const interaction = event.interaction
 
-      if (!interaction.isButton()) return Future.unit
+    if (!interaction.isButton()) return Future.unit
 
-      switch (interaction.customId) {
-        case initCallsButton.subscribeId:
-          return onSubscribe(interaction)
-        case initCallsButton.unsubscribeId:
-          return onUnsubscribe(interaction)
-      }
+    switch (interaction.customId) {
+      case initCallsButton.subscribeId:
+        return onSubscribe(interaction)
+      case initCallsButton.unsubscribeId:
+        return onUnsubscribe(interaction)
+    }
 
-      return Future.unit
-    },
-  }
+    return Future.unit
+  })
 
   function onSubscribe(interaction: ButtonInteraction): Future<void> {
     return withCallsAndMember(interaction, (guild, { calls, member }) =>

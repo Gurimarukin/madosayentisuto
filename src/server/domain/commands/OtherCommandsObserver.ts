@@ -7,8 +7,8 @@ import { StringUtils } from '../../../shared/utils/StringUtils'
 import { Either, Future } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import type { MadEventInteractionCreate } from '../../models/event/MadEvent'
-import type { TObserver } from '../../models/rx/TObserver'
+import { MadEvent } from '../../models/event/MadEvent'
+import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 
 const pingCommand = new SlashCommandBuilder()
   .setName('ping')
@@ -23,23 +23,25 @@ const randomCaseCommand = new SlashCommandBuilder()
 
 export const otherCommands = [pingCommand, randomCaseCommand]
 
-export const OtherCommandsObserver = (): TObserver<MadEventInteractionCreate> => {
-  return {
-    next: event => {
-      const interaction = event.interaction
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export const OtherCommandsObserver = () => {
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'InteractionCreate',
+  )(event => {
+    const interaction = event.interaction
 
-      if (!interaction.isCommand()) return Future.unit
+    if (!interaction.isCommand()) return Future.unit
 
-      switch (interaction.commandName) {
-        case 'ping':
-          return onPing(interaction)
-        case 'randomcase':
-          return onRandomCase(interaction)
-      }
+    switch (interaction.commandName) {
+      case 'ping':
+        return onPing(interaction)
+      case 'randomcase':
+        return onRandomCase(interaction)
+    }
 
-      return Future.unit
-    },
-  }
+    return Future.unit
+  })
 
   function onPing(interaction: CommandInteraction): Future<void> {
     return DiscordConnector.interactionReply(interaction, { content: 'pong', ephemeral: true })

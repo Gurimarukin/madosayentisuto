@@ -26,20 +26,14 @@ import { List } from '../../shared/utils/fp'
 import { Future, IO, Maybe } from '../../shared/utils/fp'
 
 import { Store } from '../models/Store'
-import type {
-  MusicEventConnectionDestroyed,
-  MusicEventConnectionDisconnected,
-  MusicEventConnectionReady,
-  MusicEventPlayerIdle,
-} from '../models/event/MusicEvent'
 import { MusicEvent } from '../models/event/MusicEvent'
 import type { LoggerGetter, LoggerType } from '../models/logger/LoggerType'
 import { AudioPlayerState } from '../models/music/AudioPlayerState'
 import type { MusicStateConnected } from '../models/music/MusicState'
 import { MusicState } from '../models/music/MusicState'
 import type { Track } from '../models/music/Track'
+import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import { PubSub } from '../models/rx/PubSub'
-import type { TObserver } from '../models/rx/TObserver'
 import type { TSubject } from '../models/rx/TSubject'
 import type { LoggableChannel } from '../utils/LogUtils'
 import { LogUtils } from '../utils/LogUtils'
@@ -47,8 +41,6 @@ import { PubSubUtils } from '../utils/PubSubUtils'
 import { DiscordConnector } from './DiscordConnector'
 import type { YtDlp } from './YtDlp'
 import { musicStateMessage } from './messages/musicStateMessage'
-
-const { or } = PubSubUtils
 
 type MusicChannel = VoiceChannel | StageChannel
 
@@ -160,18 +152,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
     const { observable, subject } = PubSub<MusicEvent>()
 
     const sub = PubSubUtils.subscribe(logger, observable)
-    const subscribe = apply.sequenceT(IO.ApplyPar)(
-      // sub(loggerObserver(), or(refinement.id())),
-      sub(
-        lifecycleObserver(),
-        or(
-          MusicEvent.is('ConnectionReady'),
-          MusicEvent.is('ConnectionDisconnected'),
-          MusicEvent.is('ConnectionDestroyed'),
-          MusicEvent.is('PlayerIdle'),
-        ),
-      ),
-    )
+    const subscribe = apply.sequenceT(IO.ApplyPar)(sub(lifecycleObserver()))
 
     return pipe(
       sendStateMessage(stateChannel),
@@ -207,27 +188,27 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
     )
   }
 
-  function lifecycleObserver(): TObserver<
-    | MusicEventConnectionReady
-    | MusicEventConnectionDisconnected
-    | MusicEventConnectionDestroyed
-    | MusicEventPlayerIdle
-  > {
-    return {
-      next: event => {
-        switch (event.type) {
-          case 'ConnectionReady':
-            return onConnectionReady()
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  function lifecycleObserver() {
+    return ObserverWithRefinement.fromNext(
+      MusicEvent,
+      'ConnectionReady',
+      'ConnectionDisconnected',
+      'ConnectionDestroyed',
+      'PlayerIdle',
+    )(event => {
+      switch (event.type) {
+        case 'ConnectionReady':
+          return onConnectionReady()
 
-          case 'ConnectionDisconnected':
-          case 'ConnectionDestroyed':
-            return onConnectionDisconnectedOrDestroyed()
+        case 'ConnectionDisconnected':
+        case 'ConnectionDestroyed':
+          return onConnectionDisconnectedOrDestroyed()
 
-          case 'PlayerIdle':
-            return onPlayerIdle()
-        }
-      },
-    }
+        case 'PlayerIdle':
+          return onPlayerIdle()
+      }
+    })
   }
 
   function onConnectionReady(): Future<void> {

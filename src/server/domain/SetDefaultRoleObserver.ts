@@ -4,42 +4,42 @@ import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventGuildMemberAdd } from '../models/event/MadEvent'
+import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
-import type { TObserver } from '../models/rx/TObserver'
+import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const SetDefaultRoleObserver = (
   Logger: LoggerGetter,
   guildStateService: GuildStateService,
-): TObserver<MadEventGuildMemberAdd> => {
+) => {
   const logger = Logger('SetDefaultRoleObserver')
 
-  return {
-    next: event => {
-      const member = event.member
-      const log = LogUtils.pretty(logger, member.guild)
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'GuildMemberAdd',
+  )(event => {
+    const member = event.member
+    const log = LogUtils.pretty(logger, member.guild)
 
-      return pipe(
-        guildStateService.getDefaultRole(member.guild),
-        futureMaybe.matchE(
-          () =>
-            Future.fromIOEither(
-              log.info(`No default role stored, couldn't add ${member.user.tag}`),
+    return pipe(
+      guildStateService.getDefaultRole(member.guild),
+      futureMaybe.matchE(
+        () =>
+          Future.fromIOEither(log.info(`No default role stored, couldn't add ${member.user.tag}`)),
+        role =>
+          pipe(
+            DiscordConnector.roleAdd(member, role),
+            Future.map(success =>
+              success
+                ? log.info(`Added ${member.user.tag} to role @${role.name}`)
+                : log.warn(`Couldn't add ${member.user.tag} to role @${role.name}`),
             ),
-          role =>
-            pipe(
-              DiscordConnector.roleAdd(member, role),
-              Future.map(success =>
-                success
-                  ? log.info(`Added ${member.user.tag} to role @${role.name}`)
-                  : log.warn(`Couldn't add ${member.user.tag} to role @${role.name}`),
-              ),
-              Future.chain(Future.fromIOEither),
-            ),
-        ),
-      )
-    },
-  }
+            Future.chain(Future.fromIOEither),
+          ),
+      ),
+    )
+  })
 }

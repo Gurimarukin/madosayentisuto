@@ -16,36 +16,36 @@ import { Future } from '../../shared/utils/fp'
 
 import type { CaptainConfig } from '../Config'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventMessageCreate } from '../models/event/MadEvent'
-import type { TObserver } from '../models/rx/TObserver'
+import { MadEvent } from '../models/event/MadEvent'
+import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import { MessageUtils } from '../utils/MessageUtils'
 
 type MyChannel = PartialDMChannel | DMChannel | TextChannel | NewsChannel | ThreadChannel
 
-export const TextInteractionsObserver = (
-  config: CaptainConfig,
-  discord: DiscordConnector,
-): TObserver<MadEventMessageCreate> => {
-  return {
-    next: event => {
-      const message = event.message
+// 'vol' & 'plagiat'
+// mention & thanks
 
-      if (message.author.id === discord.client.user.id) return Future.unit
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export const TextInteractionsObserver = (config: CaptainConfig, discord: DiscordConnector) => {
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'MessageCreate',
+  )(event => {
+    const message = event.message
 
-      const cleanedWords = cleanMessage(message.content)
+    if (message.author.id === discord.client.user.id) return Future.unit
 
-      if (containsVolAndPlagiat(cleanedWords)) return sendIDontLikeThieves(message.channel)
+    const cleanedWords = cleanMessage(message.content)
 
-      if (isMentioned(message, cleanedWords)) return reactToMention(message, cleanedWords)
+    if (containsVolAndPlagiat(cleanedWords)) return sendIDontLikeThieves(message.channel)
 
-      return Future.unit
-    },
-  }
-
-  function reactToMention(message: Message, cleanedWords: List<string>): Future<void> {
-    if (containsThanks(cleanedWords)) return sendNoNeedToThankMe(message.channel)
+    if (isMentioned(message, cleanedWords)) return reactToMention(message, cleanedWords)
 
     return Future.unit
+  })
+
+  function containsVolAndPlagiat(message: List<string>): boolean {
+    return List.elem(string.Eq)('vol', message) && List.elem(string.Eq)('plagiat', message)
   }
 
   function isMentioned(message: Message, cleanedWords: List<string>): boolean {
@@ -64,8 +64,10 @@ export const TextInteractionsObserver = (
     )
   }
 
-  function containsVolAndPlagiat(message: List<string>): boolean {
-    return List.elem(string.Eq)('vol', message) && List.elem(string.Eq)('plagiat', message)
+  function reactToMention(message: Message, cleanedWords: List<string>): Future<void> {
+    if (containsThanks(cleanedWords)) return sendNoNeedToThankMe(message.channel)
+
+    return Future.unit
   }
 
   function containsThanks(message: List<string>): boolean {

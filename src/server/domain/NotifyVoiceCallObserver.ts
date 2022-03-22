@@ -5,29 +5,32 @@ import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, IO, toUnit } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventPublicCallEnded, MadEventPublicCallStarted } from '../models/event/MadEvent'
+import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
-import type { TObserver } from '../models/rx/TObserver'
+import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const NotifyVoiceCallObserver = (
   Logger: LoggerGetter,
   guildStateService: GuildStateService,
-): TObserver<MadEventPublicCallStarted | MadEventPublicCallEnded> => {
+) => {
   const logger = Logger('NotifyVoiceCallObserver')
 
-  return {
-    next: event => {
-      switch (event.type) {
-        case 'PublicCallStarted':
-          return onPublicCallStarted(event.member, event.channel)
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'PublicCallStarted',
+    'PublicCallEnded',
+  )(event => {
+    switch (event.type) {
+      case 'PublicCallStarted':
+        return onPublicCallStarted(event.member, event.channel)
 
-        case 'PublicCallEnded':
-          return onPublicCallEnded(event.member, event.channel)
-      }
-    },
-  }
+      case 'PublicCallEnded':
+        return onPublicCallEnded(event.member, event.channel)
+    }
+  })
 
   function onPublicCallStarted(
     member: GuildMember,

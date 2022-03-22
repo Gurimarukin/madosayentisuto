@@ -16,19 +16,20 @@ import type { Config } from '../../Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { CommandId } from '../../models/command/CommandId'
 import type { PutCommandResult } from '../../models/command/PutCommandResult'
-import type { MadEventDbReady } from '../../models/event/MadEvent'
+import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
-import type { TObserver } from '../../models/rx/TObserver'
+import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 import { adminCommands } from '../commands/AdminCommandsObserver'
 import { playCommand } from '../commands/MusicCommandsObserver'
 import { otherCommands } from '../commands/OtherCommandsObserver'
 import { pollCommand } from '../commands/PollCommandsObserver'
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const DeployCommandsObserver = (
   Logger: LoggerGetter,
   config: Config,
   discord: DiscordConnector,
-): TObserver<MadEventDbReady> => {
+) => {
   const logger = Logger('DeployCommandsObserver')
 
   const rest = new REST({ version: '9' }).setToken(config.client.secret)
@@ -49,14 +50,16 @@ export const DeployCommandsObserver = (
     ),
   )
 
-  return {
-    next: () =>
-      pipe(
-        Future.fromIOEither(discord.listGuilds),
-        Future.chain(Future.traverseArray(putCommandsForGuild)),
-        Future.chainIOEitherK(() => logger.info('Ensured commands')),
-      ),
-  }
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'DbReady',
+  )(() =>
+    pipe(
+      Future.fromIOEither(discord.listGuilds),
+      Future.chain(Future.traverseArray(putCommandsForGuild)),
+      Future.chainIOEitherK(() => logger.info('Ensured commands')),
+    ),
+  )
 
   function putCommandsForGuild(guild: Guild): Future<void> {
     const guildId = GuildId.wrap(guild.id)

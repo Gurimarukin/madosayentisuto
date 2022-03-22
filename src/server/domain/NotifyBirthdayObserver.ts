@@ -12,28 +12,31 @@ import { Future, List } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventCronJob } from '../models/event/MadEvent'
+import { MadEvent } from '../models/event/MadEvent'
 import type { MemberBirthdate } from '../models/member/MemberBirthdate'
-import type { TObserver } from '../models/rx/TObserver'
+import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../services/GuildStateService'
 import type { MemberBirthdateService } from '../services/MemberBirthdateService'
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const NotifyBirthdayObserver = (
   discord: DiscordConnector,
   guildStateService: GuildStateService,
   memberBirthdateService: MemberBirthdateService,
-): TObserver<MadEventCronJob> => {
-  return {
-    next: event =>
-      DayJs.is8am(event.date)
-        ? pipe(
-            memberBirthdateService.listForDate(event.date),
-            Future.chain(members =>
-              List.isNonEmpty(members) ? notifyMembers(event.date, members) : Future.unit,
-            ),
-          )
-        : Future.unit,
-  }
+) => {
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'CronJob',
+  )(event =>
+    DayJs.is8am(event.date)
+      ? pipe(
+          memberBirthdateService.listForDate(event.date),
+          Future.chain(members =>
+            List.isNonEmpty(members) ? notifyMembers(event.date, members) : Future.unit,
+          ),
+        )
+      : Future.unit,
+  )
 
   function notifyMembers(now: DayJs, members: NonEmptyArray<MemberBirthdate>): Future<void> {
     return pipe(

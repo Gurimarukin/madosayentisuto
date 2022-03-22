@@ -10,9 +10,9 @@
 import type { EnforceNonEmptyDict } from '../../shared/models/EnforceNonEmptyDict'
 import type { Dict, List } from '../../shared/utils/fp'
 
-type UnionDescription = Dict<string, (...args: List<any>) => any>
+export type UnionDescription = Dict<string, (...args: List<any>) => any>
 
-type UnionResult<T extends UnionDescription> = {
+export type UnionResult<T extends UnionDescription> = {
   readonly T: Union<T>
   readonly is: <NAME extends keyof T>(
     name: NAME,
@@ -70,3 +70,17 @@ export function createUnion<D extends UnionDescription>(
     match,
   } as any
 }
+
+/**
+ * custom
+ */
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export type UnionKeys<U> = U extends UnionResult<infer _>
+  ? Exclude<keyof U, 'T' | 'is' | 'match'>
+  : never
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export type UnionTypes<U, K extends UnionKeys<U> = UnionKeys<U>> = U extends UnionResult<infer _>
+  ? ReturnType<U[K]>
+  : never

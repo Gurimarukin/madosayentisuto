@@ -5,43 +5,46 @@ import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, Maybe, toUnit } from '../../shared/utils/fp'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import type { MadEventMessageCreate } from '../models/event/MadEvent'
+import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
-import type { TObserver } from '../models/rx/TObserver'
+import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
 
 // We don't want any message (except bot) in the music logs thread
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const MusicThreadCleanObserver = (
   Logger: LoggerGetter,
   clientId: string,
   guildStateService: GuildStateService,
-): TObserver<MadEventMessageCreate> => {
+) => {
   const logger = Logger('MusicThreadCleanObserver')
 
-  return {
-    next: ({ message }) => {
-      if (message.guild !== null && message.author.id !== clientId) {
-        return pipe(
-          getSubscriptionThread(message.guild),
-          Future.map(Maybe.filter(messageIsInThreadAndIsNotBot(message))),
-          futureMaybe.chainFuture(() => DiscordConnector.messageDelete(message)),
-          futureMaybe.chainFuture(success =>
-            success
-              ? Future.unit
-              : Future.fromIOEither(
-                  LogUtils.pretty(logger, message.guild, message.author, message.channel).info(
-                    "Couldn't delete message in music thread",
-                  ),
+  return ObserverWithRefinement.fromNext(
+    MadEvent,
+    'MessageCreate',
+  )(({ message }) => {
+    if (message.guild !== null && message.author.id !== clientId) {
+      return pipe(
+        getSubscriptionThread(message.guild),
+        Future.map(Maybe.filter(messageIsInThreadAndIsNotBot(message))),
+        futureMaybe.chainFuture(() => DiscordConnector.messageDelete(message)),
+        futureMaybe.chainFuture(success =>
+          success
+            ? Future.unit
+            : Future.fromIOEither(
+                LogUtils.pretty(logger, message.guild, message.author, message.channel).info(
+                  "Couldn't delete message in music thread",
                 ),
-          ),
-          Future.map(toUnit),
-        )
-      }
+              ),
+        ),
+        Future.map(toUnit),
+      )
+    }
 
-      return Future.unit
-    },
-  }
+    return Future.unit
+  })
 
   function getSubscriptionThread(guild: Guild): Future<Maybe<ThreadChannel>> {
     return pipe(
