@@ -311,6 +311,9 @@ const interactionUpdate = (
 ): Future<void> =>
   pipe(
     Future.tryCatch(() => interaction.update(options)),
+    Future.orElse(e =>
+      isDiscordAPIError('Unknown interaction')(e) ? Future.unit : Future.left(e),
+    ),
     debugLeft('interactionUpdate'),
   )
 
