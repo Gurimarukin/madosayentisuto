@@ -18,6 +18,7 @@
   - state?
 - ensure indexes: unsubscribe when done?
 - commands register: unsubscribe when done?
+- `NotUsed`?
 - try to override declaration types to use GuildId, TSnowflake, ...
 
 What if 'CronJob' arrives before 'DbReady' (for activity status)? There should be a way to check that 'DbReady' was sent, when 'CronJob' arrives.

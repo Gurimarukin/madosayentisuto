@@ -2,10 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "incremental": false,
-    "sourceMap": false,
-    "declaration": false,
-    "skipLibCheck": true,
-    "noEmit": false
+    "skipLibCheck": true
   },
   "include": ["src"]
 }

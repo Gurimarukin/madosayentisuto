@@ -2,11 +2,11 @@ import type { MessageOptions } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 import util from 'util'
 
-import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import type { List } from '../../shared/utils/fp'
 import { toUnit } from '../../shared/utils/fp'
 import { Future, IO } from '../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import type { Config } from '../Config'
 import { LogLevel, LogLevelOrOff } from '../models/logger/LogLevel'
@@ -21,10 +21,7 @@ export const DiscordLogger =
       shouldLog(config.logger.consoleLevel, level)
         ? Future.tryCatch(
             () =>
-              new Promise<void>(resolve => {
-                // eslint-disable-next-line functional/no-expression-statement
-                resolve(console.log(formatConsole(name, level, msg)))
-              }),
+              new Promise<void>(resolve => resolve(console.log(formatConsole(name, level, msg)))),
           )
         : Future.unit
 

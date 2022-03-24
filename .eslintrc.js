@@ -24,7 +24,7 @@ module.exports = {
   reportUnusedDisableDirectives: true,
   rules: {
     '@typescript-eslint/array-type': ['warn', { default: 'array', readonly: 'generic' }],
-    '@typescript-eslint/consistent-type-definitions': 'off', // use functional/prefer-type-literal, it's better
+    '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
     '@typescript-eslint/consistent-type-imports': [
       'warn',
       { prefer: 'type-imports', disallowTypeAnnotations: false },
@@ -105,6 +105,7 @@ module.exports = {
     ],
     'functional/no-mixed-type': 'off',
     'functional/no-promise-reject': 'error',
+    'functional/no-return-void': ['error', { ignoreImplicit: true }],
     'max-len': [
       'warn',
       {

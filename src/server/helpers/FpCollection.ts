@@ -14,17 +14,17 @@ import type {
   InsertOneOptions,
   InsertOneResult,
   MatchKeysAndValues,
-  OptionalId,
+  OptionalUnlessRequiredId,
   ReplaceOptions,
   UpdateOptions,
   UpdateResult,
 } from 'mongodb'
 
-import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import type { Tuple } from '../../shared/utils/fp'
+import type { Dict, Tuple } from '../../shared/utils/fp'
 import { toUnit } from '../../shared/utils/fp'
 import { Either, Future, List, Maybe } from '../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import type { LoggerType } from '../models/logger/LoggerType'
@@ -33,10 +33,10 @@ import type { IndexDescription, WithoutProjection } from '../models/mongo/MongoT
 export type FpCollection = ReturnType<typeof FpCollection>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
+export const FpCollection = <A, O extends Dict<string, unknown>>(
   logger: LoggerType,
   collection: <T>(f: (coll: Collection<O>) => Promise<T>) => Future<T>,
-  codecWithName: Tuple<Codec<unknown, OptionalId<O>, A>, string>,
+  codecWithName: Tuple<Codec<unknown, OptionalUnlessRequiredId<O>, A>, string>,
 ) => {
   const [codec, codecName] = codecWithName
 
@@ -55,7 +55,7 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
         Future.chain(() =>
           collection(c =>
             // eslint-disable-next-line functional/prefer-readonly-type
-            c.createIndexes(indexSpecs as unknown as IndexDescription<A>[], options),
+            c.createIndexes(indexSpecs as IndexDescription<A>[], options),
           ),
         ),
         Future.map(toUnit),
@@ -138,12 +138,12 @@ export const FpCollection = <A, O extends { readonly [key: string]: unknown }>(
   }
 
   function findAll(): (query: Filter<O>, options?: FindOptions<O>) => Future<List<A>>
-  function findAll<B>([decoder, decoderName]: Tuple<Decoder<O, B>, string>): (
+  function findAll<B>([decoder, decoderName]: Tuple<Decoder<unknown, B>, string>): (
     query: Filter<O>,
     options?: FindOptions<O>,
   ) => Future<List<B>>
   function findAll<B>(
-    [decoder, decoderName] = codecWithName as Tuple<Decoder<O, B>, string>,
+    [decoder, decoderName] = codecWithName as Tuple<Decoder<unknown, B>, string>,
   ): (query: Filter<O>, options?: FindOptions<O>) => Future<List<B>> {
     return (query, options) =>
       pipe(

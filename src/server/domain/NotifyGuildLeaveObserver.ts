@@ -7,8 +7,8 @@ import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { UserId } from '../../shared/models/guild/UserId'
-import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'

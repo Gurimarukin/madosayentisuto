@@ -5,7 +5,7 @@ export type WithoutProjection<T> = T & {
   readonly projection?: undefined
 }
 
-export type IndexDescription<A> = MongoIndexDescription & {
+export type IndexDescription<A> = Omit<MongoIndexDescription, 'key'> & {
   readonly key: {
     readonly [B in keyof A]?: 1 | -1 | 'text'
   }

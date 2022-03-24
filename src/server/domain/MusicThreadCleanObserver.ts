@@ -1,8 +1,8 @@
 import type { Guild, Message, ThreadChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, Maybe, toUnit } from '../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'

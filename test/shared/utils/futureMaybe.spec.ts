@@ -1,9 +1,8 @@
-/* eslint-disable functional/no-return-void */
 import { task } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { futureMaybe } from '../../../src/shared/utils/FutureMaybe'
 import { Future, Maybe, Try } from '../../../src/shared/utils/fp'
+import { futureMaybe } from '../../../src/shared/utils/futureMaybe'
 
 describe('futureMaybe.chainFirst', () => {
   const futureToto = Future.right(Maybe.some('toto'))

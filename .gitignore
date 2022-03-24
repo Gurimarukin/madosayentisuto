@@ -6,4 +6,5 @@
 /dependencygraph.svg
 /dist
 /node_modules
+/tsbuild
 /yarn-error.log

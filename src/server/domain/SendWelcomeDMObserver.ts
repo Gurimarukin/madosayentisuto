@@ -1,9 +1,9 @@
 import type { GuildMember, MessageOptions } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future } from '../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { Colors } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'

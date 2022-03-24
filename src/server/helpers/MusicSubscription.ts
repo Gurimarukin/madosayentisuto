@@ -19,11 +19,11 @@ import { apply } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { flow, pipe } from 'fp-ts/function'
 
-import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { NonEmptyArray, toUnit } from '../../shared/utils/fp'
 import { List } from '../../shared/utils/fp'
 import { Future, IO, Maybe } from '../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { Store } from '../models/Store'
 import { MusicEvent } from '../models/event/MusicEvent'

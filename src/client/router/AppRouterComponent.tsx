@@ -1,3 +1,4 @@
+/* eslint-disable functional/no-expression-statement */
 import { Route, parse, zero } from 'fp-ts-routing'
 import { pipe } from 'fp-ts/function'
 import React, { useEffect, useMemo } from 'react'
@@ -51,7 +52,7 @@ export const AppRouterComponent = (): JSX.Element => {
   }, [location.pathname])
 
   useEffect(() => {
-    // eslint-disable-next-line functional/immutable-data, functional/no-expression-statement
+    // eslint-disable-next-line functional/immutable-data
     document.title = title
   }, [title])
 

@@ -4,8 +4,8 @@ import { flow, pipe } from 'fp-ts/function'
 import type { Lens } from 'monocle-ts/Lens'
 
 import { GuildId } from '../../shared/models/guild/GuildId'
-import { futureMaybe } from '../../shared/utils/FutureMaybe'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MusicSubscription } from '../helpers/MusicSubscription'

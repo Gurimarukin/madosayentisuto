@@ -4,7 +4,6 @@ import type {
   Guild,
   GuildApplicationCommandPermissionData,
 } from 'discord.js'
-import { ApplicationCommandPermissionTypes } from 'discord.js/typings/enums'
 import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
 
@@ -44,7 +43,7 @@ export const DeployCommandsObserver = (
     NonEmptyArray.map(
       (id): ApplicationCommandPermissionData => ({
         id: UserId.unwrap(id),
-        type: ApplicationCommandPermissionTypes.USER,
+        type: 2, // ApplicationCommandPermissionTypes.USER
         permission: true,
       }),
     ),
