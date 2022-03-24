@@ -1,4 +1,4 @@
-/* eslint-disable functional/no-expression-statement, functional/no-return-void */
+/* eslint-disable functional/no-expression-statement */
 import React, { useCallback } from 'react'
 
 import { useHistory } from '../router/HistoryContext'
