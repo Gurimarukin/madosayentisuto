@@ -12,7 +12,7 @@ const URI = 'TaskEitherOption' as const
 type URI = typeof URI
 
 declare module 'fp-ts/HKT' {
-  // eslint-disable-next-line functional/prefer-type-literal
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface URItoKind<A> {
     readonly [URI]: Future<Maybe<A>>
   }
