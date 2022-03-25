@@ -10,16 +10,16 @@ import type {
   TextBasedChannel,
   User,
 } from 'discord.js'
-import { apply, string } from 'fp-ts'
+import { apply } from 'fp-ts'
 import type { Lazy } from 'fp-ts/function'
 import { flow, pipe } from 'fp-ts/function'
-import { parse as shellQuoteParse } from 'shell-quote'
 
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { GuildId } from '../../../shared/models/guild/GuildId'
 import { UserId } from '../../../shared/models/guild/UserId'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { IO } from '../../../shared/utils/fp'
+import { Tuple } from '../../../shared/utils/fp'
 import { toUnit } from '../../../shared/utils/fp'
 import { Dict } from '../../../shared/utils/fp'
 import { Either } from '../../../shared/utils/fp'
@@ -42,19 +42,30 @@ import type { PollResponseService } from '../../services/PollResponseService'
 import { LogUtils } from '../../utils/LogUtils'
 import { jsonStringify } from '../../utils/jsonStringify'
 
-export const pollCommand = new SlashCommandBuilder()
-  .setName('poll')
-  .setDescription('Jean Plank fait des sondages')
-  .addStringOption(option =>
-    option.setName('question').setDescription('La question du sondage').setRequired(true),
-  )
-  .addStringOption(option =>
-    option
-      .setName('réponses')
-      .setDescription(
-        'Réponses possibles.\nEntre guillemets et séparées par des espaces ("Oui" "Non", si vide).',
+const choices = pipe(
+  NonEmptyArray.range(1, 5),
+  NonEmptyArray.map(i => Tuple.of(`choix${i}`, `Choix ${i}`)),
+)
+
+const Keys = {
+  poll: 'sondage',
+  question: 'question',
+  choices: pipe(choices, NonEmptyArray.map(Tuple.fst)),
+}
+
+export const pollCommand = pipe(
+  choices,
+  NonEmptyArray.reduce(
+    new SlashCommandBuilder()
+      .setName(Keys.poll)
+      .setDescription('Jean Plank fait des sondages')
+      .addStringOption(option =>
+        option.setName(Keys.question).setDescription('La question du sondage').setRequired(true),
       ),
-  )
+    (acc, [name, description]) =>
+      acc.addStringOption(option => option.setName(name).setDescription(description)),
+  ),
+)
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollCommandsObserver = (
@@ -82,7 +93,7 @@ export const PollCommandsObserver = (
   function onInteraction(interaction: Interaction): Future<void> {
     if (interaction.isCommand()) {
       switch (interaction.commandName) {
-        case 'poll':
+        case Keys.poll:
           return onPollCommand(interaction)
       }
     }
@@ -102,7 +113,7 @@ export const PollCommandsObserver = (
       Future.map(() =>
         apply.sequenceS(Maybe.Apply)({
           channel: Maybe.fromNullable(interaction.channel),
-          question: Maybe.fromNullable(interaction.options.getString('question')),
+          question: Maybe.fromNullable(interaction.options.getString(Keys.question)),
         }),
       ),
       futureMaybe.chainFuture(({ channel, question }) => initPoll(interaction, channel, question)),
@@ -117,37 +128,21 @@ export const PollCommandsObserver = (
     question: string,
   ): Future<void> {
     return pipe(
-      Maybe.fromNullable(interaction.options.getString('réponses')),
-      Maybe.fold(() => Either.right<string, NonEmptyArray<string>>(['Oui', 'Non']), parseAnswers),
-      Either.fold(
-        content =>
-          pipe(
-            DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
-            Future.map(toUnit),
-          ),
-        initMessage,
+      parseAnswers_(interaction),
+      getWithEmojis,
+      futureMaybe.map(withEmojis => ({
+        options: pollMessage.format({
+          question,
+          answers: withEmojis,
+          author: interaction.user.toString(),
+        }),
+      })),
+      futureMaybe.bind('message', ({ options }) => DiscordConnector.sendMessage(channel, options)),
+      futureMaybe.chainFuture(({ message, options }) =>
+        DiscordConnector.messageEdit(message, options),
       ),
+      Future.map(toUnit),
     )
-
-    function initMessage(answers: NonEmptyArray<string>): Future<void> {
-      return pipe(
-        getWithEmojis(answers),
-        futureMaybe.map(withEmojis => ({
-          options: pollMessage.format({
-            question,
-            answers: withEmojis,
-            author: interaction.user.toString(),
-          }),
-        })),
-        futureMaybe.bind('message', ({ options }) =>
-          DiscordConnector.sendMessage(channel, options),
-        ),
-        futureMaybe.chainFuture(({ message, options }) =>
-          DiscordConnector.messageEdit(message, options),
-        ),
-        Future.map(toUnit),
-      )
-    }
   }
 
   function getWithEmojis(answers: NonEmptyArray<string>): Future<Maybe<NonEmptyArray<Answer>>> {
@@ -321,16 +316,12 @@ export const PollCommandsObserver = (
   }
 }
 
-const parseAnswers = (rawAnswers: string): Either<string, NonEmptyArray<string>> =>
+const parseAnswers_ = (interaction: CommandInteraction): NonEmptyArray<string> =>
   pipe(
-    shellQuoteParse(rawAnswers),
-    List.filter(string.isString),
+    Keys.choices,
+    List.filterMap(choice => pipe(interaction.options.getString(choice), Maybe.fromNullable)),
     NonEmptyArray.fromReadonlyArray,
-    Either.fromOption(() => `Impossible de lire les réponses: ${rawAnswers}`),
-    Either.filterOrElse(
-      nea => nea.length <= 5,
-      () => 'Impossible de lire les réponses: 5 réponses max',
-    ),
+    Maybe.getOrElse((): NonEmptyArray<string> => ['Oui', 'Non']),
   )
 
 const answersWithCount = (
