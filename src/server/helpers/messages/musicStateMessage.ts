@@ -15,6 +15,7 @@ import { IO } from '../../../shared/utils/fp'
 import { List, Maybe } from '../../../shared/utils/fp'
 
 import { Colors, constants } from '../../constants'
+import { MusicCommandsObserverKeys } from '../../domain/commands/MusicCommandsObserver'
 import type { Track } from '../../models/music/Track'
 import { MessageUtils } from '../../utils/MessageUtils'
 
@@ -113,7 +114,11 @@ const playing_ = (
                   queue,
                   List.match(
                     () =>
-                      `*Aucun morceau dans la file d'attente.*\n\n\`/play <url>\` pour en ajouter`,
+                      StringUtils.stripMargins(
+                        `*Aucun morceau dans la file d'attente.*
+                        |
+                        |\`/${MusicCommandsObserverKeys.play} <${MusicCommandsObserverKeys.track}>\` pour en ajouter`,
+                      ),
                     flow(
                       List.takeLeft(queueDisplay),
                       List.map(t => `${maskedLink(constants.emojis.link, t.url)} ${t.title}`),

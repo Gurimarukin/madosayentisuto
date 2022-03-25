@@ -31,11 +31,20 @@ type PlayCommand = {
   readonly tracks: NonEmptyArray<Track>
 }
 
+const Keys = {
+  play: 'fépétéleson',
+  track: 'morceau',
+}
+export const MusicCommandsObserverKeys = Keys
+
 export const playCommand = new SlashCommandBuilder()
-  .setName('play')
+  .setName(Keys.play)
   .setDescription('Jean Plank joue un petit air')
   .addStringOption(option =>
-    option.setName('url').setDescription('Lien YouTube, Bandcamp, fichier, ...').setRequired(true),
+    option
+      .setName(Keys.track)
+      .setDescription('Lien ou recherche YouTube, lien Bandcamp, fichier, etc.')
+      .setRequired(true),
   )
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -55,7 +64,7 @@ export const MusicCommandsObserver = (
 
       if (interaction.isCommand()) {
         switch (interaction.commandName) {
-          case 'play':
+          case Keys.play:
             return onPlayCommand(interaction)
         }
       }
@@ -136,10 +145,10 @@ export const MusicCommandsObserver = (
     interaction: CommandInteraction,
   ): Future<Either<string, NonEmptyArray<Track>>> {
     return pipe(
-      interaction.options.getString('url'),
+      interaction.options.getString(Keys.track),
       Maybe.fromNullable,
       Maybe.fold(
-        () => Future.right(Either.left('Argument manquant : url')),
+        () => Future.right(Either.left(`Argument manquant : ${Keys.track}`)),
         flow(
           validateTracks,
           Future.orElse(e =>

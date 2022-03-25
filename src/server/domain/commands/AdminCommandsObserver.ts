@@ -23,7 +23,7 @@ import type { Decoder } from 'io-ts/Decoder'
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { UserId } from '../../../shared/models/guild/UserId'
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import type { Tuple } from '../../../shared/utils/fp'
+import { Tuple } from '../../../shared/utils/fp'
 import { toUnit } from '../../../shared/utils/fp'
 import { IO } from '../../../shared/utils/fp'
 import { Either, NonEmptyArray } from '../../../shared/utils/fp'
@@ -45,16 +45,34 @@ import type { GuildStateService } from '../../services/GuildStateService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { LogUtils } from '../../utils/LogUtils'
 
+const Keys = {
+  state: 'state',
+  calls: 'calls',
+  init: 'init',
+  channel: 'channel',
+  role: 'role',
+  defaultrole: 'defaultrole',
+  itsfriday: 'itsfriday',
+  birthday: 'birthday',
+  activity: 'activity',
+  type: 'type',
+  name: 'name',
+  refresh: 'refresh',
+  get: 'get',
+  set: 'set',
+  unset: 'unset',
+}
+
 const stateCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
-  .setName('state')
+  .setName(Keys.state)
   .setDescription("Dans quel état j'erre ?")
   .addSubcommand(subcommand =>
-    subcommand.setName('get').setDescription('État de Jean Plank pour ce serveur'),
+    subcommand.setName(Keys.get).setDescription('État de Jean Plank pour ce serveur'),
   )
 const callsCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
-  .setName('calls')
+  .setName(Keys.calls)
   .setDescription("Jean Plank n'est pas votre secrétaire, mais il gère vos appels")
   .addSubcommand(subcommand =>
     /**
@@ -63,18 +81,18 @@ const callsCommand = new SlashCommandBuilder()
      * À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
      */
     subcommand
-      .setName('init')
+      .setName(Keys.init)
       .setDescription(`Pour initier la gestion des appels`)
       .addChannelOption(option =>
         option
-          .setName('channel')
+          .setName(Keys.channel)
           .setDescription('Le salon dans lequel les appels seront notifiés')
           .addChannelTypes([ChannelType.GuildText])
           .setRequired(true),
       )
       .addRoleOption(option =>
         option
-          .setName('role')
+          .setName(Keys.role)
           .setDescription('Le rôle qui sera notifié des appels')
           .setRequired(true),
       ),
@@ -82,28 +100,28 @@ const callsCommand = new SlashCommandBuilder()
 
 const defaultRoleCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
-  .setName('defaultrole')
+  .setName(Keys.defaultrole)
   .setDescription("Jean Plank donne un rôle au nouveau membres d'équipages")
   .addSubcommand(subcommand =>
     subcommand
-      .setName('set')
+      .setName(Keys.set)
       .setDescription('Jean Plank veut bien changer le rôle par défaut de ce serveur')
       .addRoleOption(option =>
-        option.setName('role').setDescription('Le nouveau rôle par défaut').setRequired(true),
+        option.setName(Keys.role).setDescription('Le nouveau rôle par défaut').setRequired(true),
       ),
   )
 
 const itsFridayCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
-  .setName('itsfriday')
+  .setName(Keys.itsfriday)
   .setDescription("Jean Plank vous informe que nous sommes vendredi (c'est vrai)")
   .addSubcommand(subcommand =>
     subcommand
-      .setName('set')
+      .setName(Keys.set)
       .setDescription('Jean Plank veut bien changer le salon pour cette information vitale')
       .addChannelOption(option =>
         option
-          .setName('channel')
+          .setName(Keys.channel)
           .setDescription('Le nouveau salon pour cette information vitale')
           .addChannelTypes([ChannelType.GuildText])
           .setRequired(true),
@@ -112,15 +130,15 @@ const itsFridayCommand = new SlashCommandBuilder()
 
 const birthdayCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
-  .setName('birthday')
+  .setName(Keys.birthday)
   .setDescription("Jean Plank vous informe que c'est l'anniversaire de bidule")
   .addSubcommand(subcommand =>
     subcommand
-      .setName('set')
+      .setName(Keys.set)
       .setDescription('Jean Plank veut bien changer le salon pour cette information vitale')
       .addChannelOption(option =>
         option
-          .setName('channel')
+          .setName(Keys.channel)
           .setDescription('Le nouveau salon pour cette information vitale')
           .addChannelTypes([ChannelType.GuildText])
           .setRequired(true),
@@ -129,29 +147,29 @@ const birthdayCommand = new SlashCommandBuilder()
 
 const activityTypeBotChoices: List<Tuple<ActivityTypeBot, ActivityTypeBot>> = pipe(
   ActivityTypeBot.values,
-  List.map(a => [a, a]),
+  List.map(a => Tuple.of(a, a)),
 )
 const activityCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
-  .setName('activity')
+  .setName(Keys.activity)
   .setDescription('Jean Plank est un captaine occupé et le fait savoir')
   .addSubcommand(subcommand =>
     subcommand
-      .setName('get')
+      .setName(Keys.get)
       .setDescription("Jean Plank vous informe de ce qu'il est en train de faire"),
   )
   .addSubcommand(subcommand =>
     subcommand
-      .setName('unset')
+      .setName(Keys.unset)
       .setDescription("Jean Plank a fini ce qu'il était en train de faire"),
   )
   .addSubcommand(subcommand =>
     subcommand
-      .setName('set')
+      .setName(Keys.set)
       .setDescription("Jean Plank annonce au monde ce qu'il est en train de faire")
       .addStringOption(option =>
         option
-          .setName('type')
+          .setName(Keys.type)
           .setDescription("Le type d'activité que Jean Plank est en train de faire")
           // eslint-disable-next-line functional/prefer-readonly-type
           .addChoices(activityTypeBotChoices as [ActivityTypeBot, ActivityTypeBot][])
@@ -159,14 +177,14 @@ const activityCommand = new SlashCommandBuilder()
       )
       .addStringOption(option =>
         option
-          .setName('name')
+          .setName(Keys.name)
           .setDescription("L'activité que Jean Plank est en train de faire")
           .setRequired(true),
       ),
   )
   .addSubcommand(subcommand =>
     subcommand
-      .setName('refresh')
+      .setName(Keys.refresh)
       .setDescription(
         'Jean Plank a parfois besoin de rappeler au monde à quel point il est occupé',
       ),
@@ -199,17 +217,17 @@ export const AdminCommandsObserver = (
     if (!interaction.isCommand()) return Future.unit
 
     switch (interaction.commandName) {
-      case 'state':
+      case Keys.state:
         return onState(interaction)
-      case 'calls':
+      case Keys.calls:
         return onCalls(interaction)
-      case 'defaultrole':
+      case Keys.defaultrole:
         return onDefaultRole(interaction)
-      case 'itsfriday':
+      case Keys.itsfriday:
         return onItsFriday(interaction)
-      case 'birthday':
+      case Keys.birthday:
         return onBirthday(interaction)
-      case 'activity':
+      case Keys.activity:
         return onActivity(interaction)
     }
 
@@ -222,7 +240,7 @@ export const AdminCommandsObserver = (
 
   function onState(interaction: CommandInteraction): Future<void> {
     switch (interaction.options.getSubcommand(false)) {
-      case 'get':
+      case Keys.get:
         return onStateGet(interaction)
     }
     return Future.unit
@@ -247,7 +265,7 @@ export const AdminCommandsObserver = (
 
   function onCalls(interaction: CommandInteraction): Future<void> {
     switch (interaction.options.getSubcommand(false)) {
-      case 'init':
+      case Keys.init:
         return onCallsInit(interaction)
     }
     return Future.unit
@@ -263,8 +281,10 @@ export const AdminCommandsObserver = (
           guild: Future.right(maybeGuild),
           author: fetchUser(Maybe.fromNullable(interaction.member)),
           commandChannel: futureMaybe.fromNullable(interaction.channel),
-          callsChannel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel('channel'))),
-          role: fetchRole(maybeGuild, Maybe.fromNullable(interaction.options.getRole('role'))),
+          callsChannel: fetchChannel(
+            Maybe.fromNullable(interaction.options.getChannel(Keys.channel)),
+          ),
+          role: fetchRole(maybeGuild, Maybe.fromNullable(interaction.options.getRole(Keys.role))),
         }),
       ),
       futureMaybe.chainFuture(({ guild, author, commandChannel, callsChannel, role }) =>
@@ -327,7 +347,7 @@ export const AdminCommandsObserver = (
 
   function onDefaultRole(interaction: CommandInteraction): Future<void> {
     switch (interaction.options.getSubcommand(false)) {
-      case 'set':
+      case Keys.set:
         return onDefaultRoleSet(interaction)
     }
     return Future.unit
@@ -340,7 +360,7 @@ export const AdminCommandsObserver = (
           guild: Future.right(Maybe.fromNullable(interaction.guild)),
           role: fetchRole(
             Maybe.fromNullable(interaction.guild),
-            Maybe.fromNullable(interaction.options.getRole('role')),
+            Maybe.fromNullable(interaction.options.getRole(Keys.role)),
           ),
         }),
         futureMaybe.chainFuture(({ guild, role }) => guildStateService.setDefaultRole(guild, role)),
@@ -358,7 +378,7 @@ export const AdminCommandsObserver = (
 
   function onItsFriday(interaction: CommandInteraction): Future<void> {
     switch (interaction.options.getSubcommand(false)) {
-      case 'set':
+      case Keys.set:
         return onItsFridaySet(interaction)
     }
     return Future.unit
@@ -369,7 +389,7 @@ export const AdminCommandsObserver = (
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: Future.right(Maybe.fromNullable(interaction.guild)),
-          channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel('channel'))),
+          channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
         }),
         futureMaybe.chainFuture(({ guild, channel }) =>
           guildStateService.setItsFridayChannel(guild, channel),
@@ -389,7 +409,7 @@ export const AdminCommandsObserver = (
 
   function onBirthday(interaction: CommandInteraction): Future<void> {
     switch (interaction.options.getSubcommand(false)) {
-      case 'set':
+      case Keys.set:
         return onBirthdaySet(interaction)
     }
     return Future.unit
@@ -400,7 +420,7 @@ export const AdminCommandsObserver = (
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: Future.right(Maybe.fromNullable(interaction.guild)),
-          channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel('channel'))),
+          channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
         }),
         futureMaybe.chainFuture(({ guild, channel }) =>
           guildStateService.setBirthdayChannel(guild, channel),
@@ -420,13 +440,13 @@ export const AdminCommandsObserver = (
 
   function onActivity(interaction: CommandInteraction): Future<void> {
     switch (interaction.options.getSubcommand(false)) {
-      case 'get':
+      case Keys.get:
         return onActivityGet(interaction)
-      case 'unset':
+      case Keys.unset:
         return onActivityUnset(interaction)
-      case 'set':
+      case Keys.set:
         return onActivitySet(interaction)
-      case 'refresh':
+      case Keys.refresh:
         return onActivityRefresh(interaction)
     }
     return Future.unit
@@ -455,8 +475,8 @@ export const AdminCommandsObserver = (
     return withFollowUp(interaction)(
       pipe(
         ValidatedNea.sequenceS({
-          type: decode(ActivityTypeBot.decoder, interaction.options.getString('type')),
-          name: decode(D.string, interaction.options.getString('name')),
+          type: decode(ActivityTypeBot.decoder, interaction.options.getString(Keys.type)),
+          name: decode(D.string, interaction.options.getString(Keys.name)),
         }),
         Either.mapLeft(
           flow(

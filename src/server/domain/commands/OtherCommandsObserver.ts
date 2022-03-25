@@ -10,15 +10,21 @@ import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { MadEvent } from '../../models/event/MadEvent'
 import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 
+const Keys = {
+  ping: 'ping',
+  randomcase: 'randomcase',
+  message: 'message',
+}
+
 const pingCommand = new SlashCommandBuilder()
-  .setName('ping')
+  .setName(Keys.ping)
   .setDescription('Jean Plank répond pong')
 
 const randomCaseCommand = new SlashCommandBuilder()
-  .setName('randomcase')
+  .setName(Keys.randomcase)
   .setDescription('Jean Plank vous prend pour un débile')
   .addStringOption(option =>
-    option.setName('message').setDescription('Que voulez-vous dire ?').setRequired(true),
+    option.setName(Keys.message).setDescription('Que voulez-vous dire ?').setRequired(true),
   )
 
 export const otherCommands = [pingCommand, randomCaseCommand]
@@ -34,9 +40,9 @@ export const OtherCommandsObserver = () => {
     if (!interaction.isCommand()) return Future.unit
 
     switch (interaction.commandName) {
-      case 'ping':
+      case Keys.ping:
         return onPing(interaction)
-      case 'randomcase':
+      case Keys.randomcase:
         return onRandomCase(interaction)
     }
 
@@ -49,7 +55,7 @@ export const OtherCommandsObserver = () => {
 
   function onRandomCase(interaction: CommandInteraction): Future<void> {
     return pipe(
-      D.string.decode(interaction.options.getString('message')),
+      D.string.decode(interaction.options.getString(Keys.message)),
       Either.bimap(
         e => Error(`Invalid options from command "randomcase":\n${D.draw(e)}`),
         m =>
