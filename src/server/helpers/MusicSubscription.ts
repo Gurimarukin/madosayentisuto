@@ -40,7 +40,7 @@ import { LogUtils } from '../utils/LogUtils'
 import { PubSubUtils } from '../utils/PubSubUtils'
 import { DiscordConnector } from './DiscordConnector'
 import type { YtDlp } from './YtDlp'
-import { musicStateMessage } from './messages/musicStateMessage'
+import { MusicStateMessage } from './messages/MusicStateMessage'
 
 type MusicChannel = VoiceChannel | StageChannel
 
@@ -432,7 +432,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
 
 const sendStateMessage = (stateChannel: TextBasedChannel): Future<Maybe<Message>> =>
   pipe(
-    musicStateMessage.connecting,
+    MusicStateMessage.connecting,
     Future.fromIOEither,
     Future.chain(options => DiscordConnector.sendMessage(stateChannel, options)),
   )
@@ -498,7 +498,7 @@ const refreshMessage = (state: MusicState): Future<void> => {
   return pipe(
     apply.sequenceS(futureMaybe.ApplyPar)({
       message: futureMaybe.fromOption(maybeMessage),
-      options: futureMaybe.fromIOEither(musicStateMessage.playing(playing, queue, isPlaying)),
+      options: futureMaybe.fromIOEither(MusicStateMessage.playing(playing, queue, isPlaying)),
     }),
     futureMaybe.chainFuture(({ message, options }) =>
       DiscordConnector.messageEdit(message, options),

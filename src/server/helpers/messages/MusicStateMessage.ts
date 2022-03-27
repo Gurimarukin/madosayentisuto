@@ -15,7 +15,6 @@ import { IO } from '../../../shared/utils/fp'
 import { List, Maybe } from '../../../shared/utils/fp'
 
 import { Colors, constants } from '../../constants'
-import { MusicCommandsObserverKeys } from '../../domain/commands/MusicCommandsObserver'
 import type { Track } from '../../models/music/Track'
 import { MessageUtils } from '../../utils/MessageUtils'
 
@@ -70,8 +69,8 @@ const connecting: IO<MyMessageOptions> = pipe(
   ),
 )
 
-const playing_ = (
-  playing: Maybe<Track>,
+const playing = (
+  current: Maybe<Track>,
   queue: List<Track>,
   isPlaying: boolean,
 ): IO<MyMessageOptions> =>
@@ -85,24 +84,24 @@ const playing_ = (
             color: messagesColor,
             author: MessageUtils.author('En cours de lecture :'),
             title: pipe(
-              playing,
+              current,
               Maybe.map(t => t.title),
               Maybe.toUndefined,
             ),
             url: pipe(
-              playing,
+              current,
               Maybe.map(t => t.url),
               Maybe.toUndefined,
             ),
             description: pipe(
-              playing,
+              current,
               Maybe.fold(
                 () => '*Aucun morceau en cours*',
                 () => undefined,
               ),
             ),
             thumbnail: pipe(
-              playing,
+              current,
               Maybe.chain(t => t.thumbnail),
               Maybe.getOrElse(() => images.jpPerdu),
               MessageUtils.thumbnail,
@@ -117,7 +116,7 @@ const playing_ = (
                       StringUtils.stripMargins(
                         `*Aucun morceau dans la file d'attente.*
                         |
-                        |\`/${MusicCommandsObserverKeys.play} <${MusicCommandsObserverKeys.track}>\` pour en ajouter`,
+                        |\`/${Keys.play} <${Keys.track}>\` pour en ajouter`,
                       ),
                     flow(
                       List.takeLeft(queueDisplay),
@@ -142,6 +141,11 @@ const playing_ = (
     ),
   )
 
-const maskedLink = (text: string, url: string): string => `[${text}](${url})`
+const Keys = {
+  play: 'fépétéleson',
+  track: 'morceau',
+}
 
-export const musicStateMessage = { connecting, playing: playing_ }
+export const MusicStateMessage = { connecting, playing, Keys }
+
+const maskedLink = (text: string, url: string): string => `[${text}](${url})`

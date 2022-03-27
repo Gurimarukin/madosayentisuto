@@ -17,7 +17,7 @@ import { Future, Maybe } from '../../../shared/utils/fp'
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
 import type { MusicSubscription } from '../../helpers/MusicSubscription'
 import type { YtDlp } from '../../helpers/YtDlp'
-import { musicStateButtons } from '../../helpers/messages/musicStateMessage'
+import { MusicStateMessage, musicStateButtons } from '../../helpers/messages/MusicStateMessage'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import { MusicState } from '../../models/music/MusicState'
@@ -31,18 +31,12 @@ type PlayCommand = {
   readonly tracks: NonEmptyArray<Track>
 }
 
-const Keys = {
-  play: 'fépétéleson',
-  track: 'morceau',
-}
-export const MusicCommandsObserverKeys = Keys
-
 const playCommand = new SlashCommandBuilder()
-  .setName(Keys.play)
+  .setName(MusicStateMessage.Keys.play)
   .setDescription('Jean Plank joue un petit air')
   .addStringOption(option =>
     option
-      .setName(Keys.track)
+      .setName(MusicStateMessage.Keys.track)
       .setDescription('Lien ou recherche YouTube, lien Bandcamp, fichier, etc.')
       .setRequired(true),
   )
@@ -67,7 +61,7 @@ export const MusicCommandsObserver = (
 
       if (interaction.isCommand()) {
         switch (interaction.commandName) {
-          case Keys.play:
+          case MusicStateMessage.Keys.play:
             return onPlayCommand(interaction)
         }
       }
@@ -148,10 +142,10 @@ export const MusicCommandsObserver = (
     interaction: CommandInteraction,
   ): Future<Either<string, NonEmptyArray<Track>>> {
     return pipe(
-      interaction.options.getString(Keys.track),
+      interaction.options.getString(MusicStateMessage.Keys.track),
       Maybe.fromNullable,
       Maybe.fold(
-        () => Future.right(Either.left(`Argument manquant : ${Keys.track}`)),
+        () => Future.right(Either.left(`Argument manquant : ${MusicStateMessage.Keys.track}`)),
         flow(
           validateTracks,
           Future.orElse(e =>
