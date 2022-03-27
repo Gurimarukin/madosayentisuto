@@ -1,28 +1,24 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import type { APIMessage } from 'discord-api-types/payloads/v9'
-import { Message } from 'discord.js'
+import type { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/rest/v9'
+import type { Guild, Message } from 'discord.js'
 import type {
   ButtonInteraction,
   CommandInteraction,
-  Guild,
   Interaction,
+  MessageContextMenuInteraction,
   PartialMessage,
   TextBasedChannel,
   User,
 } from 'discord.js'
 import { apply } from 'fp-ts'
-import type { Lazy } from 'fp-ts/function'
 import { flow, pipe } from 'fp-ts/function'
+import { lens } from 'monocle-ts'
 
-import { ValidatedNea } from '../../../shared/models/ValidatedNea'
-import { GuildId } from '../../../shared/models/guild/GuildId'
 import { UserId } from '../../../shared/models/guild/UserId'
-import { StringUtils } from '../../../shared/utils/StringUtils'
-import type { IO } from '../../../shared/utils/fp'
+import { IO } from '../../../shared/utils/fp'
 import { Tuple } from '../../../shared/utils/fp'
 import { toUnit } from '../../../shared/utils/fp'
-import { Dict } from '../../../shared/utils/fp'
-import { Either } from '../../../shared/utils/fp'
 import { List } from '../../../shared/utils/fp'
 import { Maybe } from '../../../shared/utils/fp'
 import { NonEmptyArray } from '../../../shared/utils/fp'
@@ -30,19 +26,20 @@ import { Future } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import type { EmojiWithAnswer } from '../../helpers/messages/pollMessage'
-import { Answer, pollMessage } from '../../helpers/messages/pollMessage'
-import { TSnowflake } from '../../models/TSnowflake'
+import { pollMessage } from '../../helpers/messages/pollMessage'
+import { MessageId } from '../../models/MessageId'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
+import { ChoiceWithResponses } from '../../models/poll/ChoiceWithResponses'
+import { ChoiceWithVotesCount } from '../../models/poll/ChoiceWithVotesCount'
+import { Poll } from '../../models/poll/Poll'
 import { PollButton } from '../../models/poll/PollButton'
 import { PollResponse } from '../../models/poll/PollResponse'
 import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
-import type { PollResponseService } from '../../services/PollResponseService'
+import type { PollService } from '../../services/PollService'
 import { LogUtils } from '../../utils/LogUtils'
-import { jsonStringify } from '../../utils/jsonStringify'
 
-const choices = pipe(
+const keysChoices = pipe(
   NonEmptyArray.range(1, 5),
   NonEmptyArray.map(i => Tuple.of(`choix${i}`, `Choix ${i}`)),
 )
@@ -50,11 +47,12 @@ const choices = pipe(
 const Keys = {
   poll: 'sondage',
   question: 'question',
-  choices: pipe(choices, NonEmptyArray.map(Tuple.fst)),
+  choices: pipe(keysChoices, NonEmptyArray.map(Tuple.fst)),
+  deletePoll: 'Supprimer sondage',
 }
 
-export const pollCommand = pipe(
-  choices,
+const pollCommand = pipe(
+  keysChoices,
   NonEmptyArray.reduce(
     new SlashCommandBuilder()
       .setName(Keys.poll)
@@ -67,11 +65,20 @@ export const pollCommand = pipe(
   ),
 )
 
+const messageDeleteCommand: RESTPostAPIApplicationCommandsJSONBody = {
+  type: 3,
+  name: Keys.deletePoll,
+}
+
+const isMultiple = false
+
+export const pollCommands = [pollCommand.toJSON(), messageDeleteCommand]
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollCommandsObserver = (
   Logger: LoggerGetter,
   clientId: string,
-  pollResponseService: PollResponseService,
+  pollService: PollService,
 ) => {
   const logger = Logger('PollCommandsObserver')
 
@@ -91,17 +98,18 @@ export const PollCommandsObserver = (
 
   // onInteraction
   function onInteraction(interaction: Interaction): Future<void> {
-    if (interaction.isCommand()) {
-      switch (interaction.commandName) {
-        case Keys.poll:
-          return onPollCommand(interaction)
-      }
-    }
+    if (interaction.isCommand()) return onCommand(interaction)
+    if (interaction.isButton()) return onButton(interaction)
+    if (interaction.isMessageContextMenu()) return onMessageContextMenu(interaction)
+    return Future.unit
+  }
 
-    if (interaction.isButton()) {
-      return onButtonInteraction(interaction)
+  // onCommand
+  function onCommand(interaction: CommandInteraction): Future<void> {
+    switch (interaction.commandName) {
+      case Keys.poll:
+        return onPollCommand(interaction)
     }
-
     return Future.unit
   }
 
@@ -110,73 +118,69 @@ export const PollCommandsObserver = (
     return pipe(
       DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
       Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
-      Future.map(() =>
-        apply.sequenceS(Maybe.Apply)({
-          channel: Maybe.fromNullable(interaction.channel),
-          question: Maybe.fromNullable(interaction.options.getString(Keys.question)),
+      Future.chain(() =>
+        apply.sequenceS(futureMaybe.ApplyPar)({
+          channel: futureMaybe.fromNullable(interaction.channel),
+          question: futureMaybe.fromNullable(interaction.options.getString(Keys.question)),
         }),
       ),
-      futureMaybe.chainFuture(({ channel, question }) => initPoll(interaction, channel, question)),
-
+      futureMaybe.chainFuture(({ channel, question }) =>
+        initPoll(channel, interaction.user, question, getChoices(interaction)),
+      ),
       Future.map(toUnit),
     )
   }
 
   function initPoll(
-    interaction: CommandInteraction,
     channel: TextBasedChannel,
+    user: User,
     question: string,
+    choices: NonEmptyArray<string>,
   ): Future<void> {
+    const createdBy = UserId.wrap(user.id)
+    const options = pollMessage(
+      createdBy,
+      question,
+      pipe(choices, NonEmptyArray.map(ChoiceWithVotesCount.empty)),
+    )
     return pipe(
-      parseAnswers_(interaction),
-      getWithEmojis,
-      futureMaybe.map(withEmojis => ({
-        options: pollMessage.format({
-          question,
-          answers: withEmojis,
-          author: interaction.user.toString(),
-        }),
-      })),
-      futureMaybe.bind('message', ({ options }) => DiscordConnector.sendMessage(channel, options)),
-      futureMaybe.chainFuture(({ message, options }) =>
+      DiscordConnector.sendMessage(channel, options),
+      futureMaybe.chainFirstFuture(message =>
+        // we want the `(edited)` label on message so we won't have a layout shift
         DiscordConnector.messageEdit(message, options),
       ),
-      Future.map(toUnit),
-    )
-  }
-
-  function getWithEmojis(answers: NonEmptyArray<string>): Future<Maybe<NonEmptyArray<Answer>>> {
-    return pipe(
-      answers,
-      NonEmptyArray.traverseWithIndex(ValidatedNea.stringValidation)((emojiIndex, answer) =>
-        Answer.fromIndex({ answer, emojiIndex, votesCount: 0 }),
+      futureMaybe.chainFuture(message =>
+        pollService.createPoll({
+          message: MessageId.wrap(message.id),
+          createdBy,
+          question,
+          choices,
+        }),
       ),
-      Either.fold(
-        errors =>
-          pipe(
-            logger.warn(
-              `Error while getting answers:\n${pipe(errors, StringUtils.mkString('\n'))}`,
-            ),
-            Future.fromIOEither,
-            Future.map(() => Maybe.none),
-          ),
-        flow(Maybe.some, Future.right),
+      futureMaybe.matchE(
+        () => Future.unit,
+        success =>
+          success ? Future.unit : Future.fromIOEither(logger.warn('Failed to create poll')),
       ),
     )
   }
 
-  // onButtonInteraction
-  function onButtonInteraction(interaction: ButtonInteraction): Future<void> {
+  // onButton
+  function onButton(interaction: ButtonInteraction): Future<void> {
     return pipe(
       PollButton.parse(interaction.customId),
       Maybe.fold(
         () => Future.unit,
         button =>
           pipe(
-            DiscordConnector.interactionUpdate(interaction),
-            Future.chain(() => futureMaybe.fromNullable(interaction.guild)),
-            futureMaybe.chainFuture(guild =>
+            DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
+            Future.map(() => Maybe.fromNullable(interaction.guild)),
+            futureMaybe.chain(guild =>
               castVote(guild, interaction.message, interaction.user, button),
+            ),
+            Future.map(Maybe.getOrElse(() => 'Erreur')),
+            Future.chain(content =>
+              DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
             ),
             Future.map(toUnit),
           ),
@@ -188,96 +192,172 @@ export const PollCommandsObserver = (
     guild: Guild,
     message: APIMessage | Message,
     user: User,
-    { answerIndex }: PollButton,
-  ): Future<void> {
+    { choiceIndex }: PollButton,
+  ): Future<Maybe<string>> {
+    const messageId = MessageId.wrap(message.id)
+    const userId = UserId.wrap(user.id)
     return pipe(
-      pollResponseService.lookupByUser({
-        guild: GuildId.wrap(guild.id),
-        message: TSnowflake.wrap(message.id),
-        user: UserId.wrap(user.id),
-      }),
-      Future.chain(
-        Maybe.fold(
-          () => upsertVoteAndRefreshMessage(guild, message, user, answerIndex),
-          upsertIfDifferent(guild, message, user, answerIndex),
+      pollService.lookupByMessage(messageId),
+      futureMaybe.chain(
+        poll =>
+          pipe(
+            poll.choices,
+            List.lookup(choiceIndex),
+            Maybe.fold(
+              () => Future.right(Maybe.none),
+              choice => {
+                const alreadyVotedForChoice = pipe(choice.responses, List.elem(UserId.Eq)(userId))
+                if (alreadyVotedForChoice) {
+                  return pipe(
+                    removeResponse(poll, userId, choiceIndex),
+                    Future.map(p => Maybe.some(Tuple.of(p, 'Vote supprimé'))),
+                  )
+                }
+                return pipe(
+                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                  isMultiple
+                    ? Future.right(poll)
+                    : // we want only one response
+                      removeResponsesForUser(poll, userId),
+                  Future.chain(addResponse(userId, choiceIndex)),
+                  Future.map(p => Maybe.some(Tuple.of(p, 'Vote pris en compte'))),
+                )
+              },
+            ),
+          ),
+
+        // const res = pipe(
+        //   responses,
+        //   List.findFirst(r => r.choiceIndex === button.choiceIndex),
+        //   Maybe.fold(
+        //     () =>
+        //       // clicked choice for which the user didn't already vote
+        //       pipe(
+        //         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        //         List.isNonEmpty(responses) && !isMultiple
+        //           ? removeResponsesForUser(question.message, userId, responses.length) // we want only one response
+        //           : Future.unit,
+        //         Future.chain(() => addResponse(question.message, userId, button.choiceIndex)),
+        //         Future.map(() => 'Vote pris en compte'),
+        //       ),
+        //     flow(
+        //       removeResponse,
+        //       Future.map(() => 'Vote supprimé'),
+        //     ),
+        //   ),
+        // )
+      ),
+      futureMaybe.chainFirstFuture(flow(Tuple.fst, refreshMessage(guild))),
+      Future.map(Maybe.map(Tuple.snd)),
+    )
+  }
+
+  function removeResponsesForUser(poll: Poll, user: UserId): Future<Poll> {
+    const toRemove = pipe(
+      poll.choices,
+      List.chain(
+        flow(
+          ChoiceWithResponses.Lens.responses.get,
+          List.filter(id => id === user),
         ),
+      ),
+      List.size,
+    )
+    if (toRemove === 0) return Future.right(poll)
+    return pipe(
+      pollService.removeResponsesForUser(poll.message, user),
+      Future.chainIOEitherK(count =>
+        count === toRemove ? IO.unit : logger.warn('Weird responses deletion count'),
+      ),
+      Future.map(() =>
+        pipe(
+          Poll.Lens.choices,
+          lens.modify(
+            NonEmptyArray.map(
+              pipe(ChoiceWithResponses.Lens.responses, lens.modify(List.filter(id => id !== user))),
+            ),
+          ),
+        )(poll),
       ),
     )
   }
 
-  function upsertIfDifferent(
-    guild: Guild,
-    message: APIMessage | Message,
-    user: User,
-    answerIndex: number,
-  ): (previousReponse: PollResponse) => Future<void> {
-    return previousReponse =>
-      answerIndex === previousReponse.answerIndex
-        ? Future.unit
-        : upsertVoteAndRefreshMessage(guild, message, user, answerIndex)
-  }
-
-  function upsertVoteAndRefreshMessage(
-    guild: Guild,
-    message: APIMessage | Message,
-    user: User,
-    answerIndex: number,
-  ): Future<void> {
-    const response: PollResponse = {
-      guild: GuildId.wrap(guild.id),
-      message: TSnowflake.wrap(message.id),
-      user: UserId.wrap(user.id),
-      answerIndex,
-    }
-
-    return pipe(
-      pollResponseService.upsert(response),
-      Future.chain(success =>
-        success
-          ? refreshMessageFromDb(guild, message)
-          : Future.fromIOEither(
-              LogUtils.pretty(logger, guild).warn(
-                `Failed to upsert ${jsonStringify(PollResponse.codec)(response)}`,
+  function addResponse(user: UserId, choiceIndex: number): (poll: Poll) => Future<Poll> {
+    return poll =>
+      pipe(
+        pollService.createResponse(PollResponse.of(poll.message, user, choiceIndex)),
+        Future.chainIOEitherK(success =>
+          success ? IO.unit : logger.warn('Failed to add response'),
+        ),
+        Future.map(() =>
+          pipe(
+            Poll.Lens.choices,
+            lens.modify(
+              nonEmptyArrayModifyAt(
+                choiceIndex,
+                pipe(
+                  ChoiceWithResponses.Lens.responses,
+                  lens.modify<List<UserId>>(List.append(user)),
+                ),
               ),
             ),
+          )(poll),
+        ),
+      )
+  }
+
+  function removeResponse(poll: Poll, user: UserId, choiceIndex: number): Future<Poll> {
+    return pipe(
+      pollService.removeResponse(PollResponse.of(poll.message, user, choiceIndex)),
+      Future.chainIOEitherK(success =>
+        success ? IO.unit : logger.warn('Failed to remove response'),
+      ),
+      Future.map(() =>
+        pipe(
+          Poll.Lens.choices,
+          lens.modify(
+            nonEmptyArrayModifyAt(
+              choiceIndex,
+              pipe(ChoiceWithResponses.Lens.responses, lens.modify(List.filter(id => id !== user))),
+            ),
+          ),
+        )(poll),
       ),
     )
   }
 
-  function refreshMessageFromDb(guild: Guild, message_: APIMessage | Message): Future<void> {
-    const log = LogUtils.pretty(logger, guild)
+  function refreshMessage(guild: Guild): (poll: Poll) => Future<Maybe<Message>> {
+    return poll =>
+      pipe(
+        DiscordConnector.fetchMessage(guild, poll.message),
+        Future.chainFirstIOEitherK(
+          Maybe.fold(
+            () =>
+              LogUtils.pretty(logger, guild).warn(
+                `Couldn't fetch message ${MessageId.unwrap(poll.message)}`,
+              ),
+            () => IO.unit,
+          ),
+        ),
+        futureMaybe.chainFuture(message =>
+          DiscordConnector.messageEdit(
+            message,
+            pollMessage(
+              poll.createdBy,
+              poll.question,
+              pipe(poll.choices, NonEmptyArray.map(ChoiceWithVotesCount.fromChoiceWithResponses)),
+            ),
+          ),
+        ),
+      )
+  }
+
+  // onMessageContextMenu
+  function onMessageContextMenu(interaction: MessageContextMenuInteraction): Future<void> {
+    console.log('message =', interaction.targetMessage.id)
     return pipe(
-      futureMaybe.Do,
-      futureMaybe.bind('message', () =>
-        pipe(
-          message_ instanceof Message
-            ? Future.right(Maybe.some(message_))
-            : DiscordConnector.fetchMessage(guild, TSnowflake.wrap(message_.id)),
-          onNone(() => log.warn(`Couldn't fetch message ${message_.id}`)),
-        ),
-      ),
-      futureMaybe.bind('parsed', ({ message }) =>
-        pipe(
-          pollMessage.parse(message),
-          futureMaybe.fromOption,
-          onNone(() => log.warn(`Couldn't pollMessage.parse message ${message.id}`)),
-        ),
-      ),
-      futureMaybe.bind('responses', () =>
-        futureMaybe.fromFuture(
-          pollResponseService.listForMessage({
-            guild: GuildId.wrap(guild.id),
-            message: TSnowflake.wrap(message_.id),
-          }),
-        ),
-      ),
-      futureMaybe.chainFuture(({ message, parsed: { question, answers, author }, responses }) =>
-        DiscordConnector.messageEdit(
-          message,
-          pollMessage.format({ question, answers: answersWithCount(answers, responses), author }),
-        ),
-      ),
-      Future.map(toUnit),
+      DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
+      Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
     )
   }
 
@@ -287,36 +367,24 @@ export const PollCommandsObserver = (
       messages,
       List.filterMap(m =>
         m.guild !== null && m.author?.id === clientId
-          ? Maybe.some({ guild: m.guild, message: TSnowflake.wrap(m.id) })
+          ? Maybe.some(MessageId.wrap(m.id))
           : Maybe.none,
       ),
       NonEmptyArray.fromReadonlyArray,
       Maybe.fold(
         () => Future.unit,
         flow(
-          NonEmptyArray.groupBy(({ guild }) => guild.id),
-          Dict.toReadonlyArray,
-          Future.traverseArray(([guildId, nea]) => {
-            const { guild } = NonEmptyArray.head(nea)
-            const toDelete = pipe(
-              nea,
-              NonEmptyArray.map(e => e.message),
-            )
-            return pipe(
-              pollResponseService.deleteByMessageIds(GuildId.wrap(guildId), toDelete),
-              Future.chainIOEitherK(n =>
-                LogUtils.pretty(logger, guild).info(`Deleted ${n} poll messages`),
-              ),
-            )
-          }),
-          Future.map(toUnit),
+          pollService.removePollForMessages,
+          Future.chainIOEitherK(success =>
+            success ? IO.unit : logger.warn('Failed to remove poll'),
+          ),
         ),
       ),
     )
   }
 }
 
-const parseAnswers_ = (interaction: CommandInteraction): NonEmptyArray<string> =>
+const getChoices = (interaction: CommandInteraction): NonEmptyArray<string> =>
   pipe(
     Keys.choices,
     List.filterMap(choice => pipe(interaction.options.getString(choice), Maybe.fromNullable)),
@@ -324,40 +392,11 @@ const parseAnswers_ = (interaction: CommandInteraction): NonEmptyArray<string> =
     Maybe.getOrElse((): NonEmptyArray<string> => ['Oui', 'Non']),
   )
 
-const answersWithCount = (
-  answers: NonEmptyArray<EmojiWithAnswer>,
-  responses: List<PollResponse>,
-): NonEmptyArray<Answer> =>
-  pipe(
-    answers,
-    NonEmptyArray.mapWithIndex(
-      (answerIndex, { emoji, answer }): Answer => ({
-        emoji,
-        answer,
-        votesCount: pipe(
-          responses,
-          List.filter(r => r.answerIndex === answerIndex),
-          List.size,
-        ),
-      }),
-    ),
-  )
-
-// side effect if fa is None
-const onNone =
-  <A, B>(f: Lazy<IO<B>>) =>
-  (fa: Future<Maybe<A>>): Future<Maybe<A>> =>
+const nonEmptyArrayModifyAt =
+  <A>(i: number, f: (a: A) => A) =>
+  (fa: NonEmptyArray<A>): NonEmptyArray<A> =>
     pipe(
       fa,
-      Future.chain(
-        Maybe.fold(
-          () =>
-            pipe(
-              f(),
-              Future.fromIOEither,
-              Future.map(() => Maybe.none),
-            ),
-          flow(Maybe.some, Future.right),
-        ),
-      ),
+      NonEmptyArray.modifyAt(i, f),
+      Maybe.getOrElse(() => fa),
     )

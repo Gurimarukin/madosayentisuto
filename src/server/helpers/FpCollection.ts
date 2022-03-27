@@ -43,7 +43,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
   return {
     collection,
 
-    path: getPath<O>(),
+    path: FpCollectionHelpers.getPath<O>(),
 
     ensureIndexes: (
       indexSpecs: List<IndexDescription<A>>,
@@ -65,7 +65,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
       const encoded = codec.encode(doc)
       return pipe(
         collection(c => c.insertOne(encoded, options)),
-        Future.chainFirstIOEitherK(() => logger.debug('inserted', JSON.stringify(encoded))),
+        Future.chainFirstIOEitherK(() => logger.debug('Inserted', JSON.stringify(encoded))),
       )
     },
 
@@ -73,7 +73,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
       const encoded = docs.map(codec.encode)
       return pipe(
         collection(c => c.insertMany(encoded, options)),
-        Future.chainFirstIOEitherK(res => logger.debug(`inserted ${res.insertedCount} documents`)),
+        Future.chainFirstIOEitherK(res => logger.debug(`Inserted ${res.insertedCount} documents`)),
       )
     },
 
@@ -81,7 +81,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
       const encoded = codec.encode(doc)
       return pipe(
         collection(c => c.updateOne(filter, { $set: encoded as MatchKeysAndValues<O> }, options)),
-        Future.chainFirstIOEitherK(() => logger.debug('updated', JSON.stringify(encoded))),
+        Future.chainFirstIOEitherK(() => logger.debug('Updated', JSON.stringify(encoded))),
       )
     },
 
@@ -93,7 +93,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
       const encoded = codec.encode(doc)
       return pipe(
         collection(c => c.replaceOne(filter, encoded as O, options)),
-        Future.chainFirstIOEitherK(() => logger.debug('replaced', JSON.stringify(encoded))),
+        Future.chainFirstIOEitherK(() => logger.debug('Replaced', JSON.stringify(encoded))),
       )
     },
 
@@ -105,7 +105,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
     ): Future<Maybe<A>> =>
       pipe(
         collection(c => c.findOne(filter, options)),
-        Future.chainFirstIOEitherK(res => logger.debug('foundOne', JSON.stringify(res))),
+        Future.chainFirstIOEitherK(res => logger.debug('Found one', JSON.stringify(res))),
         Future.map(Maybe.fromNullable),
         futureMaybe.chain(u =>
           pipe(
@@ -121,19 +121,19 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
     deleteOne: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
       pipe(
         collection(c => c.deleteOne(filter, options)),
-        Future.chainFirstIOEitherK(res => logger.debug(`deleted ${res.deletedCount} documents`)),
+        Future.chainFirstIOEitherK(res => logger.debug(`Deleted ${res.deletedCount} documents`)),
       ),
 
     deleteMany: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
       pipe(
         collection(c => c.deleteMany(filter, options)),
-        Future.chainFirstIOEitherK(res => logger.debug(`deleted ${res.deletedCount} documents`)),
+        Future.chainFirstIOEitherK(res => logger.debug(`Deleted ${res.deletedCount} documents`)),
       ),
 
     drop: (): Future<boolean> =>
       pipe(
         collection(c => c.drop()),
-        Future.chainFirstIOEitherK(() => logger.debug('dropped collection')),
+        Future.chainFirstIOEitherK(() => logger.debug('Dropped collection')),
       ),
   }
 
@@ -148,7 +148,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
     return (query, options) =>
       pipe(
         collection(coll => coll.find(query, options).toArray()),
-        Future.chainFirstIOEitherK(res => logger.debug('foundAll', JSON.stringify(res))),
+        Future.chainFirstIOEitherK(res => logger.debug('Found all', JSON.stringify(res))),
         Future.chain(
           Future.traverseSeqArray(u =>
             pipe(
@@ -195,4 +195,6 @@ type Path<S> = {
   <K1 extends keyof S>(path: readonly [K1]): string
 }
 
-const getPath = <A>(): Path<A> => StringUtils.mkString('.')
+export const FpCollectionHelpers = {
+  getPath: <A>(): Path<A> => StringUtils.mkString('.'),
+}

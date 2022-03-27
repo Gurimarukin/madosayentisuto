@@ -1,13 +1,12 @@
+- poll:
+  - multiple choice option
+  - anonymous option 
 - decouple autorole and call mention
-- migrate `guild: GuildId` and `user: UserId` in `PollResponse`
+- UserId, GuildId, MessageId: remove wrap
 - select leave message chan
 - birthdays
 - deploy: on guild join
 - Remind
-- poll:
-  - remove own response
-  - multiple choice option
-  - anonymous option
 - Say
 - Img
 - moderators/owner
@@ -18,6 +17,7 @@
   - state?
 - ensure indexes: unsubscribe when done?
 - commands register: unsubscribe when done?
+- elevator
 - `NotUsed`?
 - try to override declaration types to use GuildId, TSnowflake, ...
 

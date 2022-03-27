@@ -169,7 +169,7 @@ export const IO = {
   right: ioRight,
   tryCatch: ioTryCatch,
   fromIO: ioFromIO,
-  unit: ioRight(undefined),
+  unit: ioRight<void>(undefined),
   runFutureUnsafe: <A>(f: Future<A>): IO<void> =>
     ioFromIO(() => {
       // eslint-disable-next-line functional/no-expression-statement

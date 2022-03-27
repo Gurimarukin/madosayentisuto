@@ -19,9 +19,9 @@ import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 import { adminCommands } from '../commands/AdminCommandsObserver'
-import { playCommand } from '../commands/MusicCommandsObserver'
+import { musicCommands } from '../commands/MusicCommandsObserver'
 import { otherCommands } from '../commands/OtherCommandsObserver'
-import { pollCommand } from '../commands/PollCommandsObserver'
+import { pollCommands } from '../commands/PollCommandsObserver'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const DeployCommandsObserver = (
@@ -33,10 +33,7 @@ export const DeployCommandsObserver = (
 
   const rest = new REST({ version: '9' }).setToken(config.client.secret)
 
-  const commands = pipe(
-    [...adminCommands, playCommand, ...otherCommands, pollCommand],
-    List.map(command => command.toJSON()),
-  )
+  const commands = List.flatten([adminCommands, musicCommands, otherCommands, pollCommands])
 
   const adminsPermissions: NonEmptyArray<ApplicationCommandPermissionData> = pipe(
     config.admins,

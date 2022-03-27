@@ -45,7 +45,7 @@ export const Application = (
     ensureIndexes,
     botStateService,
     guildStateService,
-    pollResponseService,
+    pollService,
     memberBirthdateService,
     startWebServer,
   } = Context.of(Logger, config, discord)
@@ -60,7 +60,7 @@ export const Application = (
       sub(AdminCommandsObserver(Logger, discord, botStateService, guildStateService)),
       sub(MusicCommandsObserver(Logger, ytDlp, guildStateService)),
       sub(OtherCommandsObserver()),
-      sub(PollCommandsObserver(Logger, clientId, pollResponseService)),
+      sub(PollCommandsObserver(Logger, clientId, pollService)),
       // │  └ startup/
       sub(DeployCommandsObserver(Logger, config, discord)),
       sub(IndexesEnsureObserver(Logger, madEventsPubSub.subject, ensureIndexes)),

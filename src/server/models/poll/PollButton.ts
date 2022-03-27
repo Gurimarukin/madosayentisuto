@@ -4,14 +4,14 @@ import { pipe } from 'fp-ts/function'
 import { List, Maybe } from '../../../shared/utils/fp'
 
 export type PollButton = {
-  readonly answerIndex: number
+  readonly choiceIndex: number
 }
 
 const pollButtonPrefix = 'poll'
 
-const of = (answerIndex: number): PollButton => ({ answerIndex })
+const of = (choiceIndex: number): PollButton => ({ choiceIndex })
 
-const format = ({ answerIndex }: PollButton): string => `${pollButtonPrefix}-${answerIndex}`
+const format = ({ choiceIndex }: PollButton): string => `${pollButtonPrefix}-${choiceIndex}`
 
 const parse = (raw: string): Maybe<PollButton> => {
   const [rawPoll, rawIndex, ...rest] = pipe(raw, string.split('-'))

@@ -19,6 +19,7 @@ const Keys = {
 const pingCommand = new SlashCommandBuilder()
   .setName(Keys.ping)
   .setDescription('Jean Plank répond pong')
+  .toJSON()
 
 const randomCaseCommand = new SlashCommandBuilder()
   .setName(Keys.randomcase)
@@ -26,6 +27,7 @@ const randomCaseCommand = new SlashCommandBuilder()
   .addStringOption(option =>
     option.setName(Keys.message).setDescription('Que voulez-vous dire ?').setRequired(true),
   )
+  .toJSON()
 
 export const otherCommands = [pingCommand, randomCaseCommand]
 

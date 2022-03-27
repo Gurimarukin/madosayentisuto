@@ -16,12 +16,13 @@ import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { HealthCheckPersistence } from './persistence/HealthCheckPersistence'
 import { MemberBirthdatePersistence } from './persistence/MemberBirthdatePersistence'
+import { PollQuestionPersistence } from './persistence/PollQuestionPersistence'
 import { PollResponsePersistence } from './persistence/PollResponsePersistence'
 import { BotStateService } from './services/BotStateService'
 import { GuildStateService } from './services/GuildStateService'
 import { HealthCheckService } from './services/HealthCheckService'
 import { MemberBirthdateService } from './services/MemberBirthdateService'
-import { PollResponseService } from './services/PollResponseService'
+import { PollService } from './services/PollService'
 import { Routes } from './webServer/Routes'
 import { DiscordClientController } from './webServer/controllers/DiscordClientController'
 import { HealthCheckController } from './webServer/controllers/HealthCheckController'
@@ -35,7 +36,7 @@ export type Context = {
   readonly botStateService: BotStateService
   readonly guildStateService: GuildStateService
   readonly memberBirthdateService: MemberBirthdateService
-  readonly pollResponseService: PollResponseService
+  readonly pollService: PollService
   readonly startWebServer: IO<void>
 }
 
@@ -71,11 +72,13 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
   const healthCheckPersistence = HealthCheckPersistence(withDb)
   const memberBirthdatePersistence = MemberBirthdatePersistence(Logger, mongoCollection)
   const pollResponsePersistence = PollResponsePersistence(Logger, mongoCollection)
+  const pollQuestionPersistence = PollQuestionPersistence(Logger, mongoCollection)
 
   const ensureIndexes = pipe(
     Future.sequenceArray([
       guildStatePersistence.ensureIndexes,
       memberBirthdatePersistence.ensureIndexes,
+      pollQuestionPersistence.ensureIndexes,
       pollResponsePersistence.ensureIndexes,
     ]),
     Future.map(toUnit),
@@ -85,7 +88,7 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
   const guildStateService = GuildStateService(Logger, discord, ytDlp, guildStatePersistence)
   const healthCheckService = HealthCheckService(healthCheckPersistence)
   const memberBirthdateService = MemberBirthdateService(memberBirthdatePersistence)
-  const pollResponseService = PollResponseService(pollResponsePersistence)
+  const pollService = PollService(pollQuestionPersistence, pollResponsePersistence)
 
   const healthCheckController = HealthCheckController(healthCheckService)
   const discordClientController = DiscordClientController(discord, memberBirthdateService)
@@ -102,7 +105,7 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
     botStateService,
     guildStateService,
     memberBirthdateService,
-    pollResponseService,
+    pollService,
     startWebServer: startWebServer_,
   }
 }

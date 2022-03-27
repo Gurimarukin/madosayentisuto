@@ -63,6 +63,7 @@ import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import type { ClientConfig } from '../Config'
 import { Colors, constants } from '../constants'
+import { MessageId } from '../models/MessageId'
 import { TSnowflake } from '../models/TSnowflake'
 import type { Activity } from '../models/botState/Activity'
 import { CommandId } from '../models/command/CommandId'
@@ -177,11 +178,11 @@ const fetchMembers = (guild: Guild): Future<Collection<string, GuildMember>> =>
     debugLeft('fetchMembers'),
   )
 
-const fetchMessage = (guild: Guild, messageId: TSnowflake): Future<Maybe<Message>> =>
+const fetchMessage = (guild: Guild, messageId: MessageId): Future<Maybe<Message>> =>
   pipe(
     guild.channels.cache.toJSON(),
     List.filter(ChannelUtils.isTextChannel),
-    fetchMessageRec(TSnowflake.unwrap(messageId)),
+    fetchMessageRec(MessageId.unwrap(messageId)),
     debugLeft('fetchMessage'),
   )
 

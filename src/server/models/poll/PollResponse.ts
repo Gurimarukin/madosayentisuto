@@ -1,18 +1,22 @@
 import * as C from 'io-ts/Codec'
 
-import { GuildId } from '../../../shared/models/guild/GuildId'
 import { UserId } from '../../../shared/models/guild/UserId'
 
-import { TSnowflake } from '../TSnowflake'
+import { MessageId } from '../MessageId'
 
 const codec = C.struct({
-  guild: GuildId.codec,
-  message: TSnowflake.codec,
+  message: MessageId.codec,
   user: UserId.codec,
-  answerIndex: C.number,
+  choiceIndex: C.number,
+})
+
+const of = (message: MessageId, user: UserId, choiceIndex: number): PollResponse => ({
+  message,
+  user,
+  choiceIndex,
 })
 
 export type PollResponse = C.TypeOf<typeof codec>
 export type PollResponseOutput = C.OutputOf<typeof codec>
 
-export const PollResponse = { codec }
+export const PollResponse = { codec, of }

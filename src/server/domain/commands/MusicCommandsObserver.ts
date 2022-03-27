@@ -37,7 +37,7 @@ const Keys = {
 }
 export const MusicCommandsObserverKeys = Keys
 
-export const playCommand = new SlashCommandBuilder()
+const playCommand = new SlashCommandBuilder()
   .setName(Keys.play)
   .setDescription('Jean Plank joue un petit air')
   .addStringOption(option =>
@@ -46,6 +46,9 @@ export const playCommand = new SlashCommandBuilder()
       .setDescription('Lien ou recherche YouTube, lien Bandcamp, fichier, etc.')
       .setRequired(true),
   )
+  .toJSON()
+
+export const musicCommands = [playCommand]
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const MusicCommandsObserver = (

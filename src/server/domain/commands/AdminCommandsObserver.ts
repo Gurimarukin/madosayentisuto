@@ -70,6 +70,8 @@ const stateCommand = new SlashCommandBuilder()
   .addSubcommand(subcommand =>
     subcommand.setName(Keys.get).setDescription('État de Jean Plank pour ce serveur'),
   )
+  .toJSON()
+
 const callsCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
   .setName(Keys.calls)
@@ -97,6 +99,7 @@ const callsCommand = new SlashCommandBuilder()
           .setRequired(true),
       ),
   )
+  .toJSON()
 
 const defaultRoleCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
@@ -110,6 +113,7 @@ const defaultRoleCommand = new SlashCommandBuilder()
         option.setName(Keys.role).setDescription('Le nouveau rôle par défaut').setRequired(true),
       ),
   )
+  .toJSON()
 
 const itsFridayCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
@@ -127,6 +131,7 @@ const itsFridayCommand = new SlashCommandBuilder()
           .setRequired(true),
       ),
   )
+  .toJSON()
 
 const birthdayCommand = new SlashCommandBuilder()
   .setDefaultPermission(false)
@@ -144,6 +149,7 @@ const birthdayCommand = new SlashCommandBuilder()
           .setRequired(true),
       ),
   )
+  .toJSON()
 
 const activityTypeBotChoices: List<Tuple<ActivityTypeBot, ActivityTypeBot>> = pipe(
   ActivityTypeBot.values,
@@ -189,6 +195,7 @@ const activityCommand = new SlashCommandBuilder()
         'Jean Plank a parfois besoin de rappeler au monde à quel point il est occupé',
       ),
   )
+  .toJSON()
 
 export const adminCommands = [
   stateCommand,
