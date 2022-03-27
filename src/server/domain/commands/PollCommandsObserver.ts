@@ -198,54 +198,32 @@ export const PollCommandsObserver = (
     const userId = UserId.wrap(user.id)
     return pipe(
       pollService.lookupByMessage(messageId),
-      futureMaybe.chain(
-        poll =>
-          pipe(
-            poll.choices,
-            List.lookup(choiceIndex),
-            Maybe.fold(
-              () => Future.right(Maybe.none),
-              choice => {
-                const alreadyVotedForChoice = pipe(choice.responses, List.elem(UserId.Eq)(userId))
-                if (alreadyVotedForChoice) {
-                  return pipe(
-                    removeResponse(poll, userId, choiceIndex),
-                    Future.map(p => Maybe.some(Tuple.of(p, 'Vote supprimé'))),
-                  )
-                }
+      futureMaybe.chain(poll =>
+        pipe(
+          poll.choices,
+          List.lookup(choiceIndex),
+          Maybe.fold(
+            () => Future.right(Maybe.none),
+            choice => {
+              const alreadyVotedForChoice = pipe(choice.responses, List.elem(UserId.Eq)(userId))
+              if (alreadyVotedForChoice) {
                 return pipe(
-                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                  isMultiple
-                    ? Future.right(poll)
-                    : // we want only one response
-                      removeResponsesForUser(poll, userId),
-                  Future.chain(addResponse(userId, choiceIndex)),
-                  Future.map(p => Maybe.some(Tuple.of(p, 'Vote pris en compte'))),
+                  removeResponse(poll, userId, choiceIndex),
+                  Future.map(p => Maybe.some(Tuple.of(p, 'Vote supprimé'))),
                 )
-              },
-            ),
+              }
+              return pipe(
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                isMultiple
+                  ? Future.right(poll)
+                  : // we want only one response
+                    removeResponsesForUser(poll, userId),
+                Future.chain(addResponse(userId, choiceIndex)),
+                Future.map(p => Maybe.some(Tuple.of(p, 'Vote pris en compte'))),
+              )
+            },
           ),
-
-        // const res = pipe(
-        //   responses,
-        //   List.findFirst(r => r.choiceIndex === button.choiceIndex),
-        //   Maybe.fold(
-        //     () =>
-        //       // clicked choice for which the user didn't already vote
-        //       pipe(
-        //         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        //         List.isNonEmpty(responses) && !isMultiple
-        //           ? removeResponsesForUser(question.message, userId, responses.length) // we want only one response
-        //           : Future.unit,
-        //         Future.chain(() => addResponse(question.message, userId, button.choiceIndex)),
-        //         Future.map(() => 'Vote pris en compte'),
-        //       ),
-        //     flow(
-        //       removeResponse,
-        //       Future.map(() => 'Vote supprimé'),
-        //     ),
-        //   ),
-        // )
+        ),
       ),
       futureMaybe.chainFirstFuture(flow(Tuple.fst, refreshMessage(guild))),
       Future.map(Maybe.map(Tuple.snd)),
@@ -373,12 +351,19 @@ export const PollCommandsObserver = (
       NonEmptyArray.fromReadonlyArray,
       Maybe.fold(
         () => Future.unit,
-        flow(
-          pollService.removePollForMessages,
-          Future.chainIOEitherK(success =>
-            success ? IO.unit : logger.warn('Failed to remove poll'),
+        toRemove =>
+          pipe(
+            pollService.removePollForMessages(toRemove),
+            Future.chainIOEitherK(({ removedQuestions, removedResponses }) => {
+              if (removedQuestions === 0) return IO.unit
+              if (removedQuestions === toRemove.length) {
+                return logger.debug(
+                  `Removed polls: ${removedQuestions} questions, ${removedResponses} responses`,
+                )
+              }
+              return logger.warn('Failed to remove poll')
+            }),
           ),
-        ),
       ),
     )
   }

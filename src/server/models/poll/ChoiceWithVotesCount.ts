@@ -1,5 +1,3 @@
-import { List } from '../../../shared/utils/fp'
-
 import type { ChoiceWithResponses } from './ChoiceWithResponses'
 
 export type ChoiceWithVotesCount = {
@@ -12,6 +10,6 @@ const empty = (choice: string): ChoiceWithVotesCount => ({ choice, votesCount: 0
 const fromChoiceWithResponses = ({
   choice,
   responses,
-}: ChoiceWithResponses): ChoiceWithVotesCount => ({ choice, votesCount: List.size(responses) })
+}: ChoiceWithResponses): ChoiceWithVotesCount => ({ choice, votesCount: responses.length })
 
 export const ChoiceWithVotesCount = { empty, fromChoiceWithResponses }

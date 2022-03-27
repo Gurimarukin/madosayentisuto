@@ -18,7 +18,7 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
   const logger = Logger('PollResponsePersistence')
   const collection = FpCollection<PollResponse, PollResponseOutput>(
     logger,
-    mongoCollection(PollResponsePersistenceHelpers.table),
+    mongoCollection('pollResponse'),
     [PollResponse.codec, 'PollResponse'],
   )
 
@@ -29,11 +29,8 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
   return {
     ensureIndexes,
 
-    listForUser: (message: MessageId, user: UserId): Future<List<PollResponse>> =>
-      collection.findAll()({
-        message: MessageId.unwrap(message),
-        user: UserId.unwrap(user),
-      }),
+    listForMessage: (message: MessageId): Future<List<PollResponse>> =>
+      collection.findAll()({ message: MessageId.unwrap(message) }),
 
     insert: (response: PollResponse): Future<boolean> =>
       pipe(
@@ -68,8 +65,4 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
         Future.map(r => r.deletedCount),
       ),
   }
-}
-
-export const PollResponsePersistenceHelpers = {
-  table: 'pollResponse',
 }
