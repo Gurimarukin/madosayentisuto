@@ -78,6 +78,7 @@ export const pollCommands = [pollCommand.toJSON(), messageDeleteCommand]
 export const PollCommandsObserver = (
   Logger: LoggerGetter,
   clientId: string,
+  admins: NonEmptyArray<UserId>,
   pollService: PollService,
 ) => {
   const logger = Logger('PollCommandsObserver')
@@ -197,7 +198,7 @@ export const PollCommandsObserver = (
     const messageId = MessageId.wrap(message.id)
     const userId = UserId.wrap(user.id)
     return pipe(
-      pollService.lookupByMessage(messageId),
+      pollService.lookupPollByMessage(messageId),
       futureMaybe.chain(poll =>
         pipe(
           poll.choices,
@@ -332,11 +333,43 @@ export const PollCommandsObserver = (
 
   // onMessageContextMenu
   function onMessageContextMenu(interaction: MessageContextMenuInteraction): Future<void> {
-    console.log('message =', interaction.targetMessage.id)
     return pipe(
-      DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
-      Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
+      DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
+      Future.chain(() => removePoll(interaction)),
+      Future.map(Maybe.getOrElse(() => 'Erreur')),
+      Future.chain(content =>
+        DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+      ),
+      Future.map(toUnit),
     )
+  }
+
+  function removePoll(interaction: MessageContextMenuInteraction): Future<Maybe<string>> {
+    const messageId = MessageId.wrap(interaction.targetMessage.id)
+    return pipe(
+      pollService.lookupQuestionByMessage(messageId),
+      Future.chain(
+        Maybe.fold(
+          () => futureMaybe.some("Haha ! Ce n'est pas un sondage..."),
+          ({ createdBy }) =>
+            canRemovePoll(interaction.user, createdBy)
+              ? pipe(
+                  futureMaybe.fromNullable(interaction.guild),
+                  futureMaybe.chain(guild => DiscordConnector.fetchMessage(guild, messageId)),
+                  futureMaybe.chainFuture(message => DiscordConnector.messageDelete(message)),
+                  futureMaybe.chainOption(success =>
+                    success ? Maybe.some('Sondage supprimé') : Maybe.none,
+                  ),
+                )
+              : futureMaybe.some("Haha ! Tu n'est pas l'auteur de ce sondage..."),
+        ),
+      ),
+    )
+  }
+
+  function canRemovePoll(user: User, pollCreatedBy: UserId): boolean {
+    const userId = UserId.wrap(user.id)
+    return userId === pollCreatedBy || pipe(admins, List.elem(UserId.Eq)(userId))
   }
 
   // onMessageDelete
@@ -357,7 +390,7 @@ export const PollCommandsObserver = (
             Future.chainIOEitherK(({ removedQuestions, removedResponses }) => {
               if (removedQuestions === 0) return IO.unit
               if (removedQuestions === toRemove.length) {
-                return logger.debug(
+                return logger.info(
                   `Removed polls: ${removedQuestions} questions, ${removedResponses} responses`,
                 )
               }

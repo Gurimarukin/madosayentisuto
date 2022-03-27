@@ -60,7 +60,7 @@ export const Application = (
       sub(AdminCommandsObserver(Logger, discord, botStateService, guildStateService)),
       sub(MusicCommandsObserver(Logger, ytDlp, guildStateService)),
       sub(OtherCommandsObserver()),
-      sub(PollCommandsObserver(Logger, clientId, pollService)),
+      sub(PollCommandsObserver(Logger, clientId, config.admins, pollService)),
       // │  └ startup/
       sub(DeployCommandsObserver(Logger, config, discord)),
       sub(IndexesEnsureObserver(Logger, madEventsPubSub.subject, ensureIndexes)),

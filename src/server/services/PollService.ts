@@ -25,7 +25,9 @@ export const PollService = (
 
   createResponse: pollResponsePersistence.insert,
 
-  lookupByMessage: (messageId: MessageId): Future<Maybe<Poll>> =>
+  lookupQuestionByMessage: pollQuestionPersistence.lookupByMessage,
+
+  lookupPollByMessage: (messageId: MessageId): Future<Maybe<Poll>> =>
     pipe(
       pollQuestionPersistence.lookupByMessage(messageId),
       futureMaybe.chainFuture(question =>
