@@ -138,7 +138,7 @@ export const PollCommandsObserver = (
     question: string,
     choices: NonEmptyArray<string>,
   ): Future<void> {
-    const createdBy = UserId.wrap(user.id)
+    const createdBy = UserId.fromUser(user)
     const options = pollMessage(
       createdBy,
       question,
@@ -152,7 +152,7 @@ export const PollCommandsObserver = (
       ),
       futureMaybe.chainFuture(message =>
         pollService.createPoll({
-          message: MessageId.wrap(message.id),
+          message: MessageId.fromMessage(message),
           createdBy,
           question,
           choices,
@@ -195,8 +195,8 @@ export const PollCommandsObserver = (
     user: User,
     { choiceIndex }: PollButton,
   ): Future<Maybe<string>> {
-    const messageId = MessageId.wrap(message.id)
-    const userId = UserId.wrap(user.id)
+    const messageId = MessageId.fromMessage(message)
+    const userId = UserId.fromUser(user)
     return pipe(
       pollService.lookupPollByMessage(messageId),
       futureMaybe.chain(poll =>
@@ -345,7 +345,7 @@ export const PollCommandsObserver = (
   }
 
   function removePoll(interaction: MessageContextMenuInteraction): Future<Maybe<string>> {
-    const messageId = MessageId.wrap(interaction.targetMessage.id)
+    const messageId = MessageId.fromMessage(interaction.targetMessage)
     return pipe(
       pollService.lookupQuestionByMessage(messageId),
       Future.chain(
@@ -368,7 +368,7 @@ export const PollCommandsObserver = (
   }
 
   function canRemovePoll(user: User, pollCreatedBy: UserId): boolean {
-    const userId = UserId.wrap(user.id)
+    const userId = UserId.fromUser(user)
     return userId === pollCreatedBy || pipe(admins, List.elem(UserId.Eq)(userId))
   }
 
@@ -378,7 +378,7 @@ export const PollCommandsObserver = (
       messages,
       List.filterMap(m =>
         m.guild !== null && m.author?.id === clientId
-          ? Maybe.some(MessageId.wrap(m.id))
+          ? Maybe.some(MessageId.fromMessage(m))
           : Maybe.none,
       ),
       NonEmptyArray.fromReadonlyArray,

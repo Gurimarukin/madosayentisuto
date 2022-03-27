@@ -47,7 +47,7 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
     return pipe(
       DayJs.now,
       Future.fromIO,
-      Future.chain(getLastLog(guild, UserId.wrap(user.id))),
+      Future.chain(getLastLog(guild, UserId.fromUser(user))),
       futureMaybe.match(
         () =>
           pipe(
@@ -144,7 +144,7 @@ const validateEntry =
       Maybe.filter(
         ({ target }) =>
           ord.leq(DayJs.Ord)(nowMinusNetworkTolerance, DayJs.of(entry.createdAt)) &&
-          UserId.wrap(target.id) === userId,
+          UserId.fromUser(target) === userId,
       ),
     )
 

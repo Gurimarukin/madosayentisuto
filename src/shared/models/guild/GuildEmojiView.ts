@@ -11,7 +11,7 @@ const codec = C.struct({
 })
 
 const fromGuildEmoji = (e: GuildEmoji): GuildEmojiView => ({
-  id: GuildEmojiId.wrap(e.id),
+  id: GuildEmojiId.fromGuildEmoji(e),
   name: Maybe.fromNullable(e.name),
   url: e.url,
 })

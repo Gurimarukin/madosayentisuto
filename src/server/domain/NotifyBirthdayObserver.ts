@@ -62,7 +62,7 @@ export const NotifyBirthdayObserver = (
                 memberBirthdates,
                 List.filterMap(({ id, birthdate }) =>
                   pipe(
-                    guildMembers.find(gm => UserId.wrap(gm.user.id) === id),
+                    guildMembers.find(gm => UserId.fromUser(gm.user) === id),
                     Maybe.fromNullable,
                     Maybe.map(m => Tuple.of(m, birthdate)),
                   ),

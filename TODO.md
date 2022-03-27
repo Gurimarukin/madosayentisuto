@@ -2,11 +2,11 @@
   - multiple choice option
   - anonymous option 
 - decouple autorole and call mention
-- UserId, GuildId, MessageId: remove wrap
 - select leave message chan
 - birthdays
 - deploy: on guild join
 - Remind
+- fix birthdays
 - Say
 - Img
 - moderators/owner

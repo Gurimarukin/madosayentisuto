@@ -4,12 +4,12 @@ import { GuildMember } from 'discord.js'
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
+import { UserId } from '../../shared/models/guild/UserId'
 import { Future, IO, Maybe, toUnit } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { initCallsButton, initCallsMessage } from '../helpers/messages/initCallsMessage'
-import { TSnowflake } from '../models/TSnowflake'
 import { MadEvent } from '../models/event/MadEvent'
 import type { Calls } from '../models/guildState/Calls'
 import type { LoggerGetter } from '../models/logger/LoggerType'
@@ -133,7 +133,7 @@ export const CallsAutoroleObserver = (
       member:
         member instanceof GuildMember
           ? Future.right(Maybe.some(member))
-          : DiscordConnector.fetchMember(guild, TSnowflake.wrap(member.user.id)),
+          : DiscordConnector.fetchMember(guild, UserId.fromUser(member.user)),
     })
   }
 }

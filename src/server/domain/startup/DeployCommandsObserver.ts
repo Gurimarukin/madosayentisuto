@@ -58,7 +58,7 @@ export const DeployCommandsObserver = (
   )
 
   function putCommandsForGuild(guild: Guild): Future<void> {
-    const guildId = GuildId.wrap(guild.id)
+    const guildId = GuildId.fromGuild(guild)
     return pipe(
       DiscordConnector.restPutApplicationGuildCommands(rest, config.client.id, guildId, commands),
       Future.chain(logDecodeErrors),

@@ -1,3 +1,4 @@
+import type { GuildEmoji } from 'discord.js'
 import * as C from 'io-ts/Codec'
 import type { Newtype } from 'newtype-ts'
 import { iso } from 'newtype-ts'
@@ -8,6 +9,8 @@ export type GuildEmojiId = Newtype<{ readonly GuildEmojiId: unique symbol }, str
 
 const { wrap, unwrap } = iso<GuildEmojiId>()
 
+const fromGuildEmoji = (guildEmoji: GuildEmoji): GuildEmojiId => wrap(guildEmoji.id)
+
 const codec = fromNewtype<GuildEmojiId>(C.string)
 
-export const GuildEmojiId = { codec, wrap, unwrap }
+export const GuildEmojiId = { fromGuildEmoji, unwrap, codec }

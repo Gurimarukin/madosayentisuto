@@ -25,7 +25,7 @@ const codec = C.struct({
 })
 
 const fromGuild = (guild: Guild, members: List<GuildMember>): GuildView => ({
-  id: GuildId.wrap(guild.id),
+  id: GuildId.fromGuild(guild),
   name: guild.name,
   icon: Maybe.fromNullable(guild.iconURL({ dynamic: true })),
   members: pipe(members, List.map(MemberView.fromGuildMember)),

@@ -1,3 +1,4 @@
+import type { Guild } from 'discord.js'
 import { eq, string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
@@ -10,8 +11,10 @@ export type GuildId = Newtype<{ readonly GuildId: unique symbol }, string>
 
 const { wrap, unwrap } = iso<GuildId>()
 
+const fromGuild = (guild: Guild): GuildId => wrap(guild.id)
+
 const codec = fromNewtype<GuildId>(C.string)
 
 const Eq: eq.Eq<GuildId> = pipe(string.Eq, eq.contramap(unwrap))
 
-export const GuildId = { codec, wrap, Eq, unwrap }
+export const GuildId = { fromGuild, unwrap, codec, Eq }

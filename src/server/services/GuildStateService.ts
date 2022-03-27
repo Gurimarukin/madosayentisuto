@@ -130,7 +130,7 @@ export const GuildStateService = (
     return pipe(
       getShouldLoadFromDb(guild),
       Future.map(update),
-      Future.chainFirstIOEitherK(newState => cacheSet(GuildId.wrap(guild.id), newState)),
+      Future.chainFirstIOEitherK(newState => cacheSet(GuildId.fromGuild(guild), newState)),
     )
   }
 
@@ -154,7 +154,7 @@ export const GuildStateService = (
       return res as any // I know what I'm doing
     }
 
-    const guildId = GuildId.wrap(guild.id)
+    const guildId = GuildId.fromGuild(guild)
     const res: IO<Maybe<LensInner<GuildStateLens[K]>>> = pipe(
       getFromCache(guildId),
       IO.map(Maybe.map(getter)),
@@ -168,7 +168,7 @@ export const GuildStateService = (
   }
 
   function getShouldLoadFromDb(guild: Guild): Future<GuildState> {
-    const guildId = GuildId.wrap(guild.id)
+    const guildId = GuildId.fromGuild(guild)
     return pipe(
       getFromCache(guildId),
       Future.fromIOEither,
@@ -177,7 +177,7 @@ export const GuildStateService = (
   }
 
   function addGuildToCacheFromDb(guild: Guild): Future<GuildState> {
-    const guildId = GuildId.wrap(guild.id)
+    const guildId = GuildId.fromGuild(guild)
     return pipe(
       guildStatePersistence.find(guildId),
       futureMaybe.matchE(

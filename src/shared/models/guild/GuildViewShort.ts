@@ -11,7 +11,7 @@ const codec = C.struct({
 })
 
 const fromGuild = (g: Guild): GuildViewShort => ({
-  id: GuildId.wrap(g.id),
+  id: GuildId.fromGuild(g),
   name: g.name,
   icon: Maybe.fromNullable(g.iconURL()),
 })

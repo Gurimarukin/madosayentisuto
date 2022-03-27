@@ -1,3 +1,5 @@
+import type { APIMessage } from 'discord-api-types/v9'
+import type { Message, PartialMessage } from 'discord.js'
 import * as C from 'io-ts/Codec'
 import type { Newtype } from 'newtype-ts'
 import { iso } from 'newtype-ts'
@@ -8,6 +10,8 @@ export type MessageId = Newtype<{ readonly MessageId: unique symbol }, string>
 
 const { wrap, unwrap } = iso<MessageId>()
 
+const fromMessage = (message: APIMessage | Message | PartialMessage): MessageId => wrap(message.id)
+
 const codec = fromNewtype<MessageId>(C.string)
 
-export const MessageId = { codec, wrap, unwrap }
+export const MessageId = { fromMessage, unwrap, codec }

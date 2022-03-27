@@ -16,7 +16,7 @@ const codec = C.struct({
 })
 
 const fromGuildMember = (member: GuildMember): MemberView => ({
-  id: UserId.wrap(member.user.id),
+  id: UserId.fromUser(member.user),
   name: member.displayName,
   color: member.displayHexColor,
   avatar: Maybe.fromNullable(member.user.displayAvatarURL({ dynamic: true })),

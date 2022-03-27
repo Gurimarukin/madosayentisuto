@@ -11,7 +11,7 @@ const codec = C.struct({
 })
 
 const fromCalls = ({ message, channel, role }: Calls): CallsDb => ({
-  message: MessageId.wrap(message.id),
+  message: MessageId.fromMessage(message),
   channel: TSnowflake.wrap(channel.id),
   role: TSnowflake.wrap(role.id),
 })

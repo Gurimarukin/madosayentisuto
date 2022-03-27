@@ -531,7 +531,7 @@ export const AdminCommandsObserver = (
       futureMaybe.chain(({ user }) =>
         user instanceof User
           ? Future.right(Maybe.some(user))
-          : discord.fetchUser(UserId.wrap(user.id)),
+          : discord.fetchUser(UserId.fromUser(user)),
       ),
     )
   }

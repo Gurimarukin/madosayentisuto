@@ -165,9 +165,9 @@ const fetchAuditLogs = <A extends GuildAuditLogsResolvable = 'ALL'>(
 const fetchCommand = (guild: Guild, commandId: CommandId): Future<ApplicationCommand> =>
   Future.tryCatch(() => guild.commands.fetch(CommandId.unwrap(commandId)))
 
-const fetchMember = (guild: Guild, memberId: TSnowflake): Future<Maybe<GuildMember>> =>
+const fetchMember = (guild: Guild, userId: UserId): Future<Maybe<GuildMember>> =>
   pipe(
-    Future.tryCatch(() => guild.members.fetch(TSnowflake.unwrap(memberId))),
+    Future.tryCatch(() => guild.members.fetch(UserId.unwrap(userId))),
     Future.map(Maybe.some),
     debugLeft('fetchMember'),
   )
