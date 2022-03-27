@@ -1,4 +1,3 @@
-import { bold, userMention } from '@discordjs/builders'
 import type { Collection, Guild, GuildAuditLogsEntry, TextChannel } from 'discord.js'
 import type { User } from 'discord.js'
 import { apply, date, number, ord, random, semigroup } from 'fp-ts'
@@ -43,7 +42,7 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
     const guild = event.member.guild
     const user = event.member.user
     const log = LogUtils.pretty(logger, guild)
-    const boldMember = bold(user.tag)
+    const boldMember = `**${user.tag}**`
     return pipe(
       DayJs.now,
       Future.fromIO,
@@ -58,7 +57,7 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
           pipe(
             log.info(logMessage(user.tag, executor.tag, action, reason)),
             IO.chain(() =>
-              randomMessage(kickOrBanMessages[action])(boldMember, userMention(executor.id)),
+              randomMessage(kickOrBanMessages[action])(boldMember, `<@${executor.id}>`),
             ),
           ),
       ),

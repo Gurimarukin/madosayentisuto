@@ -1,4 +1,3 @@
-import { SlashCommandBuilder } from '@discordjs/builders'
 import type {
   ButtonInteraction,
   CommandInteraction,
@@ -18,6 +17,7 @@ import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordCo
 import type { MusicSubscription } from '../../helpers/MusicSubscription'
 import type { YtDlp } from '../../helpers/YtDlp'
 import { MusicStateMessage, musicStateButtons } from '../../helpers/messages/MusicStateMessage'
+import { Command } from '../../models/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
 import { MusicState } from '../../models/music/MusicState'
@@ -31,16 +31,16 @@ type PlayCommand = {
   readonly tracks: NonEmptyArray<Track>
 }
 
-const playCommand = new SlashCommandBuilder()
-  .setName(MusicStateMessage.Keys.play)
-  .setDescription('Jean Plank joue un petit air')
-  .addStringOption(option =>
-    option
-      .setName(MusicStateMessage.Keys.track)
-      .setDescription('Lien ou recherche YouTube, lien Bandcamp, fichier, etc.')
-      .setRequired(true),
-  )
-  .toJSON()
+const playCommand = Command.chatInput({
+  name: MusicStateMessage.Keys.play,
+  description: 'Jean Plank joue un petit air',
+})(
+  Command.option.string({
+    name: MusicStateMessage.Keys.track,
+    description: 'Lien ou recherche YouTube, lien Bandcamp, fichier, etc.',
+    required: true,
+  }),
+)
 
 export const musicCommands = [playCommand]
 

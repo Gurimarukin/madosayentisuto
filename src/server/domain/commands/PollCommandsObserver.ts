@@ -1,6 +1,4 @@
-import { SlashCommandBuilder } from '@discordjs/builders'
 import type { APIMessage } from 'discord-api-types/payloads/v9'
-import type { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/rest/v9'
 import type { Guild, Message } from 'discord.js'
 import type {
   ButtonInteraction,
@@ -27,6 +25,7 @@ import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { pollMessage } from '../../helpers/messages/pollMessage'
+import { Command } from '../../models/Command'
 import { MessageId } from '../../models/MessageId'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerType'
@@ -51,28 +50,30 @@ const Keys = {
   deletePoll: 'Supprimer sondage',
 }
 
-const pollCommand = pipe(
-  keysChoices,
-  NonEmptyArray.reduce(
-    new SlashCommandBuilder()
-      .setName(Keys.poll)
-      .setDescription('Jean Plank fait des sondages')
-      .addStringOption(option =>
-        option.setName(Keys.question).setDescription('La question du sondage').setRequired(true),
-      ),
-    (acc, [name, description]) =>
-      acc.addStringOption(option => option.setName(name).setDescription(description)),
+const pollCommand = Command.chatInput({
+  name: Keys.poll,
+  description: 'Jean Plank fait des sondages',
+})(
+  Command.option.string({
+    name: Keys.question,
+    description: 'La question du sondage',
+    required: true,
+  }),
+  ...pipe(
+    keysChoices,
+    List.map(([name, description]) => Command.option.string({ name, description })),
   ),
+  Command.option.boolean({
+    name: 'anonyme',
+    description: 'Visibilité du sondage (visible par défaut)',
+  }),
 )
 
-const messageDeleteCommand: RESTPostAPIApplicationCommandsJSONBody = {
-  type: 3,
-  name: Keys.deletePoll,
-}
+const messageDeleteCommand = Command.message({ name: Keys.deletePoll })
 
 const isMultiple = false
 
-export const pollCommands = [pollCommand.toJSON(), messageDeleteCommand]
+export const pollCommands = [pollCommand, messageDeleteCommand]
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollCommandsObserver = (

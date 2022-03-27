@@ -1,4 +1,3 @@
-import { SlashCommandBuilder, inlineCode } from '@discordjs/builders'
 import type { CommandInteraction } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
@@ -7,6 +6,7 @@ import { StringUtils } from '../../../shared/utils/StringUtils'
 import { Either, Future } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
+import { Command } from '../../models/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 
@@ -16,18 +16,21 @@ const Keys = {
   message: 'message',
 }
 
-const pingCommand = new SlashCommandBuilder()
-  .setName(Keys.ping)
-  .setDescription('Jean Plank répond pong')
-  .toJSON()
+const pingCommand = Command.chatInput({
+  name: Keys.ping,
+  description: 'Jean Plank répond pong',
+})()
 
-const randomCaseCommand = new SlashCommandBuilder()
-  .setName(Keys.randomcase)
-  .setDescription('Jean Plank vous prend pour un débile')
-  .addStringOption(option =>
-    option.setName(Keys.message).setDescription('Que voulez-vous dire ?').setRequired(true),
-  )
-  .toJSON()
+const randomCaseCommand = Command.chatInput({
+  name: Keys.randomcase,
+  description: 'Jean Plank vous prend pour un débile',
+})(
+  Command.option.string({
+    name: Keys.message,
+    description: 'Que voulez-vous dire ?',
+    required: true,
+  }),
+)
 
 export const otherCommands = [pingCommand, randomCaseCommand]
 
@@ -61,9 +64,7 @@ export const OtherCommandsObserver = () => {
       Either.bimap(
         e => Error(`Invalid options from command "randomcase":\n${D.draw(e)}`),
         m =>
-          `Haha ! Il ne reste plus qu'à copy-pasta ce message :\n${inlineCode(
-            StringUtils.randomCase(m),
-          )}`,
+          `Haha ! Il ne reste plus qu'à copy-pasta ce message :\n\`${StringUtils.randomCase(m)}\``,
       ),
       Future.fromEither,
       Future.chain(content =>

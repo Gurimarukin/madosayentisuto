@@ -1,4 +1,3 @@
-import { SlashCommandBuilder, inlineCode } from '@discordjs/builders'
 import type {
   APIInteractionDataResolvedChannel,
   APIInteractionGuildMember,
@@ -23,7 +22,6 @@ import type { Decoder } from 'io-ts/Decoder'
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { UserId } from '../../../shared/models/guild/UserId'
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import { Tuple } from '../../../shared/utils/fp'
 import { toUnit } from '../../../shared/utils/fp'
 import { IO } from '../../../shared/utils/fp'
 import { Either, NonEmptyArray } from '../../../shared/utils/fp'
@@ -32,6 +30,7 @@ import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { initCallsMessage } from '../../helpers/messages/initCallsMessage'
+import { Command } from '../../models/Command'
 import { TSnowflake } from '../../models/TSnowflake'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
@@ -63,139 +62,135 @@ const Keys = {
   unset: 'unset',
 }
 
-const stateCommand = new SlashCommandBuilder()
-  .setDefaultPermission(false)
-  .setName(Keys.state)
-  .setDescription("Dans quel état j'erre ?")
-  .addSubcommand(subcommand =>
-    subcommand.setName(Keys.get).setDescription('État de Jean Plank pour ce serveur'),
-  )
-  .toJSON()
-
-const callsCommand = new SlashCommandBuilder()
-  .setDefaultPermission(false)
-  .setName(Keys.calls)
-  .setDescription("Jean Plank n'est pas votre secrétaire, mais il gère vos appels")
-  .addSubcommand(subcommand =>
-    /**
-     * Jean Plank envoie un message dans le salon où la commande a été effectuée.
-     * Les membres d'équipage qui y réagissent avec 🔔 obtiennent le rôle <role>.
-     * À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
-     */
-    subcommand
-      .setName(Keys.init)
-      .setDescription(`Pour initier la gestion des appels`)
-      .addChannelOption(option =>
-        option
-          .setName(Keys.channel)
-          .setDescription('Le salon dans lequel les appels seront notifiés')
-          .addChannelTypes([ChannelType.GuildText])
-          .setRequired(true),
-      )
-      .addRoleOption(option =>
-        option
-          .setName(Keys.role)
-          .setDescription('Le rôle qui sera notifié des appels')
-          .setRequired(true),
-      ),
-  )
-  .toJSON()
-
-const defaultRoleCommand = new SlashCommandBuilder()
-  .setDefaultPermission(false)
-  .setName(Keys.defaultrole)
-  .setDescription("Jean Plank donne un rôle au nouveau membres d'équipages")
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName(Keys.set)
-      .setDescription('Jean Plank veut bien changer le rôle par défaut de ce serveur')
-      .addRoleOption(option =>
-        option.setName(Keys.role).setDescription('Le nouveau rôle par défaut').setRequired(true),
-      ),
-  )
-  .toJSON()
-
-const itsFridayCommand = new SlashCommandBuilder()
-  .setDefaultPermission(false)
-  .setName(Keys.itsfriday)
-  .setDescription("Jean Plank vous informe que nous sommes vendredi (c'est vrai)")
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName(Keys.set)
-      .setDescription('Jean Plank veut bien changer le salon pour cette information vitale')
-      .addChannelOption(option =>
-        option
-          .setName(Keys.channel)
-          .setDescription('Le nouveau salon pour cette information vitale')
-          .addChannelTypes([ChannelType.GuildText])
-          .setRequired(true),
-      ),
-  )
-  .toJSON()
-
-const birthdayCommand = new SlashCommandBuilder()
-  .setDefaultPermission(false)
-  .setName(Keys.birthday)
-  .setDescription("Jean Plank vous informe que c'est l'anniversaire de bidule")
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName(Keys.set)
-      .setDescription('Jean Plank veut bien changer le salon pour cette information vitale')
-      .addChannelOption(option =>
-        option
-          .setName(Keys.channel)
-          .setDescription('Le nouveau salon pour cette information vitale')
-          .addChannelTypes([ChannelType.GuildText])
-          .setRequired(true),
-      ),
-  )
-  .toJSON()
-
-const activityTypeBotChoices: List<Tuple<ActivityTypeBot, ActivityTypeBot>> = pipe(
-  ActivityTypeBot.values,
-  List.map(a => Tuple.of(a, a)),
+const stateCommand = Command.chatInput({
+  name: Keys.state,
+  description: "Dans quel état j'erre ?",
+  default_permission: false,
+})(
+  Command.option.subCommand({
+    name: Keys.get,
+    description: 'État de Jean Plank pour ce serveur',
+  })(),
 )
-const activityCommand = new SlashCommandBuilder()
-  .setDefaultPermission(false)
-  .setName(Keys.activity)
-  .setDescription('Jean Plank est un captaine occupé et le fait savoir')
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName(Keys.get)
-      .setDescription("Jean Plank vous informe de ce qu'il est en train de faire"),
-  )
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName(Keys.unset)
-      .setDescription("Jean Plank a fini ce qu'il était en train de faire"),
-  )
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName(Keys.set)
-      .setDescription("Jean Plank annonce au monde ce qu'il est en train de faire")
-      .addStringOption(option =>
-        option
-          .setName(Keys.type)
-          .setDescription("Le type d'activité que Jean Plank est en train de faire")
-          // eslint-disable-next-line functional/prefer-readonly-type
-          .addChoices(activityTypeBotChoices as [ActivityTypeBot, ActivityTypeBot][])
-          .setRequired(true),
-      )
-      .addStringOption(option =>
-        option
-          .setName(Keys.name)
-          .setDescription("L'activité que Jean Plank est en train de faire")
-          .setRequired(true),
+
+/**
+ * Jean Plank envoie un message dans le salon où la commande a été effectuée.
+ * Les membres d'équipage qui y réagissent avec 🔔 obtiennent le rôle <role>.
+ * À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
+ */
+const callsCommand = Command.chatInput({
+  name: Keys.calls,
+  description: "Jean Plank n'est pas votre secrétaire, mais il gère vos appels",
+  default_permission: false,
+})(
+  Command.option.subCommand({
+    name: Keys.init,
+    description: 'Pour initier la gestion des appels',
+  })(
+    Command.option.channel({
+      name: Keys.channel,
+      description: 'Le salon dans lequel les appels seront notifiés',
+      channel_types: [ChannelType.GuildText],
+      required: true,
+    }),
+    Command.option.role({
+      name: Keys.role,
+      description: 'Le rôle qui sera notifié des appels',
+      required: true,
+    }),
+  ),
+)
+
+const defaultRoleCommand = Command.chatInput({
+  name: Keys.defaultrole,
+  description: "Jean Plank donne un rôle au nouveau membres d'équipages",
+  default_permission: false,
+})(
+  Command.option.subCommand({
+    name: Keys.set,
+    description: 'Jean Plank veut bien changer le rôle par défaut de ce serveur',
+  })(
+    Command.option.role({
+      name: Keys.role,
+      description: 'Le nouveau rôle par défaut',
+      required: true,
+    }),
+  ),
+)
+
+const itsFridayCommand = Command.chatInput({
+  name: Keys.itsfriday,
+  description: "Jean Plank vous informe que nous sommes vendredi (c'est vrai)",
+  default_permission: false,
+})(
+  Command.option.subCommand({
+    name: Keys.set,
+    description: 'Jean Plank veut bien changer le salon pour cette information vitale',
+  })(
+    Command.option.channel({
+      name: Keys.channel,
+      description: 'Le nouveau salon pour cette information vitale',
+      channel_types: [ChannelType.GuildText],
+      required: true,
+    }),
+  ),
+)
+
+const birthdayCommand = Command.chatInput({
+  name: Keys.birthday,
+  description: "Jean Plank vous informe que c'est l'anniversaire de bidule",
+  default_permission: false,
+})(
+  Command.option.subCommand({
+    name: Keys.set,
+    description: 'Jean Plank veut bien changer le salon pour cette information vitale',
+  })(
+    Command.option.channel({
+      name: Keys.channel,
+      description: 'Le nouveau salon pour cette information vitale',
+      channel_types: [ChannelType.GuildText],
+      required: true,
+    }),
+  ),
+)
+
+const activityCommand = Command.chatInput({
+  name: Keys.activity,
+  description: 'Jean Plank est un captaine occupé et le fait savoir',
+  default_permission: false,
+})(
+  Command.option.subCommand({
+    name: Keys.get,
+    description: "Jean Plank vous informe de ce qu'il est en train de faire",
+  })(),
+  Command.option.subCommand({
+    name: Keys.unset,
+    description: "Jean Plank a fini ce qu'il était en train de faire",
+  })(),
+  Command.option.subCommand({
+    name: Keys.set,
+    description: "Jean Plank annonce au monde ce qu'il est en train de faire",
+  })(
+    Command.option.string({
+      name: Keys.type,
+      description: "Le type d'activité que Jean Plank est en train de faire",
+      choices: pipe(
+        ActivityTypeBot.values,
+        List.map(a => Command.choice(a, a)),
       ),
-  )
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName(Keys.refresh)
-      .setDescription(
-        'Jean Plank a parfois besoin de rappeler au monde à quel point il est occupé',
-      ),
-  )
-  .toJSON()
+      required: true,
+    }),
+    Command.option.string({
+      name: Keys.name,
+      description: "L'activité que Jean Plank est en train de faire",
+      required: true,
+    }),
+  ),
+  Command.option.subCommand({
+    name: Keys.refresh,
+    description: 'Jean Plank a parfois besoin de rappeler au monde à quel point il est occupé',
+  })(),
+)
 
 export const adminCommands = [
   stateCommand,
@@ -602,7 +597,7 @@ const formatState = ({
 const formatCalls = ({ message, channel, role }: Calls): string =>
   `${role} - ${channel} - <${message.url}>`
 
-const formatActivity = ({ type, name }: Activity): string => inlineCode(`${type} ${name}`)
+const formatActivity = ({ type, name }: Activity): string => `\`${type} ${name}\``
 
 const decode = <A>(decoder: Decoder<unknown, A>, u: unknown): ValidatedNea<string, A> =>
   pipe(decoder.decode(u), Either.mapLeft(flow(D.draw, NonEmptyArray.of)))
