@@ -62,7 +62,7 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import type { ClientConfig } from '../Config'
-import { Colors, constants } from '../constants'
+import { constants } from '../constants'
 import { MessageId } from '../models/MessageId'
 import { TSnowflake } from '../models/TSnowflake'
 import type { Activity } from '../models/botState/Activity'
@@ -431,7 +431,7 @@ const sendPrettyMessage = (
 ): Future<Maybe<Message>> =>
   sendMessage(channel, {
     ...options,
-    embeds: [MessageUtils.safeEmbed({ color: Colors.darkred, description: message })],
+    embeds: [MessageUtils.safeEmbed({ color: constants.messagesColor, description: message })],
   })
 
 const threadDelete = (thread: ThreadChannel): Future<boolean> =>

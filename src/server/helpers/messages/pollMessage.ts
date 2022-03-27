@@ -6,12 +6,10 @@ import { UserId } from '../../../shared/models/guild/UserId'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
-import { Colors, constants } from '../../constants'
+import { constants } from '../../constants'
 import type { ChoiceWithVotesCount } from '../../models/poll/ChoiceWithVotesCount'
 import { PollButton } from '../../models/poll/PollButton'
 import { MessageUtils } from '../../utils/MessageUtils'
-
-const graphWidth = 20 // chars
 
 // emojis
 
@@ -63,7 +61,7 @@ export const pollMessage = (
           |Total de réponses : ${total}
           |*Sondage créé par <@${UserId.unwrap(createdBy)}>*`,
         ),
-        color: Colors.darkred,
+        color: constants.messagesColor,
       }),
     ],
     components: [
@@ -90,7 +88,7 @@ export const pollMessage = (
 }
 
 // What one block represents
-const blockUnit = Math.round(100 / graphWidth)
+const blockUnit = Math.round(100 / constants.pollGraphWidth)
 
 const graphBar = (votesCount: number, total: number): string => {
   const percents = total === 0 ? 0 : Math.round((votesCount / total) * 100)

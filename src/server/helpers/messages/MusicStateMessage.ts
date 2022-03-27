@@ -1,6 +1,5 @@
 import type {
   BaseMessageComponentOptions,
-  ColorResolvable,
   InteractionButtonOptions,
   MessageButtonOptions,
   MessageOptions,
@@ -14,7 +13,7 @@ import { StringUtils } from '../../../shared/utils/StringUtils'
 import { IO } from '../../../shared/utils/fp'
 import { List, Maybe } from '../../../shared/utils/fp'
 
-import { Colors, constants } from '../../constants'
+import { constants } from '../../constants'
 import type { Track } from '../../models/music/Track'
 import { MessageUtils } from '../../utils/MessageUtils'
 
@@ -27,7 +26,6 @@ export const musicStateButtons = {
 }
 
 const queueDisplay = 5
-const messagesColor: ColorResolvable = Colors.darkred
 const images = {
   empty: 'https://cdn.discordapp.com/attachments/849299103362973777/914578024366747668/vide.png',
   jpDjGifs: ['https://i.imgur.com/xwfsgKH.gif', 'https://i.imgur.com/QVhHr0g.gif'] as const,
@@ -53,7 +51,7 @@ const connecting: IO<MyMessageOptions> = pipe(
     (image): MyMessageOptions => ({
       embeds: [
         MessageUtils.safeEmbed({
-          color: messagesColor,
+          color: constants.messagesColor,
           author: MessageUtils.author('Chargement...'),
           thumbnail: MessageUtils.thumbnail(images.jpPerdu),
           image: MessageUtils.image(image),
@@ -81,7 +79,7 @@ const playing = (
       (image): MyMessageOptions => ({
         embeds: [
           MessageUtils.safeEmbed({
-            color: messagesColor,
+            color: constants.messagesColor,
             author: MessageUtils.author('En cours de lecture :'),
             title: pipe(
               current,

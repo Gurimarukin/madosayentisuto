@@ -5,7 +5,7 @@ import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import { Colors } from '../constants'
+import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerType'
@@ -45,7 +45,7 @@ const welcomeMessage = (member: GuildMember): MessageOptions => ({
   ),
   embeds: [
     MessageUtils.safeEmbed({
-      color: Colors.darkred,
+      color: constants.messagesColor,
       title: 'Jean Plank',
       url: 'https://jeanplank.blbl.ch',
       thumbnail: MessageUtils.thumbnail(
