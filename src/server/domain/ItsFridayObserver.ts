@@ -16,6 +16,9 @@ import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
 
+const rangeStart = 14
+const rangeEnd = 17
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const ItsFridayObserver = (Logger: LoggerGetter, guildStateService: GuildStateService) => {
   const logger = Logger('ItsFridayObserver')
@@ -25,12 +28,17 @@ export const ItsFridayObserver = (Logger: LoggerGetter, guildStateService: Guild
     'CronJob',
   )(({ date }) => {
     const isFriday = DayJs.day.get(date) === 5
-    return isFriday && DayJs.is8am(date) ? delaySendAllMessages(date) : Future.unit
+    return isFriday && pipe(date, DayJs.isHourSharp(rangeStart))
+      ? delaySendAllMessages(date)
+      : Future.unit
   })
 
   function delaySendAllMessages(now: DayJs): Future<void> {
     return pipe(
       randomDelay(now),
+      IO.chainFirst(delay =>
+        logger.info(`Scheduling "It's friday" in ${StringUtils.prettyMs(delay)}`),
+      ),
       Future.fromIOEither,
       Future.chain(delay => pipe(sendAllMessages(), Future.delay(delay))),
     )
@@ -75,22 +83,25 @@ export const ItsFridayObserver = (Logger: LoggerGetter, guildStateService: Guild
   }
 }
 
-const rangeStart = 14
-const rangeEnd = 17
 const range = MsDuration.hours(rangeEnd - rangeStart)
+
 function randomDelay(now: DayJs): IO<MsDuration> {
-  const today2Pm = pipe(now, DayJs.startOf('hour'), DayJs.hour.set(rangeStart))
-  const untilToday2Pm = pipe(today2Pm, DayJs.diff(now))
+  const todayRangeStart = pipe(now, DayJs.startOf('hour'), DayJs.hour.set(rangeStart))
+  const untilTodayRangeStart = pipe(todayRangeStart, DayJs.diff(now))
   return pipe(
     random.randomRange(
-      MsDuration.unwrap(untilToday2Pm),
-      pipe(untilToday2Pm, MsDuration.add(range), MsDuration.unwrap),
+      MsDuration.unwrap(untilTodayRangeStart),
+      pipe(untilTodayRangeStart, MsDuration.add(range), MsDuration.unwrap),
     ),
     IO.fromIO,
     IO.filterOrElse(
       n => 0 <= n,
       n =>
-        Error(`Got a negative delay until today 2pm: ${StringUtils.prettyMs(MsDuration.wrap(n))}`),
+        Error(
+          `Got a negative delay until today ${StringUtils.pad10(
+            rangeStart,
+          )}:00: ${StringUtils.prettyMs(MsDuration.wrap(n))}`,
+        ),
     ),
     IO.map(MsDuration.wrap),
   )

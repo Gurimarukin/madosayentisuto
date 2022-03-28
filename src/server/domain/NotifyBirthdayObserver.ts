@@ -27,12 +27,12 @@ export const NotifyBirthdayObserver = (
   return ObserverWithRefinement.fromNext(
     MadEvent,
     'CronJob',
-  )(event =>
-    DayJs.is8am(event.date)
+  )(({ date }) =>
+    pipe(date, DayJs.isHourSharp(8))
       ? pipe(
-          memberBirthdateService.listForDate(event.date),
+          memberBirthdateService.listForDate(date),
           Future.chain(members =>
-            List.isNonEmpty(members) ? notifyMembers(event.date, members) : Future.unit,
+            List.isNonEmpty(members) ? notifyMembers(date, members) : Future.unit,
           ),
         )
       : Future.unit,

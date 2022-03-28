@@ -24,7 +24,7 @@ export const ActivityStatusObserver = (botStateService: BotStateService) => {
         return discordSetActivityFromDb()
 
       case 'CronJob':
-        if (DayJs.is8am(event.date)) return discordSetActivityFromDb()
+        if (pipe(event.date, DayJs.isHourSharp(8))) return discordSetActivityFromDb()
         return Future.unit
     }
   })

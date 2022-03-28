@@ -35,10 +35,10 @@ const now: IO<DayJs> = pipe(dayjs, io.map(wrap))
 
 const isValid = (date: DayJs): boolean => unwrap(date).isValid()
 
-const is8am = (date: DayJs): boolean => {
-  const d = unwrap(date)
-  return d.hour() === 8 && d.minute() === 0
-}
+const isHourSharp =
+  (h: number) =>
+  (date: DayJs): boolean =>
+    hour.get(date) === h && minute.get(date) === 0
 
 // modifiers
 
@@ -128,7 +128,7 @@ export const DayJs = {
   now,
 
   isValid,
-  is8am,
+  isHourSharp,
 
   add,
   subtract,

@@ -6,7 +6,6 @@
 - birthdays
 - deploy: on guild join
 - Remind
-- fix birthdays
 - Say
 - Img
 - moderators/owner
