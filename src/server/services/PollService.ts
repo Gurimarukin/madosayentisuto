@@ -30,7 +30,7 @@ export const PollService = (
   lookupPollByMessage: (messageId: MessageId): Future<Maybe<Poll>> =>
     pipe(
       pollQuestionPersistence.lookupByMessage(messageId),
-      futureMaybe.chainFuture(question =>
+      futureMaybe.chainTaskEitherK(question =>
         pipe(
           pollResponsePersistence.listForMessage(messageId),
           Future.map(responses => Poll.fromQuestionAndResponses(question, responses)),

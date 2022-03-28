@@ -72,7 +72,7 @@ export const NotifyBirthdayObserver = (
             ),
           ),
         }),
-        futureMaybe.chainFuture(({ channel, members }) =>
+        futureMaybe.chainTaskEitherK(({ channel, members }) =>
           notifyMembersForChannel(now, channel, members),
         ),
         Future.map(toUnit),
@@ -89,10 +89,10 @@ export const NotifyBirthdayObserver = (
       Future.traverseArray(member =>
         pipe(
           DiscordConnector.sendPrettyMessage(channel, birthdayMessage(now, member)),
-          futureMaybe.chainFirstFuture(m =>
+          futureMaybe.chainFirstTaskEitherK(m =>
             DiscordConnector.messageReact(m, constants.emojis.birthday),
           ),
-          futureMaybe.chainFirstFuture(m =>
+          futureMaybe.chainFirstTaskEitherK(m =>
             DiscordConnector.messageReact(m, constants.emojis.tada),
           ),
         ),

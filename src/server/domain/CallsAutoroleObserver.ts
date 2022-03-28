@@ -97,7 +97,9 @@ export const CallsAutoroleObserver = (
         pipe(f(guild, callsAndMember), Future.map(Maybe.some)),
       ),
       Future.map(Maybe.filter(({ success }) => success)),
-      futureMaybe.chainFuture(({ callsAndMember: { calls } }) => refreshCallsInitMessage(calls)),
+      futureMaybe.chainTaskEitherK(({ callsAndMember: { calls } }) =>
+        refreshCallsInitMessage(calls),
+      ),
       Future.map(toUnit),
     )
   }

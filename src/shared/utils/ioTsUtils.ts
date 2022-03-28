@@ -46,9 +46,7 @@ const dateFromISOStringDecoder: Decoder<unknown, DayJs> = pipe(
   }),
 )
 
-const dateFromISOStringEncoder: Encoder<string, DayJs> = {
-  encode: d => DayJs.unwrap(d).toISOString(),
-}
+const dateFromISOStringEncoder: Encoder<string, DayJs> = { encode: DayJs.toISOString }
 
 const dateFromISOStringCodec: Codec<unknown, string, DayJs> = C.make(
   dateFromISOStringDecoder,

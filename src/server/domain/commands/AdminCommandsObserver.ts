@@ -253,7 +253,7 @@ export const AdminCommandsObserver = (
     return pipe(
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
       Future.map(() => Maybe.fromNullable(interaction.guild)),
-      futureMaybe.chainFuture(guild => guildStateService.getState(guild)),
+      futureMaybe.chainTaskEitherK(guild => guildStateService.getState(guild)),
       futureMaybe.match(() => 'Rien à montrer pour ce serveur', formatState),
       Future.chain(content =>
         DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
@@ -290,7 +290,7 @@ export const AdminCommandsObserver = (
           role: fetchRole(maybeGuild, Maybe.fromNullable(interaction.options.getRole(Keys.role))),
         }),
       ),
-      futureMaybe.chainFuture(({ guild, author, commandChannel, callsChannel, role }) =>
+      futureMaybe.chainTaskEitherK(({ guild, author, commandChannel, callsChannel, role }) =>
         sendInitMessageAndUpdateState(guild, author, commandChannel, callsChannel, role),
       ),
       Future.map(toUnit),
@@ -338,7 +338,7 @@ export const AdminCommandsObserver = (
     return message =>
       pipe(
         guildStateService.getCalls(guild),
-        futureMaybe.chainFuture(previous => deleteMessage(previous.message)),
+        futureMaybe.chainTaskEitherK(previous => deleteMessage(previous.message)),
         Future.chain(() => guildStateService.setCalls(guild, { message, channel, role })),
         Future.map(toUnit),
       )
@@ -366,7 +366,9 @@ export const AdminCommandsObserver = (
             Maybe.fromNullable(interaction.options.getRole(Keys.role)),
           ),
         }),
-        futureMaybe.chainFuture(({ guild, role }) => guildStateService.setDefaultRole(guild, role)),
+        futureMaybe.chainTaskEitherK(({ guild, role }) =>
+          guildStateService.setDefaultRole(guild, role),
+        ),
         futureMaybe.match(
           () => 'Erreur',
           ({ defaultRole }) => `Nouveau rôle par défaut : ${Maybe.toNullable(defaultRole)}`,
@@ -394,7 +396,7 @@ export const AdminCommandsObserver = (
           guild: Future.right(Maybe.fromNullable(interaction.guild)),
           channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
         }),
-        futureMaybe.chainFuture(({ guild, channel }) =>
+        futureMaybe.chainTaskEitherK(({ guild, channel }) =>
           guildStateService.setItsFridayChannel(guild, channel),
         ),
         futureMaybe.match(
@@ -425,7 +427,7 @@ export const AdminCommandsObserver = (
           guild: Future.right(Maybe.fromNullable(interaction.guild)),
           channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
         }),
-        futureMaybe.chainFuture(({ guild, channel }) =>
+        futureMaybe.chainTaskEitherK(({ guild, channel }) =>
           guildStateService.setBirthdayChannel(guild, channel),
         ),
         futureMaybe.match(

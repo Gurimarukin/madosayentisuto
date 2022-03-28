@@ -41,7 +41,7 @@ export const NotifyVoiceCallObserver = (
       log.info(`Call started in 📢${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() => guildStateService.getCalls(member.guild)),
-      futureMaybe.chainFuture(calls =>
+      futureMaybe.chainTaskEitherK(calls =>
         pipe(
           DiscordConnector.sendMessage(
             calls.channel,
@@ -67,7 +67,7 @@ export const NotifyVoiceCallObserver = (
       log.info(`Call ended in 📢${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() => guildStateService.getCalls(member.guild)),
-      futureMaybe.chainFuture(calls =>
+      futureMaybe.chainTaskEitherK(calls =>
         pipe(
           DiscordConnector.sendMessage(calls.channel, `Un appel s'est terminé.`),
           futureMaybe.match(

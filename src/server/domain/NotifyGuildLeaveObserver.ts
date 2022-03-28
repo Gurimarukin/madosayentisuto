@@ -71,7 +71,7 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           channel: futureMaybe.fromOption(goodbyeChannel(guild)),
-          message: futureMaybe.fromFuture(futureMessage),
+          message: futureMaybe.fromTaskEither(futureMessage),
         }),
         futureMaybe.chain(({ channel, message }) =>
           DiscordConnector.sendPrettyMessage(channel, message),

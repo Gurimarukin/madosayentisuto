@@ -28,7 +28,7 @@ export const constants = {
     characters: emojiCharacters(),
   } as const,
 
-  retryEnsuringIndexes: MsDuration.minutes(5),
+  retryEnsuringIndexes: MsDuration.minutes(1),
 
   messagesColor: darkred,
 

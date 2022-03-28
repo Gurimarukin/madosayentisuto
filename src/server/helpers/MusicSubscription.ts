@@ -440,7 +440,7 @@ const sendStateMessage = (stateChannel: TextBasedChannel): Future<Maybe<Message>
 const createStateThread = (maybeMessage: Maybe<Message>): Future<Maybe<ThreadChannel>> =>
   pipe(
     futureMaybe.fromOption(maybeMessage),
-    futureMaybe.chainFuture(message =>
+    futureMaybe.chainTaskEitherK(message =>
       DiscordConnector.messageStartThread(message, {
         name: threadName,
         autoArchiveDuration: 60,
@@ -500,7 +500,7 @@ const refreshMessage = (state: MusicState): Future<void> => {
       message: futureMaybe.fromOption(maybeMessage),
       options: futureMaybe.fromIOEither(MusicStateMessage.playing(playing, queue, isPlaying)),
     }),
-    futureMaybe.chainFuture(({ message, options }) =>
+    futureMaybe.chainTaskEitherK(({ message, options }) =>
       DiscordConnector.messageEdit(message, options),
     ),
     Future.map(toUnit),

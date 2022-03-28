@@ -11,10 +11,10 @@ const main: Future<void> = pipe(
   Future.Do,
   Future.apS('config', Future.fromIOEither(Config.load)),
   Future.bind('client', ({ config }) => DiscordConnector.futureClient(config.client)),
-  Future.chain(({ config, client }) => {
+  Future.chainIOEitherK(({ config, client }) => {
     const discord = DiscordConnector.of(client)
     const Logger = DiscordLogger(config, discord)
-    return Future.fromIOEither(Application(Logger, config, discord))
+    return Application(Logger, config, discord)
   }),
 )
 

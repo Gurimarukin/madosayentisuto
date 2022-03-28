@@ -2,10 +2,10 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
 import customParseFormatPlugin from 'dayjs/plugin/customParseFormat'
 import utcPlugin from 'dayjs/plugin/utc'
+import type { eq } from 'fp-ts'
 import { io, ord } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import type { IO } from 'fp-ts/IO'
-import type { Ord } from 'fp-ts/Ord'
 import { identity, pipe } from 'fp-ts/function'
 import type { Lens } from 'monocle-ts/Lens'
 import type { Newtype } from 'newtype-ts'
@@ -57,6 +57,8 @@ const format =
   (date: DayJs): string =>
     unwrap(date).format(template)
 
+const toISOString = (date: DayJs): string => unwrap(date).toISOString()
+
 function diff(b: DayJs): (a: DayJs) => MsDuration
 function diff(b: DayJs, unit: dayjs.QUnitType | dayjs.OpUnitType): (a: DayJs) => number
 function diff(
@@ -71,13 +73,17 @@ function diff(
 
 // Ord
 
-const Ord_: Ord<DayJs> = ord.fromCompare((first, second) => {
+const Ord: ord.Ord<DayJs> = ord.fromCompare((first, second) => {
   const f = unwrap(first)
   const s = unwrap(second)
   if (f.isSame(s)) return 0
   if (f.isBefore(s)) return -1
   return 1
 })
+
+// Eq
+
+const Eq: eq.Eq<DayJs> = Ord
 
 // Lens
 
@@ -135,10 +141,12 @@ export const DayJs = {
   startOf,
 
   format,
+  toISOString,
   diff,
   unwrap,
 
-  Ord: Ord_,
+  Eq,
+  Ord,
 
   year,
   month,

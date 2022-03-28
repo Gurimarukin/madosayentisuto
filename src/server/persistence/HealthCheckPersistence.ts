@@ -13,7 +13,7 @@ export const HealthCheckPersistence = (withDb: <A>(f: (db: Db) => Promise<A>) =>
   check: (): Future<boolean> =>
     pipe(
       withDb(db => db.command({ ping: 1 })),
-      Future.map((res: unknown) => {
+      Future.map(res => {
         const decoded = ResultCodec.decode(res)
         return Either.isRight(decoded) && decoded.right.ok === 1
       }),

@@ -36,7 +36,7 @@ export const DiscordClientController = (
         pipe(
           DiscordConnector.fetchMembers(guild),
           Future.map(c => GuildView.fromGuild(guild, c.toJSON())),
-          futureMaybe.fromFuture,
+          futureMaybe.fromTaskEither,
         ),
       ),
       futureMaybe.chain(guild =>
@@ -45,7 +45,7 @@ export const DiscordClientController = (
           List.map(m => m.id),
           memberBirthdateService.listForMembers,
           Future.map(birthdates => pipe(guild, GuildView.updateBirthdates(birthdates))),
-          futureMaybe.fromFuture,
+          futureMaybe.fromTaskEither,
         ),
       ),
       M.fromTaskEither,

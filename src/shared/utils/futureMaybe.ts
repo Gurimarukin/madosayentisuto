@@ -51,17 +51,23 @@ const chain = optionT.chain(Future.Monad)
 
 const chainFirst = fpTsChain.chainFirst(Chain)
 
-const chainFuture = <A, B>(f: (a: A) => Future<B>): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) =>
-  chain(flow(f, Future.map(Maybe.some)))
+const chainTaskEitherK = <A, B>(
+  f: (a: A) => Future<B>,
+): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) => chain(flow(f, Future.map(Maybe.some)))
 
-const chainFirstFuture = <A, B>(
+const chainFirstTaskEitherK = <A, B>(
   f: (a: A) => Future<B>,
 ): ((fa: Future<Maybe<A>>) => Future<Maybe<A>>) => chainFirst(flow(f, Future.map(Maybe.some)))
+
+const chainFirstIOEitherK = <A, B>(
+  f: (a: A) => IO<B>,
+): ((fa: Future<Maybe<A>>) => Future<Maybe<A>>) =>
+  chainFirstTaskEitherK(flow(f, Future.fromIOEither))
 
 const chainOption: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
   optionT.chainOptionK(Future.Monad)
 
-const fromFuture: <A>(fa: Future<A>) => Future<Maybe<A>> = optionT.fromF(Future.Functor)
+const fromTaskEither: <A>(fa: Future<A>) => Future<Maybe<A>> = optionT.fromF(Future.Functor)
 
 const fromNullable: <A>(a: A) => Future<Maybe<NonNullable<A>>> = optionT.fromNullable(
   Future.Pointed,
@@ -93,10 +99,11 @@ export const futureMaybe = {
   bindTo: functor.bindTo(Functor),
   chain,
   chainFirst,
-  chainFuture,
-  chainFirstFuture,
+  chainTaskEitherK,
+  chainFirstTaskEitherK,
+  chainFirstIOEitherK,
   chainOption,
-  fromFuture,
+  fromTaskEither,
   fromNullable,
   fromOption,
   fromIOEither,

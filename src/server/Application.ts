@@ -21,7 +21,7 @@ import { MusicCommandsObserver } from './domain/commands/MusicCommandsObserver'
 import { OtherCommandsObserver } from './domain/commands/OtherCommandsObserver'
 import { PollCommandsObserver } from './domain/commands/PollCommandsObserver'
 import { DeployCommandsObserver } from './domain/startup/DeployCommandsObserver'
-import { IndexesEnsureObserver } from './domain/startup/IndexesEnsureObserver'
+import { EnsureDbReadyObserver } from './domain/startup/EnsureDbReadyObserver'
 import type { DiscordConnector } from './helpers/DiscordConnector'
 import { LogMadEventsObserver } from './helpers/LogMadEventsObserver'
 import { VoiceStateUpdateTransformer } from './helpers/VoiceStateUpdateTransformer'
@@ -45,8 +45,10 @@ export const Application = (
     ensureIndexes,
     botStateService,
     guildStateService,
-    pollService,
+    healthCheckService,
     memberBirthdateService,
+    migrationService,
+    pollService,
     startWebServer,
   } = Context.of(Logger, config, discord)
 
@@ -63,7 +65,15 @@ export const Application = (
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
       // │  └ startup/
       sub(DeployCommandsObserver(Logger, config, discord)),
-      sub(IndexesEnsureObserver(Logger, madEventsPubSub.subject, ensureIndexes)),
+      sub(
+        EnsureDbReadyObserver(
+          Logger,
+          madEventsPubSub.subject,
+          healthCheckService,
+          migrationService,
+          ensureIndexes,
+        ),
+      ),
       // │
       sub(ActivityStatusObserver(botStateService)),
       sub(CallsAutoroleObserver(Logger, guildStateService)),

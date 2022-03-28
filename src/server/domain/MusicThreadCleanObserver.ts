@@ -29,8 +29,8 @@ export const MusicThreadCleanObserver = (
       return pipe(
         getSubscriptionThread(message.guild),
         Future.map(Maybe.filter(messageIsInThreadAndIsNotBot(message))),
-        futureMaybe.chainFuture(() => DiscordConnector.messageDelete(message)),
-        futureMaybe.chainFuture(success =>
+        futureMaybe.chainTaskEitherK(() => DiscordConnector.messageDelete(message)),
+        futureMaybe.chainTaskEitherK(success =>
           success
             ? Future.unit
             : Future.fromIOEither(

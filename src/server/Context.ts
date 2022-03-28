@@ -3,44 +3,37 @@ import { pipe } from 'fp-ts/function'
 import type { Collection, Db } from 'mongodb'
 import { MongoClient } from 'mongodb'
 
-import type { IO } from '../shared/utils/fp'
 import { toUnit } from '../shared/utils/fp'
 import { Future } from '../shared/utils/fp'
 
 import type { Config } from './Config'
 import type { DiscordConnector } from './helpers/DiscordConnector'
 import { YtDlp } from './helpers/YtDlp'
-import type { LoggerGetter, LoggerType } from './models/logger/LoggerType'
+import type { LoggerGetter } from './models/logger/LoggerType'
 import type { MongoCollection } from './models/mongo/MongoCollection'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { HealthCheckPersistence } from './persistence/HealthCheckPersistence'
 import { MemberBirthdatePersistence } from './persistence/MemberBirthdatePersistence'
+import { MigrationPersistence } from './persistence/MigrationPersistence'
 import { PollQuestionPersistence } from './persistence/PollQuestionPersistence'
 import { PollResponsePersistence } from './persistence/PollResponsePersistence'
 import { BotStateService } from './services/BotStateService'
 import { GuildStateService } from './services/GuildStateService'
 import { HealthCheckService } from './services/HealthCheckService'
 import { MemberBirthdateService } from './services/MemberBirthdateService'
+import { MigrationService } from './services/MigrationService'
 import { PollService } from './services/PollService'
 import { Routes } from './webServer/Routes'
 import { DiscordClientController } from './webServer/controllers/DiscordClientController'
 import { HealthCheckController } from './webServer/controllers/HealthCheckController'
-import { startWebServer } from './webServer/startWebServer'
+import { startWebServer as getStartWebServer } from './webServer/startWebServer'
 import { WithAuth } from './webServer/utils/WithAuth'
 
-export type Context = {
-  readonly logger: LoggerType
-  readonly ytDlp: YtDlp
-  readonly ensureIndexes: Future<void>
-  readonly botStateService: BotStateService
-  readonly guildStateService: GuildStateService
-  readonly memberBirthdateService: MemberBirthdateService
-  readonly pollService: PollService
-  readonly startWebServer: IO<void>
-}
+export type Context = ReturnType<typeof of>
 
-const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Context => {
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector) => {
   const logger = Logger('Application')
 
   const ytDlp = YtDlp(config.ytDlpPath)
@@ -71,6 +64,7 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
   const healthCheckPersistence = HealthCheckPersistence(withDb)
   const memberBirthdatePersistence = MemberBirthdatePersistence(Logger, mongoCollection)
+  const migrationPersistence = MigrationPersistence(Logger, mongoCollection)
   const pollResponsePersistence = PollResponsePersistence(Logger, mongoCollection)
   const pollQuestionPersistence = PollQuestionPersistence(Logger, mongoCollection)
 
@@ -88,6 +82,7 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
   const guildStateService = GuildStateService(Logger, discord, ytDlp, guildStatePersistence)
   const healthCheckService = HealthCheckService(healthCheckPersistence)
   const memberBirthdateService = MemberBirthdateService(memberBirthdatePersistence)
+  const migrationService = MigrationService(Logger, mongoCollection, migrationPersistence)
   const pollService = PollService(pollQuestionPersistence, pollResponsePersistence)
 
   const healthCheckController = HealthCheckController(healthCheckService)
@@ -96,7 +91,7 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
   const withAuth = WithAuth({ isDisabled: config.http.disableAuth })
 
   const routes = Routes(withAuth, healthCheckController, discordClientController)
-  const startWebServer_ = startWebServer(Logger, config.http, routes)
+  const startWebServer = getStartWebServer(Logger, config.http, routes)
 
   return {
     logger,
@@ -104,9 +99,11 @@ const of = (Logger: LoggerGetter, config: Config, discord: DiscordConnector): Co
     ensureIndexes,
     botStateService,
     guildStateService,
+    healthCheckService,
     memberBirthdateService,
+    migrationService,
     pollService,
-    startWebServer: startWebServer_,
+    startWebServer,
   }
 }
 
