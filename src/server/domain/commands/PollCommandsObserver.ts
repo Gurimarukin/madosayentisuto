@@ -23,8 +23,10 @@ import { NonEmptyArray } from '../../../shared/utils/fp'
 import { Future } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
+import type { Config } from '../../Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import { pollMessage } from '../../helpers/messages/pollMessage'
+import { PollMessage } from '../../helpers/messages/PollMessage'
+import { ChannelId } from '../../models/ChannelId'
 import { Command } from '../../models/Command'
 import { MessageId } from '../../models/MessageId'
 import { MadEvent } from '../../models/event/MadEvent'
@@ -34,13 +36,15 @@ import { ChoiceWithVotesCount } from '../../models/poll/ChoiceWithVotesCount'
 import { Poll } from '../../models/poll/Poll'
 import { PollButton } from '../../models/poll/PollButton'
 import { PollResponse } from '../../models/poll/PollResponse'
+import type { ThreadWithMessage } from '../../models/poll/ThreadWithMessage'
 import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 import type { PollService } from '../../services/PollService'
+import { ChannelUtils } from '../../utils/ChannelUtils'
 import { LogUtils } from '../../utils/LogUtils'
 
 const keysChoices = pipe(
   NonEmptyArray.range(1, 5),
-  NonEmptyArray.map(i => Tuple.of(`choix${i}`, `Choix ${i}`)),
+  NonEmptyArray.map(i => Tuple.of(`choix_${i}`, `Choix ${i}`)),
 )
 
 const Keys = {
@@ -51,6 +55,8 @@ const Keys = {
   multiple: 'multiple',
   deletePoll: 'Supprimer sondage',
 }
+
+const threadName = 'Détail sondage'
 
 const pollCommand = Command.chatInput({
   name: Keys.poll,
@@ -79,11 +85,19 @@ const messageDeleteCommand = Command.message({ name: Keys.deletePoll })
 
 export const pollCommands = [pollCommand, messageDeleteCommand]
 
+type IsMultiple = {
+  readonly isMultiple: boolean
+}
+
+type IsAnonymous = {
+  readonly isAnonymous: boolean
+}
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollCommandsObserver = (
   Logger: LoggerGetter,
-  clientId: string,
-  admins: NonEmptyArray<UserId>,
+  config: Config,
+  discord: DiscordConnector,
   pollService: PollService,
 ) => {
   const logger = Logger('PollCommandsObserver')
@@ -132,6 +146,7 @@ export const PollCommandsObserver = (
       ),
       futureMaybe.chainFuture(({ channel, question }) =>
         initPoll(channel, interaction.user, question, getChoices(interaction), {
+          isAnonymous: interaction.options.getBoolean(Keys.anonymous) ?? false,
           isMultiple: interaction.options.getBoolean(Keys.multiple) ?? false,
         }),
       ),
@@ -139,36 +154,36 @@ export const PollCommandsObserver = (
     )
   }
 
-  type IsMultiple = {
-    readonly isMultiple: boolean
-  }
-
   function initPoll(
     channel: TextBasedChannel,
     user: User,
     question: string,
     choices: NonEmptyArray<string>,
-    { isMultiple }: IsMultiple,
+    { isAnonymous, isMultiple }: IsAnonymous & IsMultiple,
   ): Future<void> {
     const createdBy = UserId.fromUser(user)
-    const options = pollMessage(
+    const options = PollMessage.poll(
       createdBy,
       question,
       pipe(choices, NonEmptyArray.map(ChoiceWithVotesCount.empty)),
-      { isMultiple },
+      { isAnonymous, isMultiple },
     )
     return pipe(
       DiscordConnector.sendMessage(channel, options),
-      futureMaybe.chainFirstFuture(message =>
-        // we want the `(edited)` label on message so we won't have a layout shift
-        DiscordConnector.messageEdit(message, options),
-      ),
       futureMaybe.chainFuture(message =>
+        apply.sequenceS(Future.ApplyPar)({
+          // we want the `(edited)` label on message so we won't have a layout shift
+          message: DiscordConnector.messageEdit(message, options),
+          detail: initDetailMessage(choices, { isAnonymous }, message),
+        }),
+      ),
+      futureMaybe.chainFuture(({ message, detail }) =>
         pollService.createPoll({
           message: MessageId.fromMessage(message),
           createdBy,
           question,
           choices,
+          detail,
           isMultiple,
         }),
       ),
@@ -176,6 +191,33 @@ export const PollCommandsObserver = (
         () => Future.unit,
         success =>
           success ? Future.unit : Future.fromIOEither(logger.warn('Failed to create poll')),
+      ),
+    )
+  }
+
+  function initDetailMessage(
+    choices: NonEmptyArray<string>,
+    { isAnonymous }: IsAnonymous,
+    pollMessage: Message,
+  ): Future<Maybe<ThreadWithMessage>> {
+    if (isAnonymous) return futureMaybe.none
+
+    const options = PollMessage.detail(pipe(choices, NonEmptyArray.map(ChoiceWithResponses.empty)))
+    return pipe(
+      DiscordConnector.messageStartThread(pollMessage, {
+        name: threadName,
+        autoArchiveDuration: 'MAX',
+      }),
+      futureMaybe.fromFuture,
+      futureMaybe.bindTo('thread'),
+      futureMaybe.bind('message', ({ thread }) => DiscordConnector.sendMessage(thread, options)),
+      // we want the `(edited)` label on message so we won't have a layout shift
+      futureMaybe.chainFirstFuture(({ message }) => DiscordConnector.messageEdit(message, options)),
+      futureMaybe.map(
+        ({ thread, message }): ThreadWithMessage => ({
+          thread: ChannelId.fromChannel(thread),
+          message: MessageId.fromMessage(message),
+        }),
       ),
     )
   }
@@ -188,8 +230,7 @@ export const PollCommandsObserver = (
         () => Future.unit,
         button =>
           pipe(
-            DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
-            Future.map(() => Maybe.fromNullable(interaction.guild)),
+            futureMaybe.fromNullable(interaction.guild),
             futureMaybe.chain(guild =>
               castVote(guild, interaction.message, interaction.user, button),
             ),
@@ -239,7 +280,7 @@ export const PollCommandsObserver = (
           ),
         ),
       ),
-      futureMaybe.chainFirstFuture(flow(Tuple.fst, refreshMessage(guild))),
+      futureMaybe.chainFirstFuture(flow(Tuple.fst, refreshMessages(guild))),
       Future.map(Maybe.map(Tuple.snd)),
     )
   }
@@ -318,38 +359,71 @@ export const PollCommandsObserver = (
     )
   }
 
-  function refreshMessage(guild: Guild): (poll: Poll) => Future<Maybe<Message>> {
+  function refreshMessages(guild: Guild): (poll: Poll) => Future<void> {
     return poll =>
       pipe(
-        DiscordConnector.fetchMessage(guild, poll.message),
-        Future.chainFirstIOEitherK(
-          Maybe.fold(
-            () =>
-              LogUtils.pretty(logger, guild).warn(
-                `Couldn't fetch message ${MessageId.unwrap(poll.message)}`,
-              ),
-            () => IO.unit,
+        apply.sequenceT(Future.ApplyPar)(
+          refreshPollMessage(guild, poll),
+          refreshDetailMessage(guild, poll),
+        ),
+        Future.map(toUnit),
+      )
+  }
+
+  function refreshPollMessage(guild: Guild, poll: Poll): Future<Maybe<Message>> {
+    return pipe(
+      DiscordConnector.fetchMessage(guild, poll.message),
+      Future.chainFirstIOEitherK(
+        Maybe.fold(
+          () =>
+            LogUtils.pretty(logger, guild).warn(
+              `Couldn't fetch poll message ${MessageId.unwrap(poll.message)}`,
+            ),
+          () => IO.unit,
+        ),
+      ),
+      futureMaybe.chainFuture(message =>
+        DiscordConnector.messageEdit(
+          message,
+          PollMessage.poll(
+            poll.createdBy,
+            poll.question,
+            pipe(poll.choices, NonEmptyArray.map(ChoiceWithVotesCount.fromChoiceWithResponses)),
+            { isAnonymous: Maybe.isNone(poll.detail), isMultiple: poll.isMultiple },
           ),
         ),
-        futureMaybe.chainFuture(message =>
-          DiscordConnector.messageEdit(
-            message,
-            pollMessage(
-              poll.createdBy,
-              poll.question,
-              pipe(poll.choices, NonEmptyArray.map(ChoiceWithVotesCount.fromChoiceWithResponses)),
-              { isMultiple: poll.isMultiple },
+      ),
+    )
+  }
+
+  function refreshDetailMessage(guild: Guild, poll: Poll): Future<Maybe<Message>> {
+    return pipe(
+      futureMaybe.fromOption(poll.detail),
+      futureMaybe.chain(detail =>
+        pipe(
+          DiscordConnector.fetchMessage(guild, detail.message),
+          Future.chainFirstIOEitherK<Maybe<Message>, void>(
+            Maybe.fold(
+              () =>
+                LogUtils.pretty(logger, guild).warn(
+                  `Couldn't fetch detail message ${MessageId.unwrap(detail.message)}`,
+                ),
+              () => IO.unit,
             ),
           ),
         ),
-      )
+      ),
+      futureMaybe.chainFuture(message =>
+        DiscordConnector.messageEdit(message, PollMessage.detail(poll.choices)),
+      ),
+    )
   }
 
   // onMessageContextMenu
   function onMessageContextMenu(interaction: MessageContextMenuInteraction): Future<void> {
     return pipe(
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
-      Future.chain(() => removePoll(interaction)),
+      Future.chain(() => removePollIfAllowed(interaction)),
       Future.map(Maybe.getOrElse(() => 'Erreur')),
       Future.chain(content =>
         DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
@@ -358,21 +432,21 @@ export const PollCommandsObserver = (
     )
   }
 
-  function removePoll(interaction: MessageContextMenuInteraction): Future<Maybe<string>> {
+  function removePollIfAllowed(interaction: MessageContextMenuInteraction): Future<Maybe<string>> {
     const messageId = MessageId.fromMessage(interaction.targetMessage)
     return pipe(
       pollService.lookupQuestionByMessage(messageId),
       Future.chain(
         Maybe.fold(
           () => futureMaybe.some("Haha ! Ce n'est pas un sondage..."),
-          ({ createdBy }) =>
+          ({ createdBy, detail }) =>
             canRemovePoll(interaction.user, createdBy)
-              ? pipe(
-                  futureMaybe.fromNullable(interaction.guild),
-                  futureMaybe.chain(guild => DiscordConnector.fetchMessage(guild, messageId)),
-                  futureMaybe.chainFuture(message => DiscordConnector.messageDelete(message)),
-                  futureMaybe.chainOption(success =>
-                    success ? Maybe.some('Sondage supprimé') : Maybe.none,
+              ? removePoll(
+                  interaction.guild,
+                  messageId,
+                  pipe(
+                    detail,
+                    Maybe.map(d => d.thread),
                   ),
                 )
               : futureMaybe.some("Haha ! Tu n'est pas l'auteur de ce sondage..."),
@@ -383,7 +457,55 @@ export const PollCommandsObserver = (
 
   function canRemovePoll(user: User, pollCreatedBy: UserId): boolean {
     const userId = UserId.fromUser(user)
-    return userId === pollCreatedBy || pipe(admins, List.elem(UserId.Eq)(userId))
+    return userId === pollCreatedBy || pipe(config.admins, List.elem(UserId.Eq)(userId))
+  }
+
+  function removePoll(
+    maybeGuild: Guild | null,
+    pollMessage: MessageId,
+    thread: Maybe<ChannelId>,
+  ): Future<Maybe<string>> {
+    return pipe(
+      futureMaybe.fromNullable(maybeGuild),
+      futureMaybe.chainFuture(guild =>
+        apply.sequenceT(Future.ApplyPar)(
+          removePollMessage(guild, pollMessage),
+          removeThread(guild, thread),
+        ),
+      ),
+      futureMaybe.chainOption(Tuple.fst),
+    )
+  }
+
+  function removePollMessage(guild: Guild, pollMessage: MessageId): Future<Maybe<string>> {
+    return pipe(
+      DiscordConnector.fetchMessage(guild, pollMessage),
+      futureMaybe.chainFuture(message => DiscordConnector.messageDelete(message)),
+      futureMaybe.chainOption(success => (success ? Maybe.some('Sondage supprimé') : Maybe.none)),
+    )
+  }
+
+  function removeThread(guild: Guild, maybeThread: Maybe<ChannelId>): Future<void> {
+    return pipe(
+      maybeThread,
+      Maybe.fold(
+        () => Future.unit,
+        threadId =>
+          pipe(
+            discord.fetchChannel(threadId),
+            Future.map(Maybe.filter(ChannelUtils.isThreadChannel)),
+            futureMaybe.chainFuture(DiscordConnector.threadDelete),
+            Future.map(Maybe.getOrElse(() => false)),
+            Future.chainIOEitherK(success =>
+              success
+                ? IO.unit
+                : LogUtils.pretty(logger, guild).info(
+                    `Couldn't delete poll thread ${ChannelId.unwrap(threadId)}`,
+                  ),
+            ),
+          ),
+      ),
+    )
   }
 
   // onMessageDelete
@@ -391,7 +513,7 @@ export const PollCommandsObserver = (
     return pipe(
       messages,
       List.filterMap(m =>
-        m.guild !== null && m.author?.id === clientId
+        m.guild !== null && m.author?.id === config.client.id
           ? Maybe.some(MessageId.fromMessage(m))
           : Maybe.none,
       ),

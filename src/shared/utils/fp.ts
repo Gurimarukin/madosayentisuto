@@ -10,6 +10,7 @@ import {
   task,
   taskEither,
 } from 'fp-ts'
+import type { nonEmptyArray } from 'fp-ts'
 import type { Predicate } from 'fp-ts/Predicate'
 import type { Refinement } from 'fp-ts/Refinement'
 import type { Lazy } from 'fp-ts/function'
@@ -83,8 +84,10 @@ const neaDecoder = <A>(decoder: Decoder<unknown, A>): Decoder<unknown, NonEmptyA
 const neaEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<NonEmptyArray<O>, NonEmptyArray<A>> => ({
   encode: NonEmptyArray.map(encoder.encode),
 })
+
 export const NonEmptyArray = {
   ...readonlyNonEmptyArray,
+  toMutable: identity as <A>(fa: NonEmptyArray<A>) => nonEmptyArray.NonEmptyArray<A>,
   decoder: neaDecoder,
   encoder: neaEncoder,
   codec: <O, A>(codec: Codec<unknown, O, A>): Codec<unknown, NonEmptyArray<O>, NonEmptyArray<A>> =>
@@ -99,9 +102,8 @@ const listEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<List<O>, List<A>> =>
 })
 export const List = {
   ...readonlyArray,
-  isEmpty: <A>(l: List<A>): l is readonly [] => readonlyArray.isEmpty(l),
-  hasLength1: <A>(l: List<A>): l is NonEmptyArray<A> => l.length === 1,
-  concat: <A>(a: List<A>, b: List<A>): List<A> => [...a, ...b],
+  // eslint-disable-next-line functional/prefer-readonly-type
+  toMutable: identity as <A>(fa: List<A>) => A[],
   decoder: listDecoder,
   encoder: listEncoder,
   codec: <O, A>(codec: Codec<unknown, O, A>): Codec<unknown, List<O>, List<A>> =>

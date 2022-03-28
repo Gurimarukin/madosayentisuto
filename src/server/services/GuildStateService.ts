@@ -10,7 +10,7 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MusicSubscription } from '../helpers/MusicSubscription'
 import type { YtDlp } from '../helpers/YtDlp'
-import type { TSnowflake } from '../models/TSnowflake'
+import type { ChannelId } from '../models/ChannelId'
 import type { Calls } from '../models/guildState/Calls'
 import { GuildState } from '../models/guildState/GuildState'
 import type { CallsDb } from '../models/guildState/db/CallsDb'
@@ -221,7 +221,7 @@ export const GuildStateService = (
       })
   }
 
-  function fetchTextChannel(channelId: TSnowflake): Future<Maybe<TextChannel>> {
+  function fetchTextChannel(channelId: ChannelId): Future<Maybe<TextChannel>> {
     return pipe(
       discord.fetchChannel(channelId),
       Future.map(Maybe.filter(ChannelUtils.isTextChannel)),

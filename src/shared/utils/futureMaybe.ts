@@ -1,4 +1,4 @@
-import { apply, chain as fpTsChain, optionT } from 'fp-ts'
+import { apply, chain as fpTsChain, functor, optionT } from 'fp-ts'
 import type { Apply1 } from 'fp-ts/Apply'
 import type { Chain1 } from 'fp-ts/Chain'
 import type { Functor1 } from 'fp-ts/Functor'
@@ -90,6 +90,7 @@ export const futureMaybe = {
   alt: optionT.alt(Future.Monad),
   apS: apply.apS(ApplyPar),
   bind: fpTsChain.bind(Chain),
+  bindTo: functor.bindTo(Functor),
   chain,
   chainFirst,
   chainFuture,

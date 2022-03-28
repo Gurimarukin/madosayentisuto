@@ -100,8 +100,7 @@ export const DeployCommandsObserver = (
       List.map(
         (cmd): GuildApplicationCommandPermissionData => ({
           id: CommandId.unwrap(cmd.id),
-          // eslint-disable-next-line functional/prefer-readonly-type
-          permissions: adminsPermissions as unknown as ApplicationCommandPermissionData[],
+          permissions: NonEmptyArray.toMutable(adminsPermissions),
         }),
       ),
     )

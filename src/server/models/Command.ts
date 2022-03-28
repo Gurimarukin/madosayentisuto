@@ -12,8 +12,10 @@ import type {
   RESTPostAPIChatInputApplicationCommandsJSONBody,
   RESTPostAPIContextMenuApplicationCommandsJSONBody,
 } from 'discord-api-types/rest/v9'
+import type { nonEmptyArray } from 'fp-ts'
 
-import type { List } from '../../shared/utils/fp'
+import { List } from '../../shared/utils/fp'
+import { NonEmptyArray } from '../../shared/utils/fp'
 
 type CommandCommon = {
   readonly name: string
@@ -83,7 +85,5 @@ export const Command = {
   choice: <A extends ChoiceType>(name: string, value: A): Choice<A> => ({ name, value }),
 }
 
-/* eslint-disable functional/prefer-readonly-type */
-const toMutable = <A>(fa: List<A> | undefined): A[] | undefined =>
-  fa === undefined ? undefined : fa.length === 0 ? [] : (fa as unknown as A[])
-/* eslint-enable functional/prefer-readonly-type */
+const toMutable = <A>(fa: List<A> | undefined): nonEmptyArray.NonEmptyArray<A> | undefined =>
+  fa === undefined ? undefined : List.isNonEmpty(fa) ? NonEmptyArray.toMutable(fa) : undefined

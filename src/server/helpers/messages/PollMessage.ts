@@ -7,6 +7,7 @@ import { StringUtils } from '../../../shared/utils/StringUtils'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import { constants } from '../../constants'
+import type { ChoiceWithResponses } from '../../models/poll/ChoiceWithResponses'
 import type { ChoiceWithVotesCount } from '../../models/poll/ChoiceWithVotesCount'
 import { PollButton } from '../../models/poll/PollButton'
 import { MessageUtils } from '../../utils/MessageUtils'
@@ -26,15 +27,16 @@ const getEmoji = (i: number): Maybe<string> => List.lookup(i, emojis)
 
 const splitWith = '  '
 
-type IsMultiple = {
+type PollOptions = {
+  readonly isAnonymous: boolean
   readonly isMultiple: boolean
 }
 
-export const pollMessage = (
+const poll = (
   createdBy: UserId,
   question: string,
   answers: NonEmptyArray<ChoiceWithVotesCount>,
-  { isMultiple }: IsMultiple,
+  { isAnonymous, isMultiple }: PollOptions,
 ): MessageOptions => {
   const total = pipe(
     answers,
@@ -66,7 +68,11 @@ export const pollMessage = (
           |Total de réponses : ${total}
           |*Sondage créé par <@${UserId.unwrap(
             createdBy,
-          )}>* - choix multiple : \`${StringUtils.booleanLabel(isMultiple).toLowerCase()}\``,
+          )}>* - anonyme : \`${StringUtils.booleanLabel(
+            isAnonymous,
+          ).toLowerCase()}\`, choix multiple : \`${StringUtils.booleanLabel(
+            isMultiple,
+          ).toLowerCase()}\``,
         ),
         color: constants.messagesColor,
       }),
@@ -93,6 +99,29 @@ export const pollMessage = (
     ],
   }
 }
+
+const detail = (answers: NonEmptyArray<ChoiceWithResponses>): MessageOptions => ({
+  embeds: pipe(
+    answers,
+    NonEmptyArray.mapWithIndex((index, { responses }) =>
+      MessageUtils.safeEmbed({
+        description: `${pipe(
+          getEmoji(index),
+          Maybe.getOrElse(() => `${index}`),
+        )}${splitWith}${pipe(
+          responses,
+          List.sort(UserId.Ord),
+          List.map(id => `<@${UserId.unwrap(id)}>`),
+          StringUtils.mkString(', '),
+        )}`,
+        color: constants.messagesColor,
+      }),
+    ),
+    NonEmptyArray.toMutable,
+  ),
+})
+
+export const PollMessage = { poll, detail }
 
 // What one block represents
 const blockUnit = Math.round(100 / constants.pollGraphWidth)

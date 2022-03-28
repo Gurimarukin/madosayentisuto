@@ -18,6 +18,7 @@ import type {
   ApplicationCommand,
   ApplicationCommandPermissions,
   BaseCommandInteraction,
+  BaseGuildTextChannel,
   ButtonInteraction,
   ClientPresence,
   Collection,
@@ -41,7 +42,6 @@ import type {
   RoleResolvable,
   StageChannel,
   StartThreadOptions,
-  TextChannel,
   ThreadChannel,
   ThreadCreateOptions,
   ThreadManager,
@@ -63,6 +63,7 @@ import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import type { ClientConfig } from '../Config'
 import { constants } from '../constants'
+import { ChannelId } from '../models/ChannelId'
 import { MessageId } from '../models/MessageId'
 import { TSnowflake } from '../models/TSnowflake'
 import type { Activity } from '../models/botState/Activity'
@@ -99,16 +100,11 @@ const of = (client: Client<true>) => {
      * Read
      */
 
-    fetchChannel: (channelId: TSnowflake): Future<Maybe<AnyChannel>> =>
+    fetchChannel: (channelId: ChannelId): Future<Maybe<AnyChannel>> =>
       pipe(
-        Future.tryCatch(() => client.channels.fetch(TSnowflake.unwrap(channelId))),
+        Future.tryCatch(() => client.channels.fetch(ChannelId.unwrap(channelId))),
         Future.map(Maybe.fromNullable),
-        // Future.orElse<Maybe<Channel>>(_ => Future.right(Maybe.none)),
         debugLeft('fetchChannel'),
-        //   [
-        //   e => e instanceof DiscordAPIError && e.message === 'Unknown Message',
-        //   Maybe.none
-        // ]
       ),
 
     fetchUser: (userId: UserId): Future<Maybe<User>> =>
@@ -180,9 +176,14 @@ const fetchMembers = (guild: Guild): Future<Collection<string, GuildMember>> =>
 
 const fetchMessage = (guild: Guild, messageId: MessageId): Future<Maybe<Message>> =>
   pipe(
-    guild.channels.cache.toJSON(),
-    List.filter(ChannelUtils.isTextChannel),
-    fetchMessageRec(MessageId.unwrap(messageId)),
+    IO.tryCatch(() => guild.channels.cache.toJSON()),
+    IO.map(
+      List.filter(
+        pipe(ChannelUtils.isBaseGuildTextChannel, refinement.or(ChannelUtils.isThreadChannel)),
+      ),
+    ),
+    Future.fromIOEither,
+    Future.chain(fetchMessageRec(MessageId.unwrap(messageId))),
     debugLeft('fetchMessage'),
   )
 
@@ -578,7 +579,7 @@ const nl = (str: string | undefined): string => (str !== undefined ? `${str}\n` 
 
 const fetchMessageRec =
   (message: string) =>
-  (channels: List<TextChannel>): Future<Maybe<Message>> => {
+  (channels: List<BaseGuildTextChannel | ThreadChannel>): Future<Maybe<Message>> => {
     if (List.isNonEmpty(channels)) {
       const [head, ...tail] = channels
       return pipe(

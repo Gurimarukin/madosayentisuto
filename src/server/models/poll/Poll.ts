@@ -8,17 +8,19 @@ import type { MessageId } from '../MessageId'
 import type { ChoiceWithResponses } from './ChoiceWithResponses'
 import type { PollQuestion } from './PollQuestion'
 import type { PollResponse } from './PollResponse'
+import type { ThreadWithMessage } from './ThreadWithMessage'
 
 export type Poll = {
   readonly message: MessageId
   readonly createdBy: UserId
   readonly question: string
   readonly choices: NonEmptyArray<ChoiceWithResponses>
+  readonly detail: Maybe<ThreadWithMessage>
   readonly isMultiple: boolean
 }
 
 const fromQuestionAndResponses = (
-  { message, createdBy, question, choices, isMultiple }: PollQuestion,
+  { message, createdBy, question, choices, detail, isMultiple }: PollQuestion,
   responses: List<PollResponse>,
 ): Poll => ({
   message,
@@ -36,6 +38,7 @@ const fromQuestionAndResponses = (
       }),
     ),
   ),
+  detail,
   isMultiple,
 })
 

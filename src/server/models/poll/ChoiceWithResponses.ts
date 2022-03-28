@@ -9,8 +9,10 @@ export type ChoiceWithResponses = {
   readonly responses: List<UserId>
 }
 
+const empty = (choice: string): ChoiceWithResponses => ({ choice, responses: [] })
+
 const Lens = {
   responses: pipe(lens.id<ChoiceWithResponses>(), lens.prop('responses')),
 }
 
-export const ChoiceWithResponses = { Lens }
+export const ChoiceWithResponses = { empty, Lens }

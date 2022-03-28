@@ -1,15 +1,17 @@
 import * as C from 'io-ts/Codec'
 
 import { UserId } from '../../../shared/models/guild/UserId'
-import { NonEmptyArray } from '../../../shared/utils/fp'
+import { Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import { MessageId } from '../MessageId'
+import { ThreadWithMessage } from './ThreadWithMessage'
 
 const codec = C.struct({
   message: MessageId.codec,
   createdBy: UserId.codec,
   question: C.string,
   choices: NonEmptyArray.codec(C.string),
+  detail: Maybe.codec(ThreadWithMessage.codec),
   isMultiple: C.boolean,
 })
 

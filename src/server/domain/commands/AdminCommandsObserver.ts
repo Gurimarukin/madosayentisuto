@@ -30,6 +30,7 @@ import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { initCallsMessage } from '../../helpers/messages/initCallsMessage'
+import { ChannelId } from '../../models/ChannelId'
 import { Command } from '../../models/Command'
 import { TSnowflake } from '../../models/TSnowflake'
 import type { Activity } from '../../models/botState/Activity'
@@ -540,7 +541,7 @@ export const AdminCommandsObserver = (
         channel instanceof TextChannel
           ? Future.right(Maybe.some(channel))
           : pipe(
-              discord.fetchChannel(TSnowflake.wrap(channel.id)),
+              discord.fetchChannel(ChannelId.fromChannel(channel)),
               Future.map(Maybe.filter(ChannelUtils.isTextChannel)),
             ),
       ),

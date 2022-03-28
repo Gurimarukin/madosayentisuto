@@ -1,10 +1,19 @@
-import type { Channel, PartialDMChannel } from 'discord.js'
-import { GuildChannel, StageChannel, TextChannel, ThreadChannel, VoiceChannel } from 'discord.js'
+import type { AnyChannel, Channel } from 'discord.js'
+import {
+  BaseGuildTextChannel,
+  GuildChannel,
+  StageChannel,
+  TextChannel,
+  ThreadChannel,
+  VoiceChannel,
+} from 'discord.js'
 import { predicate, refinement } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-type Chan = Channel | PartialDMChannel
+type Chan = AnyChannel | Channel
 
+const isBaseGuildTextChannel = (channel: Chan): channel is BaseGuildTextChannel =>
+  channel instanceof BaseGuildTextChannel
 const isGuildChannel = (channel: Chan): channel is GuildChannel => channel instanceof GuildChannel
 const isStageChannel = (channel: Chan): channel is StageChannel => channel instanceof StageChannel
 const isTextChannel = (channel: Chan): channel is TextChannel => channel instanceof TextChannel
@@ -29,6 +38,7 @@ const isPublic = (channel: VocalChannel): boolean =>
 const isPrivate = predicate.not(isPublic)
 
 export const ChannelUtils = {
+  isBaseGuildTextChannel,
   isGuildChannel,
   isStageChannel,
   isTextChannel,

@@ -5,7 +5,7 @@ import type { Dict, Maybe } from '../../shared/utils/fp'
 import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { TSnowflake } from '../models/TSnowflake'
+import type { ChannelId } from '../models/ChannelId'
 import type { GuildStateDbOutput } from '../models/guildState/db/GuildStateDb'
 import {
   GuildStateDb,
@@ -35,7 +35,7 @@ export const GuildStatePersistence = (Logger: LoggerGetter, mongoCollection: Mon
     find: (id: GuildId): Future<Maybe<GuildStateDb>> =>
       collection.findOne({ id: GuildId.unwrap(id) }),
 
-    listAllItsFridayChannels: (): Future<List<TSnowflake>> => {
+    listAllItsFridayChannels: (): Future<List<ChannelId>> => {
       const projection: Projection = { itsFridayChannel: 1 }
       return pipe(
         collection.findAll([

@@ -1,6 +1,6 @@
 import type { APIUser } from 'discord-api-types/v9'
 import type { User } from 'discord.js'
-import { eq, string } from 'fp-ts'
+import { eq, ord, string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 import type { Newtype } from 'newtype-ts'
@@ -17,5 +17,6 @@ const fromUser = (user: APIUser | User): UserId => wrap(user.id)
 const codec = fromNewtype<UserId>(C.string)
 
 const Eq: eq.Eq<UserId> = pipe(string.Eq, eq.contramap(unwrap))
+const Ord: ord.Ord<UserId> = pipe(string.Ord, ord.contramap(unwrap))
 
-export const UserId = { fromUser, unwrap, codec, Eq }
+export const UserId = { fromUser, unwrap, codec, Eq, Ord }
