@@ -1,6 +1,5 @@
-- poll:
-  - multiple choice option
-  - anonymous option 
+- poll: anonymous option
+- migration
 - decouple autorole and call mention
 - select leave message chan
 - birthdays

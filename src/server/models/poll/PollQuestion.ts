@@ -10,6 +10,7 @@ const codec = C.struct({
   createdBy: UserId.codec,
   question: C.string,
   choices: NonEmptyArray.codec(C.string),
+  isMultiple: C.boolean,
 })
 
 export type PollQuestion = C.TypeOf<typeof codec>

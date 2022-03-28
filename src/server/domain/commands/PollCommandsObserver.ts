@@ -47,6 +47,8 @@ const Keys = {
   poll: 'sondage',
   question: 'question',
   choices: pipe(keysChoices, NonEmptyArray.map(Tuple.fst)),
+  anonymous: 'anonyme',
+  multiple: 'multiple',
   deletePoll: 'Supprimer sondage',
 }
 
@@ -64,14 +66,16 @@ const pollCommand = Command.chatInput({
     List.map(([name, description]) => Command.option.string({ name, description })),
   ),
   Command.option.boolean({
-    name: 'anonyme',
+    name: Keys.anonymous,
     description: 'Visibilité du sondage (visible par défaut)',
+  }),
+  Command.option.boolean({
+    name: Keys.multiple,
+    description: 'Une seule ou plusieurs réponses par votant (une seule par défaut)',
   }),
 )
 
 const messageDeleteCommand = Command.message({ name: Keys.deletePoll })
-
-const isMultiple = false
 
 export const pollCommands = [pollCommand, messageDeleteCommand]
 
@@ -127,10 +131,16 @@ export const PollCommandsObserver = (
         }),
       ),
       futureMaybe.chainFuture(({ channel, question }) =>
-        initPoll(channel, interaction.user, question, getChoices(interaction)),
+        initPoll(channel, interaction.user, question, getChoices(interaction), {
+          isMultiple: interaction.options.getBoolean(Keys.multiple) ?? false,
+        }),
       ),
       Future.map(toUnit),
     )
+  }
+
+  type IsMultiple = {
+    readonly isMultiple: boolean
   }
 
   function initPoll(
@@ -138,12 +148,14 @@ export const PollCommandsObserver = (
     user: User,
     question: string,
     choices: NonEmptyArray<string>,
+    { isMultiple }: IsMultiple,
   ): Future<void> {
     const createdBy = UserId.fromUser(user)
     const options = pollMessage(
       createdBy,
       question,
       pipe(choices, NonEmptyArray.map(ChoiceWithVotesCount.empty)),
+      { isMultiple },
     )
     return pipe(
       DiscordConnector.sendMessage(channel, options),
@@ -157,6 +169,7 @@ export const PollCommandsObserver = (
           createdBy,
           question,
           choices,
+          isMultiple,
         }),
       ),
       futureMaybe.matchE(
@@ -215,8 +228,7 @@ export const PollCommandsObserver = (
                 )
               }
               return pipe(
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                isMultiple
+                poll.isMultiple
                   ? Future.right(poll)
                   : // we want only one response
                     removeResponsesForUser(poll, userId),
@@ -326,6 +338,7 @@ export const PollCommandsObserver = (
               poll.createdBy,
               poll.question,
               pipe(poll.choices, NonEmptyArray.map(ChoiceWithVotesCount.fromChoiceWithResponses)),
+              { isMultiple: poll.isMultiple },
             ),
           ),
         ),

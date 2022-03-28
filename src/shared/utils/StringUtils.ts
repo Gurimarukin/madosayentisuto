@@ -88,6 +88,8 @@ const randomCase = (str: string): string =>
     }),
   )
 
+const booleanLabel = (bool: boolean): string => (bool ? 'Oui' : 'Non')
+
 export const StringUtils = {
   ellipse,
   isEmpty,
@@ -100,4 +102,5 @@ export const StringUtils = {
   prettyMs,
   randomCase,
   stripMargins,
+  booleanLabel,
 }

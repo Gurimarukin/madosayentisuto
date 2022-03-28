@@ -26,10 +26,15 @@ const getEmoji = (i: number): Maybe<string> => List.lookup(i, emojis)
 
 const splitWith = '  '
 
+type IsMultiple = {
+  readonly isMultiple: boolean
+}
+
 export const pollMessage = (
   createdBy: UserId,
   question: string,
   answers: NonEmptyArray<ChoiceWithVotesCount>,
+  { isMultiple }: IsMultiple,
 ): MessageOptions => {
   const total = pipe(
     answers,
@@ -59,7 +64,9 @@ export const pollMessage = (
           `${answersStr}
           |
           |Total de réponses : ${total}
-          |*Sondage créé par <@${UserId.unwrap(createdBy)}>*`,
+          |*Sondage créé par <@${UserId.unwrap(
+            createdBy,
+          )}>* - choix multiple : \`${StringUtils.booleanLabel(isMultiple).toLowerCase()}\``,
         ),
         color: constants.messagesColor,
       }),

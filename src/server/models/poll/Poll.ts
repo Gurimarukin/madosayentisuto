@@ -14,10 +14,11 @@ export type Poll = {
   readonly createdBy: UserId
   readonly question: string
   readonly choices: NonEmptyArray<ChoiceWithResponses>
+  readonly isMultiple: boolean
 }
 
 const fromQuestionAndResponses = (
-  { message, createdBy, question, choices }: PollQuestion,
+  { message, createdBy, question, choices, isMultiple }: PollQuestion,
   responses: List<PollResponse>,
 ): Poll => ({
   message,
@@ -35,6 +36,7 @@ const fromQuestionAndResponses = (
       }),
     ),
   ),
+  isMultiple,
 })
 
 const Lens = {
