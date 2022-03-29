@@ -286,6 +286,7 @@ const interactionEditReply = (
     debugLeft('interactionEditReply'),
   )
 
+// Call this function if you used interactionDeferReply...
 const interactionFollowUp = (
   interaction: MyInteraction,
   options: string | MessagePayload | InteractionReplyOptions,
@@ -295,6 +296,7 @@ const interactionFollowUp = (
     debugLeft('interactionFollowUp'),
   )
 
+// ...or call this one if you didn't call interactionDeferReply.
 const interactionReply = (
   interaction: MyInteraction,
   options: string | MessagePayload | InteractionReplyOptions,
