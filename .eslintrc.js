@@ -135,7 +135,7 @@ module.exports = {
     quotes: ['warn', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
     'react/boolean-prop-naming': ['warn', { validateNested: true }],
     'react/button-has-type': 'warn',
-    'react/display-name': 'warn',
+    'react/display-name': 'off',
     'react/hook-use-state': 'warn',
     'react/jsx-boolean-value': ['warn', 'always'],
     'react/jsx-no-bind': [
