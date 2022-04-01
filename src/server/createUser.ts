@@ -12,8 +12,8 @@ const main: Future<void> = pipe(
   Config.load,
   Future.fromIOEither,
   Future.chain(config => Context.load(config, LoggerGetter.of(['debug', consoleLogFunction]))),
-  Future.chain(({ Logger, userPersistence }) => {
-    const userService = UserService(Logger, userPersistence)
+  Future.chain(({ Logger, userPersistence, jwtHelper }) => {
+    const userService = UserService(Logger, userPersistence, jwtHelper)
     return userService.createUser
   }),
 )

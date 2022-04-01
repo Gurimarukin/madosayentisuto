@@ -8,6 +8,7 @@ import { StringUtils } from '../shared/utils/StringUtils'
 import { Future } from '../shared/utils/fp'
 
 import type { Config } from './Config'
+import { JwtHelper } from './helpers/JwtHelper'
 import { YtDlp } from './helpers/YtDlp'
 import type { LoggerGetter } from './models/logger/LoggerGetter'
 import type { MongoCollection } from './models/mongo/MongoCollection'
@@ -44,6 +45,7 @@ const of = (
   const healthCheckService = HealthCheckService(healthCheckPersistence)
 
   const ytDlp = YtDlp(config.ytDlpPath)
+  const jwtHelper = JwtHelper(config.jwtSecret)
 
   return {
     config,
@@ -56,6 +58,7 @@ const of = (
     userPersistence,
     healthCheckService,
     ytDlp,
+    jwtHelper,
   }
 }
 

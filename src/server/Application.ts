@@ -21,7 +21,6 @@ import { OtherCommandsObserver } from './domain/commands/OtherCommandsObserver'
 import { PollCommandsObserver } from './domain/commands/PollCommandsObserver'
 import { DeployCommandsObserver } from './domain/startup/DeployCommandsObserver'
 import type { DiscordConnector } from './helpers/DiscordConnector'
-import { JwtHelper } from './helpers/JwtHelper'
 import { LogMadEventsObserver } from './helpers/LogMadEventsObserver'
 import { VoiceStateUpdateTransformer } from './helpers/VoiceStateUpdateTransformer'
 import { publishDiscordEvents } from './helpers/publishDiscordEvents'
@@ -55,13 +54,12 @@ export const Application = (
     userPersistence,
     healthCheckService,
     ytDlp,
+    jwtHelper,
   }: Context,
 ): IO<void> => {
   const logger = Logger('Application')
 
   const clientId = config.client.id
-
-  const jwtHelper = JwtHelper(config.jwtSecret)
 
   const botStateService = BotStateService(Logger, discord, botStatePersistence)
   const guildStateService = GuildStateService(Logger, discord, ytDlp, guildStatePersistence)
