@@ -12,6 +12,7 @@ const codec = C.struct({
   question: C.string,
   choices: NonEmptyArray.codec(C.string),
   detail: Maybe.codec(ThreadWithMessage.codec),
+  isAnonymous: C.boolean,
   isMultiple: C.boolean,
 })
 

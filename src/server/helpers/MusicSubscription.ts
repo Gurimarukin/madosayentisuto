@@ -356,10 +356,9 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
   function playTrackNow(audioPlayer: AudioPlayer, track: Track): Future<void> {
     return pipe(
       ytDlp.audioResource(track.url),
-      Future.map(audioResource =>
+      Future.chainIOEitherK(audioResource =>
         DiscordConnector.audioPlayerPlayAudioResource(audioPlayer, audioResource),
       ),
-      Future.chain(Future.fromIOEither),
       Future.chain(() =>
         updateState(
           flow(MusicState.setPlaying(Maybe.some(track)), MusicState.setAudioPlayerStatePlaying),

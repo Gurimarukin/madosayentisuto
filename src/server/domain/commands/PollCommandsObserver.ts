@@ -1,5 +1,5 @@
 import type { APIMessage } from 'discord-api-types/payloads/v9'
-import type { Guild, Message } from 'discord.js'
+import type { Guild, Message, ThreadChannel } from 'discord.js'
 import type {
   ButtonInteraction,
   CommandInteraction,
@@ -174,7 +174,12 @@ export const PollCommandsObserver = (
         apply.sequenceS(Future.ApplyPar)({
           // we want the `(edited)` label on message so we won't have a layout shift
           message: DiscordConnector.messageEdit(message, options),
-          detail: initDetailMessage(choices, { isAnonymous }, message),
+          detail: isAnonymous
+            ? futureMaybe.none
+            : initDetailMessage(
+                pipe(choices, NonEmptyArray.map(ChoiceWithResponses.empty)),
+                message,
+              ),
         }),
       ),
       futureMaybe.chainTaskEitherK(({ message, detail }) =>
@@ -185,41 +190,13 @@ export const PollCommandsObserver = (
           choices,
           detail,
           isMultiple,
+          isAnonymous,
         }),
       ),
       futureMaybe.matchE(
         () => Future.unit,
         success =>
           success ? Future.unit : Future.fromIOEither(logger.warn('Failed to create poll')),
-      ),
-    )
-  }
-
-  function initDetailMessage(
-    choices: NonEmptyArray<string>,
-    { isAnonymous }: IsAnonymous,
-    pollMessage: Message,
-  ): Future<Maybe<ThreadWithMessage>> {
-    if (isAnonymous) return futureMaybe.none
-
-    const options = PollMessage.detail(pipe(choices, NonEmptyArray.map(ChoiceWithResponses.empty)))
-    return pipe(
-      DiscordConnector.messageStartThread(pollMessage, {
-        name: threadName,
-        autoArchiveDuration: 'MAX',
-      }),
-      futureMaybe.fromTaskEither,
-      futureMaybe.bindTo('thread'),
-      futureMaybe.bind('message', ({ thread }) => DiscordConnector.sendMessage(thread, options)),
-      // we want the `(edited)` label on message so we won't have a layout shift
-      futureMaybe.chainFirstTaskEitherK(({ message }) =>
-        DiscordConnector.messageEdit(message, options),
-      ),
-      futureMaybe.map(
-        ({ thread, message }): ThreadWithMessage => ({
-          thread: ChannelId.fromChannel(thread),
-          message: MessageId.fromMessage(message),
-        }),
       ),
     )
   }
@@ -262,7 +239,7 @@ export const PollCommandsObserver = (
           poll.choices,
           List.lookup(choiceIndex),
           Maybe.fold(
-            () => Future.right(Maybe.none),
+            () => futureMaybe.none,
             choice => {
               const alreadyVotedForChoice = pipe(
                 choice.responses,
@@ -395,35 +372,121 @@ export const PollCommandsObserver = (
             poll.createdBy,
             poll.question,
             pipe(poll.choices, NonEmptyArray.map(ChoiceWithVotesCount.fromChoiceWithResponses)),
-            { isAnonymous: Maybe.isNone(poll.detail), isMultiple: poll.isMultiple },
+            { isAnonymous: poll.isAnonymous, isMultiple: poll.isMultiple },
           ),
         ),
       ),
     )
   }
 
-  function refreshDetailMessage(guild: Guild, poll: Poll): Future<Maybe<Message>> {
+  function refreshDetailMessage(guild: Guild, poll: Poll): Future<void> {
+    if (poll.isAnonymous) return Future.unit
+
     return pipe(
       futureMaybe.fromOption(poll.detail),
-      futureMaybe.chain(detail =>
+      futureMaybe.chainTaskEitherK(detail =>
         pipe(
           DiscordConnector.fetchMessage(guild, detail.message),
-          Future.chainFirstIOEitherK<Maybe<Message>, void>(
+          Future.chain(
             Maybe.fold(
+              // maybe the thread got deleted?
               () =>
-                LogUtils.pretty(logger, guild).warn(
-                  `Couldn't fetch detail message ${MessageId.unwrap(detail.message)}`,
+                pipe(
+                  discord.fetchChannel(detail.thread),
+                  futureMaybe.filter(ChannelUtils.isThreadChannel),
+                  Future.chain(reInitDetailMessage(guild, poll)),
                 ),
-              () => IO.unit,
+              message =>
+                pipe(
+                  DiscordConnector.messageEdit(message, PollMessage.detail(poll.choices)),
+                  Future.map(toUnit),
+                ),
             ),
           ),
         ),
       ),
-      futureMaybe.chainTaskEitherK(message =>
-        DiscordConnector.messageEdit(message, PollMessage.detail(poll.choices)),
+      Future.map(toUnit),
+    )
+  }
+
+  function reInitDetailMessage(
+    guild: Guild,
+    poll: Poll,
+  ): (thread: Maybe<ThreadChannel>) => Future<void> {
+    return maybeThread =>
+      pipe(
+        DiscordConnector.fetchMessage(guild, poll.message),
+        futureMaybe.chain(pollMessage =>
+          pipe(
+            maybeThread,
+            Maybe.fold(
+              () => initDetailMessage(poll.choices, pollMessage),
+              // the tread still exist, don't recreate it
+              thread => initDetailMessageFromThread(poll.choices, pollMessage, thread),
+            ),
+          ),
+        ),
+        futureMaybe.chainTaskEitherK(detail => pollService.setPollDetail(poll.message, detail)),
+        Future.map(toUnit),
+      )
+  }
+
+  function initDetailMessage(
+    choices: NonEmptyArray<ChoiceWithResponses>,
+    pollMessage: Message,
+  ): Future<Maybe<ThreadWithMessage>> {
+    return pipe(
+      DiscordConnector.messageStartThread(pollMessage, {
+        name: threadName,
+        autoArchiveDuration: 'MAX',
+      }),
+      Future.chain(thread => initDetailMessageFromThread(choices, pollMessage, thread)),
+    )
+  }
+
+  function initDetailMessageFromThread(
+    choices: NonEmptyArray<ChoiceWithResponses>,
+    pollMessage: Message,
+    thread: ThreadChannel,
+  ): Future<Maybe<ThreadWithMessage>> {
+    const options = PollMessage.detail(choices)
+    return pipe(
+      DiscordConnector.sendMessage(thread, options),
+      futureMaybe.chainFirstTaskEitherK(message =>
+        // we want the `(edited)` label on message so we won't have a layout shift
+        DiscordConnector.messageEdit(message, options),
+      ),
+      futureMaybe.map(
+        (message): ThreadWithMessage => ({
+          thread: ChannelId.fromChannel(thread),
+          message: MessageId.fromMessage(message),
+        }),
       ),
     )
   }
+
+  // function refreshDetailMessage(guild: Guild, poll: Poll): Future<Maybe<Message>> {
+  //   return pipe(
+  //     futureMaybe.fromOption(poll.detail),
+  //     futureMaybe.chain(detail =>
+  //       pipe(
+  //         DiscordConnector.fetchMessage(guild, detail.message),
+  //         Future.chainFirstIOEitherK<Maybe<Message>, void>(
+  //           Maybe.fold(
+  //             () =>
+  //               LogUtils.pretty(logger, guild).warn(
+  //                 `Couldn't fetch detail message ${MessageId.unwrap(detail.message)}`,
+  //               ),
+  //             () => IO.unit,
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //     futureMaybe.chainTaskEitherK(message =>
+  //       DiscordConnector.messageEdit(message, PollMessage.detail(poll.choices)),
+  //     ),
+  //   )
+  // }
 
   // onMessageContextMenu
   function onMessageContextMenu(interaction: MessageContextMenuInteraction): Future<void> {

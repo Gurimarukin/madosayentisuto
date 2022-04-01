@@ -38,6 +38,8 @@ export const PollService = (
       ),
     ),
 
+  setPollDetail: pollQuestionPersistence.setDetail,
+
   removeResponse: pollResponsePersistence.remove,
 
   removeResponsesForUser: pollResponsePersistence.removeForUser,

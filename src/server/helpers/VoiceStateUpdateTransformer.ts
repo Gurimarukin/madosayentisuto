@@ -88,7 +88,7 @@ export const VoiceStateUpdateTransformer = (
         `${member.user.tag} moved from channel #${from.name} to #${to.name}`,
       ),
       Future.fromIOEither,
-      Future.map(() => {
+      Future.chainIOEitherK(() => {
         if (member.id === clientId) return IO.unit
 
         const inPublicChans = peopleInPublicVocalChans(member.guild)
@@ -111,7 +111,6 @@ export const VoiceStateUpdateTransformer = (
 
         return IO.unit
       }),
-      Future.chain(Future.fromIOEither),
     )
   }
 

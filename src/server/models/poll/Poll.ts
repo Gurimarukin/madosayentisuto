@@ -16,11 +16,12 @@ export type Poll = {
   readonly question: string
   readonly choices: NonEmptyArray<ChoiceWithResponses>
   readonly detail: Maybe<ThreadWithMessage>
+  readonly isAnonymous: boolean
   readonly isMultiple: boolean
 }
 
 const fromQuestionAndResponses = (
-  { message, createdBy, question, choices, detail, isMultiple }: PollQuestion,
+  { message, createdBy, question, choices, detail, isAnonymous, isMultiple }: PollQuestion,
   responses: List<PollResponse>,
 ): Poll => ({
   message,
@@ -39,6 +40,7 @@ const fromQuestionAndResponses = (
     ),
   ),
   detail,
+  isAnonymous,
   isMultiple,
 })
 

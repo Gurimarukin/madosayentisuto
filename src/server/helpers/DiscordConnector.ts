@@ -104,6 +104,7 @@ const of = (client: Client<true>) => {
       pipe(
         Future.tryCatch(() => client.channels.fetch(ChannelId.unwrap(channelId))),
         Future.map(Maybe.fromNullable),
+        Future.orElse(e => (isUnknownChannelError(e) ? futureMaybe.none : Future.left(e))),
         debugLeft('fetchChannel'),
       ),
 
@@ -154,7 +155,7 @@ const fetchAuditLogs = <A extends GuildAuditLogsResolvable = 'ALL'>(
   pipe(
     Future.tryCatch(() => guild.fetchAuditLogs<A>({ ...options, limit: constants.fetchLogsLimit })),
     Future.map(logs => Maybe.some(logs.entries)),
-    Future.orElse(e => (isMissingPermissionsError(e) ? Future.right(Maybe.none) : Future.left(e))),
+    Future.orElse(e => (isMissingPermissionsError(e) ? futureMaybe.none : Future.left(e))),
     debugLeft('fetchAuditLogs'),
   )
 
@@ -422,7 +423,7 @@ const sendMessage = (
     debugLeft('sendMessage'),
     // Future.orElse<Maybe<Message>>(e =>
     //   e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user'
-    //     ? Future.right(Maybe.none)
+    //     ? futureMaybe.none
     //     : Future.left(e),
     // ),
   )
@@ -558,6 +559,7 @@ const isDiscordAPIError =
 const isMissingAccessError = isDiscordAPIError('Missing Access')
 export const isMissingPermissionsError = isDiscordAPIError('Missing Permissions')
 export const isUnknownMessageError = isDiscordAPIError('Unknown Message')
+const isUnknownChannelError = isDiscordAPIError('Unknown Channel')
 
 const isMissingAccessOrMissingPermissionError = pipe(
   isMissingAccessError,
@@ -586,12 +588,10 @@ const fetchMessageRec =
         Future.tryCatch(() => head.messages.fetch(message)),
         Future.map(Maybe.some),
         Future.orElse(e =>
-          isMissingAccessOrUnknownMessageError(e)
-            ? Future.right<Maybe<Message>>(Maybe.none)
-            : Future.left(e),
+          isMissingAccessOrUnknownMessageError(e) ? futureMaybe.none : Future.left(e),
         ),
         futureMaybe.matchE(() => fetchMessageRec(message)(tail), flow(Maybe.some, Future.right)),
       )
     }
-    return Future.right(Maybe.none)
+    return futureMaybe.none
   }

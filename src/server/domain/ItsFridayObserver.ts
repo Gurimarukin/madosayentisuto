@@ -28,6 +28,14 @@ export const ItsFridayObserver = (Logger: LoggerGetter, guildStateService: Guild
     'CronJob',
   )(({ date }) => {
     const isFriday = DayJs.day.get(date) === 5
+    console.log(
+      DayJs.toISOString(date),
+      'isFriday, hour, rangeStart, isHourSharp =',
+      isFriday,
+      DayJs.hour.get(date),
+      rangeStart,
+      pipe(date, DayJs.isHourSharp(rangeStart)),
+    )
     return isFriday && pipe(date, DayJs.isHourSharp(rangeStart))
       ? delaySendAllMessages(date)
       : Future.unit
@@ -65,7 +73,7 @@ export const ItsFridayObserver = (Logger: LoggerGetter, guildStateService: Guild
         content: `C'est vrai.`,
         files: [new MessageAttachment(constants.itsFridayUrl)],
       }),
-      Future.map(
+      Future.chainIOEitherK(
         Maybe.fold(
           () =>
             logger.warn(
@@ -78,7 +86,6 @@ export const ItsFridayObserver = (Logger: LoggerGetter, guildStateService: Guild
           () => IO.unit,
         ),
       ),
-      Future.chain(Future.fromIOEither),
     )
   }
 }

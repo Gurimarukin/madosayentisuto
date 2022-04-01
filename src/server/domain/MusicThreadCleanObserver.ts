@@ -50,8 +50,7 @@ export const MusicThreadCleanObserver = (
   function getSubscriptionThread(guild: Guild): Future<Maybe<ThreadChannel>> {
     return pipe(
       guildStateService.getSubscription(guild),
-      Future.map(subscription => subscription.getState),
-      Future.chain(Future.fromIOEither),
+      Future.chainIOEitherK(subscription => subscription.getState),
       Future.map(state => state.message),
       futureMaybe.chain(message => futureMaybe.fromNullable(message.thread)),
     )

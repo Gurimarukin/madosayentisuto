@@ -53,13 +53,12 @@ export const CallsAutoroleObserver = (
         ? Future.right(true)
         : pipe(
             DiscordConnector.roleAdd(member, calls.role),
-            Future.map(success => {
+            Future.chainIOEitherK(success => {
               const log = LogUtils.pretty(logger, guild)
               return success
                 ? log.info(`Added ${member.user.tag} to role @${calls.role.name}`)
                 : log.info(`Couldn't add ${member.user.tag} to role @${calls.role.name}`)
             }),
-            Future.chain(Future.fromIOEither),
             Future.map(() => true),
           ),
     )
@@ -71,13 +70,12 @@ export const CallsAutoroleObserver = (
         ? Future.right(true)
         : pipe(
             DiscordConnector.roleRemove(member, calls.role),
-            Future.map(success => {
+            Future.chainIOEitherK(success => {
               const log = LogUtils.pretty(logger, guild)
               return success
                 ? log.info(`Removed ${member.user.tag} from role @${calls.role.name}`)
                 : log.info(`Couldn't remove ${member.user.tag} from role @${calls.role.name}`)
             }),
-            Future.chain(Future.fromIOEither),
             Future.map(() => true),
           ),
     )

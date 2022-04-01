@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/function'
 
-import type { Maybe } from '../../shared/utils/fp'
+import { Maybe } from '../../shared/utils/fp'
 import { NonEmptyArray } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
@@ -10,6 +10,7 @@ import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { PollQuestionOutput } from '../models/poll/PollQuestion'
 import { PollQuestion } from '../models/poll/PollQuestion'
+import { ThreadWithMessage } from '../models/poll/ThreadWithMessage'
 
 export type PollQuestionPersistence = ReturnType<typeof PollQuestionPersistence>
 
@@ -37,6 +38,19 @@ export const PollQuestionPersistence = (Logger: LoggerGetter, mongoCollection: M
         collection.insertOne(question),
         Future.map(r => r.acknowledged),
       ),
+
+    setDetail: (message: MessageId, detail: ThreadWithMessage): Future<boolean> => {
+      const encodedDetail = Maybe.encoder(ThreadWithMessage.codec).encode(Maybe.some(detail))
+      return pipe(
+        collection.collection(coll =>
+          coll.updateOne(
+            { message: MessageId.unwrap(message) },
+            { $set: { detail: encodedDetail } },
+          ),
+        ),
+        Future.map(r => r.modifiedCount + r.upsertedCount <= 1),
+      )
+    },
 
     removeForMessages: (messages: NonEmptyArray<MessageId>): Future<number> =>
       pipe(
