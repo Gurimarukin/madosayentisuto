@@ -2,6 +2,8 @@ import { apply, chain as fpTsChain, functor, optionT } from 'fp-ts'
 import type { Apply1 } from 'fp-ts/Apply'
 import type { Chain1 } from 'fp-ts/Chain'
 import type { Functor1 } from 'fp-ts/Functor'
+import type { Predicate } from 'fp-ts/Predicate'
+import type { Refinement } from 'fp-ts/Refinement'
 import type { Lazy } from 'fp-ts/function'
 import { flow, identity, pipe } from 'fp-ts/function'
 
@@ -67,6 +69,14 @@ const chainFirstIOEitherK = <A, B>(
 const chainOption: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
   optionT.chainOptionK(Future.Monad)
 
+type Filter = {
+  <A, B extends A>(refinement: Refinement<A, B>): (fa: Future<Maybe<A>>) => Future<Maybe<B>>
+  <A>(predicate: Predicate<A>): <B extends A>(fb: Future<Maybe<B>>) => Future<Maybe<B>>
+  <A>(predicate: Predicate<A>): (fa: Future<Maybe<A>>) => Future<Maybe<A>>
+}
+
+const filter = flow(Maybe.filter, Future.map) as Filter
+
 const fromTaskEither: <A>(fa: Future<A>) => Future<Maybe<A>> = optionT.fromF(Future.Functor)
 
 const fromNullable: <A>(a: A) => Future<Maybe<NonNullable<A>>> = optionT.fromNullable(
@@ -103,6 +113,7 @@ export const futureMaybe = {
   chainFirstTaskEitherK,
   chainFirstIOEitherK,
   chainOption,
+  filter,
   fromTaskEither,
   fromNullable,
   fromOption,

@@ -15,17 +15,17 @@ export type HttpOptions<O, B> = Omit<Options, 'method' | 'json'> & {
 }
 
 export function http<O, B>(
-  methodWithUrl: Tuple<HttpMethod, string>,
+  methodWithUrl: Tuple<string, HttpMethod>,
   options?: HttpOptions<O, B>,
 ): Promise<unknown>
 export function http<A, O, B>(
-  methodWithUrl: Tuple<HttpMethod, string>,
+  methodWithUrl: Tuple<string, HttpMethod>,
   options: HttpOptions<O, B>,
   decoderWithName: Tuple<Decoder<unknown, A>, string>,
 ): Promise<A>
 export function http<A, O, B>(
-  [method, url]: Tuple<HttpMethod, string>,
-  options: HttpOptions<O, B> = {},
+  [url, method]: Tuple<string, HttpMethod>,
+  { credentials, ...options }: HttpOptions<O, B> = {},
   decoderWithName?: Tuple<Decoder<unknown, A>, string>,
 ): Promise<A> {
   const json = ((): O | undefined => {
@@ -33,7 +33,12 @@ export function http<A, O, B>(
     const [encoder, b] = options.json
     return encoder.encode(b)
   })()
-  return ky(new URL(url, config.apiHost), { ...options, method, json })
+  return ky(new URL(url, config.apiHost), {
+    ...options,
+    method,
+    json,
+    credentials: credentials === undefined ? 'include' : credentials,
+  })
     .json()
     .then(u => {
       if (decoderWithName === undefined) return Promise.resolve(u as A)
@@ -43,7 +48,6 @@ export function http<A, O, B>(
         Either.fold(
           flow(decodeError(decoderName)(u), error => {
             console.error(error)
-            // eslint-disable-next-line functional/no-promise-reject
             return Promise.reject(error)
           }),
           a => Promise.resolve(a),

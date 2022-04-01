@@ -13,13 +13,17 @@ import { StringUtils } from '../../shared/utils/StringUtils'
 import { Dict, Future, IO, List, Maybe, toUnit } from '../../shared/utils/fp'
 
 import type { HttpConfig } from '../Config'
-import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import type { EndedMiddleware, MyMiddleware } from './models/MyMiddleware'
 import { MyMiddleware as M } from './models/MyMiddleware'
 import type { Route } from './models/Route'
 
-const allowedHeaders = ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
-const allowedMethods = ['GET', 'POST', 'DELETE']
+const accessControl = {
+  allowCredentials: true,
+  allowMethods: ['GET', 'POST', 'DELETE'],
+  allowHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+  exposeHeaders: ['Set-Cookie'],
+}
 
 // eslint-disable-next-line functional/prefer-readonly-type
 type Header = string | string[] | undefined
@@ -65,18 +69,18 @@ export const startWebServer = (
             u => filterOrigin(u),
             Maybe.fold(next, origin => {
               /* eslint-disable functional/no-expression-statement */
-              res.header('Access-Control-Allow-Origin', origin)
+              res.header({
+                'Access-Control-Allow-Origin': origin,
+                ...(accessControl.allowCredentials
+                  ? { 'Access-Control-Allow-Credentials': true }
+                  : {}),
+                'Access-Control-Expose-Headers': headers(accessControl.exposeHeaders),
+              })
               if (req.method === 'OPTIONS') {
                 res
                   .header({
-                    'Access-Control-Allow-Headers': pipe(
-                      allowedHeaders,
-                      StringUtils.mkString(', '),
-                    ),
-                    'Access-Control-Allow-Methods': pipe(
-                      allowedMethods,
-                      StringUtils.mkString(', '),
-                    ),
+                    'Access-Control-Allow-Methods': headers(accessControl.allowMethods),
+                    'Access-Control-Allow-Headers': headers(accessControl.allowHeaders),
                   })
                   .send()
               } else {
@@ -104,7 +108,7 @@ export const startWebServer = (
                 parse<EndedMiddleware>(
                   altedRoutes[method],
                   FpTsRoute.parse(req.url),
-                  M.text(Status.NotFound)(),
+                  M.sendWithStatus(Status.NotFound)(''),
                 ),
                 M.orElse(handleError),
                 logMiddleware,
@@ -128,7 +132,7 @@ export const startWebServer = (
     return pipe(
       logger.error(e),
       M.fromIOEither,
-      M.ichain(() => M.text(Status.InternalServerError)()),
+      M.ichain(() => M.sendWithStatus(Status.InternalServerError)('')),
     )
   }
 
@@ -187,3 +191,5 @@ const errorHandler =
     res.status(500).end()
     /* eslint-enable functional/no-expression-statement */
   }
+
+const headers = (values: List<string>): string => pipe(values, StringUtils.mkString(', '))

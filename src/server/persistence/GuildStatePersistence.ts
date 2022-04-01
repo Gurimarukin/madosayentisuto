@@ -11,7 +11,7 @@ import {
   GuildStateDb,
   GuildStateDbOnlyItsFridayChannel,
 } from '../models/guildState/db/GuildStateDb'
-import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 
 type Projection = Partial<Dict<keyof GuildStateDbOutput, 1>>

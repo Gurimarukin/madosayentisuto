@@ -2,9 +2,9 @@ import type { Match, Parser } from 'fp-ts-routing'
 import { end } from 'fp-ts-routing'
 import { format, lit, str } from 'fp-ts-routing'
 
+import type { DiscordUserId } from './models/DiscordUserId'
 import type { Method } from './models/Method'
 import type { GuildId } from './models/guild/GuildId'
-import type { UserId } from './models/guild/UserId'
 import { RouterUtils } from './utils/RouterUtils'
 import type { Tuple } from './utils/fp'
 
@@ -17,43 +17,36 @@ const { codec } = RouterUtils
 // intermediate
 const api = lit('api')
 const apiHealthcheck = api.then(lit('healthcheck'))
+const apiLogin = api.then(lit('login'))
 const apiGuilds = api.then(lit('guilds'))
 const apiGuild = api.then(lit('guild')).then(codec('guildId')<GuildId>(str))
-const apiMember = api.then(lit('member')).then(codec('userId')<UserId>(str))
+const apiMember = api.then(lit('member')).then(codec('userId')<DiscordUserId>(str))
 const apiMemberBirthdate = apiMember.then(lit('birthdate'))
 
 // final
-const getApiHealthcheck = m('get', apiHealthcheck.then(end))
-const getApiGuilds = m('get', apiGuilds.then(end))
-const getApiGuild = m('get', apiGuild.then(end))
+const healthcheckGet = m(apiHealthcheck, 'get')
 
-const postApiMemberBirthdate = m('post', apiMemberBirthdate)
+const loginPost = m(apiLogin, 'post')
 
-const deleteApiMemberBirthdate = m('delete', apiMemberBirthdate)
+const guildsGet = m(apiGuilds, 'get')
+const guildGet = m(apiGuild, 'get')
+
+const memberBirthdatePost = m(apiMemberBirthdate, 'post')
+const memberBirthdateDelete = m(apiMemberBirthdate, 'delete')
 
 /**
  * parsers
  */
+
 export const apiParsers = {
-  get: {
-    api: {
-      healthcheck: p(getApiHealthcheck),
-      guilds: p(getApiGuilds),
-      guild: p(getApiGuild),
-    },
-  },
-  post: {
-    api: {
-      member: {
-        birthdate: p(postApiMemberBirthdate),
-      },
-    },
-  },
-  delete_: {
-    api: {
-      member: {
-        birthdate: p(deleteApiMemberBirthdate),
-      },
+  healthcheck: { get: p(healthcheckGet) },
+  login: { post: p(loginPost) },
+  guilds: { get: p(guildsGet) },
+  guild: { get: p(guildGet) },
+  member: {
+    birthdate: {
+      post: p(memberBirthdatePost),
+      del3te: p(memberBirthdateDelete),
     },
   },
 }
@@ -61,45 +54,35 @@ export const apiParsers = {
 /**
  * formats
  */
+
 export const apiRoutes = {
-  get: {
-    api: {
-      guilds: r(getApiGuilds, {}),
-      guild: (guildId: GuildId) => r(getApiGuild, { guildId }),
-    },
-  },
-  post: {
-    api: {
-      member: {
-        birthdate: (userId: UserId) => r(postApiMemberBirthdate, { userId }),
-      },
-    },
-  },
-  delete_: {
-    api: {
-      member: {
-        birthdate: (userId: UserId) => r(deleteApiMemberBirthdate, { userId }),
-      },
+  login: { post: r(loginPost, {}) },
+  guilds: { get: r(guildsGet, {}) },
+  guild: { get: (guildId: GuildId) => r(guildGet, { guildId }) },
+  member: {
+    birthdate: {
+      post: (userId: DiscordUserId) => r(memberBirthdatePost, { userId }),
+      del3te: (userId: DiscordUserId) => r(memberBirthdateDelete, { userId }),
     },
   },
 }
 
-type MethodWith<A> = Tuple<Method, A>
-type MethodWithMatch<A> = MethodWith<Match<A>>
-export type MethodWithParser<A> = MethodWith<Parser<A>>
-type MethodWithRoute = MethodWith<string>
+type WithMethod<A> = Tuple<A, Method>
+type MatchWithMethod<A> = WithMethod<Match<A>>
+export type ParserWithMethod<A> = WithMethod<Parser<A>>
+type RouteWithMethod = WithMethod<string>
 
 // Match with Method
-function m<A>(method: Method, match: Match<A>): MethodWithMatch<A> {
-  return [method, match]
+function m<A>(match: Match<A>, method: Method): MatchWithMethod<A> {
+  return [match.then(end), method]
 }
 
 // Parser with Method
-function p<A>([method, match]: MethodWithMatch<A>): MethodWithParser<A> {
-  return [method, match.parser]
+function p<A>([match, method]: MatchWithMethod<A>): ParserWithMethod<A> {
+  return [match.parser, method]
 }
 
 // Route with Method
-function r<A>([method, match]: MethodWithMatch<A>, a: A): MethodWithRoute {
-  return [method, format(match.formatter, a)]
+function r<A>([match, method]: MatchWithMethod<A>, a: A): RouteWithMethod {
+  return [format(match.formatter, a), method]
 }

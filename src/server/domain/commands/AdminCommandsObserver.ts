@@ -19,8 +19,8 @@ import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 import type { Decoder } from 'io-ts/Decoder'
 
+import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
-import { UserId } from '../../../shared/models/guild/UserId'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import { toUnit } from '../../../shared/utils/fp'
 import { IO } from '../../../shared/utils/fp'
@@ -38,7 +38,7 @@ import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { Calls } from '../../models/guildState/Calls'
 import type { GuildState } from '../../models/guildState/GuildState'
-import type { LoggerGetter } from '../../models/logger/LoggerType'
+import type { LoggerGetter } from '../../models/logger/LoggerGetter'
 import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 import type { BotStateService } from '../../services/BotStateService'
 import type { GuildStateService } from '../../services/GuildStateService'
@@ -529,7 +529,7 @@ export const AdminCommandsObserver = (
       futureMaybe.chain(({ user }) =>
         user instanceof User
           ? Future.right(Maybe.some(user))
-          : discord.fetchUser(UserId.fromUser(user)),
+          : discord.fetchUser(DiscordUserId.fromUser(user)),
       ),
     )
   }

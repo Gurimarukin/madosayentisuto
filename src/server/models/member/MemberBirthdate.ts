@@ -1,11 +1,11 @@
 import * as C from 'io-ts/Codec'
 
-import { UserId } from '../../../shared/models/guild/UserId'
+import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 
 import { Birthdate } from './Birthdate'
 
 const codec = C.struct({
-  id: UserId.codec,
+  id: DiscordUserId.codec,
   birthdate: Birthdate.codec,
 })
 

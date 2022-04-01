@@ -104,7 +104,6 @@ module.exports = {
       },
     ],
     'functional/no-mixed-type': 'off',
-    'functional/no-promise-reject': 'error',
     'functional/no-return-void': ['error', { ignoreImplicit: true }],
     'max-len': [
       'warn',
@@ -134,7 +133,11 @@ module.exports = {
     'object-shorthand': 'warn',
     'prettier/prettier': 'off',
     quotes: ['warn', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
-    'react/display-name': 'off',
+    'react/boolean-prop-naming': ['warn', { validateNested: true }],
+    'react/button-has-type': 'warn',
+    'react/display-name': 'warn',
+    'react/hook-use-state': 'warn',
+    'react/jsx-boolean-value': ['warn', 'always'],
     'react/jsx-no-bind': [
       'warn',
       {
@@ -145,6 +148,7 @@ module.exports = {
         allowBind: false,
       },
     ],
+    'react/no-array-index-key': 'warn',
     'react/no-unescaped-entities': 'off',
     'react/prop-types': 'off',
     'react/self-closing-comp': ['warn', { component: true, html: true }],

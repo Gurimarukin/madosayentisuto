@@ -6,13 +6,13 @@ import type { Optional } from 'monocle-ts/Optional'
 
 import { List, Maybe } from '../../utils/fp'
 import type { DayJs } from '../DayJs'
+import type { DiscordUserId } from '../DiscordUserId'
 import { GuildEmojiView } from './GuildEmojiView'
 import { GuildId } from './GuildId'
 import { MemberView } from './MemberView'
-import type { UserId } from './UserId'
 
 type MemberIdWithBirthdate = {
-  readonly id: UserId
+  readonly id: DiscordUserId
   readonly birthdate: DayJs
 }
 
@@ -46,7 +46,7 @@ const updateBirthdates =
     )
 
 const Lens = {
-  member: (member: UserId): Optional<GuildView, MemberView> =>
+  member: (member: DiscordUserId): Optional<GuildView, MemberView> =>
     pipe(
       lens.id<GuildView>(),
       lens.prop('members'),

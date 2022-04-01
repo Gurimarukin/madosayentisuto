@@ -6,7 +6,7 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
-import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'

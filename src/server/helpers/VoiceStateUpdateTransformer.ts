@@ -11,7 +11,7 @@ import type {
   MadEventVoiceStateUpdate,
 } from '../models/event/MadEvent'
 import { MadEvent } from '../models/event/MadEvent'
-import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { TSubject } from '../models/rx/TSubject'
 import { ChannelUtils } from '../utils/ChannelUtils'

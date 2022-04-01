@@ -28,8 +28,6 @@ export const constants = {
     characters: emojiCharacters(),
   } as const,
 
-  retryEnsuringIndexes: MsDuration.minutes(1),
-
   messagesColor: darkred,
 
   defaultActivity: Activity.of('PLAYING', 'hisser les voiles...'),
@@ -41,8 +39,18 @@ export const constants = {
 
   pollGraphWidth: 20, // chars
 
+  // kicks/bans
   fetchLogsLimit: 30,
   networkTolerance: MsDuration.seconds(4),
+
+  // webapp
+  account: {
+    tokenTtl: MsDuration.days(30),
+    cookie: {
+      name: 'userAccount',
+      ttl: MsDuration.days(30),
+    },
+  },
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

@@ -2,15 +2,15 @@ import { pipe } from 'fp-ts/function'
 import React from 'react'
 import type { SWRResponse } from 'swr'
 
-import { apiRoutes } from '../../shared/ApiRouter'
-import type { GuildId } from '../../shared/models/guild/GuildId'
-import { GuildView } from '../../shared/models/guild/GuildView'
-import { Maybe } from '../../shared/utils/fp'
+import { apiRoutes } from '../../../shared/ApiRouter'
+import type { GuildId } from '../../../shared/models/guild/GuildId'
+import { GuildView } from '../../../shared/models/guild/GuildView'
+import { Maybe } from '../../../shared/utils/fp'
 
-import { Link } from '../components/Link'
-import { useHttp } from '../hooks/useHttp'
-import { appRoutes } from '../router/AppRouter'
-import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
+import { Link } from '../../components/Link'
+import { useHttp } from '../../hooks/useHttp'
+import { appRoutes } from '../../router/AppRouter'
+import { basicAsyncRenderer } from '../../utils/basicAsyncRenderer'
 
 type Props = {
   readonly guildId: GuildId
@@ -22,7 +22,7 @@ type Props = {
 }
 
 export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element => {
-  const response = useHttp(apiRoutes.get.api.guild(guildId), {}, [GuildView.codec, 'GuildView'])
+  const response = useHttp(apiRoutes.guild.get(guildId), {}, [GuildView.codec, 'GuildView'])
   const { data: guild, ...rest } = response
 
   return (

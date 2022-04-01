@@ -1,12 +1,12 @@
 import { pipe } from 'fp-ts/function'
 
-import { UserId } from '../../shared/models/guild/UserId'
+import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { Future, NonEmptyArray } from '../../shared/utils/fp'
 import type { List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import { MessageId } from '../models/MessageId'
-import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { PollResponseOutput } from '../models/poll/PollResponse'
 import { PollResponse } from '../models/poll/PollResponse'
@@ -42,17 +42,17 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
       pipe(
         collection.deleteOne({
           message: MessageId.unwrap(message),
-          user: UserId.unwrap(user),
+          user: DiscordUserId.unwrap(user),
           choiceIndex,
         }),
         Future.map(r => r.deletedCount === 1),
       ),
 
-    removeForUser: (message: MessageId, user: UserId): Future<number> =>
+    removeForUser: (message: MessageId, user: DiscordUserId): Future<number> =>
       pipe(
         collection.deleteMany({
           message: MessageId.unwrap(message),
-          user: UserId.unwrap(user),
+          user: DiscordUserId.unwrap(user),
         }),
         Future.map(r => r.deletedCount),
       ),

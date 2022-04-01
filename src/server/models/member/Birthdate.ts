@@ -3,7 +3,7 @@ import * as C from 'io-ts/Codec'
 import type { Codec } from 'io-ts/Codec'
 import type { Decoder } from 'io-ts/Decoder'
 import * as D from 'io-ts/Decoder'
-import type { Encoder } from 'io-ts/lib/Encoder'
+import type { Encoder } from 'io-ts/Encoder'
 
 import { DayJs } from '../../../shared/models/DayJs'
 

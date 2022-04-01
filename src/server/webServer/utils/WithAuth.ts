@@ -1,27 +1,39 @@
 import { pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 
-import { Future, Maybe } from '../../../shared/utils/fp'
+import { Dict, Maybe } from '../../../shared/utils/fp'
 
+import { constants } from '../../constants'
+import type { TokenContent } from '../../models/webUser/TokenContent'
+import type { UserService } from '../../services/UserService'
 import type { EndedMiddleware } from '../models/MyMiddleware'
 import { MyMiddleware as M } from '../models/MyMiddleware'
 
-export type WithAuth = (f: (u: unknown /* user: User */) => EndedMiddleware) => EndedMiddleware
-
-type Args = {
-  readonly isDisabled: boolean
-}
+export type WithAuth = (f: (user: TokenContent) => EndedMiddleware) => EndedMiddleware
 
 export const WithAuth =
-  (/* userService: UserService */ { isDisabled }: Args): WithAuth =>
+  (userService: UserService): WithAuth =>
   f =>
     pipe(
-      // H.decodeHeader('Authorization', Token.codec.decode),
-      // H.ichain((/* token */) =>
-      // pipe(
-      /* userService.findByToken(token) */
-      Future.right<Maybe<unknown>>(isDisabled ? Maybe.some(undefined) : Maybe.none),
-      M.fromTaskEither,
-      M.ichain(Maybe.fold(() => M.text(Status.Unauthorized)(), f)),
-      // )),
+      M.getCookies(),
+      M.map(Dict.lookup(constants.account.cookie.name)),
+      M.ichain(
+        Maybe.fold(
+          () => M.sendWithStatus(Status.Unauthorized)(''),
+          cookie =>
+            pipe(
+              M.fromTaskEither(userService.verifyToken(cookie)),
+              M.matchE(
+                () =>
+                  pipe(
+                    M.status(Status.Unauthorized),
+                    M.ichain(() => M.clearCookie(constants.account.cookie.name, {})),
+                    M.ichain(() => M.closeHeaders()),
+                    M.ichain(() => M.send('Invalid token')),
+                  ),
+                f,
+              ),
+            ),
+        ),
+      ),
     )

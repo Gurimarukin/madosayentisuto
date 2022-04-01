@@ -7,7 +7,7 @@ import { Future, IO, toUnit } from '../../shared/utils/fp'
 
 import type { MadEventCronJob } from '../models/event/MadEvent'
 import { MadEvent } from '../models/event/MadEvent'
-import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import type { TSubject } from '../models/rx/TSubject'
 
 const cronJobInterval = MsDuration.minute(1)

@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
-import type { UserId } from '../../../shared/models/guild/UserId'
+import type { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import type { MessageId } from '../MessageId'
@@ -12,7 +12,7 @@ import type { ThreadWithMessage } from './ThreadWithMessage'
 
 export type Poll = {
   readonly message: MessageId
-  readonly createdBy: UserId
+  readonly createdBy: DiscordUserId
   readonly question: string
   readonly choices: NonEmptyArray<ChoiceWithResponses>
   readonly detail: Maybe<ThreadWithMessage>

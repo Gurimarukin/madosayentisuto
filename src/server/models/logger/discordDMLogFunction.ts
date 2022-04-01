@@ -1,0 +1,52 @@
+import type { MessageOptions } from 'discord.js'
+import { flow, pipe } from 'fp-ts/function'
+
+import type { DiscordUserId } from '../../../shared/models/DiscordUserId'
+import { StringUtils } from '../../../shared/utils/StringUtils'
+import { IO, NonEmptyArray } from '../../../shared/utils/fp'
+import { Future, toUnit } from '../../../shared/utils/fp'
+import { futureMaybe } from '../../../shared/utils/futureMaybe'
+
+import { DiscordConnector } from '../../helpers/DiscordConnector'
+import { MessageUtils } from '../../utils/MessageUtils'
+import type { LogFunction } from './LogFunction'
+import { LogLevel } from './LogLevel'
+
+type DiscordDMCompact = {
+  readonly discordDMIsCompact: boolean
+}
+
+export const discordDMLogFunction =
+  (
+    admins: NonEmptyArray<DiscordUserId>,
+    { discordDMIsCompact }: DiscordDMCompact,
+    discord: DiscordConnector,
+  ): LogFunction =>
+  (name, level, msg) => {
+    const options: string | MessageOptions = discordDMIsCompact
+      ? formatDMCompact(name, level, msg)
+      : formatDMEmbed(name, level, msg)
+    return pipe(
+      admins,
+      NonEmptyArray.traverse(Future.ApplicativePar)(
+        flow(
+          discord.fetchUser,
+          futureMaybe.chain(user => DiscordConnector.sendMessage(user, options)),
+        ),
+      ),
+      Future.map(toUnit),
+      IO.runFutureUnsafe,
+    )
+  }
+
+const formatDMCompact = (name: string, level: LogLevel, msg: string): string => {
+  const withName = `${name} - ${msg}`
+  const res =
+    level === 'info' || level === 'warn'
+      ? `\`${level.toUpperCase()}  ${withName}\``
+      : `\`${level.toUpperCase()} ${withName}\``
+  return pipe(res, StringUtils.ellipse(2000))
+}
+
+const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageOptions =>
+  MessageUtils.singleSafeEmbed({ color: LogLevel.hexColor[level], description: `${name} - ${msg}` })

@@ -1,9 +1,8 @@
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
-import { Future, Maybe, toUnit } from '../../shared/utils/fp'
+import { Future, toUnit } from '../../shared/utils/fp'
 
-import { constants } from '../constants'
 import { MadEvent } from '../models/event/MadEvent'
 import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { BotStateService } from '../services/BotStateService'
@@ -13,14 +12,10 @@ export const ActivityStatusObserver = (botStateService: BotStateService) => {
   return ObserverWithRefinement.fromNext(
     MadEvent,
     'AppStarted',
-    'DbReady',
     'CronJob',
   )(event => {
     switch (event.type) {
       case 'AppStarted':
-        return botStateService.discordSetActivity(Maybe.some(constants.defaultActivity))
-
-      case 'DbReady':
         return discordSetActivityFromDb()
 
       case 'CronJob':

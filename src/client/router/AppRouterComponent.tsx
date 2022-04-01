@@ -6,10 +6,11 @@ import React, { useEffect, useMemo } from 'react'
 import { Maybe } from '../../shared/utils/fp'
 import { Tuple } from '../../shared/utils/fp'
 
-import { Guilds } from '../Guilds'
-import { Guild } from '../guild/Guild'
-import { GuildEmojis } from '../guild/GuildEmojis'
-import { GuildMembers } from '../guild/GuildMembers'
+import { Guilds } from '../domain/Guilds'
+import { Login } from '../domain/Login'
+import { Guild } from '../domain/guild/Guild'
+import { GuildEmojis } from '../domain/guild/GuildEmojis'
+import { GuildMembers } from '../domain/guild/GuildMembers'
 import { appParsers } from './AppRouter'
 import { useHistory } from './HistoryContext'
 
@@ -20,6 +21,7 @@ const t = (element: JSX.Element, title?: string): ElementWithTitle =>
 
 const titleWithElementParser = zero<ElementWithTitle>()
   .alt(appParsers.index.map(() => t(<Guilds />)))
+  .alt(appParsers.login.map(() => t(<Login />, 'Connexion')))
   .alt(appParsers.guild.index.map(({ guildId }) => t(<Guild guildId={guildId} />, 'Serveur')))
   .alt(
     appParsers.guild.members.map(({ guildId }) =>

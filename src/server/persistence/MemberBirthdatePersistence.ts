@@ -1,11 +1,11 @@
 import { pipe } from 'fp-ts/function'
 
 import type { DayJs } from '../../shared/models/DayJs'
-import { UserId } from '../../shared/models/guild/UserId'
+import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import { Birthdate } from '../models/member/Birthdate'
 import type { MemberBirthdateOutput } from '../models/member/MemberBirthdate'
 import { MemberBirthdate } from '../models/member/MemberBirthdate'
@@ -40,18 +40,18 @@ export const MemberBirthdatePersistence = (
       return collection.findAll()({ [Keys.month]: month, [Keys.date]: date })
     },
 
-    listForMembers: (ids: List<UserId>): Future<List<MemberBirthdate>> =>
-      collection.findAll()({ id: { $in: pipe(ids, List.map(UserId.unwrap)) } }),
+    listForMembers: (ids: List<DiscordUserId>): Future<List<MemberBirthdate>> =>
+      collection.findAll()({ id: { $in: pipe(ids, List.map(DiscordUserId.unwrap)) } }),
 
     upsert: (state: MemberBirthdate): Future<boolean> =>
       pipe(
-        collection.updateOne({ id: UserId.unwrap(state.id) }, state, { upsert: true }),
+        collection.updateOne({ id: DiscordUserId.unwrap(state.id) }, state, { upsert: true }),
         Future.map(r => r.modifiedCount + r.upsertedCount <= 1),
       ),
 
-    remove: (id: UserId): Future<boolean> =>
+    remove: (id: DiscordUserId): Future<boolean> =>
       pipe(
-        collection.deleteOne({ id: UserId.unwrap(id) }),
+        collection.deleteOne({ id: DiscordUserId.unwrap(id) }),
         Future.map(r => r.deletedCount === 1),
       ),
   }

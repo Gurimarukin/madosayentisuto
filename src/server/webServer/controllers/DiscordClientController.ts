@@ -1,10 +1,10 @@
 import { pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 
+import type { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import type { GuildId } from '../../../shared/models/guild/GuildId'
 import { GuildView } from '../../../shared/models/guild/GuildView'
 import { GuildViewShort } from '../../../shared/models/guild/GuildViewShort'
-import type { UserId } from '../../../shared/models/guild/UserId'
 import { Future, IO, List, Maybe } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 import { DateFromISOString } from '../../../shared/utils/ioTsUtils'
@@ -26,7 +26,7 @@ export const DiscordClientController = (
       discord.listGuilds,
       IO.map(List.map(GuildViewShort.fromGuild)),
       M.fromIOEither,
-      M.ichain(M.json(Status.OK, List.encoder(GuildViewShort.codec).encode)),
+      M.ichain(M.jsonWithStatus(Status.OK, List.encoder(GuildViewShort.codec))),
     ),
 
   findGuild: (guildId: GuildId) => (/* user: User */): EndedMiddleware =>
@@ -50,31 +50,32 @@ export const DiscordClientController = (
       ),
       M.fromTaskEither,
       M.ichain(
-        Maybe.fold(() => M.text(Status.NotFound)(), M.json(Status.OK, GuildView.codec.encode)),
+        Maybe.fold(
+          () => M.sendWithStatus(Status.NotFound)(''),
+          M.jsonWithStatus(Status.OK, GuildView.codec),
+        ),
       ),
     ),
 
-  updateMemberBirthdate: (userId: UserId) => (/* user: User */): EndedMiddleware =>
+  updateMemberBirthdate: (userId: DiscordUserId) => (/* user: User */): EndedMiddleware =>
     /* User.canUpdateMember(user) */
     pipe(
       M.decodeBody([DateFromISOString.decoder, 'DateFromISOString']),
       M.matchE(
-        () => M.text(Status.BadRequest)(),
-        birthdate =>
-          pipe(
-            memberBirthdateService.upsert(userId, birthdate),
-            M.fromTaskEither,
-            M.ichain(success =>
-              success ? M.text(Status.NoContent)() : M.text(Status.BadRequest)(),
-            ),
-          ),
+        () => M.of(false),
+        birthdate => M.fromTaskEither(memberBirthdateService.upsert(userId, birthdate)),
+      ),
+      M.ichain(success =>
+        success ? M.sendWithStatus(Status.NoContent)('') : M.sendWithStatus(Status.BadRequest)(''),
       ),
     ),
 
-  deleteMemberBirthdate: (userId: UserId) => (/* user: User */): EndedMiddleware =>
+  deleteMemberBirthdate: (userId: DiscordUserId) => (/* user: User */): EndedMiddleware =>
     pipe(
       memberBirthdateService.remove(userId),
       M.fromTaskEither,
-      M.ichain(success => (success ? M.text(Status.NoContent)() : M.text(Status.BadRequest)())),
+      M.ichain(success =>
+        success ? M.sendWithStatus(Status.NoContent)('') : M.sendWithStatus(Status.BadRequest)(''),
+      ),
     ),
 })

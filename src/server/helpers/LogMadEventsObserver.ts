@@ -15,7 +15,6 @@ export const LogMadEventsObserver = (logger: LoggerType): TObserver<MadEvent> =>
     const message = ((): string | undefined => {
       switch (event.type) {
         case 'AppStarted':
-        case 'DbReady':
           return ''
 
         case 'CronJob':

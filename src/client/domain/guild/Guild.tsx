@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { GuildId } from '../../shared/models/guild/GuildId'
+import type { GuildId } from '../../../shared/models/guild/GuildId'
 
 import { GuildLayout } from './GuildLayout'
 

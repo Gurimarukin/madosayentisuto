@@ -4,12 +4,12 @@ import { optional } from 'monocle-ts'
 import React from 'react'
 import type { KeyedMutator } from 'swr'
 
-import type { DayJs } from '../../shared/models/DayJs'
-import type { GuildId } from '../../shared/models/guild/GuildId'
-import { GuildView } from '../../shared/models/guild/GuildView'
-import { MemberView } from '../../shared/models/guild/MemberView'
-import { UserId } from '../../shared/models/guild/UserId'
-import { List, Maybe } from '../../shared/utils/fp'
+import type { DayJs } from '../../../shared/models/DayJs'
+import { DiscordUserId } from '../../../shared/models/DiscordUserId'
+import type { GuildId } from '../../../shared/models/guild/GuildId'
+import { GuildView } from '../../../shared/models/guild/GuildView'
+import { MemberView } from '../../../shared/models/guild/MemberView'
+import { List, Maybe } from '../../../shared/utils/fp'
 
 import { BirthdateForm } from './BirthdateForm'
 import { GuildLayout } from './GuildLayout'
@@ -31,7 +31,7 @@ export const GuildMembers = ({ guildId }: Props): JSX.Element => (
           {pipe(
             guild.members,
             List.map(member => (
-              <li key={UserId.unwrap(member.id)} className="contents group">
+              <li key={DiscordUserId.unwrap(member.id)} className="contents group">
                 <div className="flex items-center gap-x-4 px-6 py-3 group-odd:bg-gray2">
                   {pipe(
                     member.avatar,
@@ -64,15 +64,16 @@ export const GuildMembers = ({ guildId }: Props): JSX.Element => (
   </GuildLayout>
 )
 
-const onPostBirthdate = (mutate: KeyedMutator<GuildView>, userId: UserId) => (birthdate: DayJs) =>
-  setBirthdate(mutate, userId, Maybe.some(birthdate))
+const onPostBirthdate =
+  (mutate: KeyedMutator<GuildView>, userId: DiscordUserId) => (birthdate: DayJs) =>
+    setBirthdate(mutate, userId, Maybe.some(birthdate))
 
-const onDeleteBirthdate = (mutate: KeyedMutator<GuildView>, userId: UserId) => () =>
+const onDeleteBirthdate = (mutate: KeyedMutator<GuildView>, userId: DiscordUserId) => () =>
   setBirthdate(mutate, userId, Maybe.none)
 
 const setBirthdate = (
   mutate: KeyedMutator<GuildView>,
-  userId: UserId,
+  userId: DiscordUserId,
   birthdate: Maybe<DayJs>,
 ): Promise<GuildView | undefined> =>
   mutate(

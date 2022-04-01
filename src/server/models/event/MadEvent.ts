@@ -19,8 +19,6 @@ export type MadEvent = typeof MadEvent.T
 export const MadEvent = createUnion({
   AppStarted: () => ({}),
 
-  DbReady: () => ({}),
-
   CronJob: (date: DayJs) => ({ date }),
 
   InteractionCreate: (interaction: Interaction) => ({ interaction }),
@@ -47,7 +45,6 @@ export const MadEvent = createUnion({
 })
 
 export type MadEventAppStarted = typeof MadEvent.AppStarted.T
-export type MadEventDbReady = typeof MadEvent.DbReady.T
 export type MadEventCronJob = typeof MadEvent.CronJob.T
 export type MadEventInteractionCreate = typeof MadEvent.InteractionCreate.T
 export type MadEventGuildMemberAdd = typeof MadEvent.GuildMemberAdd.T

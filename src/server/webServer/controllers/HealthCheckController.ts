@@ -11,7 +11,9 @@ export type HealthCheckController = ReturnType<typeof HealthCheckController>
 export const HealthCheckController = (healthCheckService: HealthCheckService) => {
   const check: EndedMiddleware = pipe(
     M.fromTaskEither(healthCheckService.check()),
-    M.ichain(ok => (ok ? M.text(Status.OK)() : M.text(Status.InternalServerError)())),
+    M.ichain(ok =>
+      ok ? M.sendWithStatus(Status.OK)('') : M.sendWithStatus(Status.InternalServerError)(''),
+    ),
   )
 
   return { check }

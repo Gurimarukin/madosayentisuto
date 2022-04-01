@@ -54,9 +54,9 @@ import type { Separated } from 'fp-ts/Separated'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
+import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { GuildId } from '../../shared/models/guild/GuildId'
-import { UserId } from '../../shared/models/guild/UserId'
 import { Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
@@ -107,14 +107,14 @@ const of = (client: Client<true>) => {
         debugLeft('fetchChannel'),
       ),
 
-    fetchUser: (userId: UserId): Future<Maybe<User>> =>
+    fetchUser: (userId: DiscordUserId): Future<Maybe<User>> =>
       pipe(
-        IO.tryCatch(() => client.users.cache.get(UserId.unwrap(userId))),
+        IO.tryCatch(() => client.users.cache.get(DiscordUserId.unwrap(userId))),
         IO.map(Maybe.fromNullable),
         Future.fromIOEither,
         futureMaybe.alt(() =>
           pipe(
-            Future.tryCatch(() => client.users.fetch(UserId.unwrap(userId))),
+            Future.tryCatch(() => client.users.fetch(DiscordUserId.unwrap(userId))),
             Future.map(Maybe.some),
           ),
         ),
@@ -161,9 +161,9 @@ const fetchAuditLogs = <A extends GuildAuditLogsResolvable = 'ALL'>(
 const fetchCommand = (guild: Guild, commandId: CommandId): Future<ApplicationCommand> =>
   Future.tryCatch(() => guild.commands.fetch(CommandId.unwrap(commandId)))
 
-const fetchMember = (guild: Guild, userId: UserId): Future<Maybe<GuildMember>> =>
+const fetchMember = (guild: Guild, userId: DiscordUserId): Future<Maybe<GuildMember>> =>
   pipe(
-    Future.tryCatch(() => guild.members.fetch(UserId.unwrap(userId))),
+    Future.tryCatch(() => guild.members.fetch(DiscordUserId.unwrap(userId))),
     Future.map(Maybe.some),
     debugLeft('fetchMember'),
   )
@@ -485,8 +485,6 @@ const voiceConnectionSubscribe = (
  */
 
 export const DiscordConnector = {
-  of,
-
   fetchAuditLogs,
   fetchCommand,
   fetchMember,
@@ -524,10 +522,10 @@ export const DiscordConnector = {
   voiceConnectionJoin,
   voiceConnectionSubscribe,
 
-  futureClient: (config: ClientConfig): Future<Client> =>
+  fromConfig: (config: ClientConfig): Future<DiscordConnector> =>
     Future.tryCatch(
       () =>
-        new Promise<Client>(resolve => {
+        new Promise<DiscordConnector>(resolve => {
           const client = new Client({
             intents: [
               Intents.FLAGS.DIRECT_MESSAGES,
@@ -541,7 +539,7 @@ export const DiscordConnector = {
             partials: ['USER', 'CHANNEL', 'GUILD_MEMBER', 'MESSAGE', 'REACTION'],
           })
           /* eslint-disable functional/no-expression-statement */
-          client.once('ready', () => resolve(client))
+          client.once('ready', () => resolve(of(client)))
           client.login(config.secret)
           /* eslint-enable functional/no-expression-statement */
         }),

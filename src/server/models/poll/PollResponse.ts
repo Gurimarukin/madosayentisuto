@@ -1,16 +1,16 @@
 import * as C from 'io-ts/Codec'
 
-import { UserId } from '../../../shared/models/guild/UserId'
+import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 
 import { MessageId } from '../MessageId'
 
 const codec = C.struct({
   message: MessageId.codec,
-  user: UserId.codec,
+  user: DiscordUserId.codec,
   choiceIndex: C.number,
 })
 
-const of = (message: MessageId, user: UserId, choiceIndex: number): PollResponse => ({
+const of = (message: MessageId, user: DiscordUserId, choiceIndex: number): PollResponse => ({
   message,
   user,
   choiceIndex,

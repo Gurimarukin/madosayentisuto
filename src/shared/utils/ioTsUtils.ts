@@ -1,9 +1,9 @@
 import { json, predicate, string } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 import type { Codec } from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
-import type { Decoder } from 'io-ts/Decoder'
+import type { DecodeError, Decoder } from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
 import type { AnyNewtype, CarrierOf } from 'newtype-ts'
 
@@ -17,7 +17,7 @@ const limit = 10000
 export const decodeError =
   (name: string) =>
   (value: unknown) =>
-  (error: D.DecodeError): Error =>
+  (error: DecodeError): Error =>
     Error(
       StringUtils.stripMargins(
         `Couldn't decode ${name}:
@@ -86,13 +86,11 @@ const numberFromStringDecoder: Decoder<unknown, number> = pipe(
 
 export const NumberFromString = { decoder: numberFromStringDecoder }
 
-const prepareArray = (i: string): List<string> =>
-  pipe(
-    i,
-    string.split(','),
-    NonEmptyArray.map(string.trim),
-    List.filter(predicate.not(string.isEmpty)),
-  )
+const prepareArray: (i: string) => List<string> = flow(
+  string.split(','),
+  NonEmptyArray.map(string.trim),
+  List.filter(predicate.not(string.isEmpty)),
+)
 
 // ArrayFromString
 

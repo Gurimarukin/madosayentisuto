@@ -5,7 +5,7 @@ import type { List } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import { MigrationCreatedAt, MigrationDb } from '../models/migration/MigrationDb'
 import type { MigrationDbOutput } from '../models/migration/MigrationDb'
 import type { MongoCollection } from '../models/mongo/MongoCollection'

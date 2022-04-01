@@ -4,7 +4,7 @@ import { GuildMember } from 'discord.js'
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { UserId } from '../../shared/models/guild/UserId'
+import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { Future, IO, Maybe, toUnit } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
@@ -12,7 +12,7 @@ import { DiscordConnector } from '../helpers/DiscordConnector'
 import { initCallsButton, initCallsMessage } from '../helpers/messages/initCallsMessage'
 import { MadEvent } from '../models/event/MadEvent'
 import type { Calls } from '../models/guildState/Calls'
-import type { LoggerGetter } from '../models/logger/LoggerType'
+import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
@@ -96,7 +96,7 @@ export const CallsAutoroleObserver = (
       futureMaybe.bind('success', ({ guild, callsAndMember }) =>
         pipe(f(guild, callsAndMember), Future.map(Maybe.some)),
       ),
-      Future.map(Maybe.filter(({ success }) => success)),
+      futureMaybe.filter(({ success }) => success),
       futureMaybe.chainTaskEitherK(({ callsAndMember: { calls } }) =>
         refreshCallsInitMessage(calls),
       ),
@@ -135,7 +135,7 @@ export const CallsAutoroleObserver = (
       member:
         member instanceof GuildMember
           ? Future.right(Maybe.some(member))
-          : DiscordConnector.fetchMember(guild, UserId.fromUser(member.user)),
+          : DiscordConnector.fetchMember(guild, DiscordUserId.fromUser(member.user)),
     })
   }
 }

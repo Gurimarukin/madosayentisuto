@@ -13,7 +13,7 @@ import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
-import { UserId } from '../../../shared/models/guild/UserId'
+import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { IO } from '../../../shared/utils/fp'
 import { Tuple } from '../../../shared/utils/fp'
 import { toUnit } from '../../../shared/utils/fp'
@@ -30,7 +30,7 @@ import { ChannelId } from '../../models/ChannelId'
 import { Command } from '../../models/Command'
 import { MessageId } from '../../models/MessageId'
 import { MadEvent } from '../../models/event/MadEvent'
-import type { LoggerGetter } from '../../models/logger/LoggerType'
+import type { LoggerGetter } from '../../models/logger/LoggerGetter'
 import { ChoiceWithResponses } from '../../models/poll/ChoiceWithResponses'
 import { ChoiceWithVotesCount } from '../../models/poll/ChoiceWithVotesCount'
 import { Poll } from '../../models/poll/Poll'
@@ -161,7 +161,7 @@ export const PollCommandsObserver = (
     choices: NonEmptyArray<string>,
     { isAnonymous, isMultiple }: IsAnonymous & IsMultiple,
   ): Future<void> {
-    const createdBy = UserId.fromUser(user)
+    const createdBy = DiscordUserId.fromUser(user)
     const options = PollMessage.poll(
       createdBy,
       question,
@@ -254,7 +254,7 @@ export const PollCommandsObserver = (
     { choiceIndex }: PollButton,
   ): Future<Maybe<string>> {
     const messageId = MessageId.fromMessage(message)
-    const userId = UserId.fromUser(user)
+    const userId = DiscordUserId.fromUser(user)
     return pipe(
       pollService.lookupPollByMessage(messageId),
       futureMaybe.chain(poll =>
@@ -264,7 +264,10 @@ export const PollCommandsObserver = (
           Maybe.fold(
             () => Future.right(Maybe.none),
             choice => {
-              const alreadyVotedForChoice = pipe(choice.responses, List.elem(UserId.Eq)(userId))
+              const alreadyVotedForChoice = pipe(
+                choice.responses,
+                List.elem(DiscordUserId.Eq)(userId),
+              )
               if (alreadyVotedForChoice) {
                 return pipe(
                   removeResponse(poll, userId, choiceIndex),
@@ -288,7 +291,7 @@ export const PollCommandsObserver = (
     )
   }
 
-  function removeResponsesForUser(poll: Poll, user: UserId): Future<Poll> {
+  function removeResponsesForUser(poll: Poll, user: DiscordUserId): Future<Poll> {
     const toRemove = pipe(
       poll.choices,
       List.chain(
@@ -318,7 +321,7 @@ export const PollCommandsObserver = (
     )
   }
 
-  function addResponse(user: UserId, choiceIndex: number): (poll: Poll) => Future<Poll> {
+  function addResponse(user: DiscordUserId, choiceIndex: number): (poll: Poll) => Future<Poll> {
     return poll =>
       pipe(
         pollService.createResponse(PollResponse.of(poll.message, user, choiceIndex)),
@@ -333,7 +336,7 @@ export const PollCommandsObserver = (
                 choiceIndex,
                 pipe(
                   ChoiceWithResponses.Lens.responses,
-                  lens.modify<List<UserId>>(List.append(user)),
+                  lens.modify<List<DiscordUserId>>(List.append(user)),
                 ),
               ),
             ),
@@ -342,7 +345,7 @@ export const PollCommandsObserver = (
       )
   }
 
-  function removeResponse(poll: Poll, user: UserId, choiceIndex: number): Future<Poll> {
+  function removeResponse(poll: Poll, user: DiscordUserId, choiceIndex: number): Future<Poll> {
     return pipe(
       pollService.removeResponse(PollResponse.of(poll.message, user, choiceIndex)),
       Future.chainIOEitherK(success =>
@@ -458,9 +461,9 @@ export const PollCommandsObserver = (
     )
   }
 
-  function canRemovePoll(user: User, pollCreatedBy: UserId): boolean {
-    const userId = UserId.fromUser(user)
-    return userId === pollCreatedBy || pipe(config.admins, List.elem(UserId.Eq)(userId))
+  function canRemovePoll(user: User, pollCreatedBy: DiscordUserId): boolean {
+    const userId = DiscordUserId.fromUser(user)
+    return userId === pollCreatedBy || pipe(config.admins, List.elem(DiscordUserId.Eq)(userId))
   }
 
   function removePoll(
@@ -496,7 +499,7 @@ export const PollCommandsObserver = (
         threadId =>
           pipe(
             discord.fetchChannel(threadId),
-            Future.map(Maybe.filter(ChannelUtils.isThreadChannel)),
+            futureMaybe.filter(ChannelUtils.isThreadChannel),
             futureMaybe.chainTaskEitherK(DiscordConnector.threadDelete),
             Future.map(Maybe.getOrElse(() => false)),
             Future.chainIOEitherK(success =>

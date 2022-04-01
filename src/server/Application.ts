@@ -3,8 +3,7 @@ import { pipe } from 'fp-ts/function'
 
 import { IO } from '../shared/utils/fp'
 
-import type { Config } from './Config'
-import { Context } from './Context'
+import type { Context } from './Context'
 import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
 import { CallsAutoroleObserver } from './domain/CallsAutoroleObserver'
 import { DisconnectVocalObserver } from './domain/DisconnectVocalObserver'
@@ -21,36 +20,62 @@ import { MusicCommandsObserver } from './domain/commands/MusicCommandsObserver'
 import { OtherCommandsObserver } from './domain/commands/OtherCommandsObserver'
 import { PollCommandsObserver } from './domain/commands/PollCommandsObserver'
 import { DeployCommandsObserver } from './domain/startup/DeployCommandsObserver'
-import { EnsureDbReadyObserver } from './domain/startup/EnsureDbReadyObserver'
 import type { DiscordConnector } from './helpers/DiscordConnector'
+import { JwtHelper } from './helpers/JwtHelper'
 import { LogMadEventsObserver } from './helpers/LogMadEventsObserver'
 import { VoiceStateUpdateTransformer } from './helpers/VoiceStateUpdateTransformer'
 import { publishDiscordEvents } from './helpers/publishDiscordEvents'
 import { scheduleCronJob } from './helpers/scheduleCronJob'
 import { MadEvent } from './models/event/MadEvent'
-import type { LoggerGetter } from './models/logger/LoggerType'
 import { ObserverWithRefinement } from './models/rx/ObserverWithRefinement'
 import { PubSub } from './models/rx/PubSub'
+import { BotStateService } from './services/BotStateService'
+import { GuildStateService } from './services/GuildStateService'
+import { MemberBirthdateService } from './services/MemberBirthdateService'
+import { PollService } from './services/PollService'
+import { UserService } from './services/UserService'
 import { PubSubUtils } from './utils/PubSubUtils'
+import { Routes } from './webServer/Routes'
+import { DiscordClientController } from './webServer/controllers/DiscordClientController'
+import { HealthCheckController } from './webServer/controllers/HealthCheckController'
+import { UserController } from './webServer/controllers/UserController'
+import { startWebServer } from './webServer/startWebServer'
+import { WithAuth } from './webServer/utils/WithAuth'
 
 export const Application = (
-  Logger: LoggerGetter,
-  config: Config,
   discord: DiscordConnector,
-): IO<void> => {
-  const clientId = config.client.id
-  const {
-    logger,
-    ytDlp,
-    ensureIndexes,
-    botStateService,
-    guildStateService,
+  {
+    config,
+    Logger,
+    botStatePersistence,
+    guildStatePersistence,
+    memberBirthdatePersistence,
+    pollResponsePersistence,
+    pollQuestionPersistence,
+    userPersistence,
     healthCheckService,
-    memberBirthdateService,
-    migrationService,
-    pollService,
-    startWebServer,
-  } = Context.of(Logger, config, discord)
+    ytDlp,
+  }: Context,
+): IO<void> => {
+  const logger = Logger('Application')
+
+  const clientId = config.client.id
+
+  const jwtHelper = JwtHelper(config.jwtSecret)
+
+  const botStateService = BotStateService(Logger, discord, botStatePersistence)
+  const guildStateService = GuildStateService(Logger, discord, ytDlp, guildStatePersistence)
+  const memberBirthdateService = MemberBirthdateService(memberBirthdatePersistence)
+  const pollService = PollService(pollQuestionPersistence, pollResponsePersistence)
+  const userService = UserService(Logger, userPersistence, jwtHelper)
+
+  const healthCheckController = HealthCheckController(healthCheckService)
+  const discordClientController = DiscordClientController(discord, memberBirthdateService)
+  const userController = UserController(userService)
+
+  const withAuth = WithAuth(userService)
+
+  const routes = Routes(withAuth, healthCheckController, userController, discordClientController)
 
   const madEventsPubSub = PubSub<MadEvent>()
   const sub = PubSubUtils.subscribe<MadEvent>(logger, madEventsPubSub.observable)
@@ -65,15 +90,6 @@ export const Application = (
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
       // │  └ startup/
       sub(DeployCommandsObserver(Logger, config, discord)),
-      sub(
-        EnsureDbReadyObserver(
-          Logger,
-          madEventsPubSub.subject,
-          healthCheckService,
-          migrationService,
-          ensureIndexes,
-        ),
-      ),
       // │
       sub(ActivityStatusObserver(botStateService)),
       sub(CallsAutoroleObserver(Logger, guildStateService)),
@@ -92,7 +108,7 @@ export const Application = (
       scheduleCronJob(Logger, madEventsPubSub.subject),
       sub(VoiceStateUpdateTransformer(Logger, clientId, madEventsPubSub.subject)),
     ),
-    IO.chain(() => startWebServer),
+    IO.chain(() => startWebServer(Logger, config.http, routes)),
     IO.chain(() => madEventsPubSub.subject.next(MadEvent.AppStarted())),
     IO.chain(() => logger.info('Started')),
   )

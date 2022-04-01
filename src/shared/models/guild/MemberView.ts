@@ -5,10 +5,10 @@ import { lens } from 'monocle-ts'
 
 import { Maybe } from '../../utils/fp'
 import { DateFromISOString } from '../../utils/ioTsUtils'
-import { UserId } from './UserId'
+import { DiscordUserId } from '../DiscordUserId'
 
 const codec = C.struct({
-  id: UserId.codec,
+  id: DiscordUserId.codec,
   name: C.string,
   color: C.string,
   avatar: Maybe.codec(C.string),
@@ -16,7 +16,7 @@ const codec = C.struct({
 })
 
 const fromGuildMember = (member: GuildMember): MemberView => ({
-  id: UserId.fromUser(member.user),
+  id: DiscordUserId.fromUser(member.user),
   name: member.displayName,
   color: member.displayHexColor,
   avatar: Maybe.fromNullable(member.user.displayAvatarURL({ dynamic: true })),

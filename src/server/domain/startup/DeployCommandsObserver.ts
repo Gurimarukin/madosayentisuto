@@ -7,8 +7,8 @@ import type {
 import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
 
+import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { GuildId } from '../../../shared/models/guild/GuildId'
-import { UserId } from '../../../shared/models/guild/UserId'
 import { Future, IO, List, NonEmptyArray, toUnit } from '../../../shared/utils/fp'
 
 import type { Config } from '../../Config'
@@ -16,7 +16,7 @@ import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { CommandId } from '../../models/command/CommandId'
 import type { PutCommandResult } from '../../models/command/PutCommandResult'
 import { MadEvent } from '../../models/event/MadEvent'
-import type { LoggerGetter } from '../../models/logger/LoggerType'
+import type { LoggerGetter } from '../../models/logger/LoggerGetter'
 import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 import { adminCommands } from '../commands/AdminCommandsObserver'
 import { musicCommands } from '../commands/MusicCommandsObserver'
@@ -39,7 +39,7 @@ export const DeployCommandsObserver = (
     config.admins,
     NonEmptyArray.map(
       (id): ApplicationCommandPermissionData => ({
-        id: UserId.unwrap(id),
+        id: DiscordUserId.unwrap(id),
         type: 2, // ApplicationCommandPermissionTypes.USER
         permission: true,
       }),
@@ -48,7 +48,7 @@ export const DeployCommandsObserver = (
 
   return ObserverWithRefinement.fromNext(
     MadEvent,
-    'DbReady',
+    'AppStarted',
   )(() =>
     pipe(
       Future.fromIOEither(discord.listGuilds),

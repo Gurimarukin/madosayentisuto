@@ -1,19 +1,19 @@
 import { pipe } from 'fp-ts/function'
 import React from 'react'
 
-import { apiRoutes } from '../shared/ApiRouter'
-import { GuildId } from '../shared/models/guild/GuildId'
-import { GuildViewShort } from '../shared/models/guild/GuildViewShort'
-import { List, Maybe } from '../shared/utils/fp'
+import { apiRoutes } from '../../shared/ApiRouter'
+import { GuildId } from '../../shared/models/guild/GuildId'
+import { GuildViewShort } from '../../shared/models/guild/GuildViewShort'
+import { List, Maybe } from '../../shared/utils/fp'
 
-import { Link } from './components/Link'
-import { useHttp } from './hooks/useHttp'
-import { appRoutes } from './router/AppRouter'
+import { Link } from '../components/Link'
+import { useHttp } from '../hooks/useHttp'
+import { appRoutes } from '../router/AppRouter'
 
 const guildsDecoder = List.decoder(GuildViewShort.codec)
 
 export const Guilds = (): JSX.Element => {
-  const { data: guilds, error } = useHttp(apiRoutes.get.api.guilds, {}, [
+  const { data: guilds, error } = useHttp(apiRoutes.guilds.get, {}, [
     guildsDecoder,
     'GuildViewShort[]',
   ])

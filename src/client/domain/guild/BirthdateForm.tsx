@@ -2,17 +2,17 @@
 import { pipe } from 'fp-ts/function'
 import React, { useCallback, useState } from 'react'
 
-import { apiRoutes } from '../../shared/ApiRouter'
-import { DayJs } from '../../shared/models/DayJs'
-import type { UserId } from '../../shared/models/guild/UserId'
-import { Maybe } from '../../shared/utils/fp'
-import { DateFromISOString } from '../../shared/utils/ioTsUtils'
+import { apiRoutes } from '../../../shared/ApiRouter'
+import { DayJs } from '../../../shared/models/DayJs'
+import type { DiscordUserId } from '../../../shared/models/DiscordUserId'
+import { Maybe } from '../../../shared/utils/fp'
+import { DateFromISOString } from '../../../shared/utils/ioTsUtils'
 
-import { Cancel, Check, EditPencil, Prohibition } from '../components/svgs'
-import { http } from '../utils/http'
+import { Cancel, Check, EditPencil, Prohibition } from '../../components/svgs'
+import { http } from '../../utils/http'
 
 type Props = {
-  readonly userId: UserId
+  readonly userId: DiscordUserId
   readonly initialBirthdate: Maybe<DayJs>
   readonly onPostBirthdate: (birthdate: DayJs) => void
   readonly onDeleteBirthdate: () => void
@@ -118,17 +118,17 @@ export const BirthdateForm = ({
             <button type="submit" className="text-3xl">
               <Check />
             </button>
-            <button onClick={stopEditing} className="text-3xl">
+            <button type="button" onClick={stopEditing} className="text-3xl">
               <Cancel />
             </button>
           </>
         ) : (
           <>
-            <button onClick={startEditing} className="text-xl">
+            <button type="button" onClick={startEditing} className="text-xl">
               <EditPencil />
             </button>
             {Maybe.isSome(initialBirthdate) ? (
-              <button onClick={handleRemoveBirthdate} className="text-xl">
+              <button type="button" onClick={handleRemoveBirthdate} className="text-xl">
                 <Prohibition />
               </button>
             ) : null}
@@ -148,10 +148,10 @@ const validateDate = (value: string): Maybe<DayJs> => {
   return DayJs.isValid(d) ? Maybe.some(d) : Maybe.none
 }
 
-const postBirthdate = (member: UserId, birthdate: DayJs): Promise<unknown> =>
-  http(apiRoutes.post.api.member.birthdate(member), {
+const postBirthdate = (member: DiscordUserId, birthdate: DayJs): Promise<unknown> =>
+  http(apiRoutes.member.birthdate.post(member), {
     json: [DateFromISOString.encoder, birthdate],
   })
 
-const deleteBirthdate = (member: UserId): Promise<unknown> =>
-  http(apiRoutes.delete_.api.member.birthdate(member))
+const deleteBirthdate = (member: DiscordUserId): Promise<unknown> =>
+  http(apiRoutes.member.birthdate.del3te(member))

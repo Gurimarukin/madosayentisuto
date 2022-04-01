@@ -8,6 +8,8 @@ const { codec } = RouterUtils
 /**
  * matches
  */
+
+const loginMatch = lit('login')
 const guildMatch = lit('guild').then(codec('guildId')<GuildId>(str))
 const guildMembersMatch = guildMatch.then(lit('members'))
 const guildEmojisMatch = guildMatch.then(lit('emojis'))
@@ -15,8 +17,11 @@ const guildEmojisMatch = guildMatch.then(lit('emojis'))
 /**
  * parser
  */
+
+// don't forget .then(end)
 export const appParsers = {
   index: end.parser,
+  login: loginMatch.then(end).parser,
   guild: {
     index: guildMatch.then(end).parser,
     members: guildMembersMatch.then(end).parser,
@@ -27,8 +32,10 @@ export const appParsers = {
 /**
  * routes
  */
+
 export const appRoutes = {
   index: format(end.formatter, {}),
+  login: format(loginMatch.formatter, {}),
   guild: {
     index: (guildId: GuildId) => format(guildMatch.formatter, { guildId }),
     members: (guildId: GuildId) => format(guildMembersMatch.formatter, { guildId }),

@@ -3,7 +3,7 @@ import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
-import { UserId } from '../../shared/models/guild/UserId'
+import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { NonEmptyArray, Tuple, toUnit } from '../../shared/utils/fp'
 import { Maybe } from '../../shared/utils/fp'
@@ -62,7 +62,7 @@ export const NotifyBirthdayObserver = (
                 memberBirthdates,
                 List.filterMap(({ id, birthdate }) =>
                   pipe(
-                    guildMembers.find(gm => UserId.fromUser(gm.user) === id),
+                    guildMembers.find(gm => DiscordUserId.fromUser(gm.user) === id),
                     Maybe.fromNullable,
                     Maybe.map(m => Tuple.of(m, birthdate)),
                   ),

@@ -2,7 +2,7 @@ import { MessageActionRow, MessageButton } from 'discord.js'
 import type { MessageOptions } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import { UserId } from '../../../shared/models/guild/UserId'
+import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
@@ -33,7 +33,7 @@ type PollOptions = {
 }
 
 const poll = (
-  createdBy: UserId,
+  createdBy: DiscordUserId,
   question: string,
   answers: NonEmptyArray<ChoiceWithVotesCount>,
   { isAnonymous, isMultiple }: PollOptions,
@@ -66,7 +66,7 @@ const poll = (
           `${answersStr}
           |
           |Total de réponses : ${total}
-          |*Sondage créé par <@${UserId.unwrap(
+          |*Sondage créé par <@${DiscordUserId.unwrap(
             createdBy,
           )}>* - anonyme : \`${StringUtils.booleanLabel(
             isAnonymous,
@@ -110,8 +110,8 @@ const detail = (answers: NonEmptyArray<ChoiceWithResponses>): MessageOptions => 
           Maybe.getOrElse(() => `${index}`),
         )}${splitWith}${pipe(
           responses,
-          List.sort(UserId.Ord),
-          List.map(id => `<@${UserId.unwrap(id)}>`),
+          List.sort(DiscordUserId.Ord),
+          List.map(id => `<@${DiscordUserId.unwrap(id)}>`),
           StringUtils.mkString(', '),
         )}`,
         color: constants.messagesColor,

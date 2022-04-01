@@ -1,15 +1,26 @@
+import { parse as parseCookie } from 'cookie'
 import type { RequestHandler } from 'express'
 import { json, string, task } from 'fp-ts'
 import { flow, identity, pipe } from 'fp-ts/function'
 import type { IncomingMessage } from 'http'
 import { MediaType } from 'hyper-ts'
-import type { Connection, HeadersOpen, ResponseEnded, Status, StatusOpen } from 'hyper-ts'
+import type {
+  Connection,
+  CookieOptions,
+  HeadersOpen,
+  ResponseEnded,
+  Status,
+  StatusOpen,
+} from 'hyper-ts'
 import * as M from 'hyper-ts/lib/Middleware'
 import { toRequestHandler as toRequestHandler_ } from 'hyper-ts/lib/express'
 import type { Decoder } from 'io-ts/Decoder'
+import * as D from 'io-ts/Decoder'
+import type { Encoder } from 'io-ts/lib/Encoder'
 
+import { MsDuration } from '../../../shared/models/MsDuration'
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import { List } from '../../../shared/utils/fp'
+import { List, Maybe } from '../../../shared/utils/fp'
 import { Try } from '../../../shared/utils/fp'
 import { Tuple } from '../../../shared/utils/fp'
 import { Future } from '../../../shared/utils/fp'
@@ -38,6 +49,20 @@ const orElse = M.orElse as <I, O, A>(
   f: (e: Error) => MyMiddleware<I, O, A>,
 ) => (ma: MyMiddleware<I, O, A>) => MyMiddleware<I, O, A>
 
+type MyCookieOptions = Omit<CookieOptions, 'maxAge'> & {
+  readonly maxAge?: MsDuration
+}
+
+const cookie = (
+  name: string,
+  value: string,
+  { maxAge, ...options }: MyCookieOptions,
+): MyMiddleware<HeadersOpen, HeadersOpen, void> =>
+  M.cookie(name, value, {
+    ...options,
+    ...(maxAge === undefined ? {} : { maxAge: MsDuration.unwrap(maxAge) }),
+  })
+
 // override decoders
 
 const decoderParam = <I = StatusOpen, A = never>(
@@ -53,6 +78,7 @@ const decodeQuery = <I = StatusOpen, A = never>(
   decoderWithName: DecoderWithName<A>,
 ): MyMiddleware<I, I, A> => M.decodeQuery(tryDecode(decoderWithName))
 
+// decode body as json
 const decodeBody = <I = StatusOpen, A = never>(
   decoderWithName: DecoderWithName<A>,
 ): MyMiddleware<I, I, A> =>
@@ -111,21 +137,36 @@ const getBodyChunks =
 const getBodyString = <I = StatusOpen>(): MyMiddleware<I, I, string> =>
   pipe(getBodyChunks<I>(), map(flow(List.map(String), StringUtils.mkString(''))))
 
-const text =
+const getCookies = <I = StatusOpen>(): MyMiddleware<I, I, Dict<string, string>> =>
+  pipe(
+    decodeHeader<I, Maybe<string>>('cookie', [Maybe.decoder(D.string), 'Maybe<string>']),
+    ichain(
+      Maybe.fold(
+        () => M.of({}),
+        str =>
+          pipe(
+            Try.tryCatch(() => parseCookie(str)),
+            e => fromEither(e),
+          ),
+      ),
+    ),
+  )
+
+const sendWithStatus =
   (status: Status, headers: Dict<string, string> = {}) =>
-  (message = ''): EndedMiddleware =>
+  (message: string): EndedMiddleware =>
     pipe(
       reduceHeaders(status, headers),
       ichain(() => M.closeHeaders()),
       ichain(() => M.send(message)),
     )
 
-const json_ =
-  <A, O>(status: Status, encode: (a: A) => O, headers: Dict<string, string> = {}) =>
+const jsonWithStatus =
+  <O, A>(status: Status, encoder: Encoder<O, A>, headers: Dict<string, string> = {}) =>
   (data: A): EndedMiddleware =>
     pipe(
       reduceHeaders(status, headers),
-      ichain(() => M.json(encode(data), unknownToError)),
+      ichain(() => M.json(encoder.encode(data), unknownToError)),
     )
 
 // Express
@@ -139,6 +180,7 @@ export const MyMiddleware = {
   map,
   ichain,
   orElse,
+  cookie,
 
   decoderParam,
   decodeParams,
@@ -147,11 +189,12 @@ export const MyMiddleware = {
   decodeMethod,
   decodeHeader,
 
+  getCookies,
   match,
   matchE,
   getBodyString,
-  text,
-  json: json_,
+  sendWithStatus,
+  jsonWithStatus,
 
   toRequestHandler,
 }
