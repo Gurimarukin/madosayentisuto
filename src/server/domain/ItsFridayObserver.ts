@@ -27,15 +27,7 @@ export const ItsFridayObserver = (Logger: LoggerGetter, guildStateService: Guild
     MadEvent,
     'CronJob',
   )(({ date }) => {
-    const isFriday = DayJs.day.get(date) === 5
-    console.log(
-      DayJs.toISOString(date),
-      'isFriday, hour, rangeStart, isHourSharp =',
-      isFriday,
-      DayJs.hour.get(date),
-      rangeStart,
-      pipe(date, DayJs.isHourSharp(rangeStart)),
-    )
+    const isFriday = DayJs.day.get(date) === 6
     return isFriday && pipe(date, DayJs.isHourSharp(rangeStart))
       ? delaySendAllMessages(date)
       : Future.unit
