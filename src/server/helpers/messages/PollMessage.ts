@@ -33,7 +33,6 @@ type PollOptions = {
 }
 
 const poll = (
-  createdBy: DiscordUserId,
   question: string,
   answers: NonEmptyArray<ChoiceWithVotesCount>,
   { isAnonymous, isMultiple }: PollOptions,
@@ -66,11 +65,9 @@ const poll = (
           `${answersStr}
           |
           |Total de réponses : ${total}
-          |*Sondage créé par <@${DiscordUserId.unwrap(
-            createdBy,
-          )}>* - anonyme : \`${StringUtils.booleanLabel(
+          |*anonyme :* \`${StringUtils.booleanLabel(
             isAnonymous,
-          ).toLowerCase()}\`, choix multiple : \`${StringUtils.booleanLabel(
+          ).toLowerCase()}\`, *choix multiple :* \`${StringUtils.booleanLabel(
             isMultiple,
           ).toLowerCase()}\``,
         ),

@@ -1,12 +1,12 @@
 import type { APIMessage } from 'discord-api-types/payloads/v9'
-import type { Guild, Message, ThreadChannel } from 'discord.js'
+import { Message } from 'discord.js'
+import type { Guild, ThreadChannel } from 'discord.js'
 import type {
   ButtonInteraction,
   CommandInteraction,
   Interaction,
   MessageContextMenuInteraction,
   PartialMessage,
-  TextBasedChannel,
   User,
 } from 'discord.js'
 import { apply } from 'fp-ts'
@@ -136,16 +136,10 @@ export const PollCommandsObserver = (
   // onPollCommand
   function onPollCommand(interaction: CommandInteraction): Future<void> {
     return pipe(
-      DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
-      Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
-      Future.chain(() =>
-        apply.sequenceS(futureMaybe.ApplyPar)({
-          channel: futureMaybe.fromNullable(interaction.channel),
-          question: futureMaybe.fromNullable(interaction.options.getString(Keys.question)),
-        }),
-      ),
-      futureMaybe.chainTaskEitherK(({ channel, question }) =>
-        initPoll(channel, interaction.user, question, getChoices(interaction), {
+      DiscordConnector.interactionDeferReply(interaction, { ephemeral: false }),
+      Future.map(() => Maybe.fromNullable(interaction.options.getString(Keys.question))),
+      futureMaybe.chainTaskEitherK(question =>
+        initPoll(interaction, interaction.user, question, getChoices(interaction), {
           isAnonymous: interaction.options.getBoolean(Keys.anonymous) ?? false,
           isMultiple: interaction.options.getBoolean(Keys.multiple) ?? false,
         }),
@@ -155,21 +149,27 @@ export const PollCommandsObserver = (
   }
 
   function initPoll(
-    channel: TextBasedChannel,
+    interaction: CommandInteraction,
     user: User,
     question: string,
     choices: NonEmptyArray<string>,
     { isAnonymous, isMultiple }: IsAnonymous & IsMultiple,
   ): Future<void> {
-    const createdBy = DiscordUserId.fromUser(user)
+    const guild = interaction.guild
+    if (guild === null) return Future.unit
+
     const options = PollMessage.poll(
-      createdBy,
       question,
       pipe(choices, NonEmptyArray.map(ChoiceWithVotesCount.empty)),
       { isAnonymous, isMultiple },
     )
     return pipe(
-      DiscordConnector.sendMessage(channel, options),
+      DiscordConnector.interactionFollowUp(interaction, options),
+      Future.chain(message =>
+        message instanceof Message
+          ? futureMaybe.some(message)
+          : DiscordConnector.fetchMessage(guild, MessageId.fromMessage(message)),
+      ),
       futureMaybe.chainTaskEitherK(message =>
         apply.sequenceS(Future.ApplyPar)({
           // we want the `(edited)` label on message so we won't have a layout shift
@@ -185,7 +185,7 @@ export const PollCommandsObserver = (
       futureMaybe.chainTaskEitherK(({ message, detail }) =>
         pollService.createPoll({
           message: MessageId.fromMessage(message),
-          createdBy,
+          createdBy: DiscordUserId.fromUser(user),
           question,
           choices,
           detail,
@@ -369,7 +369,6 @@ export const PollCommandsObserver = (
         DiscordConnector.messageEdit(
           message,
           PollMessage.poll(
-            poll.createdBy,
             poll.question,
             pipe(poll.choices, NonEmptyArray.map(ChoiceWithVotesCount.fromChoiceWithResponses)),
             { isAnonymous: poll.isAnonymous, isMultiple: poll.isMultiple },
