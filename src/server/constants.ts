@@ -43,6 +43,14 @@ export const constants = {
   fetchLogsLimit: 30,
   networkTolerance: MsDuration.seconds(4),
 
+  itsFriday: {
+    day: 5,
+    hourRange: {
+      start: 14,
+      end: 17,
+    },
+  },
+
   // webapp
   account: {
     tokenTtl: MsDuration.days(30),

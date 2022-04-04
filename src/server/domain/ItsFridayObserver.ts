@@ -16,8 +16,8 @@ import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
 
-const rangeStart = 14
-const rangeEnd = 17
+const rangeStart = constants.itsFriday.hourRange.start
+const rangeEnd = constants.itsFriday.hourRange.end
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const ItsFridayObserver = (Logger: LoggerGetter, guildStateService: GuildStateService) => {
@@ -27,7 +27,7 @@ export const ItsFridayObserver = (Logger: LoggerGetter, guildStateService: Guild
     MadEvent,
     'CronJob',
   )(({ date }) => {
-    const isFriday = DayJs.day.get(date) === 6
+    const isFriday = DayJs.day.get(date) === constants.itsFriday.day
     return isFriday && pipe(date, DayJs.isHourSharp(rangeStart))
       ? delaySendAllMessages(date)
       : Future.unit
@@ -37,7 +37,13 @@ export const ItsFridayObserver = (Logger: LoggerGetter, guildStateService: Guild
     return pipe(
       randomDelay(now),
       IO.chainFirst(delay =>
-        logger.info(`Scheduling "It's friday" in ${StringUtils.prettyMs(delay)}`),
+        logger.info(
+          `Scheduling "It's friday" at ${pipe(
+            now,
+            DayJs.add(delay),
+            DayJs.format('HH:mm:ss'),
+          )} (in ${StringUtils.prettyMs(delay)})`,
+        ),
       ),
       Future.fromIOEither,
       Future.chain(delay => pipe(sendAllMessages(), Future.delay(delay))),
