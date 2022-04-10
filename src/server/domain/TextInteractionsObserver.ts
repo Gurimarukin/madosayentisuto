@@ -15,6 +15,7 @@ import { List, toUnit } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
 import type { CaptainConfig } from '../Config'
+import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
 import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
@@ -87,6 +88,7 @@ const sendIDontLikeThieves = send(
   MessageUtils.singleSafeEmbed({
     title: "J'aime pas trop les voleurs et les fils de pute.",
     url: 'http://george-abitbol.fr/v/374a915e',
+    color: constants.messagesColor,
   }),
 )
 const sendNoNeedToThankMe = send('Haha ! Inutile de me remercier...')
