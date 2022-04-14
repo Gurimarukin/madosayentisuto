@@ -9,11 +9,15 @@ import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import { MigrationCreatedAt, MigrationDb } from '../models/migration/MigrationDb'
 import type { MigrationDbOutput } from '../models/migration/MigrationDb'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
+import { Sink } from '../models/rx/Sink'
 
 export type MigrationPersistence = ReturnType<typeof MigrationPersistence>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const MigrationPersistence = (Logger: LoggerGetter, mongoCollection: MongoCollection) => {
+export const MigrationPersistence = (
+  Logger: LoggerGetter,
+  mongoCollection: (collName: string) => MongoCollection,
+) => {
   const logger = Logger('MigrationPersistence')
   const collection = FpCollection<MigrationDb, MigrationDbOutput>(
     logger,
@@ -21,10 +25,13 @@ export const MigrationPersistence = (Logger: LoggerGetter, mongoCollection: Mong
     [MigrationDb.codec, 'MigrationDb'],
   )
 
-  const alreadyApplied: Future<List<DayJs>> = collection.findAll([
-    MigrationCreatedAt.decoder,
-    'MigrationCreatedAt',
-  ])({}, { projection: { createdAt: 1 } })
+  const alreadyApplied: Future<List<DayJs>> = pipe(
+    collection.findAll([MigrationCreatedAt.decoder, 'MigrationCreatedAt'])(
+      {},
+      { projection: { createdAt: 1 } },
+    ),
+    Sink.readonlyArray,
+  )
 
   return {
     create: (createdAt: DayJs): Future<boolean> =>

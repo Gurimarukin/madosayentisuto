@@ -57,6 +57,7 @@ const format =
   (date: DayJs): string =>
     unwrap(date).format(template)
 
+const toDate = (date: DayJs): Date => unwrap(date).toDate()
 const toISOString = (date: DayJs): string => unwrap(date).toISOString()
 
 function diff(b: DayJs): (a: DayJs) => MsDuration
@@ -141,6 +142,7 @@ export const DayJs = {
   startOf,
 
   format,
+  toDate,
   toISOString,
   diff,
   unwrap,

@@ -1,7 +1,4 @@
-import { task } from 'fp-ts'
 import { identity, pipe } from 'fp-ts/function'
-import type { Collection, Db } from 'mongodb'
-import { MongoClient } from 'mongodb'
 
 import { MsDuration } from '../shared/models/MsDuration'
 import { StringUtils } from '../shared/utils/StringUtils'
@@ -11,7 +8,8 @@ import type { Config } from './Config'
 import { JwtHelper } from './helpers/JwtHelper'
 import { YtDlp } from './helpers/YtDlp'
 import type { LoggerGetter } from './models/logger/LoggerGetter'
-import type { MongoCollection } from './models/mongo/MongoCollection'
+import { MongoCollection } from './models/mongo/MongoCollection'
+import { WithDb } from './models/mongo/WithDb'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { HealthCheckPersistence } from './persistence/HealthCheckPersistence'
@@ -23,8 +21,6 @@ import { UserPersistence } from './persistence/UserPersistence'
 import { HealthCheckService } from './services/HealthCheckService'
 import { MigrationService } from './services/MigrationService'
 
-type WithDb = <A>(f: (db: Db) => Promise<A>) => Future<A>
-
 export type Context = ReturnType<typeof of>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -32,7 +28,7 @@ const of = (
   config: Config,
   Logger: LoggerGetter,
   withDb: WithDb,
-  mongoCollection: MongoCollection,
+  mongoCollection: (collName: string) => MongoCollection,
 ) => {
   const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
@@ -67,28 +63,13 @@ const dbRetryDelay = MsDuration.seconds(10)
 const load = (config: Config, Logger: LoggerGetter): Future<Context> => {
   const logger = Logger('Context')
 
-  const url = `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`
-  const withDb = <A>(f: (db: Db) => Promise<A>): Future<A> =>
-    pipe(
-      Future.tryCatch(() => MongoClient.connect(url)),
-      Future.chain(client =>
-        pipe(
-          Future.tryCatch(() => f(client.db(config.db.dbName))),
-          task.chain(either =>
-            pipe(
-              Future.tryCatch(() => client.close()),
-              Future.orElse(e => Future.fromIOEither(logger.error('Failed to close client:\n', e))),
-              task.map(() => either),
-            ),
-          ),
-        ),
-      ),
-    )
+  const withDb = WithDb.of({
+    logger,
+    url: `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`,
+    dbName: config.db.dbName,
+  })
 
-  const mongoCollection: MongoCollection =
-    (collName: string) =>
-    <O, A>(f: (c: Collection<O>) => Promise<A>): Future<A> =>
-      withDb(db => f(db.collection(collName)))
+  const mongoCollection: (collName: string) => MongoCollection = MongoCollection.fromWithDb(withDb)
 
   const context = of(config, Logger, withDb, mongoCollection)
   const {

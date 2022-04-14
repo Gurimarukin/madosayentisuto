@@ -1,8 +1,9 @@
 import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
-import { Future, NonEmptyArray } from '../../shared/utils/fp'
-import type { List } from '../../shared/utils/fp'
+import type { NonEmptyArray } from '../../shared/utils/fp'
+import { Future } from '../../shared/utils/fp'
+import { List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import { MessageId } from '../models/MessageId'
@@ -10,11 +11,15 @@ import type { LoggerGetter } from '../models/logger/LoggerGetter'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { PollResponseOutput } from '../models/poll/PollResponse'
 import { PollResponse } from '../models/poll/PollResponse'
+import { Sink } from '../models/rx/Sink'
 
 export type PollResponsePersistence = ReturnType<typeof PollResponsePersistence>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: MongoCollection) => {
+export const PollResponsePersistence = (
+  Logger: LoggerGetter,
+  mongoCollection: (collName: string) => MongoCollection,
+) => {
   const logger = Logger('PollResponsePersistence')
   const collection = FpCollection<PollResponse, PollResponseOutput>(
     logger,
@@ -30,7 +35,7 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
     ensureIndexes,
 
     listForMessage: (message: MessageId): Future<List<PollResponse>> =>
-      collection.findAll()({ message: MessageId.unwrap(message) }),
+      pipe(collection.findAll()({ message: MessageId.codec.encode(message) }), Sink.readonlyArray),
 
     insert: (response: PollResponse): Future<boolean> =>
       pipe(
@@ -41,8 +46,8 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
     remove: ({ message, user, choiceIndex }: PollResponse): Future<boolean> =>
       pipe(
         collection.deleteOne({
-          message: MessageId.unwrap(message),
-          user: DiscordUserId.unwrap(user),
+          message: MessageId.codec.encode(message),
+          user: DiscordUserId.codec.encode(user),
           choiceIndex,
         }),
         Future.map(r => r.deletedCount === 1),
@@ -51,8 +56,8 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
     removeForUser: (message: MessageId, user: DiscordUserId): Future<number> =>
       pipe(
         collection.deleteMany({
-          message: MessageId.unwrap(message),
-          user: DiscordUserId.unwrap(user),
+          message: MessageId.codec.encode(message),
+          user: DiscordUserId.codec.encode(user),
         }),
         Future.map(r => r.deletedCount),
       ),
@@ -60,7 +65,7 @@ export const PollResponsePersistence = (Logger: LoggerGetter, mongoCollection: M
     removeForMessages: (messages: NonEmptyArray<MessageId>): Future<number> =>
       pipe(
         collection.deleteMany({
-          message: { $in: pipe(messages, NonEmptyArray.map(MessageId.unwrap)) },
+          message: { $in: List.encoder(MessageId.codec).encode(messages) },
         }),
         Future.map(r => r.deletedCount),
       ),

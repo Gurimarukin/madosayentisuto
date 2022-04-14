@@ -13,7 +13,10 @@ import { WebUser } from '../models/webUser/WebUser'
 export type UserPersistence = ReturnType<typeof UserPersistence>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export function UserPersistence(Logger: LoggerGetter, mongoCollection: MongoCollection) {
+export function UserPersistence(
+  Logger: LoggerGetter,
+  mongoCollection: (collName: string) => MongoCollection,
+) {
   const logger = Logger('UserPersistence')
   const collection = FpCollection<WebUser, WebUserOutput>(logger, mongoCollection('user'), [
     WebUser.codec,
@@ -29,7 +32,7 @@ export function UserPersistence(Logger: LoggerGetter, mongoCollection: MongoColl
     ensureIndexes,
 
     findByUserName: (userName: UserName): Future<Maybe<WebUser>> =>
-      collection.findOne({ userName: UserName.unwrap(userName) }),
+      collection.findOne({ userName: UserName.codec.encode(userName) }),
 
     create: (user: WebUser): Future<boolean> =>
       pipe(

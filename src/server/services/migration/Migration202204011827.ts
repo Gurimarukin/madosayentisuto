@@ -6,10 +6,14 @@ import { Future, toUnit } from '../../../shared/utils/fp'
 import type { Migration } from '../../models/migration/Migration'
 import type { MongoCollection } from '../../models/mongo/MongoCollection'
 
-export const Migration202204011827 = (mongoCollection: MongoCollection): Migration => ({
+export const Migration202204011827 = (
+  mongoCollection: (collName: string) => MongoCollection,
+): Migration => ({
   createdAt: DayJs.of('2022-04-01T18:27:00Z'),
   migrate: pipe(
-    mongoCollection('pollQuestion')(coll => coll.updateMany({}, { $set: { isAnonymous: true } })),
+    mongoCollection('pollQuestion').future(coll =>
+      coll.updateMany({}, { $set: { isAnonymous: true } }),
+    ),
     Future.map(toUnit),
   ),
 })

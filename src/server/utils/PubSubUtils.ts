@@ -1,6 +1,5 @@
-import { observable } from 'fp-ts-rxjs'
 import { flow, pipe } from 'fp-ts/function'
-import type { Subscription } from 'rxjs'
+import type * as rxjs from 'rxjs'
 
 import type { List } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
@@ -42,10 +41,10 @@ const publishOn =
 
 const subscribe =
   <A>(logger: LoggerType, obs: TObservable<A>) =>
-  <B extends A>({ observer, refinement }: ObserverWithRefinement<A, B>): IO<Subscription> =>
+  <B extends A>({ observer, refinement }: ObserverWithRefinement<A, B>): IO<rxjs.Subscription> =>
     pipe(
       obs,
-      observable.filter(refinement),
+      TObservable.filter(refinement),
       TObservable.subscribe({
         next: flow(
           observer.next,

@@ -9,7 +9,7 @@ import type { AnyNewtype, CarrierOf } from 'newtype-ts'
 
 import { DayJs } from '../models/DayJs'
 import { StringUtils } from './StringUtils'
-import { Either, List } from './fp'
+import { Either, List, Maybe } from './fp'
 import { NonEmptyArray } from './fp'
 
 const limit = 10000
@@ -36,27 +36,53 @@ export const fromNewtype = <N extends AnyNewtype = never>(
   codec: Codec<unknown, CarrierOf<N>, CarrierOf<N>>,
 ): Codec<unknown, CarrierOf<N>, N> => codec
 
-// DateFromISOString
+// DayJsFromISOString
 
-const dateFromISOStringDecoder: Decoder<unknown, DayJs> = pipe(
+const dayJsFromISOStringDecoder: Decoder<unknown, DayJs> = pipe(
   D.string,
   D.parse(str => {
     const d = DayJs.of(str)
-    return DayJs.isValid(d) ? D.success(d) : D.failure(str, 'DateFromISOString')
+    return DayJs.isValid(d) ? D.success(d) : D.failure(str, 'DayJsFromISOString')
   }),
 )
 
-const dateFromISOStringEncoder: Encoder<string, DayJs> = { encode: DayJs.toISOString }
+const dayJsFromISOStringEncoder: Encoder<string, DayJs> = { encode: DayJs.toISOString }
 
-const dateFromISOStringCodec: Codec<unknown, string, DayJs> = C.make(
-  dateFromISOStringDecoder,
-  dateFromISOStringEncoder,
+const dayJsFromISOStringCodec: Codec<unknown, string, DayJs> = C.make(
+  dayJsFromISOStringDecoder,
+  dayJsFromISOStringEncoder,
 )
 
-export const DateFromISOString = {
-  decoder: dateFromISOStringDecoder,
-  encoder: dateFromISOStringEncoder,
-  codec: dateFromISOStringCodec,
+export const DayJsFromISOString = {
+  decoder: dayJsFromISOStringDecoder,
+  encoder: dayJsFromISOStringEncoder,
+  codec: dayJsFromISOStringCodec,
+}
+
+// DayJsFromDate
+
+const dayJsFromDateDecoder: Decoder<unknown, DayJs> = {
+  decode: i =>
+    pipe(
+      i,
+      Maybe.fromPredicate((u): u is Date => u instanceof Date),
+      Maybe.map(DayJs.of),
+      Maybe.filter(DayJs.isValid),
+      Maybe.fold(() => D.failure(i, 'DayJsFromDate'), D.success),
+    ),
+}
+
+const dayJsFromDateEncoder: Encoder<Date, DayJs> = { encode: DayJs.toDate }
+
+const dayJsFromDateCodec: Codec<unknown, Date, DayJs> = C.make(
+  dayJsFromDateDecoder,
+  dayJsFromDateEncoder,
+)
+
+export const DayJsFromDate = {
+  decoder: dayJsFromDateDecoder,
+  encoder: dayJsFromDateEncoder,
+  codec: dayJsFromDateCodec,
 }
 
 // BooleanFromString

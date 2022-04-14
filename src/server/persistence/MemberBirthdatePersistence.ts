@@ -10,13 +10,14 @@ import { Birthdate } from '../models/member/Birthdate'
 import type { MemberBirthdateOutput } from '../models/member/MemberBirthdate'
 import { MemberBirthdate } from '../models/member/MemberBirthdate'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
+import { Sink } from '../models/rx/Sink'
 
 export type MemberBirthdatePersistence = ReturnType<typeof MemberBirthdatePersistence>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const MemberBirthdatePersistence = (
   Logger: LoggerGetter,
-  mongoCollection: MongoCollection,
+  mongoCollection: (collName: string) => MongoCollection,
 ) => {
   const logger = Logger('MemberBirthdatePersistence')
   const collection = FpCollection<MemberBirthdate, MemberBirthdateOutput>(
@@ -37,21 +38,27 @@ export const MemberBirthdatePersistence = (
 
     listForDate: (d: DayJs): Future<List<MemberBirthdate>> => {
       const { month, date } = Birthdate.fromDate(d)
-      return collection.findAll()({ [Keys.month]: month, [Keys.date]: date })
+      return pipe(
+        collection.findAll()({ [Keys.month]: month, [Keys.date]: date }),
+        Sink.readonlyArray,
+      )
     },
 
     listForMembers: (ids: List<DiscordUserId>): Future<List<MemberBirthdate>> =>
-      collection.findAll()({ id: { $in: pipe(ids, List.map(DiscordUserId.unwrap)) } }),
+      pipe(
+        collection.findAll()({ id: { $in: List.encoder(DiscordUserId.codec).encode(ids) } }),
+        Sink.readonlyArray,
+      ),
 
     upsert: (state: MemberBirthdate): Future<boolean> =>
       pipe(
-        collection.updateOne({ id: DiscordUserId.unwrap(state.id) }, state, { upsert: true }),
+        collection.updateOne({ id: DiscordUserId.codec.encode(state.id) }, state, { upsert: true }),
         Future.map(r => r.modifiedCount + r.upsertedCount <= 1),
       ),
 
     remove: (id: DiscordUserId): Future<boolean> =>
       pipe(
-        collection.deleteOne({ id: DiscordUserId.unwrap(id) }),
+        collection.deleteOne({ id: DiscordUserId.codec.encode(id) }),
         Future.map(r => r.deletedCount === 1),
       ),
   }

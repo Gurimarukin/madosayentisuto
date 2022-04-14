@@ -11,7 +11,10 @@ import type { MongoCollection } from '../models/mongo/MongoCollection'
 export type BotStatePersistence = ReturnType<typeof BotStatePersistence>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const BotStatePersistence = (Logger: LoggerGetter, mongoCollection: MongoCollection) => {
+export const BotStatePersistence = (
+  Logger: LoggerGetter,
+  mongoCollection: (collName: string) => MongoCollection,
+) => {
   const logger = Logger('BotStatePersistence')
   const collection = FpCollection<BotState, BotStateOutput>(logger, mongoCollection('botState'), [
     BotState.codec,

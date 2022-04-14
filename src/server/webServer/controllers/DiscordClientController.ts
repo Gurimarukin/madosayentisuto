@@ -7,7 +7,7 @@ import { GuildView } from '../../../shared/models/guild/GuildView'
 import { GuildViewShort } from '../../../shared/models/guild/GuildViewShort'
 import { Future, IO, List, Maybe } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
-import { DateFromISOString } from '../../../shared/utils/ioTsUtils'
+import { DayJsFromISOString } from '../../../shared/utils/ioTsUtils'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { MemberBirthdateService } from '../../services/MemberBirthdateService'
@@ -60,7 +60,7 @@ export const DiscordClientController = (
   updateMemberBirthdate: (userId: DiscordUserId) => (/* user: User */): EndedMiddleware =>
     /* User.canUpdateMember(user) */
     pipe(
-      M.decodeBody([DateFromISOString.decoder, 'DateFromISOString']),
+      M.decodeBody([DayJsFromISOString.decoder, 'DayJsFromISOString']),
       M.matchE(
         () => M.of(false),
         birthdate => M.fromTaskEither(memberBirthdateService.upsert(userId, birthdate)),

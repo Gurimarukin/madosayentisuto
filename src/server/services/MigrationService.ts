@@ -16,7 +16,7 @@ export type MigrationService = ReturnType<typeof MigrationService>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const MigrationService = (
   Logger: LoggerGetter,
-  mongoCollection: MongoCollection,
+  mongoCollection: (collName: string) => MongoCollection,
   migrationPersistence: MigrationPersistence,
 ) => {
   const logger = Logger('MigrationService')

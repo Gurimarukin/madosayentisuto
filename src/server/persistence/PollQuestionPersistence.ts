@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/function'
 
-import { Maybe } from '../../shared/utils/fp'
-import { NonEmptyArray } from '../../shared/utils/fp'
+import { List, Maybe } from '../../shared/utils/fp'
+import type { NonEmptyArray } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
@@ -15,7 +15,10 @@ import { ThreadWithMessage } from '../models/poll/ThreadWithMessage'
 export type PollQuestionPersistence = ReturnType<typeof PollQuestionPersistence>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const PollQuestionPersistence = (Logger: LoggerGetter, mongoCollection: MongoCollection) => {
+export const PollQuestionPersistence = (
+  Logger: LoggerGetter,
+  mongoCollection: (collName: string) => MongoCollection,
+) => {
   const logger = Logger('PollQuestionPersistence')
   const collection = FpCollection<PollQuestion, PollQuestionOutput>(
     logger,
@@ -31,7 +34,7 @@ export const PollQuestionPersistence = (Logger: LoggerGetter, mongoCollection: M
     ensureIndexes,
 
     lookupByMessage: (message: MessageId): Future<Maybe<PollQuestion>> =>
-      collection.findOne({ message: MessageId.unwrap(message) }),
+      collection.findOne({ message: MessageId.codec.encode(message) }),
 
     insert: (question: PollQuestion): Future<boolean> =>
       pipe(
@@ -42,9 +45,9 @@ export const PollQuestionPersistence = (Logger: LoggerGetter, mongoCollection: M
     setDetail: (message: MessageId, detail: ThreadWithMessage): Future<boolean> => {
       const encodedDetail = Maybe.encoder(ThreadWithMessage.codec).encode(Maybe.some(detail))
       return pipe(
-        collection.collection(coll =>
+        collection.collection.future(coll =>
           coll.updateOne(
-            { message: MessageId.unwrap(message) },
+            { message: MessageId.codec.encode(message) },
             { $set: { detail: encodedDetail } },
           ),
         ),
@@ -55,7 +58,7 @@ export const PollQuestionPersistence = (Logger: LoggerGetter, mongoCollection: M
     removeForMessages: (messages: NonEmptyArray<MessageId>): Future<number> =>
       pipe(
         collection.deleteMany({
-          message: { $in: pipe(messages, NonEmptyArray.map(MessageId.unwrap)) },
+          message: { $in: List.encoder(MessageId.codec).encode(messages) },
         }),
         Future.map(r => r.deletedCount),
       ),

@@ -2,17 +2,17 @@ import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
 
-import { DateFromISOString } from '../../../shared/utils/ioTsUtils'
+import { DayJsFromISOString } from '../../../shared/utils/ioTsUtils'
 
 const createdAtCodec = C.struct({
-  createdAt: DateFromISOString.codec,
+  createdAt: DayJsFromISOString.codec,
 })
 
 const codec = pipe(
   createdAtCodec,
   C.intersect(
     C.struct({
-      appliedAt: DateFromISOString.codec,
+      appliedAt: DayJsFromISOString.codec,
     }),
   ),
 )

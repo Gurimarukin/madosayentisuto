@@ -40,7 +40,7 @@ export const inspect =
 export const noop = (): void => undefined
 
 // a Future is an IO
-type NonIO<A> = A extends io.IO<unknown> ? never : A extends void ? never : A
+export type NonIO<A> = A extends io.IO<unknown> ? never : A extends void ? never : A
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars, functional/no-return-void
 export const toUnit = <A>(_: NonIO<A>): void => undefined

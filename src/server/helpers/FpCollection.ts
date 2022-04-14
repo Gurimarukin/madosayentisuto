@@ -1,10 +1,9 @@
-import { flow, pipe } from 'fp-ts/function'
+import { identity, pipe } from 'fp-ts/function'
 import type { Codec } from 'io-ts/Codec'
 import type { Decoder } from 'io-ts/Decoder'
 import type {
   BulkWriteOptions,
   ClientSession,
-  Collection,
   DeleteOptions,
   DeleteResult,
   Document,
@@ -21,21 +20,23 @@ import type {
 } from 'mongodb'
 
 import { StringUtils } from '../../shared/utils/StringUtils'
-import type { Dict, Tuple } from '../../shared/utils/fp'
+import type { Dict, List, Tuple } from '../../shared/utils/fp'
 import { toUnit } from '../../shared/utils/fp'
-import { Either, Future, List, Maybe } from '../../shared/utils/fp'
+import { Either, Future, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import type { LoggerType } from '../models/logger/LoggerType'
+import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { IndexDescription, WithoutProjection } from '../models/mongo/MongoTypings'
+import { TObservable } from '../models/rx/TObservable'
 
 export type FpCollection = ReturnType<typeof FpCollection>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const FpCollection = <A, O extends Dict<string, unknown>>(
   logger: LoggerType,
-  collection: <T>(f: (coll: Collection<O>) => Promise<T>) => Future<T>,
+  collection: MongoCollection,
   codecWithName: Tuple<Codec<unknown, OptionalUnlessRequiredId<O>, A>, string>,
 ) => {
   const [codec, codecName] = codecWithName
@@ -53,7 +54,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
         logger.info('Ensuring indexes'),
         Future.fromIOEither,
         Future.chain(() =>
-          collection(c =>
+          collection.future(c =>
             // eslint-disable-next-line functional/prefer-readonly-type
             c.createIndexes(indexSpecs as IndexDescription<A>[], options),
           ),
@@ -64,7 +65,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
     insertOne: (doc: A, options: InsertOneOptions = {}): Future<InsertOneResult<O>> => {
       const encoded = codec.encode(doc)
       return pipe(
-        collection(c => c.insertOne(encoded, options)),
+        collection.future(c => c.insertOne(encoded, options)),
         Future.chainFirstIOEitherK(() => logger.debug('Inserted', JSON.stringify(encoded))),
       )
     },
@@ -72,7 +73,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
     insertMany: (docs: List<A>, options: BulkWriteOptions = {}): Future<InsertManyResult<O>> => {
       const encoded = docs.map(codec.encode)
       return pipe(
-        collection(c => c.insertMany(encoded, options)),
+        collection.future(c => c.insertMany(encoded, options)),
         Future.chainFirstIOEitherK(res => logger.debug(`Inserted ${res.insertedCount} documents`)),
       )
     },
@@ -80,7 +81,9 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
     updateOne: (filter: Filter<O>, doc: A, options: UpdateOptions = {}): Future<UpdateResult> => {
       const encoded = codec.encode(doc)
       return pipe(
-        collection(c => c.updateOne(filter, { $set: encoded as MatchKeysAndValues<O> }, options)),
+        collection.future(c =>
+          c.updateOne(filter, { $set: encoded as MatchKeysAndValues<O> }, options),
+        ),
         Future.chainFirstIOEitherK(() => logger.debug('Updated', JSON.stringify(encoded))),
       )
     },
@@ -92,19 +95,19 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
     ): Future<UpdateResult | Document> => {
       const encoded = codec.encode(doc)
       return pipe(
-        collection(c => c.replaceOne(filter, encoded as O, options)),
+        collection.future(c => c.replaceOne(filter, encoded as O, options)),
         Future.chainFirstIOEitherK(() => logger.debug('Replaced', JSON.stringify(encoded))),
       )
     },
 
-    count: (filter: Filter<O>): Future<number> => collection(c => c.countDocuments(filter)),
+    count: (filter: Filter<O>): Future<number> => collection.future(c => c.countDocuments(filter)),
 
     findOne: (
       filter: Filter<O>,
       options: WithoutProjection<FindOptions<O>> = {},
     ): Future<Maybe<A>> =>
       pipe(
-        collection(c => c.findOne(filter, options)),
+        collection.future(c => c.findOne(filter, options)),
         Future.chainFirstIOEitherK(res => logger.debug('Found one', JSON.stringify(res))),
         Future.map(Maybe.fromNullable),
         futureMaybe.chain(u =>
@@ -120,53 +123,32 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
 
     deleteOne: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
       pipe(
-        collection(c => c.deleteOne(filter, options)),
+        collection.future(c => c.deleteOne(filter, options)),
         Future.chainFirstIOEitherK(res => logger.debug(`Deleted ${res.deletedCount} documents`)),
       ),
 
     deleteMany: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
       pipe(
-        collection(c => c.deleteMany(filter, options)),
+        collection.future(c => c.deleteMany(filter, options)),
         Future.chainFirstIOEitherK(res => logger.debug(`Deleted ${res.deletedCount} documents`)),
       ),
 
     drop: (): Future<boolean> =>
       pipe(
-        collection(c => c.drop()),
+        collection.future(c => c.drop()),
         Future.chainFirstIOEitherK(() => logger.debug('Dropped collection')),
       ),
   }
 
-  function findAll(): (query: Filter<O>, options?: FindOptions<O>) => Future<List<A>>
+  function findAll(): (query: Filter<O>, options?: FindOptions<O>) => TObservable<A>
   function findAll<B>([decoder, decoderName]: Tuple<Decoder<unknown, B>, string>): (
     query: Filter<O>,
     options?: FindOptions<O>,
-  ) => Future<List<B>>
+  ) => TObservable<B>
   function findAll<B>(
     [decoder, decoderName] = codecWithName as Tuple<Decoder<unknown, B>, string>,
-  ): (query: Filter<O>, options?: FindOptions<O>) => Future<List<B>> {
-    return (query, options) =>
-      pipe(
-        collection(coll => coll.find(query, options).toArray()),
-        Future.chainFirstIOEitherK(res => logger.debug('Found all', JSON.stringify(res))),
-        Future.chain(
-          Future.traverseSeqArray(u =>
-            pipe(
-              decoder.decode(u),
-              Either.fold(
-                flow(
-                  decodeError(decoderName)(u),
-                  e => logger.warn(e.stack),
-                  Future.fromIOEither,
-                  Future.map(() => Maybe.none),
-                ),
-                flow(Maybe.some, Future.right),
-              ),
-            ),
-          ),
-        ),
-        Future.map(List.compact),
-      )
+  ): (query: Filter<O>, options?: FindOptions<O>) => TObservable<B> {
+    return fpCollectionHelpersFindAll(logger, collection, [decoder, decoderName])
   }
 }
 
@@ -195,6 +177,28 @@ type Path<S> = {
   <K1 extends keyof S>(path: readonly [K1]): string
 }
 
-export const FpCollectionHelpers = {
-  getPath: <A>(): Path<A> => StringUtils.mkString('.'),
-}
+const getPath = <A>(): Path<A> => StringUtils.mkString('.')
+
+const fpCollectionHelpersFindAll =
+  <O, B>(
+    logger: LoggerType,
+    collection: MongoCollection,
+    [decoder, decoderName]: Tuple<Decoder<unknown, B>, string>,
+  ) =>
+  (query: Filter<O>, options?: FindOptions<O>): TObservable<B> =>
+    pipe(
+      collection.observable(coll => coll.find(query, options).stream()),
+      TObservable.map(u => pipe(decoder.decode(u), Either.mapLeft(decodeError(decoderName)(u)))),
+      TObservable.flattenTry,
+      TObservable.map(Maybe.some),
+      TObservable.concat(
+        pipe(
+          futureMaybe.none,
+          Future.chainFirstIOEitherK(() => logger.debug('Found all - TObservable completed')),
+          TObservable.fromTaskEither,
+        ),
+      ),
+      TObservable.filterMap(identity),
+    )
+
+export const FpCollectionHelpers = { getPath, findAll: fpCollectionHelpersFindAll }
