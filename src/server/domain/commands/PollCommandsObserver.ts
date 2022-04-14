@@ -389,23 +389,18 @@ export const PollCommandsObserver = (
           Future.chain(
             Maybe.fold(
               // maybe the thread got deleted?
-              () =>
-                pipe(
-                  discord.fetchChannel(detail.thread),
-                  futureMaybe.filter(ChannelUtils.isThreadChannel),
-                  Future.chain(reInitDetailMessage(guild, poll)),
-                ),
-              message =>
-                pipe(
-                  DiscordConnector.messageEdit(message, PollMessage.detail(poll.choices)),
-                  Future.map(toUnit),
-                ),
+              () => pipe(getThread(detail.thread), Future.chain(reInitDetailMessage(guild, poll))),
+              message => editDetailMessage(message, poll, detail.thread),
             ),
           ),
         ),
       ),
       Future.map(toUnit),
     )
+  }
+
+  function getThread(thread: ChannelId): Future<Maybe<ThreadChannel>> {
+    return pipe(discord.fetchChannel(thread), futureMaybe.filter(ChannelUtils.isThreadChannel))
   }
 
   function reInitDetailMessage(
@@ -421,7 +416,7 @@ export const PollCommandsObserver = (
             Maybe.fold(
               () => initDetailMessage(poll.choices, pollMessage),
               // the tread still exist, don't recreate it
-              thread => initDetailMessageFromThread(poll.choices, pollMessage, thread),
+              thread => initDetailMessageFromThread(poll.choices, thread),
             ),
           ),
         ),
@@ -439,13 +434,12 @@ export const PollCommandsObserver = (
         name: threadName,
         autoArchiveDuration: 'MAX',
       }),
-      Future.chain(thread => initDetailMessageFromThread(choices, pollMessage, thread)),
+      Future.chain(thread => initDetailMessageFromThread(choices, thread)),
     )
   }
 
   function initDetailMessageFromThread(
     choices: NonEmptyArray<ChoiceWithResponses>,
-    pollMessage: Message,
     thread: ThreadChannel,
   ): Future<Maybe<ThreadWithMessage>> {
     const options = PollMessage.detail(choices)
@@ -464,28 +458,25 @@ export const PollCommandsObserver = (
     )
   }
 
-  // function refreshDetailMessage(guild: Guild, poll: Poll): Future<Maybe<Message>> {
-  //   return pipe(
-  //     futureMaybe.fromOption(poll.detail),
-  //     futureMaybe.chain(detail =>
-  //       pipe(
-  //         DiscordConnector.fetchMessage(guild, detail.message),
-  //         Future.chainFirstIOEitherK<Maybe<Message>, void>(
-  //           Maybe.fold(
-  //             () =>
-  //               LogUtils.pretty(logger, guild).warn(
-  //                 `Couldn't fetch detail message ${MessageId.unwrap(detail.message)}`,
-  //               ),
-  //             () => IO.unit,
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //     futureMaybe.chainTaskEitherK(message =>
-  //       DiscordConnector.messageEdit(message, PollMessage.detail(poll.choices)),
-  //     ),
-  //   )
-  // }
+  function editDetailMessage(message: Message, poll: Poll, threadId: ChannelId): Future<void> {
+    const messageEdit = DiscordConnector.messageEdit(message, PollMessage.detail(poll.choices))
+    return pipe(
+      messageEdit,
+      Future.map(toUnit),
+      Future.orElse(e =>
+        e.message.split('\n')[1] === 'DiscordAPIError: Thread is archived'
+          ? pipe(
+              getThread(threadId),
+              futureMaybe.chainTaskEitherK(thread =>
+                DiscordConnector.threadSetArchived(thread, false),
+              ),
+              futureMaybe.chainTaskEitherK(() => messageEdit),
+              Future.map(toUnit),
+            )
+          : Future.left(e),
+      ),
+    )
+  }
 
   // onMessageContextMenu
   function onMessageContextMenu(interaction: MessageContextMenuInteraction): Future<void> {

@@ -460,6 +460,16 @@ const threadsCreate = <A extends MyThreadChannelTypes>(
     debugLeft('threadsCreate'),
   )
 
+const threadSetArchived = (
+  thread: ThreadChannel,
+  archived: boolean,
+  reason?: string,
+): Future<ThreadChannel> =>
+  pipe(
+    Future.tryCatch(() => thread.setArchived(archived, reason)),
+    debugLeft('threadSetArchived'),
+  )
+
 const voiceConnectionDestroy = (connection: VoiceConnection): IO<void> =>
   IO.tryCatch(() => connection.destroy())
 
@@ -519,6 +529,7 @@ export const DiscordConnector = {
   sendPrettyMessage,
   threadDelete,
   threadsCreate,
+  threadSetArchived,
   voiceConnectionDestroy,
   voiceConnectionJoin,
   voiceConnectionSubscribe,
@@ -557,9 +568,9 @@ const isDiscordAPIError =
     e instanceof DiscordAPIError && e.message === message
 
 const isMissingAccessError = isDiscordAPIError('Missing Access')
+const isUnknownChannelError = isDiscordAPIError('Unknown Channel')
 export const isMissingPermissionsError = isDiscordAPIError('Missing Permissions')
 export const isUnknownMessageError = isDiscordAPIError('Unknown Message')
-const isUnknownChannelError = isDiscordAPIError('Unknown Channel')
 
 const isMissingAccessOrMissingPermissionError = pipe(
   isMissingAccessError,
