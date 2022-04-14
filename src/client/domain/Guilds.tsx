@@ -30,7 +30,7 @@ export const Guilds = (): JSX.Element => {
           <pre>loading...</pre>
         ) : (
           <ul className="contents">
-            {guilds.concat(guilds).map(guild => (
+            {guilds.map(guild => (
               <li key={GuildId.unwrap(guild.id)}>
                 <Link
                   to={appRoutes.guild.index(guild.id)}
