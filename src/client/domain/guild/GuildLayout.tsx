@@ -12,13 +12,12 @@ import { useHttp } from '../../hooks/useHttp'
 import { appRoutes } from '../../router/AppRouter'
 import { basicAsyncRenderer } from '../../utils/basicAsyncRenderer'
 
+export type GuildViewResponse = Omit<SWRResponse<GuildView, unknown>, 'data'>
+
 type Props = {
   readonly guildId: GuildId
   readonly selected: 'emojis' | 'members' | undefined
-  readonly children?: (
-    guild: GuildView,
-    response: Omit<SWRResponse<GuildView, unknown>, 'data'>,
-  ) => React.ReactNode
+  readonly children?: (guild: GuildView, response: GuildViewResponse) => React.ReactNode
 }
 
 export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element => {

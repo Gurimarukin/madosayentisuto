@@ -23,18 +23,18 @@ export const Guilds = (): JSX.Element => {
       <div className="flex justify-center p-6">
         <h1 className="text-6xl">Bot Jean Plank</h1>
       </div>
-      <div className="grow flex justify-center items-center flex-wrap">
+      <div className="grow flex justify-center items-center flex-wrap gap-6">
         {error !== undefined ? (
           <pre>error</pre>
         ) : guilds === undefined ? (
           <pre>loading...</pre>
         ) : (
-          <ul>
-            {guilds.map(guild => (
+          <ul className="contents">
+            {guilds.concat(guilds).map(guild => (
               <li key={GuildId.unwrap(guild.id)}>
                 <Link
                   to={appRoutes.guild.index(guild.id)}
-                  className="flex flex-col items-center gap-y-2 border-4 border-gray1 rounded-xl shadow-lg p-5 pb-3 bg-gray2"
+                  className="flex flex-col items-center gap-2 border-4 border-gray1 rounded-xl shadow-lg p-5 pb-3 bg-gray2"
                 >
                   {pipe(
                     guild.icon,
