@@ -107,7 +107,7 @@ const byBirthday = (now: DayJs): Ord<MemberView> =>
 
 const byName: Ord<MemberView> = pipe(
   string.Ord,
-  ord.contramap(m => m.name),
+  ord.contramap(m => m.name.toLowerCase()),
 )
 
 const onPostBirthdate =
