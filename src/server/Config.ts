@@ -14,6 +14,7 @@ import {
   BooleanFromString,
   NonEmptyArrayFromString,
   NumberFromString,
+  URLFromString,
 } from '../shared/utils/ioTsUtils'
 
 import { LogLevelOrOff } from './models/logger/LogLevel'
@@ -60,7 +61,7 @@ export type CaptainConfig = {
 
 export type HttpConfig = {
   readonly port: number
-  readonly allowedOrigins: Maybe<NonEmptyArray<string>>
+  readonly allowedOrigins: Maybe<NonEmptyArray<URL>>
 }
 
 const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
@@ -92,7 +93,7 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
       }),
       http: seqS<HttpConfig>({
         port: r(NumberFromString.decoder)('HTTP_PORT'),
-        allowedOrigins: r(Maybe.decoder(NonEmptyArrayFromString.decoder(D.string)))(
+        allowedOrigins: r(Maybe.decoder(NonEmptyArrayFromString.decoder(URLFromString.decoder)))(
           'HTTP_ALLOWED_ORIGINS',
         ),
       }),

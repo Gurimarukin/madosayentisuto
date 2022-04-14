@@ -1,19 +1,18 @@
-import * as D from 'io-ts/Decoder'
-
 import { ValidatedNea } from '../../shared/models/ValidatedNea'
 import { parseConfig } from '../../shared/utils/config/parseConfig'
 import type { Dict, Try } from '../../shared/utils/fp'
+import { URLFromString } from '../../shared/utils/ioTsUtils'
 
 const { seqS } = ValidatedNea
 
 export type Config = {
-  readonly apiHost: string
+  readonly apiHost: URL
 }
 
 const parse = (rawConfig: Dict<string, string | undefined>): Try<Config> =>
   parseConfig(rawConfig)(r =>
     seqS<Config>({
-      apiHost: r(D.string)('API_HOST'),
+      apiHost: r(URLFromString.decoder)('API_HOST'),
     }),
   )
 

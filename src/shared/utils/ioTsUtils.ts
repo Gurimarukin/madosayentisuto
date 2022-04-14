@@ -9,7 +9,7 @@ import type { AnyNewtype, CarrierOf } from 'newtype-ts'
 
 import { DayJs } from '../models/DayJs'
 import { StringUtils } from './StringUtils'
-import { Either, List, Maybe } from './fp'
+import { Either, List, Maybe, Try } from './fp'
 import { NonEmptyArray } from './fp'
 
 const limit = 10000
@@ -117,6 +117,20 @@ const prepareArray: (i: string) => List<string> = flow(
   NonEmptyArray.map(string.trim),
   List.filter(predicate.not(string.isEmpty)),
 )
+
+// URLFromString
+
+const urlFromStringDecoder: Decoder<unknown, URL> = pipe(
+  D.string,
+  D.parse(s =>
+    pipe(
+      Try.tryCatch(() => new URL(s)),
+      Try.fold(() => D.failure(s, 'URLFromString'), D.success),
+    ),
+  ),
+)
+
+export const URLFromString = { decoder: urlFromStringDecoder }
 
 // ArrayFromString
 

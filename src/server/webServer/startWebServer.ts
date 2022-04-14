@@ -4,13 +4,13 @@ import { list } from 'fp-ts-contrib'
 import type { Parser } from 'fp-ts-routing'
 import { parse } from 'fp-ts-routing'
 import { Route as FpTsRoute, zero } from 'fp-ts-routing'
-import { identity, pipe } from 'fp-ts/function'
+import { flow, identity, pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 import type { ExpressConnection } from 'hyper-ts/lib/express'
 
 import { Method } from '../../shared/models/Method'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import { Dict, Future, IO, List, Maybe, toUnit } from '../../shared/utils/fp'
+import { Dict, Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/utils/fp'
 
 import type { HttpConfig } from '../Config'
 import type { LoggerGetter } from '../models/logger/LoggerGetter'
@@ -43,7 +43,7 @@ export const startWebServer = (
         Maybe.filter(origin =>
           pipe(
             allowedOrigins,
-            List.some(allowedOrigin => allowedOrigin === origin),
+            List.some(allowedOrigin => allowedOrigin.origin === origin),
           ),
         ),
     ),
@@ -55,7 +55,12 @@ export const startWebServer = (
       logger.debug(
         `HTTP_ALLOWED_ORIGINS: ${pipe(
           config.allowedOrigins,
-          Maybe.map(StringUtils.mkString(', ')),
+          Maybe.map(
+            flow(
+              NonEmptyArray.map(u => u.origin),
+              StringUtils.mkString(', '),
+            ),
+          ),
           Maybe.toNullable,
         )}`,
       ),

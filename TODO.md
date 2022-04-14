@@ -1,4 +1,3 @@
-- parse `API_HOST` and `HTTP_ALLOWED_ORIGINS` as `URL`
 - updgrade react
 - decouple autorole and call mention
 - select leave message chan
