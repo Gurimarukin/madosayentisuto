@@ -2,14 +2,12 @@ import * as C from 'io-ts/Codec'
 
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { Maybe } from '../../../shared/utils/fp'
-import { DayJsFromDate } from '../../../shared/utils/ioTsUtils'
 
-import { RoleId } from '../RoleId'
+import { ReminderWho } from './ReminderWho'
 
 const codec = C.struct({
   createdBy: DiscordUserId.codec,
-  who: Maybe.codec(RoleId.codec),
-  when: DayJsFromDate.codec,
+  who: Maybe.codec(ReminderWho.codec),
   what: C.string,
 })
 

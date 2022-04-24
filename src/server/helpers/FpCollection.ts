@@ -21,11 +21,13 @@ import type {
 
 import { StringUtils } from '../../shared/utils/StringUtils'
 import type { Dict, List, Tuple } from '../../shared/utils/fp'
+import { IO } from '../../shared/utils/fp'
 import { toUnit } from '../../shared/utils/fp'
 import { Either, Future, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
+import { Store } from '../models/Store'
 import type { LoggerType } from '../models/logger/LoggerType'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { IndexDescription, WithoutProjection } from '../models/mongo/MongoTypings'
@@ -185,20 +187,28 @@ const fpCollectionHelpersFindAll =
     collection: MongoCollection,
     [decoder, decoderName]: Tuple<Decoder<unknown, B>, string>,
   ) =>
-  (query: Filter<O>, options?: FindOptions<O>): TObservable<B> =>
-    pipe(
+  (query: Filter<O>, options?: FindOptions<O>): TObservable<B> => {
+    const count = Store(0)
+    return pipe(
       collection.observable(coll => coll.find(query, options).stream()),
       TObservable.map(u => pipe(decoder.decode(u), Either.mapLeft(decodeError(decoderName)(u)))),
       TObservable.flattenTry,
+      TObservable.chainFirstIOEitherK(() => count.modify(n => n + 1)),
       TObservable.map(Maybe.some),
       TObservable.concat(
         pipe(
           futureMaybe.none,
-          Future.chainFirstIOEitherK(() => logger.debug('Found all - TObservable completed')),
+          Future.chainFirstIOEitherK(() =>
+            pipe(
+              count.get,
+              IO.chain(n => logger.debug(`Found all ${n} documents`)),
+            ),
+          ),
           TObservable.fromTaskEither,
         ),
       ),
       TObservable.filterMap(identity),
     )
+  }
 
 export const FpCollectionHelpers = { getPath, findAll: fpCollectionHelpersFindAll }

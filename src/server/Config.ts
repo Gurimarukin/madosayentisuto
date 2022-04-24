@@ -9,15 +9,15 @@ import { parseConfig } from '../shared/utils/config/parseConfig'
 import { IO } from '../shared/utils/fp'
 import type { List, NonEmptyArray, Try } from '../shared/utils/fp'
 import { Maybe } from '../shared/utils/fp'
+
+import { LogLevelOrOff } from './models/logger/LogLevel'
 import {
   ArrayFromString,
   BooleanFromString,
   NonEmptyArrayFromString,
   NumberFromString,
   URLFromString,
-} from '../shared/utils/ioTsUtils'
-
-import { LogLevelOrOff } from './models/logger/LogLevel'
+} from './utils/ioTsUtils'
 
 const { seqS } = ValidatedNea
 

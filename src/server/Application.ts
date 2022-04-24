@@ -12,6 +12,7 @@ import { MusicThreadCleanObserver } from './domain/MusicThreadCleanObserver'
 import { NotifyBirthdayObserver } from './domain/NotifyBirthdayObserver'
 import { NotifyGuildLeaveObserver } from './domain/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './domain/NotifyVoiceCallObserver'
+import { ScheduledEventObserver } from './domain/ScheduledEventObserver'
 import { SendWelcomeDMObserver } from './domain/SendWelcomeDMObserver'
 import { SetDefaultRoleObserver } from './domain/SetDefaultRoleObserver'
 import { TextInteractionsObserver } from './domain/TextInteractionsObserver'
@@ -102,6 +103,7 @@ export const Application = (
       sub(NotifyBirthdayObserver(discord, guildStateService, memberBirthdateService)),
       sub(NotifyGuildLeaveObserver(Logger)),
       sub(NotifyVoiceCallObserver(Logger, guildStateService)),
+      sub(ScheduledEventObserver(Logger, discord, scheduledEventService)),
       sub(SendWelcomeDMObserver(Logger)),
       sub(SetDefaultRoleObserver(Logger, guildStateService)),
       sub(TextInteractionsObserver(config.captain, discord)),

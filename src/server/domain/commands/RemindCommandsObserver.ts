@@ -1,22 +1,25 @@
 import type { APIRole } from 'discord-api-types/payloads/v9'
 import { Role } from 'discord.js'
-import type { CommandInteraction, Guild, User } from 'discord.js'
+import type { CommandInteraction, Guild, TextBasedChannel, User } from 'discord.js'
 import { apply, ord } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../../shared/models/DayJs'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { MsDuration } from '../../../shared/models/MsDuration'
-import { Dict, Either, List, Tuple, toUnit } from '../../../shared/utils/fp'
+import { GuildId } from '../../../shared/models/guild/GuildId'
+import { Dict, Either, List, Tuple } from '../../../shared/utils/fp'
 import { Future, Maybe } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
+import { ChannelId } from '../../models/ChannelId'
 import { Command } from '../../models/Command'
 import { RoleId } from '../../models/RoleId'
 import { MadEvent } from '../../models/event/MadEvent'
 import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
-import type { Reminder } from '../../models/scheduledEvent/Reminder'
+import type { ReminderWho } from '../../models/scheduledEvent/ReminderWho'
+import { ScheduledEvent } from '../../models/scheduledEvent/ScheduledEvent'
 import type { ScheduledEventService } from '../../services/ScheduledEventService'
 
 const Keys = {
@@ -61,17 +64,16 @@ export const RemindCommandsObserver = (scheduledEventService: ScheduledEventServ
   })
 
   function onCommand(interaction: CommandInteraction): Future<void> {
-    const [who, fetchRole] = parseWho(interaction.guild, interaction.options.getRole(Keys.who))
+    const [who, fetchRole] = parseWho(
+      interaction.guild,
+      interaction.options.getRole(Keys.who),
+      interaction.channel,
+    )
     return pipe(
-      DiscordConnector.interactionDeferReply(interaction, { ephemeral: Maybe.isNone(who) }), // no role, user will get a DM
-      Future.chain(() =>
-        pipe(
-          who,
-          Maybe.fold<RoleId, Future<Maybe<Role | User>>>(
-            () => futureMaybe.some(interaction.user),
-            () => fetchRole,
-          ),
-        ),
+      who,
+      Maybe.fold<ReminderWho, Future<Maybe<Role | User>>>(
+        () => futureMaybe.some(interaction.user),
+        () => fetchRole,
       ),
       futureMaybe.bindTo('whoMention'),
       futureMaybe.apS('now', futureMaybe.fromIO(DayJs.now)),
@@ -79,28 +81,39 @@ export const RemindCommandsObserver = (scheduledEventService: ScheduledEventServ
         futureMaybe.some(parseReminder(interaction, who, now)),
       ),
       futureMaybe.chain(({ whoMention, reminder }) => createReminder(whoMention, reminder)),
-      Future.map(Maybe.getOrElse(() => 'Erreur')),
-      Future.chain(content => DiscordConnector.interactionFollowUp(interaction, { content })),
-      Future.map(toUnit),
+      Future.map(Maybe.getOrElse(() => Either.left('Erreur'))),
+      Future.chain(
+        Either.fold(
+          error =>
+            DiscordConnector.interactionReply(interaction, { content: error, ephemeral: true }),
+          content =>
+            DiscordConnector.interactionReply(interaction, {
+              content,
+              ephemeral: Maybe.isNone(who), // no role, user will get a DM
+            }),
+        ),
+      ),
     )
   }
 
   function createReminder(
     whoMention: Role | User,
-    reminder: Either<string, Reminder>,
-  ): Future<Maybe<string>> {
+    event: Either<string, ScheduledEvent>,
+  ): Future<Maybe<Either<string, string>>> {
     return pipe(
-      reminder,
-      Either.fold(futureMaybe.some, r =>
+      event,
+      Either.fold(flow(Either.left, futureMaybe.some), e =>
         pipe(
-          scheduledEventService.createReminder(r),
+          scheduledEventService.create(e),
           Future.map(success =>
             success
               ? Maybe.some(
-                  `Rappel pour ${whoMention} le **${pipe(
-                    r.when,
-                    DayJs.format('DD/MM/YYYY, HH:mm'),
-                  )}** : *${r.what}*`,
+                  Either.right(
+                    `Rappel pour ${whoMention} le **${pipe(
+                      e.scheduledAt,
+                      DayJs.format('DD/MM/YYYY, HH:mm'),
+                    )}** : *${e.reminder.what}*`,
+                  ),
                 )
               : Maybe.none,
           ),
@@ -112,25 +125,17 @@ export const RemindCommandsObserver = (scheduledEventService: ScheduledEventServ
 
 const parseReminder = (
   interaction: CommandInteraction,
-  who: Maybe<RoleId>,
+  who: Maybe<ReminderWho>,
   now: DayJs,
-): Either<string, Reminder> =>
+): Either<string, ScheduledEvent> =>
   pipe(
-    Either.right({
-      createdBy: DiscordUserId.fromUser(interaction.user),
-      who,
-    }),
-    Either.apS(
-      'when',
-      pipe(
-        parseWhen(now, interaction.options.getString(Keys.when)),
-        Either.fromOption(() => 'Durée ou date invalide'),
-        Either.filterOrElse(
-          when => ord.lt(DayJs.Ord)(now, when),
-          () => 'Le rappel ne peut pas être dans le passé',
-        ),
-      ),
+    parseWhen(now, interaction.options.getString(Keys.when)),
+    Either.fromOption(() => 'Durée ou date invalide'),
+    Either.filterOrElse(
+      when => ord.lt(DayJs.Ord)(now, when),
+      () => 'Le rappel ne peut pas être dans le passé',
     ),
+    Either.bindTo('scheduledAt'),
     Either.apS(
       'what',
       pipe(
@@ -138,17 +143,35 @@ const parseReminder = (
         Either.fromNullable(`<${Keys.what}> manquant`),
       ),
     ),
+    Either.map(({ scheduledAt, what }) =>
+      ScheduledEvent.Reminder({
+        createdAt: now,
+        scheduledAt,
+        reminder: {
+          createdBy: DiscordUserId.fromUser(interaction.user),
+          who,
+          what,
+        },
+      }),
+    ),
   )
 
 const parseWho = (
   nullableGuild: Guild | null,
   nullableRole: Role | APIRole | null,
-): Tuple<Maybe<RoleId>, Future<Maybe<Role>>> => {
-  const maybeRole = Maybe.fromNullable(nullableRole)
-  return Tuple.of(
-    pipe(maybeRole, Maybe.map(RoleId.fromRole)),
+  nullableChannel: TextBasedChannel | null,
+): Tuple<Maybe<ReminderWho>, Future<Maybe<Role>>> =>
+  Tuple.of(
+    apply.sequenceS(Maybe.Apply)({
+      guild: pipe(Maybe.fromNullable(nullableGuild), Maybe.map(GuildId.fromGuild)),
+      role: pipe(Maybe.fromNullable(nullableRole), Maybe.map(RoleId.fromRole)),
+      channel: pipe(Maybe.fromNullable(nullableChannel), Maybe.map(ChannelId.fromChannel)),
+    }),
     pipe(
-      apply.sequenceS(Maybe.Apply)({ guild: Maybe.fromNullable(nullableGuild), role: maybeRole }),
+      apply.sequenceS(Maybe.Apply)({
+        guild: Maybe.fromNullable(nullableGuild),
+        role: Maybe.fromNullable(nullableRole),
+      }),
       futureMaybe.fromOption,
       futureMaybe.chain(({ guild, role }) =>
         role instanceof Role
@@ -157,7 +180,6 @@ const parseWho = (
       ),
     ),
   )
-}
 
 const parseWhen = (now: DayJs, str: string | null): Maybe<DayJs> =>
   str === null
@@ -165,7 +187,12 @@ const parseWhen = (now: DayJs, str: string | null): Maybe<DayJs> =>
     : pipe(
         parseDayJs(str),
         Maybe.alt(() => parseMs(now, str)),
-        Maybe.map(DayJs.startOf('minute')),
+        Maybe.map(d => {
+          const startOfMinute = pipe(d, DayJs.startOf('minute'))
+          return ord.lt(DayJs.Ord)(d, pipe(startOfMinute, DayJs.add(MsDuration.seconds(30))))
+            ? startOfMinute
+            : pipe(startOfMinute, DayJs.add(MsDuration.minute(1)))
+        }),
       )
 
 const dateFormat = 'DD/MM/YYYY'

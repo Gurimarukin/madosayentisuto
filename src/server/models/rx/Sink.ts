@@ -1,7 +1,7 @@
 import { flow, identity, pipe } from 'fp-ts/function'
 
 import type { List, NonIO } from '../../../shared/utils/fp'
-import { Future, toUnit as fpToUnit } from '../../../shared/utils/fp'
+import { Future } from '../../../shared/utils/fp'
 
 import type { TObservable } from './TObservable'
 
@@ -66,7 +66,7 @@ const toUnit = <A>(obs: TObservable<NonIO<A>>): Future<void> =>
     () =>
       new Promise<void>((resolve, reject) => {
         const subscription = obs.subscribe({
-          next: fpToUnit,
+          next: () => undefined,
           /* eslint-disable functional/no-expression-statement */
           error: e => {
             subscription.unsubscribe()

@@ -38,6 +38,8 @@ export type TObservable<A> = Omit<rxjs.Observable<A>, 'subscribe'> & {
   readonly subscribe: (subscriber: TPartialObserver<A>) => rxjs.Subscription
 }
 
+const fromReadonlyArray: <A>(fa: List<A>) => TObservable<A> = rxjs.from
+
 const fromSubscribe = <A>(
   subscribe: (subscriber: rxjs.Subscriber<A>) => rxjs.TeardownLogic,
 ): TObservable<A> => new rxjs.Observable<A>(subscribe) as TObservable<A>
@@ -69,6 +71,15 @@ const chainTaskEitherK = <A, B>(f: (a: A) => Future<B>): ((fa: TObservable<A>) =
 const chainIOEitherK = <A, B>(f: (a: A) => IO<B>): ((fa: TObservable<A>) => TObservable<B>) =>
   chainTaskEitherK(flow(f, Future.fromIOEither))
 
+const chainFirst = observable.chainFirst as unknown as <A, B>(
+  f: (a: A) => TObservable<B>,
+) => (ma: TObservable<A>) => TObservable<A>
+const chainFirstTaskEitherK = <A, B>(
+  f: (a: A) => Future<B>,
+): ((fa: TObservable<A>) => TObservable<A>) => chainFirst(flow(f, fromTaskEither))
+const chainFirstIOEitherK = <A, B>(f: (a: A) => IO<B>): ((fa: TObservable<A>) => TObservable<A>) =>
+  chainFirstTaskEitherK(flow(f, Future.fromIOEither))
+
 type Filter = {
   <A, B extends A>(refinement: Refinement<A, B>): (fa: TObservable<A>) => TObservable<B>
   <A>(predicate: Predicate<A>): (fa: TObservable<A>) => TObservable<A>
@@ -84,12 +95,8 @@ const flatten = observable.flatten as unknown as <A>(
   mma: TObservable<TObservable<A>>,
 ) => TObservable<A>
 
-const concat =
-  <A, B>(b: TObservable<B>) =>
-  (a: TObservable<A>): TObservable<A | B> =>
-    observable.getMonoid<A | B>().concat(a as rxjs.Observable<A>, b as rxjs.Observable<B>)
-
 export const TObservable = {
+  fromReadonlyArray,
   fromSubscribe,
   fromReadable: (stream: Readable): TObservable<unknown> => rxjsStream.streamToRx(stream),
   fromTaskEither,
@@ -98,11 +105,17 @@ export const TObservable = {
   chain,
   chainTaskEitherK,
   chainIOEitherK,
+  chainFirst,
+  chainFirstTaskEitherK,
+  chainFirstIOEitherK,
   filter,
   filterMap,
   flatten,
   flattenTry,
-  concat,
+  concat:
+    <B>(fb: TObservable<B>) =>
+    <A>(fa: TObservable<A>): TObservable<A | B> =>
+      rxjs.concat(fa as rxjs.Observable<A>, fb as rxjs.Observable<B>),
   chunksOf:
     (n: number) =>
     <A>(fa: TObservable<A>): TObservable<NonEmptyArray<A>> => {

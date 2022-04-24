@@ -78,8 +78,9 @@ const load = (config: Config, Logger: LoggerGetter): Future<Context> => {
   const {
     guildStatePersistence,
     memberBirthdatePersistence,
-    pollResponsePersistence,
     pollQuestionPersistence,
+    pollResponsePersistence,
+    scheduledEventPersistence,
     userPersistence,
     healthCheckService,
   } = context
@@ -99,6 +100,7 @@ const load = (config: Config, Logger: LoggerGetter): Future<Context> => {
         memberBirthdatePersistence.ensureIndexes,
         pollQuestionPersistence.ensureIndexes,
         pollResponsePersistence.ensureIndexes,
+        scheduledEventPersistence.ensureIndexes,
         userPersistence.ensureIndexes,
       ]),
     ),

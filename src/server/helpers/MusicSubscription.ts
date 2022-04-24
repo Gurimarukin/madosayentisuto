@@ -77,7 +77,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
 
     const event = addedTracksEvent(author, tracks)
     return pipe(
-      musicState.update(
+      musicState.modify(
         flow(MusicState.queueTracks(tracks), MusicState.setPendingEvent(Maybe.some(event))),
       ),
       Future.fromIOEither,
@@ -159,7 +159,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
       sendStateMessage(stateChannel),
       Future.chain(message =>
         pipe(
-          musicState.update(MusicState.setMessage(message)),
+          musicState.modify(MusicState.setMessage(message)),
           Future.fromIOEither,
           Future.chainFirst(() => createStateThread(message)),
         ),
@@ -181,7 +181,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
           }),
           IO.apFirst(subscribe),
           IO.chain(({ voiceConnection, audioPlayer }) =>
-            musicState.update(MusicState.connecting(musicChannel, voiceConnection, audioPlayer)),
+            musicState.modify(MusicState.connecting(musicChannel, voiceConnection, audioPlayer)),
           ),
         ),
       ),
@@ -234,7 +234,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
                 DiscordConnector.voiceConnectionSubscribe(s.voiceConnection, s.audioPlayer),
               ),
               IO.bind('connected', ({ subscription }) =>
-                musicState.update(
+                musicState.modify(
                   MusicState.connected(s.audioPlayer, s.channel, s.voiceConnection, subscription),
                 ),
               ),
@@ -344,7 +344,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
           () => Future.unit,
           (head, tail) =>
             pipe(
-              musicState.update(MusicState.setQueue(tail)),
+              musicState.modify(MusicState.setQueue(tail)),
               Future.fromIOEither,
               Future.chain(() => playTrackNow(audioPlayer, head)),
             ),
@@ -368,7 +368,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
   }
 
   function updateState(f: Endomorphism<MusicState>): Future<void> {
-    return pipe(musicState.update(f), Future.fromIOEither, Future.chain(refreshMessage))
+    return pipe(musicState.modify(f), Future.fromIOEither, Future.chain(refreshMessage))
   }
 
   function voiceConnectionDestroy(currentState: MusicState): Future<void> {
