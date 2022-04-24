@@ -17,6 +17,7 @@ import { MemberBirthdatePersistence } from './persistence/MemberBirthdatePersist
 import { MigrationPersistence } from './persistence/MigrationPersistence'
 import { PollQuestionPersistence } from './persistence/PollQuestionPersistence'
 import { PollResponsePersistence } from './persistence/PollResponsePersistence'
+import { ScheduledEventPersistence } from './persistence/ScheduledEventPersistence'
 import { UserPersistence } from './persistence/UserPersistence'
 import { HealthCheckService } from './services/HealthCheckService'
 import { MigrationService } from './services/MigrationService'
@@ -34,8 +35,9 @@ const of = (
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
   const healthCheckPersistence = HealthCheckPersistence(withDb)
   const memberBirthdatePersistence = MemberBirthdatePersistence(Logger, mongoCollection)
-  const pollResponsePersistence = PollResponsePersistence(Logger, mongoCollection)
   const pollQuestionPersistence = PollQuestionPersistence(Logger, mongoCollection)
+  const pollResponsePersistence = PollResponsePersistence(Logger, mongoCollection)
+  const scheduledEventPersistence = ScheduledEventPersistence(Logger, mongoCollection)
   const userPersistence = UserPersistence(Logger, mongoCollection)
 
   const healthCheckService = HealthCheckService(healthCheckPersistence)
@@ -49,8 +51,9 @@ const of = (
     botStatePersistence,
     guildStatePersistence,
     memberBirthdatePersistence,
-    pollResponsePersistence,
     pollQuestionPersistence,
+    pollResponsePersistence,
+    scheduledEventPersistence,
     userPersistence,
     healthCheckService,
     ytDlp,

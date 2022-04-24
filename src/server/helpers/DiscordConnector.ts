@@ -51,7 +51,7 @@ import type {
 import { Client, DiscordAPIError, Intents } from 'discord.js'
 import { refinement } from 'fp-ts'
 import type { Separated } from 'fp-ts/Separated'
-import { flow, pipe } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
@@ -601,7 +601,7 @@ const fetchMessageRec =
         Future.orElse(e =>
           isMissingAccessOrUnknownMessageError(e) ? futureMaybe.none : Future.left(e),
         ),
-        futureMaybe.matchE(() => fetchMessageRec(message)(tail), flow(Maybe.some, Future.right)),
+        futureMaybe.matchE(() => fetchMessageRec(message)(tail), futureMaybe.some),
       )
     }
     return futureMaybe.none

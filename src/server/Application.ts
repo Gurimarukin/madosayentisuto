@@ -33,6 +33,7 @@ import { BotStateService } from './services/BotStateService'
 import { GuildStateService } from './services/GuildStateService'
 import { MemberBirthdateService } from './services/MemberBirthdateService'
 import { PollService } from './services/PollService'
+import { ScheduledEventService } from './services/ScheduledEventService'
 import { UserService } from './services/UserService'
 import { PubSubUtils } from './utils/PubSubUtils'
 import { Routes } from './webServer/Routes'
@@ -50,8 +51,9 @@ export const Application = (
     botStatePersistence,
     guildStatePersistence,
     memberBirthdatePersistence,
-    pollResponsePersistence,
     pollQuestionPersistence,
+    pollResponsePersistence,
+    scheduledEventPersistence,
     userPersistence,
     healthCheckService,
     ytDlp,
@@ -66,6 +68,7 @@ export const Application = (
   const guildStateService = GuildStateService(Logger, discord, ytDlp, guildStatePersistence)
   const memberBirthdateService = MemberBirthdateService(memberBirthdatePersistence)
   const pollService = PollService(pollQuestionPersistence, pollResponsePersistence)
+  const scheduledEventService = ScheduledEventService(scheduledEventPersistence)
   const userService = UserService(Logger, userPersistence, jwtHelper)
 
   const healthCheckController = HealthCheckController(healthCheckService)
@@ -87,7 +90,7 @@ export const Application = (
       sub(MusicCommandsObserver(Logger, ytDlp, guildStateService)),
       sub(OtherCommandsObserver()),
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
-      sub(RemindCommandsObserver()),
+      sub(RemindCommandsObserver(scheduledEventService)),
       // │  └ startup/
       sub(DeployCommandsObserver(Logger, config, discord)),
       // │

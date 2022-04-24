@@ -15,8 +15,9 @@ import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { Command } from '../../models/Command'
 import { RoleId } from '../../models/RoleId'
 import { MadEvent } from '../../models/event/MadEvent'
-import { RemindMention } from '../../models/remind/RemindMention'
 import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
+import type { Reminder } from '../../models/scheduledEvent/Reminder'
+import type { ScheduledEventService } from '../../services/ScheduledEventService'
 
 const Keys = {
   remind: 'rappel',
@@ -50,8 +51,8 @@ const remindCommand = Command.chatInput({
 export const remindCommands = [remindCommand]
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const RemindCommandsObserver = () =>
-  ObserverWithRefinement.fromNext(
+export const RemindCommandsObserver = (scheduledEventService: ScheduledEventService) => {
+  return ObserverWithRefinement.fromNext(
     MadEvent,
     'InteractionCreate',
   )(({ interaction }) => {
@@ -59,46 +60,77 @@ export const RemindCommandsObserver = () =>
     return Future.unit
   })
 
-const onCommand = (interaction: CommandInteraction): Future<void> => {
-  const [who, fetchRole] = parseWho(
-    interaction.guild,
-    interaction.options.getRole(Keys.who),
-    interaction.user,
-  )
-  return pipe(
-    DiscordConnector.interactionDeferReply(interaction, {
-      ephemeral: RemindMention.is('User')(who),
-    }),
-    Future.chain((): Future<Maybe<Role | User>> => {
-      switch (who.type) {
-        case 'Role':
-          return fetchRole
-        case 'User':
-          return futureMaybe.some(interaction.user)
-      }
-    }),
-    futureMaybe.bindTo('whoMention'),
-    futureMaybe.apS('now', futureMaybe.fromIO(DayJs.now)),
-    futureMaybe.map(({ whoMention, now }) => commandContent(interaction, whoMention, now)),
-    Future.map(Maybe.getOrElse(() => 'Erreur')),
-    Future.chain(content => DiscordConnector.interactionFollowUp(interaction, { content })),
-    Future.map(toUnit),
-  )
+  function onCommand(interaction: CommandInteraction): Future<void> {
+    const [who, fetchRole] = parseWho(interaction.guild, interaction.options.getRole(Keys.who))
+    return pipe(
+      DiscordConnector.interactionDeferReply(interaction, { ephemeral: Maybe.isNone(who) }), // no role, user will get a DM
+      Future.chain(() =>
+        pipe(
+          who,
+          Maybe.fold<RoleId, Future<Maybe<Role | User>>>(
+            () => futureMaybe.some(interaction.user),
+            () => fetchRole,
+          ),
+        ),
+      ),
+      futureMaybe.bindTo('whoMention'),
+      futureMaybe.apS('now', futureMaybe.fromIO(DayJs.now)),
+      futureMaybe.bind('reminder', ({ now }) =>
+        futureMaybe.some(parseReminder(interaction, who, now)),
+      ),
+      futureMaybe.chain(({ whoMention, reminder }) => createReminder(whoMention, reminder)),
+      Future.map(Maybe.getOrElse(() => 'Erreur')),
+      Future.chain(content => DiscordConnector.interactionFollowUp(interaction, { content })),
+      Future.map(toUnit),
+    )
+  }
+
+  function createReminder(
+    whoMention: Role | User,
+    reminder: Either<string, Reminder>,
+  ): Future<Maybe<string>> {
+    return pipe(
+      reminder,
+      Either.fold(futureMaybe.some, r =>
+        pipe(
+          scheduledEventService.createReminder(r),
+          Future.map(success =>
+            success
+              ? Maybe.some(
+                  `Rappel pour ${whoMention} le **${pipe(
+                    r.when,
+                    DayJs.format('DD/MM/YYYY, HH:mm'),
+                  )}** : *${r.what}*`,
+                )
+              : Maybe.none,
+          ),
+        ),
+      ),
+    )
+  }
 }
 
-const commandContent = (
+const parseReminder = (
   interaction: CommandInteraction,
-  whoMention: Role | User,
+  who: Maybe<RoleId>,
   now: DayJs,
-): string =>
+): Either<string, Reminder> =>
   pipe(
-    parseWhen(now, interaction.options.getString(Keys.when)),
-    Either.fromOption(() => 'Durée ou date invalide'),
-    Either.filterOrElse(
-      when => ord.lt(DayJs.Ord)(now, when),
-      () => 'Le rappel ne peut pas être dans le passé',
+    Either.right({
+      createdBy: DiscordUserId.fromUser(interaction.user),
+      who,
+    }),
+    Either.apS(
+      'when',
+      pipe(
+        parseWhen(now, interaction.options.getString(Keys.when)),
+        Either.fromOption(() => 'Durée ou date invalide'),
+        Either.filterOrElse(
+          when => ord.lt(DayJs.Ord)(now, when),
+          () => 'Le rappel ne peut pas être dans le passé',
+        ),
+      ),
     ),
-    Either.bindTo('when'),
     Either.apS(
       'what',
       pipe(
@@ -106,30 +138,15 @@ const commandContent = (
         Either.fromNullable(`<${Keys.what}> manquant`),
       ),
     ),
-    Either.fold(
-      e => e,
-      ({ when, what }) =>
-        `Rappel pour ${whoMention} le **${pipe(
-          when,
-          DayJs.format('DD/MM/YYYY, HH:mm'),
-        )}** : *${what}*`,
-    ),
   )
 
 const parseWho = (
   nullableGuild: Guild | null,
   nullableRole: Role | APIRole | null,
-  user: User,
-): Tuple<RemindMention, Future<Maybe<Role>>> => {
+): Tuple<Maybe<RoleId>, Future<Maybe<Role>>> => {
   const maybeRole = Maybe.fromNullable(nullableRole)
   return Tuple.of(
-    pipe(
-      maybeRole,
-      Maybe.foldW(
-        () => RemindMention.User({ user: DiscordUserId.fromUser(user) }),
-        role => RemindMention.Role({ role: RoleId.fromRole(role) }),
-      ),
-    ),
+    pipe(maybeRole, Maybe.map(RoleId.fromRole)),
     pipe(
       apply.sequenceS(Maybe.Apply)({ guild: Maybe.fromNullable(nullableGuild), role: maybeRole }),
       futureMaybe.fromOption,
