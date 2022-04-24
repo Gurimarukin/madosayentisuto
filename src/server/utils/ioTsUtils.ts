@@ -62,20 +62,6 @@ const numberFromStringDecoder: Decoder<unknown, number> = pipe(
 
 export const NumberFromString = { decoder: numberFromStringDecoder }
 
-// URLFromString
-
-const urlFromStringDecoder: Decoder<unknown, URL> = pipe(
-  D.string,
-  D.parse(s =>
-    pipe(
-      Maybe.tryCatch(() => new URL(s)),
-      Maybe.fold(() => D.failure(s, 'URLFromString'), D.success),
-    ),
-  ),
-)
-
-export const URLFromString = { decoder: urlFromStringDecoder }
-
 //
 
 const prepareArray: (i: string) => List<string> = flow(

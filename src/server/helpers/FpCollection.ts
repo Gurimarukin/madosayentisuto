@@ -6,13 +6,13 @@ import type {
   ClientSession,
   DeleteOptions,
   DeleteResult,
-  Document,
   Filter,
   FindOptions,
   InsertManyResult,
   InsertOneOptions,
   InsertOneResult,
   MatchKeysAndValues,
+  Document as MongoDocument,
   OptionalUnlessRequiredId,
   ReplaceOptions,
   UpdateOptions,
@@ -94,7 +94,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
       filter: Filter<O>,
       doc: A,
       options: ReplaceOptions = {},
-    ): Future<UpdateResult | Document> => {
+    ): Future<UpdateResult | MongoDocument> => {
       const encoded = codec.encode(doc)
       return pipe(
         collection.future(c => c.replaceOne(filter, encoded as O, options)),

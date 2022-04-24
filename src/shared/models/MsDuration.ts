@@ -1,21 +1,20 @@
-import { predicate } from 'fp-ts'
+import { option, predicate } from 'fp-ts'
+import type { Option } from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
 import type { StringValue } from 'ms'
 import ms from 'ms'
 import type { Newtype } from 'newtype-ts'
 import { iso } from 'newtype-ts'
 
-import { Maybe } from '../utils/fp'
-
 export type MsDuration = Newtype<{ readonly MsDuration: unique symbol }, number>
 
 const { wrap, unwrap } = iso<MsDuration>()
 
-const fromString = (str: string): Maybe<MsDuration> =>
+const fromString = (str: string): Option<MsDuration> =>
   pipe(
-    Maybe.tryCatch(() => ms(str as StringValue)),
-    Maybe.filter(predicate.not(isNaN)),
-    Maybe.map(wrap),
+    option.tryCatch(() => ms(str as StringValue)),
+    option.filter(predicate.not(isNaN)),
+    option.map(wrap),
   )
 
 const seconds = (n: number): MsDuration => wrap(1000 * n)

@@ -9,7 +9,7 @@ import type { AnyNewtype, CarrierOf } from 'newtype-ts'
 
 import { DayJs } from '../models/DayJs'
 import { StringUtils } from './StringUtils'
-import { Either } from './fp'
+import { Either, Maybe } from './fp'
 
 const limit = 10000
 
@@ -57,3 +57,17 @@ export const DayJsFromISOString = {
   encoder: dayJsFromISOStringEncoder,
   codec: dayJsFromISOStringCodec,
 }
+
+// URLFromString
+
+const urlFromStringDecoder: Decoder<unknown, URL> = pipe(
+  D.string,
+  D.parse(s =>
+    pipe(
+      Maybe.tryCatch(() => new URL(s)),
+      Maybe.fold(() => D.failure(s, 'URLFromString'), D.success),
+    ),
+  ),
+)
+
+export const URLFromString = { decoder: urlFromStringDecoder }
