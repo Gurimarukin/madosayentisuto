@@ -32,7 +32,7 @@ import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { initCallsMessage } from '../../helpers/messages/initCallsMessage'
 import { ChannelId } from '../../models/ChannelId'
 import { Command } from '../../models/Command'
-import { TSnowflake } from '../../models/TSnowflake'
+import { RoleId } from '../../models/RoleId'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
 import { MadEvent } from '../../models/event/MadEvent'
@@ -560,7 +560,7 @@ export const AdminCommandsObserver = (
       futureMaybe.chain(({ guild, role }) =>
         role instanceof Role
           ? Future.right(Maybe.some(role))
-          : DiscordConnector.fetchRole(guild, TSnowflake.wrap(role.id)),
+          : DiscordConnector.fetchRole(guild, RoleId.fromRole(role)),
       ),
     )
   }

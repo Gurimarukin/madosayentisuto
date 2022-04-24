@@ -66,7 +66,7 @@ const dayJsFromDateDecoder: Decoder<unknown, DayJs> = {
     pipe(
       i,
       Maybe.fromPredicate((u): u is Date => u instanceof Date),
-      Maybe.map(DayJs.of),
+      Maybe.map(d => DayJs.of(d)),
       Maybe.filter(DayJs.isValid),
       Maybe.fold(() => D.failure(i, 'DayJsFromDate'), D.success),
     ),

@@ -1,3 +1,4 @@
+import type { io } from 'fp-ts'
 import { apply, chain as fpTsChain, functor, optionT } from 'fp-ts'
 import type { Apply1 } from 'fp-ts/Apply'
 import type { Chain1 } from 'fp-ts/Chain'
@@ -79,6 +80,8 @@ const filter = flow(Maybe.filter, Future.map) as Filter
 
 const fromTaskEither: <A>(fa: Future<A>) => Future<Maybe<A>> = optionT.fromF(Future.Functor)
 
+const fromIO: <A>(fa: io.IO<A>) => Future<Maybe<A>> = flow(Future.fromIO, fromTaskEither)
+
 const fromNullable: <A>(a: A) => Future<Maybe<NonNullable<A>>> = optionT.fromNullable(
   Future.Pointed,
 )
@@ -115,6 +118,7 @@ export const futureMaybe = {
   chainOption,
   filter,
   fromTaskEither,
+  fromIO,
   fromNullable,
   fromOption,
   fromIOEither,

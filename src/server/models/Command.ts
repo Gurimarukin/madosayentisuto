@@ -2,6 +2,7 @@ import type {
   APIApplicationCommandBasicOption,
   APIApplicationCommandBooleanOption,
   APIApplicationCommandChannelOption,
+  APIApplicationCommandMentionableOption,
   APIApplicationCommandOption,
   APIApplicationCommandRoleOption,
   APIApplicationCommandStringOption,
@@ -80,6 +81,10 @@ export const Command = {
       channel_types: toMutable(channel_types),
     }),
     role: (common: OptionCommon): APIApplicationCommandRoleOption => ({ type: 8, ...common }),
+    mentionable: (common: OptionCommon): APIApplicationCommandMentionableOption => ({
+      type: 9,
+      ...common,
+    }),
   },
 
   choice: <A extends ChoiceType>(name: string, value: A): Choice<A> => ({ name, value }),

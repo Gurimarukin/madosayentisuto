@@ -1,8 +1,8 @@
+- move prettyMs to MsDuration
 - updgrade react
 - decouple autorole and call mention
 - select leave message chan
 - deploy: on guild join
-- Remind
 - Say
 - Img
 - moderators/owner

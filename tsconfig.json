@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "tsbuild",
     "jsx": "react",
+    "lib": ["ES2021"],
     "incremental": true,
     "sourceMap": true,
     "noEmit": true,

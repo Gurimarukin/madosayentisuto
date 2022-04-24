@@ -65,7 +65,7 @@ import type { ClientConfig } from '../Config'
 import { constants } from '../constants'
 import { ChannelId } from '../models/ChannelId'
 import { MessageId } from '../models/MessageId'
-import { TSnowflake } from '../models/TSnowflake'
+import { RoleId } from '../models/RoleId'
 import type { Activity } from '../models/botState/Activity'
 import { CommandId } from '../models/command/CommandId'
 import { PutCommandResult } from '../models/command/PutCommandResult'
@@ -196,9 +196,9 @@ const fetchPartial = <A extends MyPartial<A>>(partial: A): Future<A> =>
       )
     : Future.right(partial)
 
-const fetchRole = (guild: Guild, roleId: TSnowflake): Future<Maybe<Role>> =>
+const fetchRole = (guild: Guild, roleId: RoleId): Future<Maybe<Role>> =>
   pipe(
-    Future.tryCatch(() => guild.roles.fetch(TSnowflake.unwrap(roleId))),
+    Future.tryCatch(() => guild.roles.fetch(RoleId.unwrap(roleId))),
     Future.map(Maybe.fromNullable),
     debugLeft('fetchRole'),
   )

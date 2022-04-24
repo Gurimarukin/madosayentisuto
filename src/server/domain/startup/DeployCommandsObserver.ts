@@ -22,6 +22,7 @@ import { adminCommands } from '../commands/AdminCommandsObserver'
 import { musicCommands } from '../commands/MusicCommandsObserver'
 import { otherCommands } from '../commands/OtherCommandsObserver'
 import { pollCommands } from '../commands/PollCommandsObserver'
+import { remindCommands } from '../commands/RemindCommandsObserver'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const DeployCommandsObserver = (
@@ -33,7 +34,13 @@ export const DeployCommandsObserver = (
 
   const rest = new REST({ version: '9' }).setToken(config.client.secret)
 
-  const commands = List.flatten([adminCommands, musicCommands, otherCommands, pollCommands])
+  const commands = List.flatten([
+    adminCommands,
+    musicCommands,
+    otherCommands,
+    pollCommands,
+    remindCommands,
+  ])
 
   const adminsPermissions: NonEmptyArray<ApplicationCommandPermissionData> = pipe(
     config.admins,

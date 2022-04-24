@@ -56,7 +56,7 @@ const Keys = {
   deletePoll: 'Supprimer sondage',
 }
 
-const threadName = 'Détail sondage'
+const threadName = 'Détail du sondage'
 
 const pollCommand = Command.chatInput({
   name: Keys.poll,

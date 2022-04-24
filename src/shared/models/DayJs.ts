@@ -26,8 +26,11 @@ const modify = identity as (f: Endomorphism<dayjs.Dayjs>) => Endomorphism<DayJs>
 
 // constructors
 
-const of = (date: string | number | Date, format?: string): DayJs =>
-  wrap(dayjs.utc(date, format, true))
+function of(date: number | Date): DayJs
+function of(date: string, format?: string): DayJs
+function of(date: number | Date | string, format?: string): DayJs {
+  return wrap(dayjs.utc(date, format, true))
+}
 
 const now: IO<DayJs> = pipe(dayjs, io.map(wrap))
 

@@ -19,6 +19,7 @@ import { AdminCommandsObserver } from './domain/commands/AdminCommandsObserver'
 import { MusicCommandsObserver } from './domain/commands/MusicCommandsObserver'
 import { OtherCommandsObserver } from './domain/commands/OtherCommandsObserver'
 import { PollCommandsObserver } from './domain/commands/PollCommandsObserver'
+import { RemindCommandsObserver } from './domain/commands/RemindCommandsObserver'
 import { DeployCommandsObserver } from './domain/startup/DeployCommandsObserver'
 import type { DiscordConnector } from './helpers/DiscordConnector'
 import { LogMadEventsObserver } from './helpers/LogMadEventsObserver'
@@ -86,6 +87,7 @@ export const Application = (
       sub(MusicCommandsObserver(Logger, ytDlp, guildStateService)),
       sub(OtherCommandsObserver()),
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
+      sub(RemindCommandsObserver()),
       // │  └ startup/
       sub(DeployCommandsObserver(Logger, config, discord)),
       // │
