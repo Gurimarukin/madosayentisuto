@@ -19,6 +19,7 @@ import { RoleId } from '../../models/RoleId'
 import { MadEvent } from '../../models/event/MadEvent'
 import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 import type { ReminderWho } from '../../models/scheduledEvent/ReminderWho'
+import type { ScheduledEventReminder } from '../../models/scheduledEvent/ScheduledEvent'
 import { ScheduledEvent } from '../../models/scheduledEvent/ScheduledEvent'
 import type { ScheduledEventService } from '../../services/ScheduledEventService'
 
@@ -98,7 +99,7 @@ export const RemindCommandsObserver = (scheduledEventService: ScheduledEventServ
 
   function createReminder(
     whoMention: Role | User,
-    event: Either<string, ScheduledEvent>,
+    event: Either<string, ScheduledEventReminder>,
   ): Future<Maybe<Either<string, string>>> {
     return pipe(
       event,
@@ -127,7 +128,7 @@ const parseReminder = (
   interaction: CommandInteraction,
   who: Maybe<ReminderWho>,
   now: DayJs,
-): Either<string, ScheduledEvent> =>
+): Either<string, ScheduledEventReminder> =>
   pipe(
     parseWhen(now, interaction.options.getString(Keys.when)),
     Either.fromOption(() => 'Durée ou date invalide'),
@@ -147,11 +148,7 @@ const parseReminder = (
       ScheduledEvent.Reminder({
         createdAt: now,
         scheduledAt,
-        reminder: {
-          createdBy: DiscordUserId.fromUser(interaction.user),
-          who,
-          what,
-        },
+        reminder: { createdBy: DiscordUserId.fromUser(interaction.user), who, what },
       }),
     ),
   )

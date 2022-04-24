@@ -1,14 +1,16 @@
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
-import type { DayJs } from '../../../shared/models/DayJs'
-
 import { DayJsFromDate } from '../../utils/ioTsUtils'
 import { Reminder as ReminderType } from './Reminder'
 
-const scheduledReminderCodec = C.struct({
+const reminderCodec = C.struct({
   type: C.literal('Reminder'),
   reminder: ReminderType.codec,
+})
+
+const itsFridayCodec = C.struct({
+  type: C.literal('ItsFriday'),
 })
 
 const commonCodec = C.struct({
@@ -20,7 +22,8 @@ const codec = pipe(
   commonCodec,
   C.intersect(
     C.sum('type')({
-      Reminder: scheduledReminderCodec,
+      Reminder: reminderCodec,
+      ItsFriday: itsFridayCodec,
     }),
   ),
 )
@@ -28,12 +31,18 @@ const codec = pipe(
 export type ScheduledEvent = C.TypeOf<typeof codec>
 export type ScheduledEventOutput = C.OutputOf<typeof codec>
 
-type ReminderArgs = {
-  readonly createdAt: DayJs
-  readonly scheduledAt: DayJs
-  readonly reminder: ReminderType
+type ScheduledEventCommon = C.TypeOf<typeof commonCodec>
+
+export type ScheduledEventReminder = ScheduledEventCommon & C.TypeOf<typeof reminderCodec>
+export type ScheduledEventItsFriday = ScheduledEventCommon & C.TypeOf<typeof itsFridayCodec>
+
+type ReminderArgs = Omit<ScheduledEventReminder, 'type'>
+
+export const ScheduledEvent = {
+  Reminder: (args: ReminderArgs): ScheduledEventReminder => ({ type: 'Reminder', ...args }),
+  ItsFriday: (args: ScheduledEventCommon): ScheduledEventItsFriday => ({
+    type: 'ItsFriday',
+    ...args,
+  }),
+  codec,
 }
-
-const Reminder = (args: ReminderArgs): ScheduledEvent => ({ type: 'Reminder', ...args })
-
-export const ScheduledEvent = { Reminder, codec }

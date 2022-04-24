@@ -1,9 +1,17 @@
-import type { Guild, MessageOptions, PartialTextBasedChannelFields, Role } from 'discord.js'
+import type {
+  Guild,
+  MessageOptions,
+  PartialTextBasedChannelFields,
+  Role,
+  TextChannel,
+} from 'discord.js'
+import { MessageAttachment } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
-import { Future, IO } from '../../shared/utils/fp'
+import { StringUtils } from '../../shared/utils/StringUtils'
+import { Future, IO, List, toUnit } from '../../shared/utils/fp'
 import { Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
@@ -17,8 +25,10 @@ import { TObservable } from '../models/rx/TObservable'
 import type { Reminder } from '../models/scheduledEvent/Reminder'
 import type { ReminderWho } from '../models/scheduledEvent/ReminderWho'
 import { ScheduledEvent } from '../models/scheduledEvent/ScheduledEvent'
+import type { GuildStateService } from '../services/GuildStateService'
 import type { ScheduledEventService } from '../services/ScheduledEventService'
 import { ChannelUtils } from '../utils/ChannelUtils'
+import { LogUtils } from '../utils/LogUtils'
 import { MessageUtils } from '../utils/MessageUtils'
 
 type ReminderWhoParsed = {
@@ -32,6 +42,7 @@ export const ScheduledEventObserver = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
   scheduledEventService: ScheduledEventService,
+  guildStateService: GuildStateService,
 ) => {
   const logger = Logger('ScheduledEventObserver')
 
@@ -60,6 +71,8 @@ export const ScheduledEventObserver = (
     switch (event.type) {
       case 'Reminder':
         return onReminder(now, event, event.reminder)
+      case 'ItsFriday':
+        return onItsFriday(now, event)
     }
   }
 
@@ -118,6 +131,53 @@ export const ScheduledEventObserver = (
         ),
       }),
       futureMaybe.bind('role', ({ guild }) => DiscordConnector.fetchRole(guild, who.role)),
+    )
+  }
+
+  function onItsFriday(now: DayJs, event: ScheduledEvent): Future<void> {
+    if (
+      !DayJs.Eq.equals(
+        pipe(now, DayJs.startOf('day')),
+        pipe(event.scheduledAt, DayJs.startOf('day')),
+      )
+    ) {
+      return Future.fromIOEither(
+        logger.warn(`Missed "It's friday": ${DayJs.toISOString(event.scheduledAt)}`),
+      )
+    }
+    return pipe(
+      guildStateService.listAllItsFridayChannels,
+      Future.chainFirstIOEitherK(
+        flow(
+          List.map(c => LogUtils.format(c.guild, null, c)),
+          StringUtils.mkString(' '),
+          str => logger.info(`Sending "It's friday" in channels: ${str}`),
+        ),
+      ),
+      Future.chain(Future.traverseArray(sendItsFridayMessage)),
+      Future.map(toUnit),
+    )
+  }
+
+  function sendItsFridayMessage(channel: TextChannel): Future<void> {
+    return pipe(
+      DiscordConnector.sendMessage(channel, {
+        content: `C'est vrai.`,
+        files: [new MessageAttachment(constants.itsFridayUrl)],
+      }),
+      Future.chainIOEitherK(
+        Maybe.fold(
+          () =>
+            logger.warn(
+              `Couldn't send "It's friday" in channel ${LogUtils.format(
+                channel.guild,
+                null,
+                channel,
+              )}`,
+            ),
+          () => IO.unit,
+        ),
+      ),
     )
   }
 }

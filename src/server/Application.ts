@@ -7,11 +7,11 @@ import type { Context } from './Context'
 import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
 import { CallsAutoroleObserver } from './domain/CallsAutoroleObserver'
 import { DisconnectVocalObserver } from './domain/DisconnectVocalObserver'
-import { ItsFridayObserver } from './domain/ItsFridayObserver'
 import { MusicThreadCleanObserver } from './domain/MusicThreadCleanObserver'
 import { NotifyBirthdayObserver } from './domain/NotifyBirthdayObserver'
 import { NotifyGuildLeaveObserver } from './domain/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './domain/NotifyVoiceCallObserver'
+import { ScheduleItsFridayObserver } from './domain/ScheduleItsFridayObserver'
 import { ScheduledEventObserver } from './domain/ScheduledEventObserver'
 import { SendWelcomeDMObserver } from './domain/SendWelcomeDMObserver'
 import { SetDefaultRoleObserver } from './domain/SetDefaultRoleObserver'
@@ -98,12 +98,12 @@ export const Application = (
       sub(ActivityStatusObserver(botStateService)),
       sub(CallsAutoroleObserver(Logger, guildStateService)),
       sub(DisconnectVocalObserver(clientId, guildStateService)),
-      sub(ItsFridayObserver(Logger, guildStateService)),
       sub(MusicThreadCleanObserver(Logger, clientId, guildStateService)),
       sub(NotifyBirthdayObserver(discord, guildStateService, memberBirthdateService)),
       sub(NotifyGuildLeaveObserver(Logger)),
       sub(NotifyVoiceCallObserver(Logger, guildStateService)),
-      sub(ScheduledEventObserver(Logger, discord, scheduledEventService)),
+      sub(ScheduledEventObserver(Logger, discord, scheduledEventService, guildStateService)),
+      sub(ScheduleItsFridayObserver(Logger, scheduledEventService)),
       sub(SendWelcomeDMObserver(Logger)),
       sub(SetDefaultRoleObserver(Logger, guildStateService)),
       sub(TextInteractionsObserver(config.captain, discord)),
