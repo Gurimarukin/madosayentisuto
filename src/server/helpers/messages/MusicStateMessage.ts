@@ -140,7 +140,7 @@ const playing = (
   )
 
 const Keys = {
-  play: 'fépétéleson',
+  play: 'jouer',
   track: 'morceau',
 }
 
