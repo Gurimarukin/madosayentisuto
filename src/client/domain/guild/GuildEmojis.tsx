@@ -15,7 +15,7 @@ type Props = {
 export const GuildEmojis = ({ guildId }: Props): JSX.Element => (
   <GuildLayout guildId={guildId} selected="emojis">
     {guild => (
-      <ul className="w-full flex flex-wrap justify-center p-6 gap-6">
+      <ul className="w-full flex flex-wrap justify-center content-start p-6 gap-6">
         {guild.emojis.map(emoji => (
           <li key={GuildEmojiId.unwrap(emoji.id)}>
             <Tooltip
