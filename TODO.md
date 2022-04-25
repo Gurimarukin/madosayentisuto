@@ -1,5 +1,6 @@
 - move prettyMs to MsDuration
-- updgrade react
+- move mkString to List?
+- upgrade react
 - decouple autorole and call mention
 - select leave message chan
 - deploy: on guild join

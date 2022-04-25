@@ -1,5 +1,5 @@
 import type {
-  Guild,
+  GuildMember,
   MessageOptions,
   PartialTextBasedChannelFields,
   Role,
@@ -10,8 +10,9 @@ import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
+import type { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import { Future, IO, List, toUnit } from '../../shared/utils/fp'
+import { Future, IO, List, NonEmptyArray, toUnit } from '../../shared/utils/fp'
 import { Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
@@ -32,8 +33,8 @@ import { LogUtils } from '../utils/LogUtils'
 import { MessageUtils } from '../utils/MessageUtils'
 
 type ReminderWhoParsed = {
-  readonly guild: Guild
   readonly role: Role
+  readonly author: GuildMember
   readonly channel: PartialTextBasedChannelFields
 }
 
@@ -96,16 +97,16 @@ export const ScheduledEventObserver = (
                 futureMaybe.chain(user =>
                   DiscordConnector.sendMessage(
                     user,
-                    reminderMessage({ now, scheduledAt, what, role: Maybe.none }),
+                    reminderMessage({ now, scheduledAt, what, r: Maybe.none }),
                   ),
                 ),
               ),
             flow(
-              parseWho,
-              futureMaybe.chain(({ role, channel }) =>
+              parseWho(createdBy),
+              futureMaybe.chain(({ role, author, channel }) =>
                 DiscordConnector.sendMessage(
                   channel,
-                  reminderMessage({ now, scheduledAt, what, role: Maybe.some(role) }),
+                  reminderMessage({ now, scheduledAt, what, r: Maybe.some({ role, author }) }),
                 ),
               ),
             ),
@@ -121,17 +122,24 @@ export const ScheduledEventObserver = (
     )
   }
 
-  function parseWho(who: ReminderWho): Future<Maybe<ReminderWhoParsed>> {
-    return pipe(
-      apply.sequenceS(futureMaybe.ApplyPar)({
-        guild: Future.fromIOEither(discord.getGuild(who.guild)),
-        channel: pipe(
-          discord.fetchChannel(who.channel),
-          futureMaybe.filter(ChannelUtils.isBaseGuildTextChannel),
+  function parseWho(
+    createdBy: DiscordUserId,
+  ): (who: ReminderWho) => Future<Maybe<ReminderWhoParsed>> {
+    return who =>
+      pipe(
+        discord.getGuild(who.guild),
+        Future.fromIOEither,
+        futureMaybe.chain(guild =>
+          apply.sequenceS(futureMaybe.ApplyPar)({
+            role: DiscordConnector.fetchRole(guild, who.role),
+            author: DiscordConnector.fetchMember(guild, createdBy),
+            channel: pipe(
+              discord.fetchChannel(who.channel),
+              futureMaybe.filter(ChannelUtils.isBaseGuildTextChannel),
+            ),
+          }),
         ),
-      }),
-      futureMaybe.bind('role', ({ guild }) => DiscordConnector.fetchRole(guild, who.role)),
-    )
+      )
   }
 
   function onItsFriday(now: DayJs, event: ScheduledEvent): Future<void> {
@@ -186,23 +194,52 @@ type ReminderMessage = {
   readonly now: DayJs
   readonly scheduledAt: DayJs
   readonly what: string
-  readonly role: Maybe<Role>
+  readonly r: Maybe<{
+    readonly role: Role
+    readonly author: GuildMember
+  }>
 }
 
-const reminderMessage = ({ now, scheduledAt, what, role }: ReminderMessage): MessageOptions => {
+const reminderMessage = ({ now, scheduledAt, what, r }: ReminderMessage): MessageOptions => {
+  const authorStr = pipe(
+    r,
+    Maybe.map(({ author }) => `*Créé par ${author}*`),
+  )
   const initialyScheduledAt = DayJs.Eq.equals(scheduledAt, now)
-    ? ''
-    : `\n\n*Initialement prévu le : ${pipe(scheduledAt, DayJs.format('DD/MM/YYYY, HH:mm'))}*`
+    ? Maybe.none
+    : Maybe.some(
+        `*Initialement prévu le ${pipe(
+          scheduledAt,
+          DayJs.format('DD/MM/YYYY, HH:mm', { locale: true }),
+        )}*`,
+      )
   return {
     content: pipe(
-      role,
-      Maybe.map(r => `${r}`),
+      r,
+      Maybe.map(({ role }) => `${role}`),
       Maybe.toUndefined,
     ),
     embeds: [
       MessageUtils.safeEmbed({
         color: constants.messagesColor,
-        fields: [MessageUtils.field('Rappel', `${what}${initialyScheduledAt}`)],
+        fields: [
+          MessageUtils.field(
+            'Rappel',
+            pipe(
+              [
+                Maybe.some(what),
+                pipe(
+                  [authorStr, initialyScheduledAt],
+                  List.compact,
+                  NonEmptyArray.fromReadonlyArray,
+                  Maybe.map(StringUtils.mkString('\n')),
+                ),
+              ],
+              List.compact,
+              StringUtils.mkString('\n\n'),
+            ),
+          ),
+        ],
       }),
     ],
   }

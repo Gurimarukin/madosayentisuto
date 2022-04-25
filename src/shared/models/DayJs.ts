@@ -55,10 +55,16 @@ const startOf = (unit: dayjs.OpUnitType): Endomorphism<DayJs> => modify(d => d.s
 
 // outputs
 
+type FormatOptions = {
+  readonly locale?: boolean
+}
+
 const format =
-  (template?: string) =>
-  (date: DayJs): string =>
-    unwrap(date).format(template)
+  (template?: string, { locale = false }: FormatOptions = {}) =>
+  (date: DayJs): string => {
+    const unwrapped = unwrap(date)
+    return (locale ? unwrapped.local() : unwrapped).format(template)
+  }
 
 const toDate = (date: DayJs): Date => unwrap(date).toDate()
 const toISOString = (date: DayJs): string => unwrap(date).toISOString()
