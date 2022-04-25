@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
+import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future, IO } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
@@ -38,7 +39,7 @@ export const ScheduleItsFridayObserver = (
           `Scheduling "It's friday" at ${pipe(scheduledAt, DayJs.format('HH:mm:ss'))} (in ${pipe(
             scheduledAt,
             DayJs.diff(now),
-            MsDuration.pretty,
+            StringUtils.prettyMs,
           )})`,
         ),
       ),
