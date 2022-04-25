@@ -9,7 +9,6 @@ import { Status } from 'hyper-ts'
 import type { ExpressConnection } from 'hyper-ts/lib/express'
 
 import { Method } from '../../shared/models/Method'
-import { StringUtils } from '../../shared/utils/StringUtils'
 import { Dict, Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/utils/fp'
 
 import type { HttpConfig } from '../Config'
@@ -58,7 +57,7 @@ export const startWebServer = (
           Maybe.map(
             flow(
               NonEmptyArray.map(u => u.origin),
-              StringUtils.mkString(', '),
+              List.mkString(', '),
             ),
           ),
           Maybe.toNullable,
@@ -197,4 +196,4 @@ const errorHandler =
     /* eslint-enable functional/no-expression-statement */
   }
 
-const headers = (values: List<string>): string => pipe(values, StringUtils.mkString(', '))
+const headers = (values: List<string>): string => pipe(values, List.mkString(', '))

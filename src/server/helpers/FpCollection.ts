@@ -19,8 +19,8 @@ import type {
   UpdateResult,
 } from 'mongodb'
 
-import { StringUtils } from '../../shared/utils/StringUtils'
-import type { Dict, List, Tuple } from '../../shared/utils/fp'
+import type { Dict, Tuple } from '../../shared/utils/fp'
+import { List } from '../../shared/utils/fp'
 import { IO } from '../../shared/utils/fp'
 import { toUnit } from '../../shared/utils/fp'
 import { Either, Future, Maybe } from '../../shared/utils/fp'
@@ -179,7 +179,7 @@ type Path<S> = {
   <K1 extends keyof S>(path: readonly [K1]): string
 }
 
-const getPath = <A>(): Path<A> => StringUtils.mkString('.')
+const getPath = <A>(): Path<A> => List.mkString('.')
 
 const fpCollectionHelpersFindAll =
   <O, B>(

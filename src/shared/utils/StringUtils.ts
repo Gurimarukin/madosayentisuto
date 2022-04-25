@@ -12,10 +12,6 @@ const ellipse =
   (str: string): string =>
     take < str.length && 3 <= take ? `${str.slice(0, take - 3)}...` : str
 
-const isEmpty = (str: string): boolean => str === ''
-
-const isString = (u: unknown): u is string => typeof u === 'string'
-
 const matcher =
   <A>(regex: RegExp, f: (arr: RegExpMatchArray) => A) =>
   (str: string): Maybe<A> =>
@@ -27,18 +23,10 @@ const matcher1 = (regex: RegExp): ((str: string) => Maybe<string>) =>
 const matcher2 = (regex: RegExp): ((str: string) => Maybe<Tuple<string, string>>) =>
   matcher(regex, ([, a, b]) => [a, b] as Tuple<string, string>)
 
-function mkString(sep: string): (list: List<string>) => string
-function mkString(start: string, sep: string, end: string): (list: List<string>) => string
-function mkString(startOrSep: string, sep?: string, end?: string): (list: List<string>) => string {
-  return list =>
-    sep !== undefined && end !== undefined
-      ? `${startOrSep}${list.join(sep)}${end}`
-      : list.join(startOrSep)
-}
-
-const pad10 = (n: number): string => (n < 10 ? `0${n}` : `${n}`)
-
-const pad100 = (n: number): string => (n < 10 ? `00${n}` : n < 100 ? `0${n}` : `${n}`)
+const padStart =
+  (maxLength: number) =>
+  (n: number): string =>
+    `${n}`.padStart(maxLength, '0')
 
 const isUnicodeLetter = (c: string): boolean => c.toLowerCase() !== c.toUpperCase()
 const isUpperCase = (c: string): boolean => c.toUpperCase() === c
@@ -74,13 +62,9 @@ const booleanLabel = (bool: boolean): string => (bool ? 'Oui' : 'Non')
 
 export const StringUtils = {
   ellipse,
-  isEmpty,
-  isString,
   matcher1,
   matcher2,
-  mkString,
-  pad10,
-  pad100,
+  padStart,
   randomCase,
   stripMargins,
   booleanLabel,

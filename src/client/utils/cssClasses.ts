@@ -1,6 +1,5 @@
 import { pipe } from 'fp-ts/function'
 
-import { StringUtils } from '../../shared/utils/StringUtils'
 import type { Tuple } from '../../shared/utils/fp'
 import { List, Maybe } from '../../shared/utils/fp'
 
@@ -17,6 +16,6 @@ export const cssClasses = (
       return display && className !== undefined ? Maybe.some(className) : Maybe.none
     }),
     Maybe.fromPredicate(List.isNonEmpty),
-    Maybe.map(StringUtils.mkString(' ')),
+    Maybe.map(List.mkString(' ')),
     Maybe.toUndefined,
   )

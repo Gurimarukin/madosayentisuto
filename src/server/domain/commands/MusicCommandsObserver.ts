@@ -9,8 +9,7 @@ import type {
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
-import { StringUtils } from '../../../shared/utils/StringUtils'
-import { Either, NonEmptyArray, toUnit } from '../../../shared/utils/fp'
+import { Either, List, NonEmptyArray, toUnit } from '../../../shared/utils/fp'
 import { Future, Maybe } from '../../../shared/utils/fp'
 
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
@@ -258,5 +257,5 @@ const tracksAddedInteractionReply = (tracks: NonEmptyArray<Track>): string =>
   pipe(
     tracks,
     NonEmptyArray.map(t => `"${t.title}"`),
-    StringUtils.mkString('', ', ', ` ajouté${tracks.length === 1 ? '' : 's'} à la file d'attente.`),
+    List.mkString('', ', ', ` ajouté${tracks.length === 1 ? '' : 's'} à la file d'attente.`),
   )

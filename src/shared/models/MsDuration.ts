@@ -9,7 +9,10 @@ import { iso } from 'newtype-ts'
 import { StringUtils } from '../utils/StringUtils'
 import { DayJs } from './DayJs'
 
-const { pad10, pad100 } = StringUtils
+const { padStart } = StringUtils
+
+const pad10 = padStart(2)
+const pad100 = padStart(3)
 
 export type MsDuration = Newtype<{ readonly MsDuration: unique symbol }, number>
 

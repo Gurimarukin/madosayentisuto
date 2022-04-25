@@ -54,7 +54,7 @@ const poll = (
         |${graphBar(votesCount, total)}`,
       )
     }),
-    StringUtils.mkString('\n\n'),
+    List.mkString('\n\n'),
   )
 
   return {
@@ -109,7 +109,7 @@ const detail = (answers: NonEmptyArray<ChoiceWithResponses>): MessageOptions => 
           responses,
           List.sort(DiscordUserId.Ord),
           List.map(id => `<@${DiscordUserId.unwrap(id)}>`),
-          StringUtils.mkString(', '),
+          List.mkString(', '),
         )}`,
         color: constants.messagesColor,
       }),

@@ -19,7 +19,6 @@ import * as D from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/lib/Encoder'
 
 import { MsDuration } from '../../../shared/models/MsDuration'
-import { StringUtils } from '../../../shared/utils/StringUtils'
 import { List, Maybe } from '../../../shared/utils/fp'
 import { Try } from '../../../shared/utils/fp'
 import { Tuple } from '../../../shared/utils/fp'
@@ -135,7 +134,7 @@ const getBodyChunks =
     )
 
 const getBodyString = <I = StatusOpen>(): MyMiddleware<I, I, string> =>
-  pipe(getBodyChunks<I>(), map(flow(List.map(String), StringUtils.mkString(''))))
+  pipe(getBodyChunks<I>(), map(flow(List.map(String), List.mkString(''))))
 
 const getCookies = <I = StatusOpen>(): MyMiddleware<I, I, Dict<string, string>> =>
   pipe(

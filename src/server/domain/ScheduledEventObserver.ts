@@ -11,7 +11,6 @@ import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import type { DiscordUserId } from '../../shared/models/DiscordUserId'
-import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future, IO, List, NonEmptyArray, toUnit } from '../../shared/utils/fp'
 import { Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
@@ -158,7 +157,7 @@ export const ScheduledEventObserver = (
       Future.chainFirstIOEitherK(
         flow(
           List.map(c => LogUtils.format(c.guild, null, c)),
-          StringUtils.mkString(' '),
+          List.mkString(' '),
           str => logger.info(`Sending "It's friday" in channels: ${str}`),
         ),
       ),
@@ -232,11 +231,11 @@ const reminderMessage = ({ now, scheduledAt, what, r }: ReminderMessage): Messag
                   [authorStr, initialyScheduledAt],
                   List.compact,
                   NonEmptyArray.fromReadonlyArray,
-                  Maybe.map(StringUtils.mkString('\n')),
+                  Maybe.map(List.mkString('\n')),
                 ),
               ],
               List.compact,
-              StringUtils.mkString('\n\n'),
+              List.mkString('\n\n'),
             ),
           ),
         ],

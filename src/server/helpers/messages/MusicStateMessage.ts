@@ -119,7 +119,7 @@ const playing = (
                     flow(
                       List.takeLeft(queueDisplay),
                       List.map(t => `${maskedLink(constants.emojis.link, t.url)} ${t.title}`),
-                      StringUtils.mkString(
+                      List.mkString(
                         `*File d'attente (${queue.length}) :*\n`,
                         '\n',
                         queue.length <= queueDisplay ? '' : '\n...',

@@ -19,7 +19,6 @@ import { apply } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { flow, pipe } from 'fp-ts/function'
 
-import { StringUtils } from '../../shared/utils/StringUtils'
 import { NonEmptyArray, toUnit } from '../../shared/utils/fp'
 import { List } from '../../shared/utils/fp'
 import { Future, IO, Maybe } from '../../shared/utils/fp'
@@ -526,7 +525,7 @@ const addedTracksEvent = (author: User, tracks: NonEmptyArray<Track>): string =>
     return pipe(
       tracks,
       List.map(t => `• [${t.title}](${t.url})`),
-      StringUtils.mkString('\n', '\n', ''),
+      List.mkString('\n', '\n', ''),
     )
   })()
   return `**${author}** a ajouté${tracksStr}`

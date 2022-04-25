@@ -1,4 +1,3 @@
-- move mkString to List?
 - upgrade react
 - decouple autorole and call mention
 - select leave message chan

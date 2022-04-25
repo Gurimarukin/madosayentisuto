@@ -3,8 +3,8 @@ import * as D from 'io-ts/Decoder'
 import type { Decoder } from 'io-ts/Decoder'
 
 import type { ValidatedNea } from '../../models/ValidatedNea'
-import { StringUtils } from '../StringUtils'
 import type { Dict, Try } from '../fp'
+import { List } from '../fp'
 import { Either, NonEmptyArray } from '../fp'
 
 export type DecodeKey = <B>(
@@ -23,5 +23,5 @@ export const parseConfig =
               Either.mapLeft(e => NonEmptyArray.of(`${key}: ${D.draw(e)}`)),
             ),
       ),
-      Either.mapLeft(flow(StringUtils.mkString('Errors while reading config:\n', '\n', ''), Error)),
+      Either.mapLeft(flow(List.mkString('Errors while reading config:\n', '\n', ''), Error)),
     )

@@ -484,10 +484,7 @@ export const AdminCommandsObserver = (
           name: decode(D.string, interaction.options.getString(Keys.name)),
         }),
         Either.mapLeft(
-          flow(
-            StringUtils.mkString('Invalid options from command "activity set":\n', '\n', ''),
-            Error,
-          ),
+          flow(List.mkString('Invalid options from command "activity set":\n', '\n', ''), Error),
         ),
         Future.fromEither,
         Future.chainFirst(activity => botStateService.setActivity(activity)),

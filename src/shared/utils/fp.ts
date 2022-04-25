@@ -96,8 +96,15 @@ export const NonEmptyArray = {
     C_.make(neaDecoder(codec), neaEncoder(codec)),
 }
 
-// can't just alias it to `Array`
 export type List<A> = ReadonlyArray<A>
+function mkString(sep: string): (list: List<string>) => string
+function mkString(start: string, sep: string, end: string): (list: List<string>) => string
+function mkString(startOrSep: string, sep?: string, end?: string): (list: List<string>) => string {
+  return list =>
+    sep !== undefined && end !== undefined
+      ? `${startOrSep}${list.join(sep)}${end}`
+      : list.join(startOrSep)
+}
 const listDecoder: <A>(decoder: Decoder<unknown, A>) => Decoder<unknown, List<A>> = D.array
 const listEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<List<O>, List<A>> => ({
   encode: readonlyArray.map(encoder.encode),
@@ -106,6 +113,7 @@ export const List = {
   ...readonlyArray,
   // eslint-disable-next-line functional/prefer-readonly-type
   toMutable: identity as <A>(fa: List<A>) => A[],
+  mkString,
   decoder: listDecoder,
   encoder: listEncoder,
   codec: <O, A>(codec: Codec<unknown, O, A>): Codec<unknown, List<O>, List<A>> =>
