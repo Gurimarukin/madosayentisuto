@@ -2,10 +2,9 @@ import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 
-import { ChannelId } from '../../../shared/models/ChannelId'
 import type { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { ScheduledEventView } from '../../../shared/models/ScheduledEventView'
-import { GuildId } from '../../../shared/models/guild/GuildId'
+import type { GuildId } from '../../../shared/models/guild/GuildId'
 import { GuildView } from '../../../shared/models/guild/GuildView'
 import { GuildViewShort } from '../../../shared/models/guild/GuildViewShort'
 import { Future, IO, List, Maybe } from '../../../shared/utils/fp'
@@ -13,11 +12,13 @@ import { futureMaybe } from '../../../shared/utils/futureMaybe'
 import { DayJsFromISOString } from '../../../shared/utils/ioTsUtils'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
+import { GuildState } from '../../models/guildState/GuildState'
 import type { LoggerGetter } from '../../models/logger/LoggerGetter'
 import { TObjectId } from '../../models/mongo/TObjectId'
 import { Sink } from '../../models/rx/Sink'
 import { TObservable } from '../../models/rx/TObservable'
 import type { ScheduledEventWithId } from '../../models/scheduledEvent/ScheduledEventWithId'
+import type { GuildStateService } from '../../services/GuildStateService'
 import type { MemberBirthdateService } from '../../services/MemberBirthdateService'
 import type { ScheduledEventService } from '../../services/ScheduledEventService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
@@ -30,6 +31,7 @@ export type DiscordClientController = ReturnType<typeof DiscordClientController>
 export const DiscordClientController = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
+  guildStateService: GuildStateService,
   memberBirthdateService: MemberBirthdateService,
   scheduledEventService: ScheduledEventService,
 ) => {
@@ -49,8 +51,13 @@ export const DiscordClientController = (
         Future.fromIOEither(discord.getGuild(guildId)),
         futureMaybe.chain(guild =>
           pipe(
-            DiscordConnector.fetchMembers(guild),
-            Future.map(c => GuildView.fromGuild(guild, c.toJSON())),
+            apply.sequenceS(Future.ApplyPar)({
+              members: DiscordConnector.fetchMembers(guild),
+              state: guildStateService.getState(guild),
+            }),
+            Future.map(({ members, state }) =>
+              GuildView.fromGuild(guild, GuildState.toView(state), members.toJSON()),
+            ),
             futureMaybe.fromTaskEither,
           ),
         ),
@@ -137,27 +144,10 @@ export const DiscordClientController = (
             ),
           }),
           futureMaybe.map(({ createdBy, who }) =>
-            ScheduledEventView.Reminder({
+            ScheduledEventView.reminderFromParsed({
               scheduledAt: event.scheduledAt,
-              createdBy: {
-                tag: createdBy.tag,
-                avatar: Maybe.fromNullable(createdBy.displayAvatarURL({ dynamic: true })),
-              },
-              who: pipe(
-                who,
-                Maybe.map(({ guild, channel, role }) => ({
-                  guild: {
-                    id: GuildId.fromGuild(guild),
-                    name: guild.name,
-                    icon: Maybe.fromNullable(guild.iconURL()),
-                  },
-                  channel: {
-                    id: ChannelId.fromChannel(channel),
-                    name: channel.name,
-                  },
-                  role: { name: role.name, color: role.hexColor },
-                })),
-              ),
+              createdBy,
+              who,
               what: event.reminder.what,
             }),
           ),

@@ -2,11 +2,14 @@ import type { Role, TextChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
+import { ChannelView } from '../../../shared/models/ChannelView'
 import type { GuildId } from '../../../shared/models/guild/GuildId'
+import type { GuildStateView } from '../../../shared/models/guild/GuildStateView'
+import { RoleView } from '../../../shared/models/guild/RoleView'
 import { Maybe } from '../../../shared/utils/fp'
 
 import type { MusicSubscription } from '../../helpers/MusicSubscription'
-import type { Calls } from './Calls'
+import { Calls } from './Calls'
 
 export type GuildState = {
   readonly id: GuildId
@@ -26,7 +29,14 @@ const empty = (id: GuildId): GuildState => ({
   subscription: Maybe.none,
 })
 
-const Lens_ = {
+const toView = (s: GuildState): GuildStateView => ({
+  calls: pipe(s.calls, Maybe.map(Calls.toView)),
+  defaultRole: pipe(s.defaultRole, Maybe.map(RoleView.fromRole)),
+  itsFridayChannel: pipe(s.itsFridayChannel, Maybe.map(ChannelView.fromChannel)),
+  birthdayChannel: pipe(s.birthdayChannel, Maybe.map(ChannelView.fromChannel)),
+})
+
+const Lens = {
   calls: pipe(lens.id<GuildState>(), lens.prop('calls')),
   defaultRole: pipe(lens.id<GuildState>(), lens.prop('defaultRole')),
   itsFridayChannel: pipe(lens.id<GuildState>(), lens.prop('itsFridayChannel')),
@@ -34,4 +44,4 @@ const Lens_ = {
   subscription: pipe(lens.id<GuildState>(), lens.prop('subscription')),
 }
 
-export const GuildState = { empty, Lens: Lens_ }
+export const GuildState = { empty, toView, Lens }

@@ -6,7 +6,9 @@ import { DayJs } from '../../shared/models/DayJs'
 import { ScheduledEventView } from '../../shared/models/ScheduledEventView'
 import { List, Maybe } from '../../shared/utils/fp'
 
+import { ChannelViewComponent } from '../components/ChannelViewComponent'
 import { Header } from '../components/Header'
+import { RoleViewComponent } from '../components/RoleViewComponent'
 import { useHttp } from '../hooks/useHttp'
 import { DiscordUtils } from '../utils/DiscordUtils'
 import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
@@ -92,15 +94,8 @@ const renderEvent = (event: ScheduledEventView): JSX.Element => {
                         ),
                       )}
                     </a>
-                    <a
-                      href={DiscordUtils.urls.guildChannel(guild.id, channel.id)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="cursor-pointer"
-                    >
-                      #{channel.name}
-                    </a>
-                    <span style={{ color: role.color }}>@{role.name}</span>
+                    <ChannelViewComponent guild={guild.id} channel={channel} />
+                    <RoleViewComponent role={role} />
                   </>
                 ),
               ),

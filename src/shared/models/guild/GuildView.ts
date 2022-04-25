@@ -9,6 +9,8 @@ import type { DayJs } from '../DayJs'
 import type { DiscordUserId } from '../DiscordUserId'
 import { GuildEmojiView } from './GuildEmojiView'
 import { GuildId } from './GuildId'
+import { GuildStateView } from './GuildStateView'
+import { GuildViewShort } from './GuildViewShort'
 import { MemberView } from './MemberView'
 
 type MemberIdWithBirthdate = {
@@ -16,17 +18,21 @@ type MemberIdWithBirthdate = {
   readonly birthdate: DayJs
 }
 
-const codec = C.struct({
-  id: GuildId.codec,
-  name: C.string,
-  icon: Maybe.codec(C.string),
-  members: List.codec(MemberView.codec),
-  emojis: List.codec(GuildEmojiView.codec),
-})
+const codec = pipe(
+  GuildViewShort.codec,
+  C.intersect(
+    C.struct({
+      state: GuildStateView.codec,
+      members: List.codec(MemberView.codec),
+      emojis: List.codec(GuildEmojiView.codec),
+    }),
+  ),
+)
 
-const fromGuild = (guild: Guild, members: List<GuildMember>): GuildView => ({
+const fromGuild = (guild: Guild, state: GuildStateView, members: List<GuildMember>): GuildView => ({
   id: GuildId.fromGuild(guild),
   name: guild.name,
+  state,
   icon: Maybe.fromNullable(guild.iconURL({ dynamic: true })),
   members: pipe(members, List.map(MemberView.fromGuildMember)),
   emojis: guild.emojis.cache.toJSON().map(GuildEmojiView.fromGuildEmoji),

@@ -9,7 +9,6 @@
 - webapp
   - tier-list
   - logs?
-  - state?
 - commands register: unsubscribe when done?
 - elevator
 - `NotUsed`?

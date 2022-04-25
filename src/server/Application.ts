@@ -76,6 +76,7 @@ export const Application = (
   const discordClientController = DiscordClientController(
     Logger,
     discord,
+    guildStateService,
     memberBirthdateService,
     scheduledEventService,
   )
