@@ -1,7 +1,6 @@
 import { identity, pipe } from 'fp-ts/function'
 
 import { MsDuration } from '../shared/models/MsDuration'
-import { StringUtils } from '../shared/utils/StringUtils'
 import { Future } from '../shared/utils/fp'
 
 import type { Config } from './Config'
@@ -114,9 +113,7 @@ const load = (config: Config, Logger: LoggerGetter): Future<Context> => {
       Future.orElse(() =>
         pipe(
           logger.info(
-            `Couldn't connect to mongo, waiting ${StringUtils.prettyMs(
-              dbRetryDelay,
-            )} before next try`,
+            `Couldn't connect to mongo, waiting ${MsDuration.pretty(dbRetryDelay)} before next try`,
           ),
           Future.fromIOEither,
           Future.chain(() => pipe(waitDatabaseReady(), Future.delay(dbRetryDelay))),

@@ -2,7 +2,6 @@ import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
-import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future, IO, toUnit } from '../../shared/utils/fp'
 
 import type { MadEventCronJob } from '../models/event/MadEvent'
@@ -27,9 +26,9 @@ export const scheduleCronJob = (
     }),
     IO.chainFirst(untilNextMinute =>
       logger.info(
-        `Scheduling; next minute is in ${StringUtils.prettyMs(
+        `Scheduling; next minute is in ${MsDuration.pretty(
           untilNextMinute,
-        )} (interval: ${StringUtils.prettyMs(cronJobInterval)})`,
+        )} (interval: ${MsDuration.pretty(cronJobInterval)})`,
       ),
     ),
     IO.chain(untilNextMinute =>

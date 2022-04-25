@@ -1,8 +1,6 @@
 import { random } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { DayJs } from '../models/DayJs'
-import { MsDuration } from '../models/MsDuration'
 import type { NonEmptyArray, Tuple } from './fp'
 import { List, Maybe } from './fp'
 
@@ -36,22 +34,6 @@ function mkString(startOrSep: string, sep?: string, end?: string): (list: List<s
     sep !== undefined && end !== undefined
       ? `${startOrSep}${list.join(sep)}${end}`
       : list.join(startOrSep)
-}
-
-const prettyMs = (ms: MsDuration): string => {
-  const date = DayJs.of(MsDuration.unwrap(ms))
-  const zero = DayJs.of(0)
-
-  const d = pipe(date, DayJs.diff(zero, 'days'))
-  const h = DayJs.hour.get(date)
-  const m = DayJs.minute.get(date)
-  const s = DayJs.second.get(date)
-  const ms_ = DayJs.millisecond.get(date)
-
-  if (d !== 0) return `${d}d${pad10(h)}h${pad10(m)}'${pad10(s)}.${pad100(ms_)}"`
-  if (h !== 0) return `${pad10(h)}h${pad10(m)}'${pad10(s)}.${pad100(ms_)}"`
-  if (m !== 0) return `${pad10(m)}'${pad10(s)}.${pad100(ms_)}"`
-  return `${pad10(s)}.${pad100(ms_)}"`
 }
 
 const pad10 = (n: number): string => (n < 10 ? `0${n}` : `${n}`)
@@ -99,7 +81,6 @@ export const StringUtils = {
   mkString,
   pad10,
   pad100,
-  prettyMs,
   randomCase,
   stripMargins,
   booleanLabel,

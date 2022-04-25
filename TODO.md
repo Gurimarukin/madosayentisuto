@@ -1,4 +1,3 @@
-- move prettyMs to MsDuration
 - move mkString to List?
 - upgrade react
 - decouple autorole and call mention
