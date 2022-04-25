@@ -73,7 +73,12 @@ export const Application = (
   const userService = UserService(Logger, userPersistence, jwtHelper)
 
   const healthCheckController = HealthCheckController(healthCheckService)
-  const discordClientController = DiscordClientController(discord, memberBirthdateService)
+  const discordClientController = DiscordClientController(
+    Logger,
+    discord,
+    memberBirthdateService,
+    scheduledEventService,
+  )
   const userController = UserController(userService)
 
   const withAuth = WithAuth(userService)

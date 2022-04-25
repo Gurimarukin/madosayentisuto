@@ -1,8 +1,8 @@
 import * as C from 'io-ts/Codec'
 
+import { ChannelId } from '../../../shared/models/ChannelId'
 import { GuildId } from '../../../shared/models/guild/GuildId'
 
-import { ChannelId } from '../ChannelId'
 import { RoleId } from '../RoleId'
 
 const codec = C.struct({

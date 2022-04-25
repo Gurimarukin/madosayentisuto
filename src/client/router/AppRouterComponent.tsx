@@ -6,12 +6,14 @@ import React, { useEffect, useMemo } from 'react'
 import { Maybe } from '../../shared/utils/fp'
 import { Tuple } from '../../shared/utils/fp'
 
-import { Guilds } from '../domain/Guilds'
+import { Link } from '../components/Link'
+import { Home } from '../domain/Home'
 import { Login } from '../domain/Login'
+import { ScheduledEvents } from '../domain/ScheduledEvents'
 import { Guild } from '../domain/guild/Guild'
 import { GuildEmojis } from '../domain/guild/GuildEmojis'
 import { GuildMembers } from '../domain/guild/GuildMembers'
-import { appParsers } from './AppRouter'
+import { appParsers, appRoutes } from './AppRouter'
 import { useHistory } from './HistoryContext'
 
 type ElementWithTitle = Tuple<JSX.Element, Maybe<string>>
@@ -20,7 +22,7 @@ const t = (element: JSX.Element, title?: string): ElementWithTitle =>
   Tuple.of(element, Maybe.fromNullable(title))
 
 const titleWithElementParser = zero<ElementWithTitle>()
-  .alt(appParsers.index.map(() => t(<Guilds />)))
+  .alt(appParsers.index.map(() => t(<Home />)))
   .alt(appParsers.login.map(() => t(<Login />, 'Connexion')))
   .alt(appParsers.guild.index.map(({ guildId }) => t(<Guild guildId={guildId} />, 'Serveur')))
   .alt(
@@ -33,6 +35,7 @@ const titleWithElementParser = zero<ElementWithTitle>()
       t(<GuildEmojis guildId={guildId} />, 'Serveur - émojis'),
     ),
   )
+  .alt(appParsers.scheduledEvents.map(() => t(<ScheduledEvents />, 'Évènements')))
 
 export const AppRouterComponent = (): JSX.Element => {
   const { location } = useHistory()
@@ -62,4 +65,11 @@ export const AppRouterComponent = (): JSX.Element => {
 }
 
 // TODO: move to own file?
-const NotFound = (): JSX.Element => <div>Cette page n'existe pas.</div>
+const NotFound = (): JSX.Element => (
+  <div className="flex flex-col items-center p-6 gap-4">
+    <p className="text-xl">Cette page n'existe pas.</p>
+    <Link to={appRoutes.index} className="underline">
+      Accueil
+    </Link>
+  </div>
+)

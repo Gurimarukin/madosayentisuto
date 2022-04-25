@@ -26,10 +26,18 @@ const modify = identity as (f: Endomorphism<dayjs.Dayjs>) => Endomorphism<DayJs>
 
 // constructors
 
+type OfOptions = {
+  readonly locale?: boolean
+}
+
 function of(date: number | Date): DayJs
-function of(date: string, format?: string): DayJs
-function of(date: number | Date | string, format?: string): DayJs {
-  return wrap(dayjs.utc(date, format, true))
+function of(date: string, format?: string, options?: OfOptions): DayJs
+function of(
+  date: number | Date | string,
+  format?: string,
+  { locale = false }: OfOptions = {},
+): DayJs {
+  return wrap((locale ? dayjs : dayjs.utc)(date, format, true))
 }
 
 const now: IO<DayJs> = pipe(dayjs, io.map(wrap))

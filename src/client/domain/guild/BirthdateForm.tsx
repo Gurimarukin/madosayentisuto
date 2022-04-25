@@ -98,16 +98,18 @@ export const BirthdateForm = ({
             value={value}
             onChange={handleInputChange}
             autoFocus={true}
-            className="w-full border-none rounded-sm bg-gray1 text-inherit text-center"
+            className="w-full border-none rounded-sm pl-2 bg-gray1 text-inherit"
           />
         ) : (
-          pipe(
-            initialBirthdate,
-            Maybe.fold(
-              () => <span className="w-full text-center">-</span>,
-              d => <span>{pipe(d, DayJs.format(dateFormat))}</span>,
-            ),
-          )
+          <span className="w-full">
+            {pipe(
+              initialBirthdate,
+              Maybe.fold(
+                () => '-',
+                d => pipe(d, DayJs.format(dateFormat)),
+              ),
+            )}
+          </span>
         )}
       </div>
       <div className="w-16 flex justify-between gap-x-1">

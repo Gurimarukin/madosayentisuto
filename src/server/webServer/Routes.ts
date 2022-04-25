@@ -28,6 +28,7 @@ export const Routes = (
   r(api.member.birthdate.del3te, ({ userId }) =>
     withAuth(discordClientController.deleteMemberBirthdate(userId)),
   ),
+  r(api.scheduledEvents.get, () => withAuth(discordClientController.listScheduledEvents)),
 ]
 
 // get Route

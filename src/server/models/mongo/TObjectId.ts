@@ -22,4 +22,4 @@ const encoder: Encoder<ObjectId, TObjectId> = {
 
 const codec: C.Codec<unknown, ObjectId, TObjectId> = C.make(decoder, encoder)
 
-export const TObjectId = { decoder, encoder, codec }
+export const TObjectId = { unwrap, decoder, encoder, codec }

@@ -4,6 +4,7 @@ import type { CommandInteraction, Guild, TextBasedChannel, User } from 'discord.
 import { apply, ord } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
+import { ChannelId } from '../../../shared/models/ChannelId'
 import { DayJs } from '../../../shared/models/DayJs'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { MsDuration } from '../../../shared/models/MsDuration'
@@ -13,7 +14,6 @@ import { Future, Maybe } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import { ChannelId } from '../../models/ChannelId'
 import { Command } from '../../models/Command'
 import { RoleId } from '../../models/RoleId'
 import { MadEvent } from '../../models/event/MadEvent'
@@ -204,7 +204,7 @@ const parseDayJs = (str: string): Maybe<DayJs> =>
   )
 
 const parseFormat = (format: string, str: string): Maybe<DayJs> =>
-  pipe(DayJs.of(str, format), Maybe.fromPredicate(DayJs.isValid))
+  pipe(DayJs.of(str, format, { locale: true }), Maybe.fromPredicate(DayJs.isValid))
 
 const parseMs = (now: DayJs, str: string): Maybe<DayJs> =>
   pipe(

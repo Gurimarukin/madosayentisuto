@@ -1,6 +1,7 @@
 import * as C from 'io-ts/Codec'
 
-import { ChannelId } from '../../ChannelId'
+import { ChannelId } from '../../../../shared/models/ChannelId'
+
 import { MessageId } from '../../MessageId'
 import { RoleId } from '../../RoleId'
 import type { Calls } from '../Calls'

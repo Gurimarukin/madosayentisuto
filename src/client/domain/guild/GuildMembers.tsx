@@ -44,43 +44,47 @@ const Members = ({ guild, response }: MembersProps): JSX.Element => {
 
   return (
     <div className="w-full">
-      <ul className="grid grid-cols-[auto_auto_1fr]">
-        <li className="contents text-lg font-bold">
-          <span className="px-6 py-3 bg-gray2">Pseudal</span>
-          <span className="flex items-center px-6 bg-gray2">Date de naissance</span>
-          <span className="bg-gray2" />
-        </li>
-        {pipe(
-          members,
-          List.map(member => (
-            <li key={DiscordUserId.unwrap(member.id)} className="contents group">
-              <div className="flex items-center gap-x-4 px-6 py-3 group-odd:bg-gray2">
-                {pipe(
-                  member.avatar,
-                  Maybe.fold(
-                    () => null,
-                    avatar => (
-                      <div className="w-12 h-12 rounded-full overflow-hidden">
-                        <img src={avatar} alt={`Avatar de ${member.name}`} />
-                      </div>
+      <table className="grid grid-cols-[auto_auto_1fr]">
+        <thead className="contents">
+          <tr className="contents text-lg font-bold">
+            <th className="flex px-6 py-3 bg-gray2">Pseudal</th>
+            <th className="flex px-6 py-3 bg-gray2">Date de naissance</th>
+            <th className="bg-gray2" />
+          </tr>
+        </thead>
+        <tbody className="contents">
+          {pipe(
+            members,
+            List.map(member => (
+              <tr key={DiscordUserId.unwrap(member.id)} className="contents group">
+                <td className="flex items-center gap-4 px-6 py-3 group-even:bg-gray2">
+                  {pipe(
+                    member.avatar,
+                    Maybe.fold(
+                      () => null,
+                      avatar => (
+                        <div className="w-12 h-12 rounded-full overflow-hidden">
+                          <img src={avatar} alt={`Avatar de ${member.name}`} />
+                        </div>
+                      ),
                     ),
-                  ),
-                )}
-                <span style={{ color: member.color }}>{member.name}</span>
-              </div>
-              <div className="px-6 group-odd:bg-gray2">
-                <BirthdateForm
-                  userId={member.id}
-                  initialBirthdate={member.birthdate}
-                  onPostBirthdate={onPostBirthdate(response.mutate, member.id)}
-                  onDeleteBirthdate={onDeleteBirthdate(response.mutate, member.id)}
-                />
-              </div>
-              <span className="group-odd:bg-gray2" />
-            </li>
-          )),
-        )}
-      </ul>
+                  )}
+                  <span style={{ color: member.color }}>{member.name}</span>
+                </td>
+                <td className="px-6 group-even:bg-gray2">
+                  <BirthdateForm
+                    userId={member.id}
+                    initialBirthdate={member.birthdate}
+                    onPostBirthdate={onPostBirthdate(response.mutate, member.id)}
+                    onDeleteBirthdate={onDeleteBirthdate(response.mutate, member.id)}
+                  />
+                </td>
+                <td className="group-even:bg-gray2" />
+              </tr>
+            )),
+          )}
+        </tbody>
+      </table>
     </div>
   )
 }

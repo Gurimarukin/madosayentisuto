@@ -1,10 +1,10 @@
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
+import { ChannelId } from '../../../../shared/models/ChannelId'
 import { GuildId } from '../../../../shared/models/guild/GuildId'
 import { Dict, Maybe } from '../../../../shared/utils/fp'
 
-import { ChannelId } from '../../ChannelId'
 import { RoleId } from '../../RoleId'
 import type { GuildState } from '../GuildState'
 import { CallsDb } from './CallsDb'

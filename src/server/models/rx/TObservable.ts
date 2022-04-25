@@ -91,6 +91,8 @@ const filterMap = observable.filterMap as unknown as <A, B>(
   f: (a: A) => Maybe<B>,
 ) => (fa: TObservable<A>) => TObservable<B>
 
+const compact = observable.compact as unknown as <A>(fa: TObservable<Maybe<A>>) => TObservable<A>
+
 const flatten = observable.flatten as unknown as <A>(
   mma: TObservable<TObservable<A>>,
 ) => TObservable<A>
@@ -110,6 +112,7 @@ export const TObservable = {
   chainFirstIOEitherK,
   filter,
   filterMap,
+  compact,
   flatten,
   flattenTry,
   concat:

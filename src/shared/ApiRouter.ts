@@ -22,6 +22,7 @@ const apiGuilds = api.then(lit('guilds'))
 const apiGuild = api.then(lit('guild')).then(codec('guildId')<GuildId>(str))
 const apiMember = api.then(lit('member')).then(codec('userId')<DiscordUserId>(str))
 const apiMemberBirthdate = apiMember.then(lit('birthdate'))
+const apiScheduledEvents = api.then(lit('scheduledEvents'))
 
 // final
 const healthcheckGet = m(apiHealthcheck, 'get')
@@ -33,6 +34,8 @@ const guildGet = m(apiGuild, 'get')
 
 const memberBirthdatePost = m(apiMemberBirthdate, 'post')
 const memberBirthdateDelete = m(apiMemberBirthdate, 'delete')
+
+const scheduledEventsGet = m(apiScheduledEvents, 'get')
 
 /**
  * parsers
@@ -49,6 +52,7 @@ export const apiParsers = {
       del3te: p(memberBirthdateDelete),
     },
   },
+  scheduledEvents: { get: p(scheduledEventsGet) },
 }
 
 /**
@@ -65,7 +69,12 @@ export const apiRoutes = {
       del3te: (userId: DiscordUserId) => r(memberBirthdateDelete, { userId }),
     },
   },
+  scheduledEvents: { get: r(scheduledEventsGet, {}) },
 }
+
+/**
+ * Helpers
+ */
 
 type WithMethod<A> = Tuple<A, Method>
 type MatchWithMethod<A> = WithMethod<Match<A>>

@@ -1,11 +1,11 @@
 import { pipe } from 'fp-ts/function'
 
+import type { ChannelId } from '../../shared/models/ChannelId'
 import { GuildId } from '../../shared/models/guild/GuildId'
 import type { Dict, List, Maybe } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { ChannelId } from '../models/ChannelId'
 import type { GuildStateDbOutput } from '../models/guildState/db/GuildStateDb'
 import {
   GuildStateDb,

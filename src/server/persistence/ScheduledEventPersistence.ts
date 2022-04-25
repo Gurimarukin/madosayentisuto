@@ -30,6 +30,11 @@ export function ScheduledEventPersistence(
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { scheduledAt: -1 } }])
 
+  const list: TObservable<ScheduledEventWithId> = collection.findAll([
+    ScheduledEventWithId.decoder,
+    'ScheduledEventWithId',
+  ])({}, { sort: [[collection.path(['scheduledAt']), 1]] })
+
   return {
     ensureIndexes,
 
@@ -37,6 +42,8 @@ export function ScheduledEventPersistence(
       collection.findAll([ScheduledEventWithId.decoder, 'ScheduledEventWithId'])({
         scheduledAt: { $lte: DayJsFromDate.encoder.encode(date) },
       }),
+
+    list,
 
     create: (event: ScheduledEvent): Future<boolean> =>
       pipe(
