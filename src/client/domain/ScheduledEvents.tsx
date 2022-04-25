@@ -9,6 +9,7 @@ import { List, Maybe } from '../../shared/utils/fp'
 import { ChannelViewComponent } from '../components/ChannelViewComponent'
 import { Header } from '../components/Header'
 import { RoleViewComponent } from '../components/RoleViewComponent'
+import { Tooltip } from '../components/Tooltip'
 import { useHttp } from '../hooks/useHttp'
 import { DiscordUtils } from '../utils/DiscordUtils'
 import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
@@ -83,13 +84,17 @@ const renderEvent = (event: ScheduledEventView): JSX.Element => {
                         Maybe.fold(
                           () => <span>{guild.name}</span>,
                           icon => (
-                            <div className="w-8 h-8 rounded-md overflow-hidden" title={guild.name}>
-                              <img
-                                src={icon}
-                                alt={`Icone du serveur ${guild.name}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
+                            <Tooltip
+                              title={<span className="whitespace-nowrap">{guild.name}</span>}
+                            >
+                              <div className="w-8 h-8 rounded-md overflow-hidden">
+                                <img
+                                  src={icon}
+                                  alt={`Icone du serveur ${guild.name}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            </Tooltip>
                           ),
                         ),
                       )}
