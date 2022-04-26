@@ -64,6 +64,7 @@ export const apiParsers = {
  */
 
 export const apiRoutes = {
+  index: format(api.formatter, {}),
   login: { post: r(loginPost, {}) },
   guilds: { get: r(guildsGet, {}) },
   guild: { get: (guildId: GuildId) => r(guildGet, { guildId }) },
