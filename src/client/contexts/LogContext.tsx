@@ -101,7 +101,7 @@ export const useLog = (): LogContext => {
 const reconnectingWebSocket: IO<ReconnectingWebSocket> = IO.tryCatch(() => {
   const url = new URL('/', config.apiHost)
   // eslint-disable-next-line functional/immutable-data
-  url.protocol = window.location.protocol.startsWith('https') ? 'wss' : 'ws'
+  url.protocol = window.location.protocol.startsWith('https') ? 'ws' : 'ws'
   return new ReconnectingWebSocket(url.toString())
 })
 
