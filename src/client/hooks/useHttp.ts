@@ -7,8 +7,8 @@ import useSWR from 'swr'
 
 import type { Tuple } from '../../shared/utils/fp'
 
+import { useHistory } from '../contexts/HistoryContext'
 import { appRoutes } from '../router/AppRouter'
-import { useHistory } from '../router/HistoryContext'
 import type { HttpOptions } from '../utils/http'
 import { http } from '../utils/http'
 

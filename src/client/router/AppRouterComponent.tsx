@@ -7,7 +7,8 @@ import { Maybe } from '../../shared/utils/fp'
 import { Tuple } from '../../shared/utils/fp'
 
 import { Link } from '../components/Link'
-import { ConsoleLog } from '../domain/ConsoleLog'
+import { useHistory } from '../contexts/HistoryContext'
+import { ConsolLogs } from '../domain/ConsolLogs'
 import { Home } from '../domain/Home'
 import { Login } from '../domain/Login'
 import { ScheduledEvents } from '../domain/ScheduledEvents'
@@ -15,7 +16,6 @@ import { Guild } from '../domain/guild/Guild'
 import { GuildEmojis } from '../domain/guild/GuildEmojis'
 import { GuildMembers } from '../domain/guild/GuildMembers'
 import { appParsers, appRoutes } from './AppRouter'
-import { useHistory } from './HistoryContext'
 
 type ElementWithTitle = Tuple<JSX.Element, Maybe<string>>
 
@@ -37,7 +37,7 @@ const titleWithElementParser = zero<ElementWithTitle>()
     ),
   )
   .alt(appParsers.scheduledEvents.map(() => t(<ScheduledEvents />, 'Évènements')))
-  .alt(appParsers.console.map(() => t(<ConsoleLog />, 'Console')))
+  .alt(appParsers.console.map(() => t(<ConsolLogs />, 'Console')))
 
 export const AppRouterComponent = (): JSX.Element => {
   const { location } = useHistory()

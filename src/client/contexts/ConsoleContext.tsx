@@ -1,55 +1,60 @@
+/* eslint-disable functional/no-expression-statement */
 import { apply, json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
-import React, { useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import ReconnectingWebSocket from 'reconnecting-websocket'
 import type {
   CloseEvent as ReconnectingCloseEvent,
   ErrorEvent as ReconnectingErrorEvent,
   Event as ReconnectingEvent,
 } from 'reconnecting-websocket'
-import { interval } from 'rxjs'
 
+import type { ConsoleLog } from '../../shared/models/ConsoleLog'
 import { DayJs } from '../../shared/models/DayJs'
-import { LogLevel } from '../../shared/models/LogLevel'
-import type { LoggerType } from '../../shared/models/LoggerType'
-import { MsDuration } from '../../shared/models/MsDuration'
 import { ClientToServerEvent } from '../../shared/models/event/ClientToServerEvent'
 import type { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../../shared/models/rx/PubSub'
 import { TObservable } from '../../shared/models/rx/TObservable'
 import type { TSubject } from '../../shared/models/rx/TSubject'
-import type { Color } from '../../shared/utils/Color'
 import { PubSubUtils } from '../../shared/utils/PubSubUtils'
-import { Either, Future, IO, List, toUnit } from '../../shared/utils/fp'
+import { Either, Future, IO, List } from '../../shared/utils/fp'
 
-import { Header } from '../components/Header'
 import { config } from '../config/unsafe'
 import { WSClientEvent } from '../model/event/WSClientEvent'
+import { logger } from '../utils/logger'
 
-type Log = {
-  readonly date: DayJs
-  readonly name: string
-  readonly level: LogLevel
-  readonly message: string
+type ConsoleContext = {
+  readonly logs: List<ConsoleLog>
 }
 
-export const ConsoleLog = (): JSX.Element => {
-  const [logs, setLogs] = useState<List<Log>>([])
+const ConsoleContext = createContext<ConsoleContext | undefined>(undefined)
 
+export const ConsoleContextProvider: React.FC = ({ children }) => {
+  const [logs, setLogs] = useState<List<ConsoleLog>>([])
+
+  const initialLogsFetched = useRef(false)
   useEffect(() => {
-    const { clientToServerEventSubject, closeWebSocket } = pipe(
+    const { closeWebSocket } = pipe(
       initWs,
       IO.chainFirst(({ wsClientEventObservable }) =>
         pipe(wsClientEventObservable, TObservable.subscribe({ next: onWSClientEvent })),
       ),
+      IO.chainFirst(() =>
+        initialLogsFetched.current
+          ? IO.unit
+          : pipe(
+              fetchInitialLogs,
+              Future.map(initialLogs => {
+                setLogs(prev => pipe(initialLogs, List.concat(prev)))
+                // eslint-disable-next-line functional/immutable-data
+                initialLogsFetched.current = true
+              }),
+              IO.runFutureUnsafe,
+            ),
+      ),
       IO.runUnsafe,
     )
-    /* eslint-disable */
-    interval(1000).subscribe(a =>
-      IO.runUnsafe(clientToServerEventSubject.next(ClientToServerEvent.Dummy({ a }))),
-    )
-    /* eslint-enable */
     return () => pipe(closeWebSocket, IO.runUnsafe)
 
     function onWSClientEvent(e: WSClientEvent): Future<void> {
@@ -77,31 +82,23 @@ export const ConsoleLog = (): JSX.Element => {
     }
   }, [])
 
-  return (
-    <div className="h-full flex flex-col">
-      <Header>ConsoleLog</Header>
-      <div className="flex-grow px-3 py-2 bg-black overflow-x-hidden overflow-y-auto">
-        <pre className="w-full grid grid-cols-[min-content_min-content_1fr] gap-x-3 text-sm">
-          {logs.map(({ date, name, level, message }) => (
-            <div key={pipe(date, DayJs.unixMs, MsDuration.unwrap)} className="contents">
-              {color(level.toUpperCase(), LogLevel.hexColor[level])}
-              {color(pipe(date, DayJs.format('YYYY/MM/DD HH:mm:ss')), LogLevel.hexColor.debug)}
-              <span className="whitespace-pre-wrap">
-                {name} - {message}
-              </span>
-            </div>
-          ))}
-        </pre>
-      </div>
-    </div>
-  )
+  const value: ConsoleContext = { logs }
+
+  return <ConsoleContext.Provider value={value}>{children}</ConsoleContext.Provider>
 }
 
-const color = (str: string, col: Color): JSX.Element => <span style={{ color: col }}>{str}</span>
+export const useConsole = (): ConsoleContext => {
+  const context = useContext(ConsoleContext)
+  if (context === undefined) {
+    // eslint-disable-next-line functional/no-throw-statement
+    throw Error('useConsole must be used within a ConsoleContextProvider')
+  }
+  return context
+}
 
 const reconnectingWebSocket: IO<ReconnectingWebSocket> = IO.tryCatch(() => {
   const url = new URL('/', config.apiHost)
-  // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
+  // eslint-disable-next-line functional/immutable-data
   url.protocol = window.location.protocol.startsWith('https') ? 'wss' : 'ws'
   return new ReconnectingWebSocket(url.toString())
 })
@@ -135,26 +132,6 @@ const initWs: IO<InitWSResult> = pipe(
         pub('error', WSClientEvent.WSError),
         pub('message', WSClientEvent.messageFromRawEvent),
 
-        PubSubUtils.subscribeWithRefinement(
-          logger,
-          wsClientEventPubSub.observable,
-        )(
-          ObserverWithRefinement.fromNext(
-            WSClientEvent,
-            'Close',
-          )(() =>
-            pipe(
-              apply.sequenceT(IO.ApplyPar)(
-                // TODO: don't complete, makes both pubSubs singletons (moar global)
-                wsClientEventPubSub.subject.complete,
-                clientToServerEventPubSub.subject.complete,
-              ),
-              Future.fromIOEither,
-              Future.map(toUnit),
-            ),
-          ),
-        ),
-
         // clientToServerEventPubSub
         PubSubUtils.subscribeWithRefinement(
           logger,
@@ -182,9 +159,6 @@ const initWs: IO<InitWSResult> = pipe(
   }),
 )
 
-const logger: LoggerType = {
-  debug: (...params) => IO.fromIO(() => console.debug(...params)),
-  info: (...params) => IO.fromIO(() => console.info(...params)),
-  warn: (...params) => IO.fromIO(() => console.warn(...params)),
-  error: (...params) => IO.fromIO(() => console.error(...params)),
-}
+const fetchInitialLogs = Future.right<List<ConsoleLog>>([
+  { date: DayJs.of(0), name: 'Adedigado', level: 'warn', message: 'Plouf' },
+])

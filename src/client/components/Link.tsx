@@ -1,7 +1,7 @@
 /* eslint-disable functional/no-expression-statement */
 import React, { useCallback } from 'react'
 
-import { useHistory } from '../router/HistoryContext'
+import { useHistory } from '../contexts/HistoryContext'
 
 type Props = {
   readonly to: string

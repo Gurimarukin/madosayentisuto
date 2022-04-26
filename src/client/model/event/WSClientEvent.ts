@@ -26,7 +26,9 @@ type Message = typeof u.Message.T
 export type WSClientEvent = typeof u.T
 
 export const WSClientEvent = {
-  ...u,
+  Open: u.Open,
+  Close: u.Close,
+  WSError: u.WSError,
   messageFromRawEvent: (event: MessageEvent<unknown>): InvalidMessageError | Message =>
     pipe(
       D.string.decode(event.data),

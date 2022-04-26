@@ -6,8 +6,8 @@ import { ClearPassword } from '../../shared/models/webUser/ClearPassword'
 import { LoginPayload } from '../../shared/models/webUser/LoginPayload'
 import { UserName } from '../../shared/models/webUser/UserName'
 
+import { useHistory } from '../contexts/HistoryContext'
 import { appRoutes } from '../router/AppRouter'
-import { useHistory } from '../router/HistoryContext'
 import { http } from '../utils/http'
 
 export const Login = (): JSX.Element => {
