@@ -3,9 +3,9 @@ import type * as rxjs from 'rxjs'
 import util from 'util'
 
 import type { LogLevel } from '../../../shared/models/LogLevel'
-import { LogLevelOrOff } from '../../../shared/models/LogLevel'
+import type { LogLevelOrOff } from '../../../shared/models/LogLevel'
 import type { LoggerType } from '../../../shared/models/LoggerType'
-import type { LogEvent } from '../../../shared/models/event/LogEvent'
+import { LogEvent } from '../../../shared/models/event/LogEvent'
 import { PubSub } from '../../../shared/models/rx/PubSub'
 import { TObservable } from '../../../shared/models/rx/TObservable'
 import type { TObserver } from '../../../shared/models/rx/TObserver'
@@ -36,7 +36,7 @@ const init = (): LoggerObservable => {
     subscribe: (configLevel, observer) =>
       pipe(
         logEventPubSub.observable,
-        TObservable.filter(filterLogEvent(configLevel)),
+        TObservable.filter(LogEvent.filter(configLevel)),
         TObservable.subscribe(observer),
       ),
   }
@@ -58,8 +58,3 @@ const initAndSubscribe = (
 }
 
 export const LoggerObservable = { initAndSubscribe }
-
-const filterLogEvent =
-  (configLevel: LogLevelOrOff) =>
-  (event: LogEvent): boolean =>
-    LogLevelOrOff.value[event.level] <= LogLevelOrOff.value[configLevel]

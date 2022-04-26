@@ -3,7 +3,6 @@ import { createEnum } from '../utils/createEnum'
 import type { Dict } from '../utils/fp'
 
 const levelEnum = createEnum('debug', 'info', 'warn', 'error')
-const { decoder: levelDecoder, codec: levelCodec } = levelEnum
 
 const shellColor: Dict<LogLevel, string> = {
   debug: '90',
@@ -21,10 +20,15 @@ const hexColor: Dict<LogLevel, Color> = {
 
 export type LogLevel = typeof levelEnum.T
 
-export const LogLevel = { decoder: levelDecoder, codec: levelCodec, shellColor, hexColor }
+export const LogLevel = {
+  decoder: levelEnum.decoder,
+  codec: levelEnum.codec,
+  values: levelEnum.values,
+  shellColor,
+  hexColor,
+}
 
 const levelOrOffEnum = createEnum('off', ...levelEnum.values)
-const { codec: levelOrOfCodec } = levelOrOffEnum
 
 const value: Dict<LogLevelOrOff, number> = {
   debug: 4,
@@ -36,4 +40,4 @@ const value: Dict<LogLevelOrOff, number> = {
 
 export type LogLevelOrOff = typeof levelOrOffEnum.T
 
-export const LogLevelOrOff = { codec: levelOrOfCodec, value }
+export const LogLevelOrOff = { codec: levelOrOffEnum.codec, value }
