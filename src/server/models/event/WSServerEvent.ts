@@ -10,6 +10,7 @@ import { decodeError } from '../../../shared/utils/ioTsUtils'
 import { unknownToError } from '../../utils/unknownToError'
 
 const u = createUnion({
+  Closed: () => ({}),
   InvalidMessageError: (error: Error) => ({ error }),
   Message: (event: ClientToServerEvent) => ({ event }),
 })
@@ -20,6 +21,7 @@ type Message = typeof u.Message.T
 export type WSServerEvent = typeof u.T
 
 export const WSServerEvent = {
+  Closed: u.Closed,
   messageFromRawData: (data: RawData): InvalidMessageError | Message =>
     pipe(
       // eslint-disable-next-line @typescript-eslint/no-base-to-string
@@ -33,5 +35,4 @@ export const WSServerEvent = {
       ),
       Either.foldW(u.InvalidMessageError, u.Message),
     ),
-  is: u.is,
 }

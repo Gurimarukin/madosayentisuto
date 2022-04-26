@@ -172,8 +172,7 @@ export const startWebServer = (
               IO.runUnsafe,
             ),
           )
-          // TODO: don't complete, emit Closed instead
-          .on('close', () => pipe(wsServerEventSubject.complete, IO.runUnsafe)),
+          .on('close', () => IO.runUnsafe(wsServerEventSubject.next(WSServerEvent.Closed()))),
       ),
     ),
     IO.map(({ server, wss }) =>

@@ -37,9 +37,11 @@ export const ScheduledEvents = (): JSX.Element =>
           </tr>
         </thead>
         <tbody className="contents">
-          {events.map(event => (
-            // eslint-disable-next-line react/jsx-key
-            <tr className="contents group">{renderEvent(event)}</tr>
+          {events.map((event, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <tr key={i} className="contents group">
+              {renderEvent(event)}
+            </tr>
           ))}
         </tbody>
       </table>

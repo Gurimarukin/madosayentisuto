@@ -10,7 +10,7 @@ import { LogUtils } from '../utils/LogUtils'
 
 const { format } = LogUtils
 
-export const LogMadEventsObserver = (logger: LoggerType): TObserver<MadEvent> => ({
+export const LogMadEventObserver = (logger: LoggerType): TObserver<MadEvent> => ({
   next: event => {
     const message = ((): string | undefined => {
       switch (event.type) {

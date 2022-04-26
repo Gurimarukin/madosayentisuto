@@ -23,6 +23,7 @@ const apiGuild = api.then(lit('guild')).then(codec('guildId')<GuildId>(str))
 const apiMember = api.then(lit('member')).then(codec('userId')<DiscordUserId>(str))
 const apiMemberBirthdate = apiMember.then(lit('birthdate'))
 const apiScheduledEvents = api.then(lit('scheduledEvents'))
+const apiLogs = api.then(lit('logs'))
 
 // final
 const healthcheckGet = m(apiHealthcheck, 'get')
@@ -36,6 +37,8 @@ const memberBirthdatePost = m(apiMemberBirthdate, 'post')
 const memberBirthdateDelete = m(apiMemberBirthdate, 'delete')
 
 const scheduledEventsGet = m(apiScheduledEvents, 'get')
+
+const logsGet = m(apiLogs, 'get')
 
 /**
  * parsers
@@ -53,6 +56,7 @@ export const apiParsers = {
     },
   },
   scheduledEvents: { get: p(scheduledEventsGet) },
+  logs: { get: p(logsGet) },
 }
 
 /**
@@ -70,6 +74,7 @@ export const apiRoutes = {
     },
   },
   scheduledEvents: { get: r(scheduledEventsGet, {}) },
+  logs: { get: r(logsGet, {}) },
 }
 
 /**

@@ -3,24 +3,27 @@ import React from 'react'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { LogLevel } from '../../shared/models/LogLevel'
-import { MsDuration } from '../../shared/models/MsDuration'
 import type { Color } from '../../shared/utils/Color'
 
 import { Header } from '../components/Header'
-import { useConsole } from '../contexts/ConsoleContext'
+import { useLog } from '../contexts/LogContext'
 
-export const ConsolLogs = (): JSX.Element => {
-  const { logs } = useConsole()
+export const Logs = (): JSX.Element => {
+  const { logs } = useLog()
 
   return (
     <div className="h-full flex flex-col">
-      <Header>ConsoleLog</Header>
+      <Header>Console</Header>
       <div className="flex-grow px-3 py-2 bg-black overflow-x-hidden overflow-y-auto">
         <pre className="w-full grid grid-cols-[min-content_min-content_1fr] gap-x-3 text-sm">
-          {logs.map(({ date, name, level, message }) => (
-            <div key={pipe(date, DayJs.unixMs, MsDuration.unwrap)} className="contents">
+          {logs.map(({ date, name, level, message }, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div key={i} className="contents">
               {color(level.toUpperCase(), LogLevel.hexColor[level])}
-              {color(pipe(date, DayJs.format('YYYY/MM/DD HH:mm:ss')), LogLevel.hexColor.debug)}
+              {color(
+                pipe(date, DayJs.format('YYYY/MM/DD HH:mm:ss', { locale: true })),
+                LogLevel.hexColor.debug,
+              )}
               <span className="whitespace-pre-wrap">
                 {name} - {message}
               </span>

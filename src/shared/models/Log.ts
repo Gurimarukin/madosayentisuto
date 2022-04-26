@@ -10,6 +10,6 @@ const apiCodec = C.struct({
   message: C.string,
 })
 
-export type ConsoleLog = C.TypeOf<typeof apiCodec>
+export type Log = C.TypeOf<typeof apiCodec>
 
-export const ConsoleLog = { apiCodec }
+export const Log = { apiCodec }

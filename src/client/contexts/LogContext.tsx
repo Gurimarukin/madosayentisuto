@@ -9,8 +9,9 @@ import type {
   Event as ReconnectingEvent,
 } from 'reconnecting-websocket'
 
-import type { ConsoleLog } from '../../shared/models/ConsoleLog'
+import { apiRoutes } from '../../shared/ApiRouter'
 import { DayJs } from '../../shared/models/DayJs'
+import { Log } from '../../shared/models/Log'
 import { ClientToServerEvent } from '../../shared/models/event/ClientToServerEvent'
 import type { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
@@ -22,16 +23,17 @@ import { Either, Future, IO, List } from '../../shared/utils/fp'
 
 import { config } from '../config/unsafe'
 import { WSClientEvent } from '../model/event/WSClientEvent'
+import { http } from '../utils/http'
 import { logger } from '../utils/logger'
 
-type ConsoleContext = {
-  readonly logs: List<ConsoleLog>
+type LogContext = {
+  readonly logs: List<Log>
 }
 
-const ConsoleContext = createContext<ConsoleContext | undefined>(undefined)
+const LogContext = createContext<LogContext | undefined>(undefined)
 
-export const ConsoleContextProvider: React.FC = ({ children }) => {
-  const [logs, setLogs] = useState<List<ConsoleLog>>([])
+export const LogContextProvider: React.FC = ({ children }) => {
+  const [logs, setLogs] = useState<List<Log>>([])
 
   const initialLogsFetched = useRef(false)
   useEffect(() => {
@@ -82,16 +84,16 @@ export const ConsoleContextProvider: React.FC = ({ children }) => {
     }
   }, [])
 
-  const value: ConsoleContext = { logs }
+  const value: LogContext = { logs }
 
-  return <ConsoleContext.Provider value={value}>{children}</ConsoleContext.Provider>
+  return <LogContext.Provider value={value}>{children}</LogContext.Provider>
 }
 
-export const useConsole = (): ConsoleContext => {
-  const context = useContext(ConsoleContext)
+export const useLog = (): LogContext => {
+  const context = useContext(LogContext)
   if (context === undefined) {
     // eslint-disable-next-line functional/no-throw-statement
-    throw Error('useConsole must be used within a ConsoleContextProvider')
+    throw Error('useLog must be used within a LogContextProvider')
   }
   return context
 }
@@ -159,6 +161,6 @@ const initWs: IO<InitWSResult> = pipe(
   }),
 )
 
-const fetchInitialLogs = Future.right<List<ConsoleLog>>([
-  { date: DayJs.of(0), name: 'Adedigado', level: 'warn', message: 'Plouf' },
-])
+const fetchInitialLogs: Future<List<Log>> = Future.tryCatch(() =>
+  http(apiRoutes.logs.get, {}, [List.decoder(Log.apiCodec), 'Log[]']),
+)

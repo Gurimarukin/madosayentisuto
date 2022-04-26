@@ -13,6 +13,7 @@ import { WithDb } from './models/mongo/WithDb'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
 import { HealthCheckPersistence } from './persistence/HealthCheckPersistence'
+import { LogPersistence } from './persistence/LogPersistence'
 import { MemberBirthdatePersistence } from './persistence/MemberBirthdatePersistence'
 import { MigrationPersistence } from './persistence/MigrationPersistence'
 import { PollQuestionPersistence } from './persistence/PollQuestionPersistence'
@@ -34,6 +35,7 @@ const of = (
   const { Logger } = loggerObservable
 
   const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
+  const logPersistence = LogPersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
   const healthCheckPersistence = HealthCheckPersistence(withDb)
   const memberBirthdatePersistence = MemberBirthdatePersistence(Logger, mongoCollection)
@@ -51,6 +53,7 @@ const of = (
     config,
     loggerObservable,
     botStatePersistence,
+    logPersistence,
     guildStatePersistence,
     memberBirthdatePersistence,
     pollQuestionPersistence,
@@ -77,6 +80,7 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
   const context = of(config, loggerObservable, withDb, mongoCollection)
   const {
     guildStatePersistence,
+    logPersistence,
     memberBirthdatePersistence,
     pollQuestionPersistence,
     pollResponsePersistence,
@@ -97,6 +101,7 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
     Future.chain(() =>
       Future.sequenceArray([
         guildStatePersistence.ensureIndexes,
+        logPersistence.ensureIndexes,
         memberBirthdatePersistence.ensureIndexes,
         pollQuestionPersistence.ensureIndexes,
         pollResponsePersistence.ensureIndexes,

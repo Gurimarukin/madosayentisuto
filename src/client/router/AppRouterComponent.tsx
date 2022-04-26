@@ -8,9 +8,9 @@ import { Tuple } from '../../shared/utils/fp'
 
 import { Link } from '../components/Link'
 import { useHistory } from '../contexts/HistoryContext'
-import { ConsolLogs } from '../domain/ConsolLogs'
 import { Home } from '../domain/Home'
 import { Login } from '../domain/Login'
+import { Logs } from '../domain/Logs'
 import { ScheduledEvents } from '../domain/ScheduledEvents'
 import { Guild } from '../domain/guild/Guild'
 import { GuildEmojis } from '../domain/guild/GuildEmojis'
@@ -37,7 +37,7 @@ const titleWithElementParser = zero<ElementWithTitle>()
     ),
   )
   .alt(appParsers.scheduledEvents.map(() => t(<ScheduledEvents />, 'Évènements')))
-  .alt(appParsers.console.map(() => t(<ConsolLogs />, 'Console')))
+  .alt(appParsers.console.map(() => t(<Logs />, 'Console')))
 
 export const AppRouterComponent = (): JSX.Element => {
   const { location } = useHistory()
