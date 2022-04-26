@@ -4,7 +4,7 @@ import { DayJs } from '../../shared/models/DayJs'
 import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { Migration } from '../models/migration/Migration'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { MigrationPersistence } from '../persistence/MigrationPersistence'

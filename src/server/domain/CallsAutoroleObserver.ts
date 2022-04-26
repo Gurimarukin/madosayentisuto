@@ -5,6 +5,7 @@ import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { Future, IO, Maybe, toUnit } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
@@ -12,8 +13,7 @@ import { DiscordConnector } from '../helpers/DiscordConnector'
 import { initCallsButton, initCallsMessage } from '../helpers/messages/initCallsMessage'
 import { MadEvent } from '../models/event/MadEvent'
 import type { Calls } from '../models/guildState/Calls'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
-import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
 

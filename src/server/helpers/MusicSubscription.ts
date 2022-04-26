@@ -19,6 +19,11 @@ import { apply } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { flow, pipe } from 'fp-ts/function'
 
+import type { LoggerType } from '../../shared/models/LoggerType'
+import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import { PubSub } from '../../shared/models/rx/PubSub'
+import type { TSubject } from '../../shared/models/rx/TSubject'
+import { PubSubUtils } from '../../shared/utils/PubSubUtils'
 import { NonEmptyArray, toUnit } from '../../shared/utils/fp'
 import { List } from '../../shared/utils/fp'
 import { Future, IO, Maybe } from '../../shared/utils/fp'
@@ -26,18 +31,13 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { Store } from '../models/Store'
 import { MusicEvent } from '../models/event/MusicEvent'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
-import type { LoggerType } from '../models/logger/LoggerType'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { AudioPlayerState } from '../models/music/AudioPlayerState'
 import type { MusicStateConnected } from '../models/music/MusicState'
 import { MusicState } from '../models/music/MusicState'
 import type { Track } from '../models/music/Track'
-import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
-import { PubSub } from '../models/rx/PubSub'
-import type { TSubject } from '../models/rx/TSubject'
 import type { LoggableChannel } from '../utils/LogUtils'
 import { LogUtils } from '../utils/LogUtils'
-import { PubSubUtils } from '../utils/PubSubUtils'
 import { DiscordConnector } from './DiscordConnector'
 import type { YtDlp } from './YtDlp'
 import { MusicStateMessage } from './messages/MusicStateMessage'
@@ -151,7 +151,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
   function connect(musicChannel: MusicChannel, stateChannel: TextBasedChannel): Future<void> {
     const { observable, subject } = PubSub<MusicEvent>()
 
-    const sub = PubSubUtils.subscribe(logger, observable)
+    const sub = PubSubUtils.subscribeWithRefinement(logger, observable)
     const subscribe = apply.sequenceT(IO.ApplyPar)(sub(lifecycleObserver()))
 
     return pipe(
@@ -454,9 +454,8 @@ const joinVoiceChannel = (
   pipe(
     DiscordConnector.voiceConnectionJoin(channel),
     IO.chainFirst(voiceConnection => {
-      const connectionPub = PubSubUtils.publishOn<VoiceConnectionEvents, MusicEvent>(
+      const connectionPub = PubSubUtils.publish(subject.next)('on')<VoiceConnectionEvents>(
         voiceConnection,
-        subject.next,
       )
       return apply.sequenceT(IO.ApplyPar)(
         connectionPub('error', MusicEvent.ConnectionError),
@@ -473,10 +472,7 @@ const createAudioPlayer = (subject: TSubject<MusicEvent>): IO<AudioPlayer> =>
   pipe(
     DiscordConnector.audioPlayerCreate,
     IO.chainFirst(audioPlayer => {
-      const playerPub = PubSubUtils.publishOn<AudioPlayerEvents, MusicEvent>(
-        audioPlayer,
-        subject.next,
-      )
+      const playerPub = PubSubUtils.publish(subject.next)('on')<AudioPlayerEvents>(audioPlayer)
       return apply.sequenceT(IO.ApplyPar)(
         playerPub('error', MusicEvent.PlayerError),
         playerPub(AudioPlayerStatus.Idle, MusicEvent.PlayerIdle),

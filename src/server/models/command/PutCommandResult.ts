@@ -2,9 +2,9 @@ import type { ApplicationCommandType } from 'discord-api-types/payloads/v9'
 import * as D from 'io-ts/Decoder'
 
 import { GuildId } from '../../../shared/models/guild/GuildId'
+import { createEnum } from '../../../shared/utils/createEnum'
 import { List, Maybe } from '../../../shared/utils/fp'
 
-import { createEnum } from '../../utils/createEnum'
 import { ApplicationId } from '../ApplicationId'
 import { CommandId } from './CommandId'
 

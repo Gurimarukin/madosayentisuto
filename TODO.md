@@ -8,10 +8,11 @@
 - generalize bot
 - webapp
   - tier-list
-  - logs?
 - commands register: unsubscribe when done?
 - elevator
 - `NotUsed`?
+- `Either.toError`?
+- TObservable.subscribe
 - try to override declaration types to use GuildId, TSnowflake, ...
 
 ---

@@ -1,13 +1,13 @@
 import { flow, pipe } from 'fp-ts/function'
 import type * as rxjs from 'rxjs'
 
-import type { List } from '../../shared/utils/fp'
-import { Future } from '../../shared/utils/fp'
-import { IO } from '../../shared/utils/fp'
-
-import type { LoggerType } from '../models/logger/LoggerType'
+import type { LoggerType } from '../models/LoggerType'
 import type { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import { TObservable } from '../models/rx/TObservable'
+import type { TObserver } from '../models/rx/TObserver'
+import type { Dict, List } from './fp'
+import { Future } from './fp'
+import { IO } from './fp'
 
 type TinyListenerSignature<L> = {
   readonly // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,28 +23,27 @@ export type ToTiny<L extends ListenerSignature<L>> = {
   [K in keyof L]: (...args: L[K]) => any
 }
 
-type EventListenable<L extends TinyListenerSignature<L>> = {
+type EventListenable<On extends string, L extends TinyListenerSignature<L>> = Dict<
+  On,
   // eslint-disable-next-line functional/no-return-void
-  readonly on: <K extends keyof L>(event: K, listener: L[K]) => void
-}
+  <K extends keyof L>(event: K, listener: L[K]) => void
+>
 
-const publishOn =
-  <L extends TinyListenerSignature<L>, A>(
-    listenable: EventListenable<L>,
-    publish: (a: A) => IO<void>,
-  ) =>
+const publish_ =
+  <A>(publish: (a: A) => IO<void>) =>
+  <On extends string>(on: On) =>
+  <L extends TinyListenerSignature<L>>(listenable: EventListenable<On, L>) =>
   <K extends keyof L>(event: K, transformer: (...args: Parameters<L[K]>) => A): IO<void> =>
     IO.tryCatch(() =>
-      listenable.on(event, ((...args: Parameters<L[K]>) =>
+      listenable[on](event, ((...args: Parameters<L[K]>) =>
         pipe(publish(transformer(...args)), IO.runUnsafe)) as L[K]),
     )
 
 const subscribe =
-  <A>(logger: LoggerType, obs: TObservable<A>) =>
-  <B extends A>({ observer, refinement }: ObserverWithRefinement<A, B>): IO<rxjs.Subscription> =>
+  <A>(logger: LoggerType, observable: TObservable<A>) =>
+  (observer: TObserver<A>): IO<rxjs.Subscription> =>
     pipe(
-      obs,
-      TObservable.filter(refinement),
+      observable,
       TObservable.subscribe({
         next: flow(
           observer.next,
@@ -53,4 +52,9 @@ const subscribe =
       }),
     )
 
-export const PubSubUtils = { publishOn, subscribe }
+const subscribeWithRefinement =
+  <A>(logger: LoggerType, observable: TObservable<A>) =>
+  <B extends A>({ observer, refinement }: ObserverWithRefinement<A, B>): IO<rxjs.Subscription> =>
+    subscribe(logger, pipe(observable, TObservable.filter(refinement)))(observer)
+
+export const PubSubUtils = { publish: publish_, subscribe, subscribeWithRefinement }

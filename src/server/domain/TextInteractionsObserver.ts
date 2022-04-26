@@ -11,6 +11,7 @@ import type {
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
+import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { List, toUnit } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
@@ -18,7 +19,6 @@ import type { CaptainConfig } from '../Config'
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
-import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import { MessageUtils } from '../utils/MessageUtils'
 
 type MyChannel = PartialDMChannel | DMChannel | TextChannel | NewsChannel | ThreadChannel

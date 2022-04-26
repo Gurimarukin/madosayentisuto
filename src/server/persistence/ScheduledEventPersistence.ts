@@ -1,14 +1,14 @@
 import { pipe } from 'fp-ts/function'
 
 import type { DayJs } from '../../shared/models/DayJs'
+import type { TObservable } from '../../shared/models/rx/TObservable'
 import type { NonEmptyArray } from '../../shared/utils/fp'
 import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import { TObjectId } from '../models/mongo/TObjectId'
-import type { TObservable } from '../models/rx/TObservable'
 import type { ScheduledEventOutput } from '../models/scheduledEvent/ScheduledEvent'
 import { ScheduledEvent } from '../models/scheduledEvent/ScheduledEvent'
 import { ScheduledEventWithId } from '../models/scheduledEvent/ScheduledEventWithId'

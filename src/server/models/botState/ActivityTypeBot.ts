@@ -1,4 +1,4 @@
-import { createEnum } from '../../utils/createEnum'
+import { createEnum } from '../../../shared/utils/createEnum'
 
 const enum_ = createEnum('PLAYING', 'STREAMING', 'LISTENING', 'WATCHING', 'COMPETING')
 const { values, decoder, encoder, codec } = enum_

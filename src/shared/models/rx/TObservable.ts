@@ -3,13 +3,10 @@ import type { Predicate } from 'fp-ts/Predicate'
 import type { Refinement } from 'fp-ts/Refinement'
 import { flow } from 'fp-ts/function'
 import * as rxjs from 'rxjs'
-import * as rxjsStream from 'rxjs-stream'
 import * as rxjsOperators from 'rxjs/operators'
-import type { Readable } from 'stream'
 
-import type { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
-import { Future, IO, Try } from '../../../shared/utils/fp'
-
+import type { List, Maybe, NonEmptyArray } from '../../utils/fp'
+import { Future, IO, Try } from '../../utils/fp'
 import type { TObserver } from './TObserver'
 
 /* eslint-disable functional/no-return-void */
@@ -100,7 +97,6 @@ const flatten = observable.flatten as unknown as <A>(
 export const TObservable = {
   fromReadonlyArray,
   fromSubscribe,
-  fromReadable: (stream: Readable): TObservable<unknown> => rxjsStream.streamToRx(stream),
   fromTaskEither,
   throwError: (e: Error): TObservable<never> => rxjs.throwError(e),
   map,
@@ -126,9 +122,11 @@ export const TObservable = {
       return res as TObservable<NonEmptyArray<A>>
     },
   subscribe:
-    <A>({ next }: TObserver<A>) =>
-    (fa: TObservable<A>): IO<rxjs.Subscription> => {
-      const subscriber: rxjs.PartialObserver<A> = { next: a => Future.runUnsafe(next(a)) }
-      return IO.tryCatch(() => fa.subscribe(subscriber))
-    },
+    <A>(observer: TObserver<A>) =>
+    (fa: TObservable<A>): IO<rxjs.Subscription> =>
+      IO.tryCatch(() =>
+        fa.subscribe({
+          next: flow(observer.next, Future.runUnsafe),
+        }),
+      ),
 }

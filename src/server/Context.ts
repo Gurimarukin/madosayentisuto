@@ -1,13 +1,13 @@
 import { identity, pipe } from 'fp-ts/function'
 
-import { MsDuration } from '../shared/models/MsDuration'
 import { StringUtils } from '../shared/utils/StringUtils'
 import { Future } from '../shared/utils/fp'
 
 import type { Config } from './Config'
+import { constants } from './constants'
 import { JwtHelper } from './helpers/JwtHelper'
 import { YtDlp } from './helpers/YtDlp'
-import type { LoggerGetter } from './models/logger/LoggerGetter'
+import type { LoggerObservable } from './models/logger/LoggerObservable'
 import { MongoCollection } from './models/mongo/MongoCollection'
 import { WithDb } from './models/mongo/WithDb'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
@@ -27,10 +27,12 @@ export type Context = ReturnType<typeof of>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const of = (
   config: Config,
-  Logger: LoggerGetter,
+  loggerObservable: LoggerObservable,
   withDb: WithDb,
   mongoCollection: (collName: string) => MongoCollection,
 ) => {
+  const { Logger } = loggerObservable
+
   const botStatePersistence = BotStatePersistence(Logger, mongoCollection)
   const guildStatePersistence = GuildStatePersistence(Logger, mongoCollection)
   const healthCheckPersistence = HealthCheckPersistence(withDb)
@@ -47,7 +49,7 @@ const of = (
 
   return {
     config,
-    Logger,
+    loggerObservable,
     botStatePersistence,
     guildStatePersistence,
     memberBirthdatePersistence,
@@ -61,20 +63,18 @@ const of = (
   }
 }
 
-const dbRetryDelay = MsDuration.seconds(10)
-
-const load = (config: Config, Logger: LoggerGetter): Future<Context> => {
+const load = (config: Config, loggerObservable: LoggerObservable): Future<Context> => {
+  const { Logger } = loggerObservable
   const logger = Logger('Context')
 
   const withDb = WithDb.of({
-    logger,
     url: `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`,
     dbName: config.db.dbName,
   })
 
   const mongoCollection: (collName: string) => MongoCollection = MongoCollection.fromWithDb(withDb)
 
-  const context = of(config, Logger, withDb, mongoCollection)
+  const context = of(config, loggerObservable, withDb, mongoCollection)
   const {
     guildStatePersistence,
     memberBirthdatePersistence,
@@ -115,11 +115,11 @@ const load = (config: Config, Logger: LoggerGetter): Future<Context> => {
         pipe(
           logger.info(
             `Couldn't connect to mongo, waiting ${StringUtils.prettyMs(
-              dbRetryDelay,
+              constants.dbRetryDelay,
             )} before next try`,
           ),
           Future.fromIOEither,
-          Future.chain(() => pipe(waitDatabaseReady(), Future.delay(dbRetryDelay))),
+          Future.chain(() => pipe(waitDatabaseReady(), Future.delay(constants.dbRetryDelay))),
         ),
       ),
       Future.filterOrElse(identity, () => Error("HealthCheck wasn't success")),

@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { DiscordUserId } from '../shared/models/DiscordUserId'
+import { LogLevelOrOff } from '../shared/models/LogLevel'
 import { ValidatedNea } from '../shared/models/ValidatedNea'
 import { loadDotEnv } from '../shared/utils/config/loadDotEnv'
 import { parseConfig } from '../shared/utils/config/parseConfig'
@@ -11,7 +12,6 @@ import type { List, NonEmptyArray, Try } from '../shared/utils/fp'
 import { Maybe } from '../shared/utils/fp'
 import { URLFromString } from '../shared/utils/ioTsUtils'
 
-import { LogLevelOrOff } from './models/logger/LogLevel'
 import {
   ArrayFromString,
   BooleanFromString,

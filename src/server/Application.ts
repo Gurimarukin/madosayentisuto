@@ -1,7 +1,11 @@
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { IO } from '../shared/utils/fp'
+import { ServerToClientEvent } from '../shared/models/event/ServerToClientEvent'
+import { ObserverWithRefinement } from '../shared/models/rx/ObserverWithRefinement'
+import { PubSub } from '../shared/models/rx/PubSub'
+import { PubSubUtils } from '../shared/utils/PubSubUtils'
+import { Future, IO } from '../shared/utils/fp'
 
 import type { Context } from './Context'
 import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
@@ -28,15 +32,13 @@ import { VoiceStateUpdateTransformer } from './helpers/VoiceStateUpdateTransform
 import { publishDiscordEvents } from './helpers/publishDiscordEvents'
 import { scheduleCronJob } from './helpers/scheduleCronJob'
 import { MadEvent } from './models/event/MadEvent'
-import { ObserverWithRefinement } from './models/rx/ObserverWithRefinement'
-import { PubSub } from './models/rx/PubSub'
+import type { WSServerEvent } from './models/event/WSServerEvent'
 import { BotStateService } from './services/BotStateService'
 import { GuildStateService } from './services/GuildStateService'
 import { MemberBirthdateService } from './services/MemberBirthdateService'
 import { PollService } from './services/PollService'
 import { ScheduledEventService } from './services/ScheduledEventService'
 import { UserService } from './services/UserService'
-import { PubSubUtils } from './utils/PubSubUtils'
 import { Routes } from './webServer/Routes'
 import { DiscordClientController } from './webServer/controllers/DiscordClientController'
 import { HealthCheckController } from './webServer/controllers/HealthCheckController'
@@ -48,7 +50,7 @@ export const Application = (
   discord: DiscordConnector,
   {
     config,
-    Logger,
+    loggerObservable,
     botStatePersistence,
     guildStatePersistence,
     memberBirthdatePersistence,
@@ -61,6 +63,7 @@ export const Application = (
     jwtHelper,
   }: Context,
 ): IO<void> => {
+  const { Logger } = loggerObservable
   const logger = Logger('Application')
 
   const clientId = config.client.id
@@ -87,39 +90,58 @@ export const Application = (
   const routes = Routes(withAuth, healthCheckController, userController, discordClientController)
 
   const madEventsPubSub = PubSub<MadEvent>()
-  const sub = PubSubUtils.subscribe<MadEvent>(logger, madEventsPubSub.observable)
+  const sub = PubSubUtils.subscribeWithRefinement<MadEvent>(logger, madEventsPubSub.observable)
+
+  const serverToClientEventPubSub = PubSub<ServerToClientEvent>()
+  const wsServerEventPubSub = PubSub<WSServerEvent>()
 
   return pipe(
-    apply.sequenceT(IO.ApplyPar)(
-      // └ domain/
-      // │  └ commands/
-      sub(AdminCommandsObserver(Logger, discord, botStateService, guildStateService)),
-      sub(MusicCommandsObserver(Logger, ytDlp, guildStateService)),
-      sub(OtherCommandsObserver()),
-      sub(PollCommandsObserver(Logger, config, discord, pollService)),
-      sub(RemindCommandsObserver(scheduledEventService)),
-      // │  └ startup/
-      sub(DeployCommandsObserver(Logger, config, discord)),
-      // │
-      sub(ActivityStatusObserver(botStateService)),
-      sub(CallsAutoroleObserver(Logger, guildStateService)),
-      sub(DisconnectVocalObserver(clientId, guildStateService)),
-      sub(MusicThreadCleanObserver(Logger, clientId, guildStateService)),
-      sub(NotifyBirthdayObserver(discord, guildStateService, memberBirthdateService)),
-      sub(NotifyGuildLeaveObserver(Logger)),
-      sub(NotifyVoiceCallObserver(Logger, guildStateService)),
-      sub(ScheduledEventObserver(Logger, discord, scheduledEventService, guildStateService)),
-      sub(ScheduleItsFridayObserver(Logger, scheduledEventService)),
-      sub(SendWelcomeDMObserver(Logger)),
-      sub(SetDefaultRoleObserver(Logger, guildStateService)),
-      sub(TextInteractionsObserver(config.captain, discord)),
-      // └ helpers/
-      sub(ObserverWithRefinement.of(LogMadEventsObserver(logger))),
-      publishDiscordEvents(discord, madEventsPubSub.subject),
-      scheduleCronJob(Logger, madEventsPubSub.subject),
-      sub(VoiceStateUpdateTransformer(Logger, clientId, madEventsPubSub.subject)),
+    loggerObservable.subscribe('debug', {
+      next: ({ name, level, message }) =>
+        Future.fromIOEither(
+          serverToClientEventPubSub.subject.next(ServerToClientEvent.Log({ name, level, message })),
+        ),
+    }),
+    IO.chain(() =>
+      apply.sequenceT(IO.ApplyPar)(
+        // └ domain/
+        // │  └ commands/
+        sub(AdminCommandsObserver(Logger, discord, botStateService, guildStateService)),
+        sub(MusicCommandsObserver(Logger, ytDlp, guildStateService)),
+        sub(OtherCommandsObserver()),
+        sub(PollCommandsObserver(Logger, config, discord, pollService)),
+        sub(RemindCommandsObserver(scheduledEventService)),
+        // │  └ startup/
+        sub(DeployCommandsObserver(Logger, config, discord)),
+        // │
+        sub(ActivityStatusObserver(botStateService)),
+        sub(CallsAutoroleObserver(Logger, guildStateService)),
+        sub(DisconnectVocalObserver(clientId, guildStateService)),
+        sub(MusicThreadCleanObserver(Logger, clientId, guildStateService)),
+        sub(NotifyBirthdayObserver(discord, guildStateService, memberBirthdateService)),
+        sub(NotifyGuildLeaveObserver(Logger)),
+        sub(NotifyVoiceCallObserver(Logger, guildStateService)),
+        sub(ScheduledEventObserver(Logger, discord, scheduledEventService, guildStateService)),
+        sub(ScheduleItsFridayObserver(Logger, scheduledEventService)),
+        sub(SendWelcomeDMObserver(Logger)),
+        sub(SetDefaultRoleObserver(Logger, guildStateService)),
+        sub(TextInteractionsObserver(config.captain, discord)),
+        // └ helpers/
+        sub(ObserverWithRefinement.of(LogMadEventsObserver(logger))),
+        publishDiscordEvents(discord, madEventsPubSub.subject),
+        scheduleCronJob(Logger, madEventsPubSub.subject),
+        sub(VoiceStateUpdateTransformer(Logger, clientId, madEventsPubSub.subject)),
+      ),
     ),
-    IO.chain(() => startWebServer(Logger, config.http, routes)),
+    IO.chain(() =>
+      startWebServer(
+        Logger,
+        config.http,
+        routes,
+        serverToClientEventPubSub.observable,
+        wsServerEventPubSub.subject,
+      ),
+    ),
     IO.chain(() => madEventsPubSub.subject.next(MadEvent.AppStarted())),
     IO.chain(() => logger.info('Started')),
   )

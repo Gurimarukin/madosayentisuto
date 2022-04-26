@@ -72,11 +72,13 @@
     "qs": "6.10.3",
     "react": "17.0.2",
     "react-dom": "17.0.2",
+    "reconnecting-websocket": "4.4.0",
     "rxjs": "6.6.7",
     "rxjs-stream": "3.3.0",
     "swr": "1.2.2",
     "upash": "1.0.2",
     "uuid": "8.3.2",
+    "ws": "8.5.0",
     "youtube-dl-exec": "2.0.8"
   },
   "devDependencies": {

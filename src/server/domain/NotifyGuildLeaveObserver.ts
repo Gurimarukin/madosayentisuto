@@ -6,14 +6,15 @@ import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import type { Dict } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
-import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
@@ -213,7 +214,7 @@ type KickOrBanMessageGetters = NonEmptyArray<
   MessageGetter<readonly [member: string, admin: string]>
 >
 
-const kickOrBanMessages: Record<KickOrBanAction, KickOrBanMessageGetters> = {
+const kickOrBanMessages: Dict<KickOrBanAction, KickOrBanMessageGetters> = {
   MEMBER_KICK: [
     // (m, a) => `${m} left the guild; kicked by ${a}.`,
     (m, a) => `${m} s'en est allé, mis à la porte par ${a}.`,

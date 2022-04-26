@@ -1,8 +1,7 @@
 import { flow, identity, pipe } from 'fp-ts/function'
 
-import type { List, NonIO } from '../../../shared/utils/fp'
-import { Future } from '../../../shared/utils/fp'
-
+import type { List, NonIO } from '../../utils/fp'
+import { Future } from '../../utils/fp'
 import type { TObservable } from './TObservable'
 
 export type Sink<A, B> = (observable: TObservable<A>) => Future<B>

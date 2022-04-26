@@ -2,13 +2,13 @@ import type { CommandInteraction } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
+import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import { Either, Future } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { Command } from '../../models/Command'
 import { MadEvent } from '../../models/event/MadEvent'
-import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 
 const Keys = {
   ping: 'ping',

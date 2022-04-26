@@ -1,9 +1,9 @@
 import type { Collection } from 'mongodb'
 import type { Readable } from 'stream'
 
+import type { TObservable } from '../../../shared/models/rx/TObservable'
 import type { Future } from '../../../shared/utils/fp'
 
-import type { TObservable } from '../rx/TObservable'
 import type { WithDb } from './WithDb'
 
 export type MongoCollection = {

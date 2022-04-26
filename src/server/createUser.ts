@@ -1,21 +1,25 @@
+import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { Future } from '../shared/utils/fp'
+import { Future, IO } from '../shared/utils/fp'
 
 import { Config } from './Config'
 import { Context } from './Context'
-import { LoggerGetter } from './models/logger/LoggerGetter'
-import { consoleLogFunction } from './models/logger/consoleLogFunction'
+import { LoggerObservable } from './models/logger/LoggerObservable'
+import { ConsoleLogObserver } from './models/logger/observers/ConsoleLogObserver'
 import { UserService } from './services/UserService'
 
 const main: Future<void> = pipe(
-  Config.load,
-  Future.fromIOEither,
-  Future.chain(config => Context.load(config, LoggerGetter.of(['debug', consoleLogFunction]))),
-  Future.chain(({ Logger, userPersistence, jwtHelper }) => {
-    const userService = UserService(Logger, userPersistence, jwtHelper)
-    return userService.createUser
+  apply.sequenceS(IO.ApplyPar)({
+    config: Config.load,
+    loggerObservable: LoggerObservable.initAndSubscribe(['debug', ConsoleLogObserver]),
   }),
+  Future.fromIOEither,
+  Future.chain(({ config, loggerObservable }) => Context.load(config, loggerObservable)),
+  Future.chain(
+    ({ loggerObservable: { Logger }, userPersistence, jwtHelper }) =>
+      UserService(Logger, userPersistence, jwtHelper).createUser,
+  ),
 )
 
 // eslint-disable-next-line functional/no-expression-statement

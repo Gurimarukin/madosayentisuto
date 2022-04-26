@@ -1,14 +1,14 @@
 import type { Guild, Message, ThreadChannel } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
+import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import type { Maybe } from '../../shared/utils/fp'
 import { Future, toUnit } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
-import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
 

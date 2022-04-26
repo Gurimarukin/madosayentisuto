@@ -71,11 +71,14 @@ const format =
   (template?: string, { locale = false }: FormatOptions = {}) =>
   (date: DayJs): string => {
     const unwrapped = unwrap(date)
+
     return (locale ? unwrapped.local() : unwrapped).format(template)
   }
 
 const toDate = (date: DayJs): Date => unwrap(date).toDate()
 const toISOString = (date: DayJs): string => unwrap(date).toISOString()
+const unix = (date: DayJs): number => unwrap(date).unix()
+const unixMs = (date: DayJs): MsDuration => MsDuration.wrap(unwrap(date).valueOf())
 
 function diff(b: DayJs): (a: DayJs) => MsDuration
 function diff(b: DayJs, unit: dayjs.QUnitType | dayjs.OpUnitType): (a: DayJs) => number
@@ -161,6 +164,8 @@ export const DayJs = {
   format,
   toDate,
   toISOString,
+  unix,
+  unixMs,
   diff,
   unwrap,
 

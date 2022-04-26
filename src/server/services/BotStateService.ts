@@ -6,7 +6,7 @@ import { Future, IO, Maybe, toUnit } from '../../shared/utils/fp'
 import type { DiscordConnector } from '../helpers/DiscordConnector'
 import type { Activity } from '../models/botState/Activity'
 import type { BotState } from '../models/botState/BotState'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { BotStatePersistence } from '../persistence/BotStatePersistence'
 
 export type BotStateService = ReturnType<typeof BotStateService>

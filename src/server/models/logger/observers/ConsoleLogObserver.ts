@@ -1,13 +1,15 @@
 import { flow, pipe } from 'fp-ts/function'
 
-import { DayJs } from '../../../shared/models/DayJs'
-import { IO } from '../../../shared/utils/fp'
+import { DayJs } from '../../../../shared/models/DayJs'
+import { LogLevel } from '../../../../shared/models/LogLevel'
+import type { LogEvent } from '../../../../shared/models/event/LogEvent'
+import type { TObserver } from '../../../../shared/models/rx/TObserver'
+import { Future } from '../../../../shared/utils/fp'
 
-import { LogLevel } from '../../models/logger/LogLevel'
-import type { LogFunction } from './LogFunction'
-
-export const consoleLogFunction: LogFunction = (name, level, msg) =>
-  pipe(DayJs.now, IO.fromIO, IO.map(flow(format(name, level, msg), console.log)))
+export const ConsoleLogObserver: TObserver<LogEvent> = {
+  next: ({ name, level, message }) =>
+    pipe(DayJs.now, Future.fromIO, Future.map(flow(format(name, level, message), console.log))),
+}
 
 const format =
   (name: string, level: LogLevel, msg: string) =>

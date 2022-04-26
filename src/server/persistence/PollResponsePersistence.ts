@@ -1,17 +1,17 @@
 import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import { Sink } from '../../shared/models/rx/Sink'
 import type { NonEmptyArray } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 import { List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import { MessageId } from '../models/MessageId'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { PollResponseOutput } from '../models/poll/PollResponse'
 import { PollResponse } from '../models/poll/PollResponse'
-import { Sink } from '../models/rx/Sink'
 
 export type PollResponsePersistence = ReturnType<typeof PollResponsePersistence>
 

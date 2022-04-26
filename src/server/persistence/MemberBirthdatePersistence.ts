@@ -2,15 +2,15 @@ import { pipe } from 'fp-ts/function'
 
 import type { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import { Sink } from '../../shared/models/rx/Sink'
 import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { Birthdate } from '../models/member/Birthdate'
 import type { MemberBirthdateOutput } from '../models/member/MemberBirthdate'
 import { MemberBirthdate } from '../models/member/MemberBirthdate'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
-import { Sink } from '../models/rx/Sink'
 
 export type MemberBirthdatePersistence = ReturnType<typeof MemberBirthdatePersistence>
 

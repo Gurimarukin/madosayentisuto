@@ -1,10 +1,10 @@
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
+import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { Future, toUnit } from '../../shared/utils/fp'
 
 import { MadEvent } from '../models/event/MadEvent'
-import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { BotStateService } from '../services/BotStateService'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

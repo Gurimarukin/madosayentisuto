@@ -6,7 +6,7 @@ import { Future } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import { MessageId } from '../models/MessageId'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { PollQuestionOutput } from '../models/poll/PollQuestion'
 import { PollQuestion } from '../models/poll/PollQuestion'

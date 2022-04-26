@@ -3,9 +3,9 @@ import type { Message, StageChannel, VoiceChannel } from 'discord.js'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { pipe } from 'fp-ts/function'
 
+import { createUnion } from '../../../shared/utils/createUnion'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
-import { createUnion } from '../../utils/createUnion'
 import { AudioPlayerState } from './AudioPlayerState'
 import type { Track } from './Track'
 

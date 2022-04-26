@@ -1,15 +1,15 @@
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
+import { Sink } from '../../shared/models/rx/Sink'
 import type { List } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { MigrationCreatedAt, MigrationDb } from '../models/migration/MigrationDb'
 import type { MigrationDbOutput } from '../models/migration/MigrationDb'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
-import { Sink } from '../models/rx/Sink'
 
 export type MigrationPersistence = ReturnType<typeof MigrationPersistence>
 

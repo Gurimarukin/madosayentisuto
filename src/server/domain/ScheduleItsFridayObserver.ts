@@ -3,13 +3,13 @@ import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
+import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future, IO } from '../../shared/utils/fp'
 
 import { constants } from '../constants'
 import { MadEvent } from '../models/event/MadEvent'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
-import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { ScheduledEvent } from '../models/scheduledEvent/ScheduledEvent'
 import type { ScheduledEventService } from '../services/ScheduledEventService'
 

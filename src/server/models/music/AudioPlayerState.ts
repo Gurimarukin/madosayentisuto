@@ -1,6 +1,6 @@
 import type { AudioPlayer } from '@discordjs/voice'
 
-import { createUnion } from '../../utils/createUnion'
+import { createUnion } from '../../../shared/utils/createUnion'
 
 export type AudioPlayerState = typeof u.T
 

@@ -2,6 +2,8 @@ import { pipe } from 'fp-ts/function'
 
 import type { ChannelId } from '../../shared/models/ChannelId'
 import { GuildId } from '../../shared/models/guild/GuildId'
+import { Sink } from '../../shared/models/rx/Sink'
+import { TObservable } from '../../shared/models/rx/TObservable'
 import type { Dict, List, Maybe } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
@@ -11,10 +13,8 @@ import {
   GuildStateDb,
   GuildStateDbOnlyItsFridayChannel,
 } from '../models/guildState/db/GuildStateDb'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
-import { Sink } from '../models/rx/Sink'
-import { TObservable } from '../models/rx/TObservable'
 
 type Projection = Partial<Dict<keyof GuildStateDbOutput, 1>>
 

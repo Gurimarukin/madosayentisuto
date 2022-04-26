@@ -1,17 +1,7 @@
-import type { ColorResolvable } from 'discord.js'
-
 import { MsDuration } from '../shared/models/MsDuration'
+import { Color } from '../shared/utils/Color'
 
 import { Activity } from './models/botState/Activity'
-
-const darkred: ColorResolvable = '#8b0000'
-
-const dimgray: ColorResolvable = '#686a66'
-const lightseagreen: ColorResolvable = '#00a4a8'
-const goldenrod: ColorResolvable = '#c8a800'
-const tomato: ColorResolvable = '#f54234'
-
-export const Colors = { darkred, dimgray, lightseagreen, goldenrod, tomato }
 
 export const constants = {
   emptyChar: '\u200B',
@@ -28,7 +18,7 @@ export const constants = {
     characters: emojiCharacters(),
   } as const,
 
-  messagesColor: darkred,
+  messagesColor: Color.darkred,
 
   defaultActivity: Activity.of('PLAYING', 'hisser les voiles...'),
 
@@ -38,6 +28,8 @@ export const constants = {
   // thumbnail: https://cdn.discordapp.com/attachments/636626556734930948/909048276957945886/unknown.png
 
   pollGraphWidth: 20, // chars
+
+  dbRetryDelay: MsDuration.seconds(10),
 
   // kicks/bans
   fetchLogsLimit: 30,

@@ -128,14 +128,12 @@ export const Tuple = {
 
 export type Tuple3<A, B, C> = readonly [A, B, C]
 
-const unknownAsError = (e: unknown): Error => e as Error
-
 export type Try<A> = Either<Error, A>
 export const Try = {
   ...either,
   right: <A>(a: A): Try<A> => Either.right(a),
   left: <A = never>(e: Error): Try<A> => Either.left(e),
-  tryCatch: <A>(a: Lazy<A>): Try<A> => Either.tryCatch(a, unknownAsError),
+  tryCatch: <A>(a: Lazy<A>): Try<A> => Either.tryCatch(a, Either.toError),
   getUnsafe: <A>(t: Try<A>): A =>
     pipe(
       t,
@@ -162,7 +160,7 @@ export const Future = {
     (fa: Future<A>): Future<A> =>
       pipe(fa, taskEither.orElse(flow(f, Future.fromIOEither))),
   fromIO: futureFromIO,
-  tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, unknownAsError),
+  tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, Either.toError),
   unit: futureRight<void>(undefined),
   runUnsafe: <A>(fa: Future<A>): Promise<A> => pipe(fa, task.map(Try.getUnsafe))(),
   delay:
@@ -172,7 +170,7 @@ export const Future = {
 }
 
 const ioRight = <A>(a: A): IO<A> => ioEither.right(a)
-const ioTryCatch = <A>(a: Lazy<A>): IO<A> => ioEither.tryCatch(a, unknownAsError)
+const ioTryCatch = <A>(a: Lazy<A>): IO<A> => ioEither.tryCatch(a, Either.toError)
 const ioFromIO: <A>(fa: io.IO<A>) => IO<A> = ioEither.fromIO
 const ioRunUnsafe = <A>(ioA: IO<A>): A => Try.getUnsafe(ioA())
 export type IO<A> = io.IO<Try<A>>

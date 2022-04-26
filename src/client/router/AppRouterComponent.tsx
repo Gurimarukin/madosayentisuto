@@ -7,6 +7,7 @@ import { Maybe } from '../../shared/utils/fp'
 import { Tuple } from '../../shared/utils/fp'
 
 import { Link } from '../components/Link'
+import { ConsoleLog } from '../domain/ConsoleLog'
 import { Home } from '../domain/Home'
 import { Login } from '../domain/Login'
 import { ScheduledEvents } from '../domain/ScheduledEvents'
@@ -36,6 +37,7 @@ const titleWithElementParser = zero<ElementWithTitle>()
     ),
   )
   .alt(appParsers.scheduledEvents.map(() => t(<ScheduledEvents />, 'Évènements')))
+  .alt(appParsers.console.map(() => t(<ConsoleLog />, 'Console')))
 
 export const AppRouterComponent = (): JSX.Element => {
   const { location } = useHistory()

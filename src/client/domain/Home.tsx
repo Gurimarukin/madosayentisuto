@@ -32,8 +32,8 @@ export const Home = (): JSX.Element => (
                   </Link>
                 </li>
                 <li>
-                  <Link to="#" className="underline">
-                    Console (WIP)
+                  <Link to={appRoutes.console} className="underline">
+                    Console
                   </Link>
                 </li>
               </ul>

@@ -5,7 +5,7 @@ import type { Maybe } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { WebUserOutput } from '../models/webUser/WebUser'
 import { WebUser } from '../models/webUser/WebUser'

@@ -19,6 +19,8 @@ import type {
   UpdateResult,
 } from 'mongodb'
 
+import type { LoggerType } from '../../shared/models/LoggerType'
+import { TObservable } from '../../shared/models/rx/TObservable'
 import type { Dict, Tuple } from '../../shared/utils/fp'
 import { List } from '../../shared/utils/fp'
 import { IO } from '../../shared/utils/fp'
@@ -28,10 +30,8 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import { Store } from '../models/Store'
-import type { LoggerType } from '../models/logger/LoggerType'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { IndexDescription, WithoutProjection } from '../models/mongo/MongoTypings'
-import { TObservable } from '../models/rx/TObservable'
 
 export type FpCollection = ReturnType<typeof FpCollection>
 

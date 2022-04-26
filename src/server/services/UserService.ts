@@ -11,7 +11,7 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { constants } from '../constants'
 import type { JwtHelper } from '../helpers/JwtHelper'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { TokenContent } from '../models/webUser/TokenContent'
 import { WebUser } from '../models/webUser/WebUser'
 import { WebUserId } from '../models/webUser/WebUserId'

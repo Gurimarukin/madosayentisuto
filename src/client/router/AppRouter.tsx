@@ -14,6 +14,7 @@ const guildMatch = lit('guild').then(codec('guildId')<GuildId>(str))
 const guildMembersMatch = guildMatch.then(lit('members'))
 const guildEmojisMatch = guildMatch.then(lit('emojis'))
 const scheduledEventsMatch = lit('scheduledEvents')
+const consoleMatch = lit('console')
 
 /**
  * parser
@@ -29,6 +30,7 @@ export const appParsers = {
     emojis: guildEmojisMatch.then(end).parser,
   },
   scheduledEvents: scheduledEventsMatch.then(end).parser,
+  console: consoleMatch.then(end).parser,
 }
 
 /**
@@ -44,4 +46,5 @@ export const appRoutes = {
     emojis: (guildId: GuildId) => format(guildEmojisMatch.formatter, { guildId }),
   },
   scheduledEvents: format(scheduledEventsMatch.formatter, {}),
+  console: format(consoleMatch.formatter, {}),
 }

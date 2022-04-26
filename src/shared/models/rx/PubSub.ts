@@ -1,7 +1,6 @@
 import { Subject } from 'rxjs'
 
-import { IO } from '../../../shared/utils/fp'
-
+import { IO } from '../../utils/fp'
 import type { TObservable } from './TObservable'
 import type { TSubject } from './TSubject'
 
@@ -18,8 +17,11 @@ export type PubSub<A> = {
 export const PubSub = <A>(): PubSub<A> => {
   const subject: StrongSubject<A> = new Subject()
 
-  const next: TSubject<A>['next'] = a => IO.tryCatch(() => subject.next(a))
-  const observable: PubSub<A>['observable'] = subject.asObservable()
-
-  return { subject: { next }, observable }
+  return {
+    subject: {
+      next: a => IO.tryCatch(() => subject.next(a)),
+      complete: IO.tryCatch(() => subject.complete()),
+    },
+    observable: subject.asObservable(),
+  }
 }

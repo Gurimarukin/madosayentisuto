@@ -5,7 +5,7 @@ import type {
   VoiceConnectionStatus,
 } from '@discordjs/voice'
 
-import { createUnion } from '../../utils/createUnion'
+import { createUnion } from '../../../shared/utils/createUnion'
 
 type DetVoiceConnectionState<S extends VoiceConnectionState['status']> = VoiceConnectionState & {
   readonly status: S

@@ -6,7 +6,7 @@ import * as E from 'io-ts/Encoder'
 import type { Encoder } from 'io-ts/Encoder'
 import type { Literal } from 'io-ts/Schemable'
 
-import type { List } from '../../shared/utils/fp'
+import type { List } from './fp'
 
 type Res<A> = {
   readonly values: List<A>

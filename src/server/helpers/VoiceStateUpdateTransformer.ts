@@ -3,6 +3,8 @@ import { refinement } from 'fp-ts'
 import type { Refinement } from 'fp-ts/Refinement'
 import { pipe } from 'fp-ts/function'
 
+import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import type { TSubject } from '../../shared/models/rx/TSubject'
 import { Future, IO, List, Maybe, refinementFromPredicate } from '../../shared/utils/fp'
 
 import type {
@@ -11,9 +13,7 @@ import type {
   MadEventVoiceStateUpdate,
 } from '../models/event/MadEvent'
 import { MadEvent } from '../models/event/MadEvent'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
-import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
-import type { TSubject } from '../models/rx/TSubject'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 

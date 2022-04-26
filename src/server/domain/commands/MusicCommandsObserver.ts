@@ -9,6 +9,7 @@ import type {
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
+import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { Either, List, NonEmptyArray, toUnit } from '../../../shared/utils/fp'
 import { Future, Maybe } from '../../../shared/utils/fp'
 
@@ -18,10 +19,9 @@ import type { YtDlp } from '../../helpers/YtDlp'
 import { MusicStateMessage, musicStateButtons } from '../../helpers/messages/MusicStateMessage'
 import { Command } from '../../models/Command'
 import { MadEvent } from '../../models/event/MadEvent'
-import type { LoggerGetter } from '../../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import { MusicState } from '../../models/music/MusicState'
 import { Track } from '../../models/music/Track'
-import { ObserverWithRefinement } from '../../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../../services/GuildStateService'
 
 type PlayCommand = {

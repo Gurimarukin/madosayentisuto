@@ -2,10 +2,9 @@ import { refinement as refinement_ } from 'fp-ts'
 import type { Refinement } from 'fp-ts/Refinement'
 import { pipe } from 'fp-ts/function'
 
-import { List, NonEmptyArray } from '../../../shared/utils/fp'
-
 import type { UnionDescription, UnionKeys, UnionResult } from '../../utils/createUnion'
 import type { UnionTypes } from '../../utils/createUnion'
+import { List, NonEmptyArray } from '../../utils/fp'
 import type { TObserver } from './TObserver'
 
 export type ObserverWithRefinement<A, B extends A> = {

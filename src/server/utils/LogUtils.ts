@@ -10,7 +10,8 @@ import type {
   VoiceChannel,
 } from 'discord.js'
 
-import type { LoggerType } from '../models/logger/LoggerType'
+import type { LoggerType } from '../../shared/models/LoggerType'
+
 import { ChannelUtils } from './ChannelUtils'
 
 export type LoggableChannel =

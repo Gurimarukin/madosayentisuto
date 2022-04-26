@@ -5,7 +5,7 @@ import { Future, Maybe } from '../../shared/utils/fp'
 import { FpCollection } from '../helpers/FpCollection'
 import type { BotStateOutput } from '../models/botState/BotState'
 import { BotState } from '../models/botState/BotState'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 
 export type BotStatePersistence = ReturnType<typeof BotStatePersistence>

@@ -1,6 +1,7 @@
 import type { GuildMember, MessageOptions } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
+import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
@@ -8,8 +9,7 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
-import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { LogUtils } from '../utils/LogUtils'
 import { MessageUtils } from '../utils/MessageUtils'
 

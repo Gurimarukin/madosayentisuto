@@ -1,11 +1,11 @@
 import { pipe } from 'fp-ts/function'
 
+import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { Future, List, Maybe } from '../../shared/utils/fp'
 
 import { MadEvent } from '../models/event/MadEvent'
 import type { MusicChannel } from '../models/music/MusicState'
 import { MusicState } from '../models/music/MusicState'
-import { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import type { GuildStateService } from '../services/GuildStateService'
 
 // disconnect when bot is alone in channel

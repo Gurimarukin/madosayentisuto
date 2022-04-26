@@ -2,13 +2,13 @@ import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
+import type { TSubject } from '../../shared/models/rx/TSubject'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future, IO, toUnit } from '../../shared/utils/fp'
 
 import type { MadEventCronJob } from '../models/event/MadEvent'
 import { MadEvent } from '../models/event/MadEvent'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
-import type { TSubject } from '../models/rx/TSubject'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 
 const cronJobInterval = MsDuration.minute(1)
 

@@ -10,9 +10,8 @@ import type {
 } from 'discord.js'
 
 import type { DayJs } from '../../../shared/models/DayJs'
+import { createUnion } from '../../../shared/utils/createUnion'
 import type { List } from '../../../shared/utils/fp'
-
-import { createUnion } from '../../utils/createUnion'
 
 export type MadEvent = typeof MadEvent.T
 

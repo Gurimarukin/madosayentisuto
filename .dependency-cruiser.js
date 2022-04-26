@@ -240,6 +240,17 @@ module.exports = {
         path: 'dayjs',
       },
     },
+    // {
+    //   name: 'not-to-server-libs',
+    //   severity: 'error',
+    //   from: {
+    //     path: '^src',
+    //     pathNot: '^src/server',
+    //   },
+    //   to: {
+    //     path: '(discord|mongo)',
+    //   },
+    // },
   ],
   options: {
     /* conditions specifying which files not to follow further when encountered:

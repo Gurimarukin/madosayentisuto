@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from 'express'
 import express from 'express'
+import { json } from 'fp-ts'
 import { list } from 'fp-ts-contrib'
 import type { Parser } from 'fp-ts-routing'
 import { parse } from 'fp-ts-routing'
@@ -7,12 +8,20 @@ import { Route as FpTsRoute, zero } from 'fp-ts-routing'
 import { flow, identity, pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 import type { ExpressConnection } from 'hyper-ts/lib/express'
+import { WebSocketServer } from 'ws'
 
 import { Method } from '../../shared/models/Method'
-import { Dict, Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/utils/fp'
+import { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
+import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import type { TObservable } from '../../shared/models/rx/TObservable'
+import type { TSubject } from '../../shared/models/rx/TSubject'
+import { PubSubUtils } from '../../shared/utils/PubSubUtils'
+import { Dict, Either, Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/utils/fp'
 
 import type { HttpConfig } from '../Config'
-import type { LoggerGetter } from '../models/logger/LoggerGetter'
+import { WSServerEvent } from '../models/event/WSServerEvent'
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
+import { unknownToError } from '../utils/unknownToError'
 import type { EndedMiddleware, MyMiddleware } from './models/MyMiddleware'
 import { MyMiddleware as M } from './models/MyMiddleware'
 import type { Route } from './models/Route'
@@ -31,6 +40,8 @@ export const startWebServer = (
   Logger: LoggerGetter,
   config: HttpConfig,
   routes: List<Route>,
+  serverToClientEventObservable: TObservable<ServerToClientEvent>,
+  wsServerEventSubject: TSubject<WSServerEvent>,
 ): IO<void> => {
   const logger = Logger('WebServer')
 
@@ -127,6 +138,47 @@ export const startWebServer = (
     IO.chain(e =>
       IO.tryCatch(() =>
         e.listen(config.port, logger.info(`Server listening on port ${config.port}`)),
+      ),
+    ),
+    IO.bindTo('server'),
+    IO.apS(
+      'wss',
+      IO.tryCatch(() =>
+        new WebSocketServer({ noServer: true })
+          .on('connection', ws =>
+            pipe(
+              IO.tryCatch(() =>
+                ws.on(
+                  'message',
+                  flow(WSServerEvent.messageFromRawData, wsServerEventSubject.next, IO.runUnsafe),
+                ),
+              ),
+              IO.chain(() =>
+                PubSubUtils.subscribeWithRefinement(
+                  logger,
+                  serverToClientEventObservable,
+                )(
+                  ObserverWithRefinement.of({
+                    next: flow(
+                      ServerToClientEvent.codec.encode,
+                      json.stringify,
+                      Either.mapLeft(unknownToError),
+                      Future.fromEither,
+                      Future.chainIOEitherK(encodedJson => IO.tryCatch(() => ws.send(encodedJson))),
+                    ),
+                  }),
+                ),
+              ),
+              IO.runUnsafe,
+            ),
+          )
+          // TODO: don't complete, emit Closed instead
+          .on('close', () => pipe(wsServerEventSubject.complete, IO.runUnsafe)),
+      ),
+    ),
+    IO.map(({ server, wss }) =>
+      server.on('upgrade', (req, ws, head) =>
+        wss.handleUpgrade(req, ws, head, ws_ => wss.emit('connection', ws_, req)),
       ),
     ),
     IO.map(toUnit),
