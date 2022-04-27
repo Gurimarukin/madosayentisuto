@@ -1,7 +1,7 @@
-/* eslint-disable functional/no-expression-statement */
+/* eslint-disable functional/no-expression-statement, functional/no-return-void */
 import { apply, json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import ReconnectingWebSocket from 'reconnecting-websocket'
 import type {
   CloseEvent as ReconnectingCloseEvent,
@@ -28,6 +28,7 @@ import { useHttp } from './HttpContext'
 
 type LogContext = {
   readonly logs: List<Log>
+  readonly tryRefetchInitialLogs: () => void
 }
 
 const LogContext = createContext<LogContext | undefined>(undefined)
@@ -35,34 +36,33 @@ const LogContext = createContext<LogContext | undefined>(undefined)
 export const LogContextProvider: React.FC = ({ children }) => {
   const { http } = useHttp()
 
-  const fetchInitialLogs: Future<List<Log>> = useMemo(
-    () =>
-      Future.tryCatch(() => http(apiRoutes.logs.get, {}, [List.decoder(Log.apiCodec), 'Log[]'])),
+  const initialLogsFetched = useRef(false)
+  const fetchInitialLogs = useCallback(
+    (): Future<void> =>
+      initialLogsFetched.current
+        ? Future.unit
+        : pipe(
+            Future.tryCatch(() =>
+              http(apiRoutes.logs.get, {}, [List.decoder(Log.apiCodec), 'Log[]']),
+            ),
+            Future.map(initialLogs => {
+              setLogs(prev => pipe(initialLogs, List.concat(prev)))
+              // eslint-disable-next-line functional/immutable-data
+              initialLogsFetched.current = true
+            }),
+          ),
     [http],
   )
 
   const [logs, setLogs] = useState<List<Log>>([])
 
-  const initialLogsFetched = useRef(false)
   useEffect(() => {
     const { closeWebSocket } = pipe(
       initWs,
       IO.chainFirst(({ wsClientEventObservable }) =>
         pipe(wsClientEventObservable, TObservable.subscribe({ next: onWSClientEvent })),
       ),
-      IO.chainFirst(() =>
-        initialLogsFetched.current
-          ? IO.unit
-          : pipe(
-              fetchInitialLogs,
-              Future.map(initialLogs => {
-                setLogs(prev => pipe(initialLogs, List.concat(prev)))
-                // eslint-disable-next-line functional/immutable-data
-                initialLogsFetched.current = true
-              }),
-              IO.runFutureUnsafe,
-            ),
-      ),
+      IO.chainFirst(() => IO.runFutureUnsafe(fetchInitialLogs())),
       IO.runUnsafe,
     )
     return () => pipe(closeWebSocket, IO.runUnsafe)
@@ -75,7 +75,8 @@ export const LogContextProvider: React.FC = ({ children }) => {
         case 'Close':
         case 'WSError':
         case 'InvalidMessageError':
-          return Future.fromIOEither(logger.info(e))
+          // return Future.fromIOEither(logger.info(e)) // TODO: do something?
+          return Future.unit
       }
     }
 
@@ -92,7 +93,15 @@ export const LogContextProvider: React.FC = ({ children }) => {
     }
   }, [fetchInitialLogs])
 
-  const value: LogContext = { logs }
+  const tryRefetchInitialLogs = useCallback(
+    (): Promise<void> => Future.runUnsafe(fetchInitialLogs()),
+    [fetchInitialLogs],
+  )
+
+  const value: LogContext = {
+    logs,
+    tryRefetchInitialLogs,
+  }
 
   return <LogContext.Provider value={value}>{children}</LogContext.Provider>
 }
@@ -107,7 +116,7 @@ export const useLog = (): LogContext => {
 }
 
 const reconnectingWebSocket: IO<ReconnectingWebSocket> = IO.tryCatch(() => {
-  const url = new URL(apiRoutes.index, config.apiHost)
+  const url = new URL(apiRoutes.logs.ws, config.apiHost)
   // eslint-disable-next-line functional/immutable-data
   url.protocol = window.location.protocol.startsWith('https') ? 'wss' : 'ws'
   return new ReconnectingWebSocket(url.toString())

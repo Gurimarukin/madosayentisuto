@@ -131,8 +131,9 @@ export type Tuple3<A, B, C> = readonly [A, B, C]
 export type Try<A> = Either<Error, A>
 export const Try = {
   ...either,
-  right: <A>(a: A): Try<A> => Either.right(a),
-  left: <A = never>(e: Error): Try<A> => Either.left(e),
+  right: either.right as <A>(a: A) => Try<A>,
+  left: either.left as <A = never>(e: Error) => Try<A>,
+  fromNullable: either.fromNullable as (e: Error) => <A>(a: A) => Try<NonNullable<A>>,
   tryCatch: <A>(a: Lazy<A>): Try<A> => Either.tryCatch(a, Either.toError),
   getUnsafe: <A>(t: Try<A>): A =>
     pipe(
@@ -144,13 +145,11 @@ export const Try = {
     ),
 }
 
-const futureRight = <A>(a: A): Future<A> => taskEither.right(a)
-const futureFromIO: <A>(fa: io.IO<A>) => Future<A> = taskEither.fromIO
 export type Future<A> = task.Task<Try<A>>
 export const Future = {
   ...taskEither,
-  right: futureRight,
-  left: <A = never>(e: Error): Future<A> => taskEither.left(e),
+  right: taskEither.right as <A>(a: A) => Future<A>,
+  left: taskEither.left as <A = never>(e: Error) => Future<A>,
   chainFirstIOEitherK:
     <A, B>(f: (a: A) => IO<B>) =>
     (fa: Future<A>): Future<A> =>
@@ -159,9 +158,9 @@ export const Future = {
     <A>(f: (e: Error) => IO<A>) =>
     (fa: Future<A>): Future<A> =>
       pipe(fa, taskEither.orElse(flow(f, Future.fromIOEither))),
-  fromIO: futureFromIO,
+  fromIO: taskEither.fromIO as <A>(fa: io.IO<A>) => Future<A>,
   tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, Either.toError),
-  unit: futureRight<void>(undefined),
+  unit: taskEither.right(undefined) as Future<void>,
   runUnsafe: <A>(fa: Future<A>): Promise<A> => pipe(fa, task.map(Try.getUnsafe))(),
   delay:
     <A>(ms: MsDuration) =>
@@ -169,17 +168,15 @@ export const Future = {
       pipe(future, task.delay(MsDuration.unwrap(ms))),
 }
 
-const ioRight = <A>(a: A): IO<A> => ioEither.right(a)
-const ioTryCatch = <A>(a: Lazy<A>): IO<A> => ioEither.tryCatch(a, Either.toError)
 const ioFromIO: <A>(fa: io.IO<A>) => IO<A> = ioEither.fromIO
 const ioRunUnsafe = <A>(ioA: IO<A>): A => Try.getUnsafe(ioA())
 export type IO<A> = io.IO<Try<A>>
 export const IO = {
   ...ioEither,
-  right: ioRight,
-  tryCatch: ioTryCatch,
+  right: ioEither.right as <A>(a: A) => IO<A>,
+  tryCatch: <A>(a: Lazy<A>): IO<A> => ioEither.tryCatch(a, Either.toError),
   fromIO: ioFromIO,
-  unit: ioRight<void>(undefined),
+  unit: ioEither.right(undefined) as IO<void>,
   runFutureUnsafe: (f: Future<void>): IO<void> =>
     ioFromIO(() => {
       // eslint-disable-next-line functional/no-expression-statement

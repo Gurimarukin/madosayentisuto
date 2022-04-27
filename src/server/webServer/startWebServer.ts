@@ -1,30 +1,35 @@
 import type { ErrorRequestHandler } from 'express'
 import express from 'express'
-import { json } from 'fp-ts'
 import { list } from 'fp-ts-contrib'
 import type { Parser } from 'fp-ts-routing'
 import { parse } from 'fp-ts-routing'
 import { Route as FpTsRoute, zero } from 'fp-ts-routing'
 import { flow, identity, pipe } from 'fp-ts/function'
+import type * as http from 'http'
 import { Status } from 'hyper-ts'
 import type { ExpressConnection } from 'hyper-ts/lib/express'
-import { WebSocketServer } from 'ws'
 
 import { Method } from '../../shared/models/Method'
-import { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
-import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import type { TObservable } from '../../shared/models/rx/TObservable'
-import type { TSubject } from '../../shared/models/rx/TSubject'
-import { PubSubUtils } from '../../shared/utils/PubSubUtils'
-import { Dict, Either, Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/utils/fp'
+import {
+  Dict,
+  Either,
+  Future,
+  IO,
+  List,
+  Maybe,
+  NonEmptyArray,
+  Try,
+  toUnit,
+} from '../../shared/utils/fp'
 
 import type { HttpConfig } from '../Config'
-import { WSServerEvent } from '../models/event/WSServerEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
-import { unknownToError } from '../utils/unknownToError'
 import type { EndedMiddleware, MyMiddleware } from './models/MyMiddleware'
 import { MyMiddleware as M } from './models/MyMiddleware'
-import type { Route } from './models/Route'
+import { Route } from './models/Route'
+import type { RouteMiddleware, RouteUpgrade } from './models/Route'
+import { SimpleHttpResponse } from './models/SimpleHttpResponse'
+import { UpgradeHandler } from './models/UpgradeHandler'
 
 const accessControl = {
   allowCredentials: true,
@@ -40,8 +45,6 @@ export const startWebServer = (
   Logger: LoggerGetter,
   config: HttpConfig,
   routes: List<Route>,
-  serverToClientEventObservable: TObservable<ServerToClientEvent>,
-  wsServerEventSubject: TSubject<WSServerEvent>,
 ): IO<void> => {
   const logger = Logger('WebServer')
 
@@ -109,85 +112,87 @@ export const startWebServer = (
     ),
   )
 
-  const altedRoutes = getAltedRoutes(routes)
+  const altedMiddlewareRoutes = pipe(
+    routes,
+    List.filter(Route.is('Middleware')),
+    getAltedMiddlewareRoutes,
+  )
+  const altedUpgradeRoutes = pipe(routes, List.filter(Route.is('Upgrade')), getAltedUpgradeRoutes)
 
   return pipe(
     Method.values,
-    List.reduce(withCors, (ioApp, method) =>
-      pipe(
-        ioApp,
-        IO.chain(app =>
-          IO.tryCatch(() =>
-            app[method]('*', (req, res, next) =>
-              pipe(
-                parse<EndedMiddleware>(
-                  altedRoutes[method],
-                  FpTsRoute.parse(req.url),
-                  M.sendWithStatus(Status.NotFound)(''),
-                ),
-                M.orElse(handleError),
-                logMiddleware,
-                M.toRequestHandler,
-              )(req, res, next),
-            ),
-          ),
-        ),
-      ),
-    ),
+    List.reduce(withCors, bindMiddlewares),
     IO.chain(e => IO.tryCatch(() => e.use(errorHandler(onError)))),
     IO.chain(e =>
       IO.tryCatch(() =>
         e.listen(config.port, logger.info(`Server listening on port ${config.port}`)),
       ),
     ),
-    IO.bindTo('server'),
-    IO.apS(
-      'wss',
-      IO.tryCatch(() =>
-        new WebSocketServer({ noServer: true })
-          .on('connection', ws =>
-            pipe(
-              IO.tryCatch(() =>
-                ws.on(
-                  'message',
-                  flow(WSServerEvent.messageFromRawData, wsServerEventSubject.next, IO.runUnsafe),
-                ),
-              ),
-              IO.chain(() =>
-                PubSubUtils.subscribeWithRefinement(
-                  logger,
-                  serverToClientEventObservable,
-                )(
-                  ObserverWithRefinement.of({
-                    next: flow(
-                      ServerToClientEvent.codec.encode,
-                      json.stringify,
-                      Either.mapLeft(unknownToError),
-                      Future.fromEither,
-                      Future.chainIOEitherK(encodedJson => IO.tryCatch(() => ws.send(encodedJson))),
-                    ),
-                  }),
-                ),
-              ),
-              IO.runUnsafe,
-            ),
-          )
-          .on('close', () => IO.runUnsafe(wsServerEventSubject.next(WSServerEvent.Closed()))),
-      ),
-    ),
-    IO.map(({ server, wss }) =>
-      server.on('upgrade', (req, ws, head) =>
-        wss.handleUpgrade(req, ws, head, ws_ => wss.emit('connection', ws_, req)),
-      ),
-    ),
+    IO.chain(bindUpgrades),
     IO.map(toUnit),
   )
 
-  function handleError(e: Error): EndedMiddleware {
+  function bindMiddlewares(ioApp: IO<express.Express>, method: Method): IO<express.Express> {
+    return pipe(
+      ioApp,
+      IO.chain(app =>
+        IO.tryCatch(() =>
+          app[method]('*', (req, res, next) => {
+            const handler = pipe(
+              parse<EndedMiddleware>(
+                altedMiddlewareRoutes[method],
+                FpTsRoute.parse(req.url),
+                M.sendWithStatus(Status.NotFound)(''),
+              ),
+              M.orElse(handleErrorMiddleware),
+              logMiddleware,
+              M.toRequestHandler,
+            )
+            return handler(req, res, next)
+          }),
+        ),
+      ),
+    )
+  }
+
+  function bindUpgrades(server: http.Server): IO<http.Server> {
+    return IO.tryCatch(() =>
+      server.on('upgrade', (request, socket, head) =>
+        pipe(
+          request.url,
+          Try.fromNullable(Error(`request.url was ${request.url}`)),
+          Future.fromEither,
+          Future.chain(url => {
+            const handler = pipe(
+              parse<UpgradeHandler>(
+                altedUpgradeRoutes,
+                FpTsRoute.parse(url),
+                UpgradeHandler.NotFound,
+              ),
+            )
+            return handler(request, socket, head)
+          }),
+          Future.orElse<Error, Either<SimpleHttpResponse, void>, Error>(handleErrorUpgrade),
+          Future.map(Either.getOrElse(res => socket.end(SimpleHttpResponse.toRawHttp(res)))),
+          Future.runUnsafe,
+        ),
+      ),
+    )
+  }
+
+  function handleErrorMiddleware(e: Error): EndedMiddleware {
     return pipe(
       logger.error(e),
       M.fromIOEither,
       M.ichain(() => M.sendWithStatus(Status.InternalServerError)('')),
+    )
+  }
+
+  function handleErrorUpgrade(e: Error): Future<Either<SimpleHttpResponse, never>> {
+    return pipe(
+      logger.error(e),
+      IO.map(() => Either.left(SimpleHttpResponse.of(Status.InternalServerError, ''))),
+      Future.fromIOEither,
     )
   }
 
@@ -217,7 +222,9 @@ export const startWebServer = (
   }
 }
 
-const getAltedRoutes = (routes: List<Route>): Dict<Method, Parser<EndedMiddleware>> => {
+const getAltedMiddlewareRoutes = (
+  routes: List<RouteMiddleware>,
+): Dict<Method, Parser<EndedMiddleware>> => {
   const init: Dict<Method, Parser<EndedMiddleware>> = pipe(
     Method.values,
     List.reduce({} as Dict<Method, Parser<EndedMiddleware>>, (acc, method) => ({
@@ -227,9 +234,18 @@ const getAltedRoutes = (routes: List<Route>): Dict<Method, Parser<EndedMiddlewar
   )
   return pipe(
     routes,
-    List.reduce(init, (acc, [method, parser]) => ({ ...acc, [method]: acc[method].alt(parser) })),
+    List.reduce(init, (acc, { middleware: [method, parser] }) => ({
+      ...acc,
+      [method]: acc[method].alt(parser),
+    })),
   )
 }
+
+const getAltedUpgradeRoutes = (routes: List<RouteUpgrade>): Parser<UpgradeHandler> =>
+  pipe(
+    routes,
+    List.reduce(zero<UpgradeHandler>(), (acc, { upgrade: parser }) => acc.alt(parser)),
+  )
 
 const getStatus = <A>(conn: ExpressConnection<A>): Maybe<Status> =>
   pipe(

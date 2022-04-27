@@ -11,7 +11,11 @@ import { Header } from '../components/Header'
 import { useLog } from '../contexts/LogContext'
 
 export const Logs = (): JSX.Element => {
-  const { logs } = useLog()
+  const { logs, tryRefetchInitialLogs } = useLog()
+
+  useEffect(() => {
+    tryRefetchInitialLogs()
+  }, [tryRefetchInitialLogs])
 
   const [selectedLevel, setSelectedLevel] = useState<LogLevel>('info')
   const handleChange = useCallback(
@@ -33,10 +37,14 @@ export const Logs = (): JSX.Element => {
     setIsFollowingScroll(scrollTop + offsetHeight === scrollHeight)
   }, [])
 
+  const scrollDown = useCallback(() => {
+    if (scrollRef.current === null) return
+    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [])
+
   useEffect(() => {
-    if (scrollRef.current === null || !isFollowingScroll) return
-    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight })
-  }, [filteredLogs, isFollowingScroll])
+    if (isFollowingScroll) scrollDown()
+  }, [logs, isFollowingScroll, scrollDown])
 
   return (
     <div className="h-full flex flex-col">
@@ -58,11 +66,18 @@ export const Logs = (): JSX.Element => {
             </select>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={scrollDown}
+          className="ml-2 border border-gray4 rounded-md px-2 py-1 bg-gray1 text-sm cursor-pointer"
+        >
+          Scroll en bas
+        </button>
       </Header>
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-grow px-3 pt-2 py-6 bg-black overflow-x-hidden overflow-y-auto"
+        className="flex-grow pt-2 pr-4 pb-6 pl-3 bg-black overflow-x-hidden overflow-y-auto"
       >
         <pre className="w-full grid grid-cols-[min-content_min-content_1fr] gap-x-3 text-sm">
           {filteredLogs.map(({ date, name, level, message }, i) => (
@@ -73,7 +88,7 @@ export const Logs = (): JSX.Element => {
                 pipe(date, DayJs.format('YYYY/MM/DD HH:mm:ss', { locale: true })),
                 LogLevel.hexColor.debug,
               )}
-              <span className="whitespace-pre-wrap">
+              <span className="whitespace-pre-wrap break-all">
                 {name} - {message}
               </span>
             </div>

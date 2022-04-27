@@ -82,13 +82,20 @@ export const Application = (
   const scheduledEventService = ScheduledEventService(scheduledEventPersistence)
   const userService = UserService(Logger, userPersistence, jwtHelper)
 
+  const serverToClientEventPubSub = PubSub<ServerToClientEvent>()
+  const wsServerEventPubSub = PubSub<WSServerEvent>() // TODO: do something with wsServerEventPubSub.observable
+
   const discordClientController = DiscordClientController(
     discord,
     guildStateService,
     memberBirthdateService,
   )
   const healthCheckController = HealthCheckController(healthCheckService)
-  const logController = LogController(logService)
+  const logController = LogController(
+    logService,
+    serverToClientEventPubSub.observable,
+    wsServerEventPubSub.subject,
+  )
   const memberController = MemberController(Logger, memberBirthdateService)
   const scheduledEventController = ScheduledEventController(Logger, discord, scheduledEventService)
   const userController = UserController(userService)
@@ -107,9 +114,6 @@ export const Application = (
 
   const madEventsPubSub = PubSub<MadEvent>()
   const sub = PubSubUtils.subscribeWithRefinement<MadEvent>(logger, madEventsPubSub.observable)
-
-  const serverToClientEventPubSub = PubSub<ServerToClientEvent>()
-  const wsServerEventPubSub = PubSub<WSServerEvent>()
 
   const logsObserver = LogObserver(logService, serverToClientEventPubSub.subject)
 
@@ -145,15 +149,7 @@ export const Application = (
       scheduleCronJob(Logger, madEventsPubSub.subject),
       sub(VoiceStateUpdateTransformer(Logger, clientId, madEventsPubSub.subject)),
     ),
-    IO.chain(() =>
-      startWebServer(
-        Logger,
-        config.http,
-        routes,
-        serverToClientEventPubSub.observable,
-        wsServerEventPubSub.subject,
-      ),
-    ),
+    IO.chain(() => startWebServer(Logger, config.http, routes)),
     IO.chain(() => madEventsPubSub.subject.next(MadEvent.AppStarted())),
     IO.chain(() => logger.info('Started')),
   )

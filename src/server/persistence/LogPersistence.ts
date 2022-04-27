@@ -36,7 +36,10 @@ export function LogPersistence(
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { date: -1 } }])
 
-  const list: TObservable<Log> = collection.findAll()({})
+  const list: TObservable<Log> = collection.findAll()(
+    {},
+    { sort: [[collection.path(['date']), 1]] },
+  )
 
   return {
     ensureIndexes,

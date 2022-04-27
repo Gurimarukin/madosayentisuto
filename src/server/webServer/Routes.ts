@@ -1,3 +1,5 @@
+import type { Parser } from 'fp-ts-routing'
+
 import type { ParserWithMethod } from '../../shared/ApiRouter'
 import { apiParsers as api } from '../../shared/ApiRouter'
 import type { List } from '../../shared/utils/fp'
@@ -9,38 +11,48 @@ import type { MemberController } from './controllers/MemberController'
 import type { ScheduledEventController } from './controllers/ScheduledEventController'
 import type { UserController } from './controllers/UserController'
 import type { EndedMiddleware } from './models/MyMiddleware'
-import type { Route } from './models/Route'
+import type { RouteMiddleware, RouteUpgrade } from './models/Route'
+import { Route } from './models/Route'
+import type { UpgradeHandler } from './models/UpgradeHandler'
 import type { WithAuth } from './utils/WithAuth'
 
 export const Routes = (
-  withAuth: WithAuth,
+  withAuth_: WithAuth,
   discordClientController: DiscordClientController,
   healthCheckController: HealthCheckController,
   logController: LogController,
   memberController: MemberController,
   scheduledEventController: ScheduledEventController,
   userController: UserController,
-): List<Route> => [
-  r(api.healthcheck.get, () => healthCheckController.check),
+): List<Route> => {
+  const { middleware: withAuth, upgrade: withAuthUpgrade } = withAuth_
 
-  r(api.login.post, () => userController.login),
+  return [
+    m(api.healthcheck.get, () => healthCheckController.check),
 
-  r(api.guilds.get, () => withAuth(discordClientController.listGuilds)),
-  r(api.guild.get, ({ guildId }) => withAuth(discordClientController.findGuild(guildId))),
+    m(api.login.post, () => userController.login),
 
-  r(api.member.birthdate.post, ({ userId }) =>
-    withAuth(memberController.updateMemberBirthdate(userId)),
-  ),
-  r(api.member.birthdate.del3te, ({ userId }) =>
-    withAuth(memberController.deleteMemberBirthdate(userId)),
-  ),
+    m(api.guilds.get, () => withAuth(discordClientController.listGuilds)),
+    m(api.guild.get, ({ guildId }) => withAuth(discordClientController.findGuild(guildId))),
 
-  r(api.scheduledEvents.get, () => withAuth(scheduledEventController.listScheduledEvents)),
+    m(api.member.birthdate.post, ({ userId }) =>
+      withAuth(memberController.updateMemberBirthdate(userId)),
+    ),
+    m(api.member.birthdate.del3te, ({ userId }) =>
+      withAuth(memberController.deleteMemberBirthdate(userId)),
+    ),
 
-  r(api.logs.get, () => withAuth(logController.listLogs)),
-]
+    m(api.scheduledEvents.get, () => withAuth(scheduledEventController.listScheduledEvents)),
 
-// get Route
-function r<A>([parser, method]: ParserWithMethod<A>, f: (a: A) => EndedMiddleware): Route {
-  return [method, parser.map(f)]
+    m(api.logs.get, () => withAuth(logController.listLogs)),
+    u(api.logs.ws, () => withAuthUpgrade(logController.webSocket)),
+  ]
 }
+
+const m = <A>(
+  [parser, method]: ParserWithMethod<A>,
+  f: (a: A) => EndedMiddleware,
+): RouteMiddleware => Route.Middleware([method, parser.map(f)])
+
+const u = <A>(parser: Parser<A>, f: (a: A) => UpgradeHandler): RouteUpgrade =>
+  Route.Upgrade(parser.map(f))

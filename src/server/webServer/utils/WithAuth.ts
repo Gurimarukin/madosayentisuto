@@ -1,39 +1,80 @@
-import { pipe } from 'fp-ts/function'
+import { parse as parseCookie } from 'cookie'
+import { flow, pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 
-import { Dict, Maybe } from '../../../shared/utils/fp'
+import { Dict, Either, Future, Maybe, Try } from '../../../shared/utils/fp'
+import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { constants } from '../../constants'
 import type { TokenContent } from '../../models/webUser/TokenContent'
 import type { UserService } from '../../services/UserService'
 import type { EndedMiddleware } from '../models/MyMiddleware'
 import { MyMiddleware as M } from '../models/MyMiddleware'
+import { SimpleHttpResponse } from '../models/SimpleHttpResponse'
+import type { UpgradeHandler } from '../models/UpgradeHandler'
 
-export type WithAuth = (f: (user: TokenContent) => EndedMiddleware) => EndedMiddleware
+export type WithAuth = {
+  readonly middleware: (f: (user: TokenContent) => EndedMiddleware) => EndedMiddleware
+  readonly upgrade: (f: (user: TokenContent) => UpgradeHandler) => UpgradeHandler
+}
 
-export const WithAuth =
-  (userService: UserService): WithAuth =>
-  f =>
+export const WithAuth = (userService: UserService): WithAuth => ({
+  middleware: f =>
     pipe(
       M.getCookies(),
       M.map(Dict.lookup(constants.account.cookie.name)),
       M.ichain(
         Maybe.fold(
           () => M.sendWithStatus(Status.Unauthorized)(''),
-          cookie =>
-            pipe(
-              M.fromTaskEither(userService.verifyToken(cookie)),
-              M.matchE(
-                () =>
-                  pipe(
-                    M.status(Status.Unauthorized),
-                    M.ichain(() => M.clearCookie(constants.account.cookie.name, {})),
-                    M.ichain(() => M.closeHeaders()),
-                    M.ichain(() => M.send('Invalid token')),
-                  ),
-                f,
-              ),
+          flow(
+            userService.verifyToken,
+            M.fromTaskEither,
+            M.matchE(
+              () =>
+                pipe(
+                  M.status(Status.Unauthorized),
+                  M.ichain(() => M.clearCookie(constants.account.cookie.name, {})),
+                  M.ichain(() => M.closeHeaders()),
+                  M.ichain(() => M.send('Invalid token')),
+                ),
+              f,
             ),
+          ),
         ),
       ),
-    )
+    ),
+
+  upgrade: f => (request, socket, head) =>
+    pipe(
+      futureMaybe.fromNullable(request.headers.cookie),
+      futureMaybe.chainTaskEitherK(cookie =>
+        Future.fromEither(Try.tryCatch(() => parseCookie(cookie))),
+      ),
+      futureMaybe.chainOption(Dict.lookup(constants.account.cookie.name)),
+      Future.chain(
+        Maybe.fold(
+          () => Future.right(Either.left(SimpleHttpResponse.of(Status.Unauthorized, ''))),
+          flow(
+            userService.verifyToken,
+            Future.map(Either.right),
+            Future.orElse(() =>
+              Future.right(
+                Either.left(
+                  SimpleHttpResponse.of(Status.Unauthorized, 'Invalid token', {
+                    'Set-Cookie': [
+                      `${constants.account.cookie.name}=`,
+                      'Path=/',
+                      'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+                    ],
+                  }),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      Future.chain(
+        Either.fold(flow(Either.left, Future.right), user => f(user)(request, socket, head)),
+      ),
+    ),
+})
