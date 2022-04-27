@@ -9,7 +9,7 @@ import { Maybe } from '../../../shared/utils/fp'
 
 import { Header } from '../../components/Header'
 import { Link } from '../../components/Link'
-import { useHttp } from '../../hooks/useHttp'
+import { useMySWR } from '../../hooks/useMySWR'
 import { appRoutes } from '../../router/AppRouter'
 import { basicAsyncRenderer } from '../../utils/basicAsyncRenderer'
 
@@ -22,7 +22,7 @@ type Props = {
 }
 
 export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element => {
-  const response = useHttp(apiRoutes.guild.get(guildId), {}, [GuildView.codec, 'GuildView'])
+  const response = useMySWR(apiRoutes.guild.get(guildId), {}, [GuildView.codec, 'GuildView'])
   const { data: guild, ...rest } = response
 
   return (

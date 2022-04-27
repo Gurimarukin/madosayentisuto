@@ -1,7 +1,7 @@
 /* eslint-disable functional/no-expression-statement */
 import { apply, json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import ReconnectingWebSocket from 'reconnecting-websocket'
 import type {
   CloseEvent as ReconnectingCloseEvent,
@@ -23,8 +23,8 @@ import { Either, Future, IO, List } from '../../shared/utils/fp'
 
 import { config } from '../config/unsafe'
 import { WSClientEvent } from '../model/event/WSClientEvent'
-import { http } from '../utils/http'
 import { logger } from '../utils/logger'
+import { useHttp } from './HttpContext'
 
 type LogContext = {
   readonly logs: List<Log>
@@ -33,6 +33,14 @@ type LogContext = {
 const LogContext = createContext<LogContext | undefined>(undefined)
 
 export const LogContextProvider: React.FC = ({ children }) => {
+  const { http } = useHttp()
+
+  const fetchInitialLogs: Future<List<Log>> = useMemo(
+    () =>
+      Future.tryCatch(() => http(apiRoutes.logs.get, {}, [List.decoder(Log.apiCodec), 'Log[]'])),
+    [http],
+  )
+
   const [logs, setLogs] = useState<List<Log>>([])
 
   const initialLogsFetched = useRef(false)
@@ -82,7 +90,7 @@ export const LogContextProvider: React.FC = ({ children }) => {
           )
       }
     }
-  }, [])
+  }, [fetchInitialLogs])
 
   const value: LogContext = { logs }
 
@@ -159,8 +167,4 @@ const initWs: IO<InitWSResult> = pipe(
       ),
     )
   }),
-)
-
-const fetchInitialLogs: Future<List<Log>> = Future.tryCatch(() =>
-  http(apiRoutes.logs.get, {}, [List.decoder(Log.apiCodec), 'Log[]']),
 )

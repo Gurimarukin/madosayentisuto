@@ -7,11 +7,27 @@ import { LoginPayload } from '../../shared/models/webUser/LoginPayload'
 import { UserName } from '../../shared/models/webUser/UserName'
 
 import { useHistory } from '../contexts/HistoryContext'
+import { useHttp } from '../contexts/HttpContext'
 import { appRoutes } from '../router/AppRouter'
-import { http } from '../utils/http'
 
 export const Login = (): JSX.Element => {
   const { navigate } = useHistory()
+  const { http } = useHttp()
+
+  const postLogin = useCallback(
+    (userName: string, password: string): Promise<unknown> =>
+      http(apiRoutes.login.post, {
+        redirectToLoginOnUnauthorized: false,
+        json: [
+          LoginPayload.codec,
+          {
+            userName: UserName.wrap(userName),
+            password: ClearPassword.wrap(password),
+          },
+        ],
+      }),
+    [http],
+  )
 
   const [userName, setUserName] = useState('')
   const [password, setPassword] = useState('')
@@ -30,7 +46,7 @@ export const Login = (): JSX.Element => {
       e.preventDefault()
       postLogin(userName, password).then(() => navigate(appRoutes.index))
     },
-    [navigate, password, userName],
+    [navigate, password, postLogin, userName],
   )
 
   return (
@@ -68,14 +84,3 @@ export const Login = (): JSX.Element => {
     </div>
   )
 }
-
-const postLogin = (userName: string, password: string): Promise<unknown> =>
-  http(apiRoutes.login.post, {
-    json: [
-      LoginPayload.codec,
-      {
-        userName: UserName.wrap(userName),
-        password: ClearPassword.wrap(password),
-      },
-    ],
-  })

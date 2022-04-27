@@ -7,7 +7,7 @@ import { GuildViewShort } from '../../shared/models/guild/GuildViewShort'
 import { List, Maybe } from '../../shared/utils/fp'
 
 import { Link } from '../components/Link'
-import { useHttp } from '../hooks/useHttp'
+import { useMySWR } from '../hooks/useMySWR'
 import { appRoutes } from '../router/AppRouter'
 import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
 
@@ -19,7 +19,7 @@ export const Home = (): JSX.Element => (
       <h1 className="text-6xl">Bot Jean Plank</h1>
     </div>
     <div className="grow flex flex-col items-center p-4">
-      {basicAsyncRenderer(useHttp(apiRoutes.guilds.get, {}, [guildsDecoder, 'GuildViewShort[]']))(
+      {basicAsyncRenderer(useMySWR(apiRoutes.guilds.get, {}, [guildsDecoder, 'GuildViewShort[]']))(
         guilds => (
           <div className="self-stretch flex flex-col gap-14">
             <Guilds guilds={guilds} />

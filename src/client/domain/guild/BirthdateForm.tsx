@@ -9,7 +9,7 @@ import { Maybe } from '../../../shared/utils/fp'
 import { DayJsFromISOString } from '../../../shared/utils/ioTsUtils'
 
 import { Cancel, Check, EditPencil, Prohibition } from '../../components/svgs'
-import { http } from '../../utils/http'
+import { useHttp } from '../../contexts/HttpContext'
 
 type Props = {
   readonly userId: DiscordUserId
@@ -24,6 +24,21 @@ export const BirthdateForm = ({
   onPostBirthdate,
   onDeleteBirthdate,
 }: Props): JSX.Element => {
+  const { http } = useHttp()
+
+  const postBirthdate = useCallback(
+    (member: DiscordUserId, birthdate: DayJs): Promise<unknown> =>
+      http(apiRoutes.member.birthdate.post(member), {
+        json: [DayJsFromISOString.encoder, birthdate],
+      }),
+    [http],
+  )
+
+  const deleteBirthdate = useCallback(
+    (member: DiscordUserId): Promise<unknown> => http(apiRoutes.member.birthdate.del3te(member)),
+    [http],
+  )
+
   const [isEditing, setIsEditing] = useState(false)
   const [value, setValue] = useState('')
   const [error, setError] = useState<Maybe<string>>(Maybe.none)
@@ -72,7 +87,7 @@ export const BirthdateForm = ({
         ),
       )
     },
-    [userId, onPostBirthdate, value],
+    [onPostBirthdate, postBirthdate, userId, value],
   )
   const handleRemoveBirthdate = useCallback(
     (e: React.MouseEvent) => {
@@ -85,7 +100,7 @@ export const BirthdateForm = ({
         .finally(() => setIsLoading(false))
       onDeleteBirthdate()
     },
-    [onDeleteBirthdate, userId],
+    [deleteBirthdate, onDeleteBirthdate, userId],
   )
 
   return (
@@ -149,11 +164,3 @@ const validateDate = (value: string): Maybe<DayJs> => {
   const d = DayJs.of(value, dateFormat)
   return DayJs.isValid(d) ? Maybe.some(d) : Maybe.none
 }
-
-const postBirthdate = (member: DiscordUserId, birthdate: DayJs): Promise<unknown> =>
-  http(apiRoutes.member.birthdate.post(member), {
-    json: [DayJsFromISOString.encoder, birthdate],
-  })
-
-const deleteBirthdate = (member: DiscordUserId): Promise<unknown> =>
-  http(apiRoutes.member.birthdate.del3te(member))

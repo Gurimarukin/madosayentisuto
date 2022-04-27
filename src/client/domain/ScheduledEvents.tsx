@@ -10,14 +10,14 @@ import { ChannelViewComponent } from '../components/ChannelViewComponent'
 import { Header } from '../components/Header'
 import { RoleViewComponent } from '../components/RoleViewComponent'
 import { Tooltip } from '../components/Tooltip'
-import { useHttp } from '../hooks/useHttp'
+import { useMySWR } from '../hooks/useMySWR'
 import { DiscordUtils } from '../utils/DiscordUtils'
 import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
 import { cssClasses } from '../utils/cssClasses'
 
 export const ScheduledEvents = (): JSX.Element =>
   basicAsyncRenderer(
-    useHttp(apiRoutes.scheduledEvents.get, {}, [
+    useMySWR(apiRoutes.scheduledEvents.get, {}, [
       List.decoder(ScheduledEventView.codec),
       'ScheduledEventView[]',
     ]),
