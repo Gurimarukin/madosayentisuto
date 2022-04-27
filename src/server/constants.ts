@@ -44,6 +44,7 @@ export const constants = {
   },
 
   // webapp
+  rateLimiterLifeTime: MsDuration.days(1),
   account: {
     tokenTtl: MsDuration.days(30),
     cookie: {

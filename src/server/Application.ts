@@ -8,6 +8,7 @@ import { PubSubUtils } from '../shared/utils/PubSubUtils'
 import { IO } from '../shared/utils/fp'
 
 import type { Context } from './Context'
+import { constants } from './constants'
 import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
 import { CallsAutoroleObserver } from './domain/CallsAutoroleObserver'
 import { DisconnectVocalObserver } from './domain/DisconnectVocalObserver'
@@ -49,7 +50,9 @@ import { MemberController } from './webServer/controllers/MemberController'
 import { ScheduledEventController } from './webServer/controllers/ScheduledEventController'
 import { UserController } from './webServer/controllers/UserController'
 import { startWebServer } from './webServer/startWebServer'
+import { RateLimiter } from './webServer/utils/RateLimiter'
 import { WithAuth } from './webServer/utils/WithAuth'
+import { WithIp } from './webServer/utils/WithIp'
 
 export const Application = (
   discord: DiscordConnector,
@@ -101,9 +104,12 @@ export const Application = (
   const scheduledEventController = ScheduledEventController(Logger, discord, scheduledEventService)
   const userController = UserController(userService)
 
+  const withIp = WithIp(Logger, config)
+  const rateLimiter = RateLimiter(Logger, withIp, constants.rateLimiterLifeTime)
   const withAuth = WithAuth(userService)
 
   const routes = Routes(
+    rateLimiter,
     withAuth,
     discordClientController,
     healthCheckController,

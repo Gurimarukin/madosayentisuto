@@ -2,6 +2,7 @@ import type { Parser } from 'fp-ts-routing'
 
 import type { ParserWithMethod } from '../../shared/ApiRouter'
 import { apiParsers as api } from '../../shared/ApiRouter'
+import { MsDuration } from '../../shared/models/MsDuration'
 import type { List } from '../../shared/utils/fp'
 
 import type { DiscordClientController } from './controllers/DiscordClientController'
@@ -14,9 +15,11 @@ import type { EndedMiddleware } from './models/MyMiddleware'
 import type { RouteMiddleware, RouteUpgrade } from './models/Route'
 import { Route } from './models/Route'
 import type { UpgradeHandler } from './models/UpgradeHandler'
+import type { RateLimiter } from './utils/RateLimiter'
 import type { WithAuth } from './utils/WithAuth'
 
 export const Routes = (
+  rateLimiter: RateLimiter,
   withAuth_: WithAuth,
   discordClientController: DiscordClientController,
   healthCheckController: HealthCheckController,
@@ -30,7 +33,7 @@ export const Routes = (
   return [
     m(api.healthcheck.get, () => healthCheckController.check),
 
-    m(api.login.post, () => userController.login),
+    m(api.login.post, () => rateLimiter(2, MsDuration.minutes(1))(userController.login)),
 
     m(api.guilds.get, () => withAuth(discordClientController.listGuilds)),
     m(api.guild.get, ({ guildId }) => withAuth(discordClientController.findGuild(guildId))),

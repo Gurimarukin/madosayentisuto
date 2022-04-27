@@ -1,8 +1,11 @@
 import { parse as parseCookie } from 'cookie'
-import type { RequestHandler } from 'express'
+import type * as express from 'express'
 import { json, string, task } from 'fp-ts'
+import type { Apply2 } from 'fp-ts/Apply'
+import type { FromIO2 } from 'fp-ts/FromIO'
+import type { Functor2 } from 'fp-ts/Functor'
 import { flow, identity, pipe } from 'fp-ts/function'
-import type { IncomingMessage } from 'http'
+import type * as http from 'http'
 import { MediaType } from 'hyper-ts'
 import type {
   Connection,
@@ -30,11 +33,38 @@ import { unknownToError } from '../../utils/unknownToError'
 
 export type MyMiddleware<I, O, A> = (c: Connection<I>) => Future<Tuple<A, Connection<O>>>
 
+const URI = 'MyMiddleware' as const
+type URI = typeof URI
+
+declare module 'fp-ts/HKT' {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+  interface URItoKind2<E, A> {
+    readonly [URI]: MyMiddleware<E, E, A>
+  }
+}
+
 type DecoderWithName<A> = Tuple<Decoder<unknown, A>, string>
 
 // alias to readonly
 
+const Functor: Functor2<URI> = {
+  URI,
+  map: M.Functor.map as <I, A, B>(
+    fa: MyMiddleware<I, I, A>,
+    f: (a: A) => B,
+  ) => MyMiddleware<I, I, B>,
+}
+
+const ApplyPar: Apply2<URI> = {
+  ...Functor,
+  ap: M.ApplyPar.ap as <I, A, B>(
+    fab: MyMiddleware<I, I, (a: A) => B>,
+    fa: MyMiddleware<I, I, A>,
+  ) => MyMiddleware<I, I, B>,
+}
+
 const fromEither = M.fromEither as <I = StatusOpen, A = never>(fa: Try<A>) => MyMiddleware<I, I, A>
+const fromIO = M.fromIO as FromIO2<URI>['fromIO']
 
 const map = M.map as <A, B>(
   f: (a: A) => B,
@@ -125,13 +155,21 @@ const matchE =
   (ma: MyMiddleware<I, I, A>): MyMiddleware<I, O, B> =>
     pipe(ma, match(onLeft, onRight), ichain(identity))
 
-const getBodyChunks =
-  <I = StatusOpen>(): MyMiddleware<I, I, List<unknown>> =>
+const getRequest =
+  <I = StatusOpen>(): MyMiddleware<I, I, http.IncomingMessage> =>
   conn =>
-    pipe(
-      requestChunks(conn.getRequest()),
-      Future.map(a => Tuple.of(a, conn)),
-    )
+    Future.right(Tuple.of(conn.getRequest(), conn))
+
+const getBodyChunks = <I = StatusOpen>(): MyMiddleware<I, I, List<unknown>> =>
+  pipe(getRequest<I>(), ichain(flow(requestChunks, f => M.fromTaskEither(f))))
+
+const getUrl = <I = StatusOpen>(): MyMiddleware<I, I, string> =>
+  pipe(
+    getRequest<I>(),
+    ichain(request =>
+      request.url === undefined ? M.left(Error('request.url was undefined')) : M.right(request.url),
+    ),
+  )
 
 const getBodyString = <I = StatusOpen>(): MyMiddleware<I, I, string> =>
   pipe(getBodyChunks<I>(), map(flow(List.map(String), List.mkString(''))))
@@ -172,10 +210,12 @@ const jsonWithStatus =
 
 const toRequestHandler = toRequestHandler_ as <I, O>(
   middleware: MyMiddleware<I, O, void>,
-) => RequestHandler
+) => express.RequestHandler
 
 export const MyMiddleware = {
   ...M,
+  ApplyPar,
+  fromIO,
   map,
   ichain,
   orElse,
@@ -191,6 +231,7 @@ export const MyMiddleware = {
   getCookies,
   match,
   matchE,
+  getUrl,
   getBodyString,
   sendWithStatus,
   jsonWithStatus,
@@ -200,7 +241,7 @@ export const MyMiddleware = {
 
 export type EndedMiddleware = MyMiddleware<StatusOpen, ResponseEnded, void>
 
-const requestChunks = (req: IncomingMessage): Future<List<unknown>> =>
+const requestChunks = (req: http.IncomingMessage): Future<List<unknown>> =>
   Future.tryCatch(
     () =>
       new Promise<List<unknown>>((resolve, reject) => {

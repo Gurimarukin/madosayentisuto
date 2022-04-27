@@ -7,7 +7,7 @@ import { LogLevelOrOff } from '../shared/models/LogLevel'
 import { ValidatedNea } from '../shared/models/ValidatedNea'
 import { loadDotEnv } from '../shared/utils/config/loadDotEnv'
 import { parseConfig } from '../shared/utils/config/parseConfig'
-import { IO } from '../shared/utils/fp'
+import { Either, IO } from '../shared/utils/fp'
 import type { List, NonEmptyArray, Try } from '../shared/utils/fp'
 import { Maybe } from '../shared/utils/fp'
 import { URLFromString } from '../shared/utils/ioTsUtils'
@@ -22,6 +22,7 @@ import {
 const { seqS } = ValidatedNea
 
 export type Config = {
+  readonly isDev: boolean
   readonly ytDlpPath: string
   readonly jwtSecret: string
   readonly client: ClientConfig
@@ -67,6 +68,10 @@ export type HttpConfig = {
 const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
   parseConfig(dict)(r =>
     seqS<Config>({
+      isDev: pipe(
+        r(Maybe.decoder(BooleanFromString.decoder))('IS_DEV'),
+        Either.map(Maybe.getOrElseW(() => false)),
+      ),
       ytDlpPath: r(D.string)('YTDLP_PATH'),
       jwtSecret: r(D.string)('JWT_SECRET'),
       client: seqS<ClientConfig>({
