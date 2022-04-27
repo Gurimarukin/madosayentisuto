@@ -7,13 +7,14 @@ module.exports = {
       jsx: true,
     },
   },
-  plugins: ['functional', 'fp-ts'],
+  plugins: ['functional', 'fp-ts', 'tailwindcss'],
   extends: [
     'plugin:@typescript-eslint/recommended',
     'plugin:functional/recommended',
     'plugin:fp-ts/all',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
+    'plugin:tailwindcss/recommended',
     'prettier',
   ],
   settings: {

@@ -16,14 +16,14 @@ type Props = {
 export const Guild = ({ guildId }: Props): JSX.Element => (
   <GuildLayout guildId={guildId} selected={undefined}>
     {guild => (
-      <div className="w-full px-8 py-4">
+      <div className="py-4 px-8 w-full">
         <ul className="flex flex-col gap-6 list-disc">
           <Li label="calls" className="flex-col gap-0">
             {pipe(
               guild.state.calls,
               Maybe.map(({ message, channel, role }) => (
                 // eslint-disable-next-line react/jsx-key
-                <ul className="flex flex-col gap-1 pl-8 py-2 list-disc">
+                <ul className="flex flex-col gap-1 py-2 pl-8 list-disc">
                   <LiPre label="message:">
                     <MessageViewComponent message={message} />
                   </LiPre>

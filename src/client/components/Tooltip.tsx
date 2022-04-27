@@ -10,8 +10,8 @@ type Props = {
 export const Tooltip: React.FC<Props> = ({ title, className, children }) => (
   <div className={cssClasses('relative group', className)}>
     {children}
-    <div className="absolute z-50 left-1/2 top-[calc(100%_+_2px)] opacity-0 blur invisible duration-300 group-hover:opacity-100 group-hover:blur-0 group-hover:visible">
-      <div className="relative left-[-50%] flex px-3 py-2 bg-gray1 rounded">{title}</div>
+    <div className="absolute top-[calc(100%_+_2px)] left-1/2 invisible group-hover:visible z-50 opacity-0 group-hover:opacity-100 blur group-hover:blur-0 duration-300">
+      <div className="flex relative left-[-50%] py-2 px-3 bg-gray1 rounded">{title}</div>
     </div>
   </div>
 )

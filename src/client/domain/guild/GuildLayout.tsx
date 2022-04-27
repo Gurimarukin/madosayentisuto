@@ -26,7 +26,7 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
   const { data: guild, ...rest } = response
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="flex flex-col w-full h-full">
       <Header>
         {guild !== undefined ? (
           <>
@@ -37,7 +37,7 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
                 icon => (
                   <Link
                     to={appRoutes.guild.index(guildId)}
-                    className="w-12 h-12 rounded-lg overflow-hidden"
+                    className="overflow-hidden w-12 h-12 rounded-lg"
                   >
                     <img src={icon} alt={`Icône du serveur ${guild.name}`} />
                   </Link>
@@ -68,7 +68,7 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
           </>
         ) : null}
       </Header>
-      <div className="grow flex justify-center overflow-auto">
+      <div className="flex overflow-auto grow justify-center">
         {basicAsyncRenderer(response)(g => children?.(g, rest))}
       </div>
     </div>

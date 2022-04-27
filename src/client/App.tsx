@@ -9,7 +9,7 @@ export const App = (): JSX.Element => (
   <HistoryContextProvider>
     <HttpContextProvider>
       <LogContextProvider>
-        <div className="w-[100vw] h-[100vh] font-[baloopaaji2] bg-gray3 text-gray4 overflow-hidden">
+        <div className="overflow-hidden w-[100vw] h-[100vh] font-[baloopaaji2] text-gray4 bg-gray3">
           <AppRouterComponent />
         </div>
       </LogContextProvider>

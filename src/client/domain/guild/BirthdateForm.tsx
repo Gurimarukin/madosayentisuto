@@ -104,8 +104,8 @@ export const BirthdateForm = ({
   )
 
   return (
-    <form onSubmit={handleFormSubmit} className="h-full flex justify-center items-center gap-x-3">
-      <div className="w-[12ch] flex justify-center">
+    <form onSubmit={handleFormSubmit} className="flex gap-x-3 justify-center items-center h-full">
+      <div className="flex justify-center w-[12ch]">
         {isEditing ? (
           <input
             ref={onInputMount}
@@ -113,7 +113,7 @@ export const BirthdateForm = ({
             value={value}
             onChange={handleInputChange}
             autoFocus={true}
-            className="w-full border-none rounded-sm pl-2 bg-gray1 text-inherit"
+            className="pl-2 w-full text-inherit bg-gray1 rounded-sm border-none"
           />
         ) : (
           <span className="w-full">
@@ -127,7 +127,7 @@ export const BirthdateForm = ({
           </span>
         )}
       </div>
-      <div className="w-16 flex justify-between gap-x-1">
+      <div className="flex gap-x-1 justify-between w-16">
         {isLoading ? (
           <pre>loading...</pre>
         ) : isEditing ? (
@@ -152,7 +152,7 @@ export const BirthdateForm = ({
           </>
         )}
       </div>
-      <span className="grow text-red-700 text-sm">{Maybe.toNullable(error)}</span>
+      <span className="grow text-sm text-red-700">{Maybe.toNullable(error)}</span>
     </form>
   )
 }

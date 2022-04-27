@@ -47,16 +47,16 @@ export const Logs = (): JSX.Element => {
   }, [logs, isFollowingScroll, scrollDown])
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col h-full">
       <Header>
-        <div className="flex items-center gap-8">
+        <div className="flex gap-8 items-center">
           <h1 className="text-3xl">Console</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2 items-center">
             <span>Niveau de log :</span>
             <select
               value={selectedLevel}
               onChange={handleChange}
-              className="text-gray1 bg-gray4 border-none py-1 rounded-sm text-sm font-mono"
+              className="py-1 font-mono text-sm text-gray1 bg-gray4 rounded-sm border-none"
             >
               {LogLevel.values.map(level => (
                 <option key={level} value={level} className="font-mono text-xs cursor-pointer">
@@ -69,7 +69,7 @@ export const Logs = (): JSX.Element => {
         <button
           type="button"
           onClick={scrollDown}
-          className="ml-2 border border-gray4 rounded-md px-2 py-1 bg-gray1 text-sm cursor-pointer"
+          className="py-1 px-2 ml-2 text-sm bg-gray1 rounded-md border border-gray4 cursor-pointer"
         >
           Scroll en bas
         </button>
@@ -77,9 +77,9 @@ export const Logs = (): JSX.Element => {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-grow pt-2 pr-4 pb-6 pl-3 bg-black overflow-x-hidden overflow-y-auto"
+        className="overflow-x-hidden overflow-y-auto grow pt-2 pr-4 pb-6 pl-3 bg-black"
       >
-        <pre className="w-full grid grid-cols-[min-content_min-content_1fr] gap-x-3 text-sm">
+        <pre className="grid grid-cols-[min-content_min-content_1fr] gap-x-3 w-full text-sm">
           {filteredLogs.map(({ date, name, level, message }, i) => (
             // eslint-disable-next-line react/no-array-index-key
             <div key={i} className="contents">

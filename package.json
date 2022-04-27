@@ -106,6 +106,7 @@
     "eslint-plugin-prettier": "4.0.0",
     "eslint-plugin-react": "7.29.4",
     "eslint-plugin-react-hooks": "4.3.0",
+    "eslint-plugin-tailwindcss": "3.5.0",
     "jest": "27.5.1",
     "nodemon": "2.0.15",
     "parcel": "2.5.0",

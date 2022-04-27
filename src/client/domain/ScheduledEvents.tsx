@@ -22,11 +22,11 @@ export const ScheduledEvents = (): JSX.Element =>
       'ScheduledEventView[]',
     ]),
   )(events => (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col h-full">
       <Header>
         <h1 className="text-3xl">Rappels</h1>
       </Header>
-      <table className="flex-grow grid grid-cols-[auto_auto_auto_auto_1fr] overflow-auto">
+      <table className="grid overflow-auto grow grid-cols-[auto_auto_auto_auto_1fr]">
         <thead className="contents">
           <tr className="contents text-lg font-bold">
             <Th>Date</Th>
@@ -39,7 +39,7 @@ export const ScheduledEvents = (): JSX.Element =>
         <tbody className="contents">
           {events.map((event, i) => (
             // eslint-disable-next-line react/no-array-index-key
-            <tr key={i} className="contents group">
+            <tr key={i} className="group contents">
               {renderEvent(event)}
             </tr>
           ))}
@@ -60,7 +60,7 @@ const renderEvent = (event: ScheduledEventView): JSX.Element => {
               Maybe.fold(
                 () => null,
                 avatar => (
-                  <div className="w-7 h-7 rounded-full overflow-hidden">
+                  <div className="overflow-hidden w-7 h-7 rounded-full">
                     <img src={avatar} alt={`Avatar de ${event.createdBy.tag}`} />
                   </div>
                 ),
@@ -89,11 +89,11 @@ const renderEvent = (event: ScheduledEventView): JSX.Element => {
                             <Tooltip
                               title={<span className="whitespace-nowrap">{guild.name}</span>}
                             >
-                              <div className="w-8 h-8 rounded-md overflow-hidden">
+                              <div className="overflow-hidden w-8 h-8 rounded-md">
                                 <img
                                   src={icon}
                                   alt={`Icone du serveur ${guild.name}`}
-                                  className="w-full h-full object-cover"
+                                  className="object-cover w-full h-full"
                                 />
                               </div>
                             </Tooltip>
@@ -128,7 +128,7 @@ const renderEvent = (event: ScheduledEventView): JSX.Element => {
 
 const formatScheduledAt = DayJs.format('DD/MM/YYYY, HH:mm')
 
-const Th: React.FC = ({ children }) => <th className="flex px-5 py-3 bg-gray2">{children}</th>
+const Th: React.FC = ({ children }) => <th className="flex py-3 px-5 bg-gray2">{children}</th>
 
 type TdProps = {
   readonly className?: string
