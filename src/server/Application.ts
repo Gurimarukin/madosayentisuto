@@ -83,7 +83,7 @@ export const Application = (
   const userService = UserService(Logger, userPersistence, jwtHelper)
 
   const serverToClientEventPubSub = PubSub<ServerToClientEvent>()
-  const wsServerEventPubSub = PubSub<WSServerEvent>() // TODO: do something with wsServerEventPubSub.observable
+  const wsServerEventPubSub = PubSub<WSServerEvent>() // TODO: do something with wsServerEventPubSub.observable?
 
   const discordClientController = DiscordClientController(
     discord,

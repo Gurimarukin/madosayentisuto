@@ -68,7 +68,7 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
           </>
         ) : null}
       </Header>
-      <div className="grow flex justify-center">
+      <div className="grow flex justify-center overflow-auto">
         {basicAsyncRenderer(response)(g => children?.(g, rest))}
       </div>
     </div>

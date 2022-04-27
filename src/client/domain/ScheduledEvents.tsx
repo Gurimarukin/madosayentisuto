@@ -22,11 +22,11 @@ export const ScheduledEvents = (): JSX.Element =>
       'ScheduledEventView[]',
     ]),
   )(events => (
-    <div>
+    <div className="h-full flex flex-col">
       <Header>
         <h1 className="text-3xl">Rappels</h1>
       </Header>
-      <table className="grid grid-cols-[auto_auto_auto_auto_1fr]">
+      <table className="flex-grow grid grid-cols-[auto_auto_auto_auto_1fr] overflow-auto">
         <thead className="contents">
           <tr className="contents text-lg font-bold">
             <Th>Date</Th>

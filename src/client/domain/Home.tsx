@@ -14,7 +14,7 @@ import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
 const guildsDecoder = List.decoder(GuildViewShort.codec)
 
 export const Home = (): JSX.Element => (
-  <div className="h-full flex flex-col">
+  <div className="h-full flex flex-col overflow-auto">
     <div className="flex justify-center p-6">
       <h1 className="text-6xl">Bot Jean Plank</h1>
     </div>
