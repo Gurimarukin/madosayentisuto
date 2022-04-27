@@ -92,6 +92,7 @@ export const Application = (
   )
   const healthCheckController = HealthCheckController(healthCheckService)
   const logController = LogController(
+    Logger,
     logService,
     serverToClientEventPubSub.observable,
     wsServerEventPubSub.subject,

@@ -12,9 +12,8 @@ import type { TSubject } from '../../../shared/models/rx/TSubject'
 import { PubSubUtils } from '../../../shared/utils/PubSubUtils'
 import { Either, Future, IO, List } from '../../../shared/utils/fp'
 
-import { logger } from '../../../client/utils/logger'
-
 import { WSServerEvent } from '../../models/event/WSServerEvent'
+import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { LogService } from '../../services/LogService'
 import { unknownToError } from '../../utils/unknownToError'
 import type { EndedMiddleware } from '../models/MyMiddleware'
@@ -25,10 +24,13 @@ export type LogController = ReturnType<typeof LogController>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const LogController = (
+  Logger: LoggerGetter,
   logService: LogService,
   serverToClientEventObservable: TObservable<ServerToClientEvent>,
   wsServerEventSubject: TSubject<WSServerEvent>,
 ) => {
+  const logger = Logger('LogController')
+
   // TODO: move to WebSocketUtils
   const wss = new WebSocketServer({ noServer: true })
     .on('connection', ws =>
@@ -69,7 +71,8 @@ export const LogController = (
         M.ichain(M.jsonWithStatus(Status.OK, List.encoder(Log.apiCodec))),
       ),
 
-    webSocket: (/* user: User */): UpgradeHandler => (request, socket, head) => pipe(
+    webSocket: (/* user: User */): UpgradeHandler => (request, socket, head) =>
+      pipe(
         IO.tryCatch(() =>
           wss.handleUpgrade(request, socket, head, ws => wss.emit('connection', ws, request)),
         ),
