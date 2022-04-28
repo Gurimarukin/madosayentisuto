@@ -49,7 +49,10 @@ export function LogPersistence(
     count,
 
     list: ({ skip, limit }: ListArgs = {}): TObservable<Log> =>
-      collection.findAll()({}, { sort: [[collection.path(['date']), 1]], skip, limit }),
+      collection.findAll()(
+        { level: { $ne: 'debug' } },
+        { sort: [[collection.path(['date']), 1]], skip, limit },
+      ),
 
     insertMany: (logs: List<Log>): Future<number> =>
       pipe(

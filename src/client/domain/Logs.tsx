@@ -6,6 +6,7 @@ import { DayJs } from '../../shared/models/DayJs'
 import { LogEvent } from '../../shared/models/event/LogEvent'
 import { LogLevel } from '../../shared/models/log/LogLevel'
 import type { Color } from '../../shared/utils/Color'
+import { List } from '../../shared/utils/fp'
 
 import { Header } from '../components/Header'
 import { useLog } from '../contexts/LogContext'
@@ -62,11 +63,15 @@ export const Logs = (): JSX.Element => {
               onChange={handleChange}
               className="py-1 font-mono text-sm text-gray1 bg-gray4 rounded-sm border-none"
             >
-              {LogLevel.values.map(level => (
-                <option key={level} value={level} className="font-mono text-xs cursor-pointer">
-                  {level.toUpperCase()}
-                </option>
-              ))}
+              {pipe(
+                LogLevel.values,
+                List.filter(l => l !== 'debug'),
+                List.map(level => (
+                  <option key={level} value={level} className="font-mono text-xs cursor-pointer">
+                    {level.toUpperCase()}
+                  </option>
+                )),
+              )}
             </select>
           </div>
           <button

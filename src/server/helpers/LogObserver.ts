@@ -27,13 +27,16 @@ export const LogObserver = (
   return {
     logEventObserver: {
       next: ({ name, level, message }) =>
-        pipe(
-          serverToClientEventSubject.next(ServerToClientEvent.Log({ name, level, message })),
-          IO.chain(() => IO.fromIO(DayJs.now)),
-          IO.chain(date => logService.addLog({ date, name, level, message })),
-          Future.fromIOEither,
-        ),
+        level !== 'debug'
+          ? Future.unit
+          : pipe(
+              serverToClientEventSubject.next(ServerToClientEvent.Log({ name, level, message })),
+              IO.chain(() => IO.fromIO(DayJs.now)),
+              IO.chain(date => logService.addLog({ date, name, level, message })),
+              Future.fromIOEither,
+            ),
     },
+
     madEventObserver: ObserverWithRefinement.fromNext(
       MadEvent,
       'CronJob',
