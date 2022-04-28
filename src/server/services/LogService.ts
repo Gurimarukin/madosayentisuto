@@ -1,3 +1,4 @@
+import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import type { Log } from '../../shared/models/log/Log'
@@ -17,17 +18,21 @@ export const LogService = (logPersistence: LogPersistence) => {
   const buffer = Store<List<Log>>([])
 
   const list: Future<LogsWithTotalCount> = pipe(
-    logPersistence.count,
-    Future.chain(totalCount =>
-      pipe(
-        logPersistence.list({
-          skip: Math.max(0, totalCount - constants.logsLimit),
-          limit: constants.logsLimit,
-        }),
-        Sink.readonlyArray,
-        Future.map((logs): LogsWithTotalCount => ({ logs, totalCount })),
+    apply.sequenceS(Future.ApplyPar)({
+      logs: pipe(
+        logPersistence.countNonDebug,
+        Future.chain(nonDebug =>
+          pipe(
+            logPersistence.list({
+              skip: Math.max(0, nonDebug - constants.logsLimit),
+              limit: constants.logsLimit,
+            }),
+            Sink.readonlyArray,
+          ),
+        ),
       ),
-    ),
+      totalCount: logPersistence.countAll,
+    }),
     Future.chain(({ logs, totalCount }) =>
       pipe(
         Future.fromIOEither(buffer.get),

@@ -41,12 +41,14 @@ export function LogPersistence(
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { date: -1 } }])
 
-  const count: Future<number> = collection.count({ level: { $ne: 'debug' } })
+  const countAll: Future<number> = collection.count({})
+  const countNonDebug: Future<number> = collection.count({ level: { $ne: 'debug' } })
 
   return {
     ensureIndexes,
 
-    count,
+    countAll,
+    countNonDebug,
 
     list: ({ skip, limit }: ListArgs = {}): TObservable<Log> =>
       collection.findAll()(
