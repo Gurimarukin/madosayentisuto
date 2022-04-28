@@ -27,7 +27,7 @@ export const LogObserver = (
   return {
     logEventObserver: {
       next: ({ name, level, message }) =>
-        level !== 'debug'
+        level === 'debug'
           ? Future.unit
           : pipe(
               serverToClientEventSubject.next(ServerToClientEvent.Log({ name, level, message })),
