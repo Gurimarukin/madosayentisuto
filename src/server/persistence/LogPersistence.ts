@@ -41,7 +41,7 @@ export function LogPersistence(
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { date: -1 } }])
 
-  const count: Future<number> = collection.count({})
+  const count: Future<number> = collection.count({ level: { $ne: 'debug' } })
 
   return {
     ensureIndexes,
