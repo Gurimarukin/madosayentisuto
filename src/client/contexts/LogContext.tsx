@@ -91,7 +91,10 @@ export const LogContextProvider: React.FC = ({ children }) => {
           return pipe(
             DayJs.now,
             Future.fromIO,
-            Future.map(date => setLogs(List.append({ date, name, level, message }))),
+            Future.map(date => {
+              setLogs(List.append({ date, name, level, message }))
+              setTotalCount(n => n + 1)
+            }),
           )
       }
     }

@@ -28,6 +28,17 @@ export const LogService = (logPersistence: LogPersistence) => {
         Future.map((logs): LogsWithTotalCount => ({ logs, totalCount })),
       ),
     ),
+    Future.chain(({ logs, totalCount }) =>
+      pipe(
+        Future.fromIOEither(buffer.get),
+        Future.map(
+          (bufferLogs): LogsWithTotalCount => ({
+            logs: pipe(logs, List.concat(bufferLogs)),
+            totalCount: totalCount + bufferLogs.length,
+          }),
+        ),
+      ),
+    ),
   )
 
   const addLog = (log: Log): IO<void> => pipe(buffer.modify(List.append(log)), IO.map(toUnit))

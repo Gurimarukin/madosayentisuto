@@ -15,9 +15,7 @@
 - Store: IO > io.IO?
 - TObservable.subscribe
 - try to override declaration types to use GuildId, TSnowflake, ...
-- logs
-  - limit logs sent to client
-  - logs id 
+- logs id
 
 ---
 
