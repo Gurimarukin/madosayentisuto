@@ -16,7 +16,6 @@ import type {
   AllowedThreadTypeForTextChannel,
   AnyChannel,
   ApplicationCommand,
-  ApplicationCommandPermissions,
   BaseCommandInteraction,
   BaseGuildTextChannel,
   ButtonInteraction,
@@ -24,7 +23,6 @@ import type {
   Collection,
   EmojiIdentifierResolvable,
   Guild,
-  GuildApplicationCommandPermissionData,
   GuildAuditLogsEntry,
   GuildAuditLogsFetchOptions,
   GuildAuditLogsResolvable,
@@ -248,20 +246,6 @@ function entersState(
     ),
   )
 }
-
-const guildCommandsPermissionsSet = (
-  guild: Guild,
-  fullPermissions: List<GuildApplicationCommandPermissionData>,
-): Future<Collection<string, List<ApplicationCommandPermissions>>> =>
-  pipe(
-    Future.tryCatch(() =>
-      guild.commands.permissions.set({
-        // eslint-disable-next-line functional/prefer-readonly-type
-        fullPermissions: fullPermissions as GuildApplicationCommandPermissionData[],
-      }),
-    ),
-    debugLeft('guildCommandsPermissionsSet'),
-  )
 
 const interactionDeferReply = (
   interaction: MyInteraction,
@@ -511,7 +495,6 @@ export const DiscordConnector = {
   audioPlayerStop,
   audioPlayerUnpause,
   entersState,
-  guildCommandsPermissionsSet,
   interactionDeferReply,
   interactionDeleteReply,
   interactionEditReply,

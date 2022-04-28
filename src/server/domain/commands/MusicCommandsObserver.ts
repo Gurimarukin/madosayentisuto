@@ -55,29 +55,21 @@ export const MusicCommandsObserver = (
     ...ObserverWithRefinement.fromNext(
       MadEvent,
       'InteractionCreate',
-    )(event => {
-      const interaction = event.interaction
-
-      if (interaction.isCommand()) {
-        switch (interaction.commandName) {
-          case MusicStateMessage.Keys.play:
-            return onPlayCommand(interaction)
-        }
-      }
-
-      if (interaction.isButton()) {
-        switch (interaction.customId) {
-          case musicStateButtons.playPauseId:
-            return onPlayPauseButton(interaction)
-          case musicStateButtons.nextId:
-            return onNextButton(interaction)
-        }
-      }
-
+    )(({ interaction }) => {
+      if (interaction.isCommand()) return onCommand(interaction)
+      if (interaction.isButton()) return onButton(interaction)
       return Future.unit
     }),
 
     validateTracks,
+  }
+
+  function onCommand(interaction: CommandInteraction): Future<void> {
+    switch (interaction.commandName) {
+      case MusicStateMessage.Keys.play:
+        return onPlayCommand(interaction)
+    }
+    return Future.unit
   }
 
   function onPlayCommand(interaction: CommandInteraction): Future<void> {
@@ -106,6 +98,16 @@ export const MusicCommandsObserver = (
       ),
       Future.map(toUnit),
     )
+  }
+
+  function onButton(interaction: ButtonInteraction): Future<void> {
+    switch (interaction.customId) {
+      case musicStateButtons.playPauseId:
+        return onPlayPauseButton(interaction)
+      case musicStateButtons.nextId:
+        return onNextButton(interaction)
+    }
+    return Future.unit
   }
 
   function onPlayPauseButton(interaction: ButtonInteraction): Future<void> {

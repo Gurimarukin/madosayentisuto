@@ -65,6 +65,14 @@ export const RemindCommandsObserver = (scheduledEventService: ScheduledEventServ
   })
 
   function onCommand(interaction: CommandInteraction): Future<void> {
+    switch (interaction.commandName) {
+      case Keys.remind:
+        return onRemind(interaction)
+    }
+    return Future.unit
+  }
+
+  function onRemind(interaction: CommandInteraction): Future<void> {
     const [who, fetchRole] = parseWho(
       interaction.guild,
       interaction.options.getRole(Keys.who),

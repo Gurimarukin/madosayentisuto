@@ -39,20 +39,20 @@ export const OtherCommandsObserver = () => {
   return ObserverWithRefinement.fromNext(
     MadEvent,
     'InteractionCreate',
-  )(event => {
-    const interaction = event.interaction
+  )(({ interaction }) => {
+    if (interaction.isCommand()) return onCommand(interaction)
+    return Future.unit
+  })
 
-    if (!interaction.isCommand()) return Future.unit
-
+  function onCommand(interaction: CommandInteraction): Future<void> {
     switch (interaction.commandName) {
       case Keys.ping:
         return onPing(interaction)
       case Keys.randomcase:
         return onRandomCase(interaction)
     }
-
     return Future.unit
-  })
+  }
 
   function onPing(interaction: CommandInteraction): Future<void> {
     return DiscordConnector.interactionReply(interaction, { content: 'pong', ephemeral: true })

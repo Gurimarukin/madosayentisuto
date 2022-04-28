@@ -128,13 +128,15 @@ export const Application = (
     apply.sequenceT(IO.ApplyPar)(
       // └ domain/
       // │  └ commands/
-      sub(AdminCommandsObserver(Logger, discord, botStateService, guildStateService)),
+      sub(
+        AdminCommandsObserver(Logger, config.admins, discord, botStateService, guildStateService),
+      ),
       sub(MusicCommandsObserver(Logger, ytDlp, guildStateService)),
       sub(OtherCommandsObserver()),
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
       sub(RemindCommandsObserver(scheduledEventService)),
       // │  └ startup/
-      sub(DeployCommandsObserver(Logger, config, discord)),
+      sub(DeployCommandsObserver(Logger, config.client, discord)),
       // │
       sub(ActivityStatusObserver(botStateService)),
       sub(CallsAutoroleObserver(Logger, guildStateService)),

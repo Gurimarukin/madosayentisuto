@@ -6,6 +6,7 @@ import type {
   APIApplicationCommandOption,
   APIApplicationCommandRoleOption,
   APIApplicationCommandStringOption,
+  APIApplicationCommandSubcommandGroupOption,
   APIApplicationCommandSubcommandOption,
   ChannelType,
 } from 'discord-api-types/payloads/v9'
@@ -21,7 +22,6 @@ import { NonEmptyArray } from '../../shared/utils/fp'
 type CommandCommon = {
   readonly name: string
   readonly description: string
-  readonly default_permission?: boolean
 }
 
 type OptionCommon = {
@@ -60,12 +60,21 @@ export const Command = {
   ): RESTPostAPIContextMenuApplicationCommandsJSONBody => ({ type: 3, ...common }),
 
   option: {
-    subCommand:
+    subcommand:
       (common: OptionCommon) =>
       (
         ...options: List<APIApplicationCommandBasicOption>
       ): APIApplicationCommandSubcommandOption => ({
         type: 1,
+        ...common,
+        options: toMutable(options),
+      }),
+    subcommandGroup:
+      (common: CommandCommon) =>
+      (
+        ...options: List<APIApplicationCommandSubcommandOption>
+      ): APIApplicationCommandSubcommandGroupOption => ({
+        type: 2,
         ...common,
         options: toMutable(options),
       }),

@@ -46,6 +46,7 @@ import { ChannelUtils } from '../../utils/ChannelUtils'
 import { LogUtils } from '../../utils/LogUtils'
 
 const Keys = {
+  admin: 'admin',
   state: 'state',
   calls: 'calls',
   init: 'init',
@@ -63,148 +64,146 @@ const Keys = {
   unset: 'unset',
 }
 
-const stateCommand = Command.chatInput({
-  name: Keys.state,
-  description: "Dans quel état j'erre ?",
-  default_permission: false,
+const adminCommand = Command.chatInput({
+  name: Keys.admin,
+  description: 'Administration de Jean Plank (réservé aux admins du bot)',
 })(
-  Command.option.subCommand({
-    name: Keys.get,
-    description: 'État de Jean Plank pour ce serveur',
-  })(),
-)
-
-/**
- * Jean Plank envoie un message dans le salon où la commande a été effectuée.
- * Les membres d'équipage qui y réagissent avec 🔔 obtiennent le rôle <role>.
- * À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
- */
-const callsCommand = Command.chatInput({
-  name: Keys.calls,
-  description: "Jean Plank n'est pas votre secrétaire, mais il gère vos appels",
-  default_permission: false,
-})(
-  Command.option.subCommand({
-    name: Keys.init,
-    description: 'Pour initier la gestion des appels',
+  Command.option.subcommandGroup({
+    name: Keys.state,
+    description: "Dans quel état j'erre ?",
   })(
-    Command.option.channel({
-      name: Keys.channel,
-      description: 'Le salon dans lequel les appels seront notifiés',
-      channel_types: [ChannelType.GuildText],
-      required: true,
-    }),
-    Command.option.role({
-      name: Keys.role,
-      description: 'Le rôle qui sera notifié des appels',
-      required: true,
-    }),
+    Command.option.subcommand({
+      name: Keys.get,
+      description: 'État de Jean Plank pour ce serveur',
+    })(),
+  ),
+
+  /**
+   * Jean Plank envoie un message dans le salon où la commande a été effectuée.
+   * Les membres d'équipage qui clique sur obtiennent le rôle <role> (ou le perdent).
+   * À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
+   */
+  Command.option.subcommandGroup({
+    name: Keys.calls,
+    description: "Jean Plank n'est pas votre secrétaire, mais il gère vos appels",
+  })(
+    Command.option.subcommand({
+      name: Keys.init,
+      description: 'Pour initier la gestion des appels',
+    })(
+      Command.option.channel({
+        name: Keys.channel,
+        description: 'Le salon dans lequel les appels seront notifiés',
+        channel_types: [ChannelType.GuildText],
+        required: true,
+      }),
+      Command.option.role({
+        name: Keys.role,
+        description: 'Le rôle qui sera notifié des appels',
+        required: true,
+      }),
+    ),
+  ),
+
+  Command.option.subcommandGroup({
+    name: Keys.defaultrole,
+    description: "Jean Plank donne un rôle au nouveau membres d'équipages",
+  })(
+    Command.option.subcommand({
+      name: Keys.set,
+      description: 'Jean Plank veut bien changer le rôle par défaut de ce serveur',
+    })(
+      Command.option.role({
+        name: Keys.role,
+        description: 'Le nouveau rôle par défaut',
+        required: true,
+      }),
+    ),
+  ),
+
+  Command.option.subcommandGroup({
+    name: Keys.itsfriday,
+    description: "Jean Plank vous informe que nous sommes vendredi (c'est vrai)",
+  })(
+    Command.option.subcommand({
+      name: Keys.set,
+      description: 'Jean Plank veut bien changer le salon pour cette information vitale',
+    })(
+      Command.option.channel({
+        name: Keys.channel,
+        description: 'Le nouveau salon pour cette information vitale',
+        channel_types: [ChannelType.GuildText],
+        required: true,
+      }),
+    ),
+  ),
+
+  Command.option.subcommandGroup({
+    name: Keys.birthday,
+    description: "Jean Plank vous informe que c'est l'anniversaire de bidule",
+  })(
+    Command.option.subcommand({
+      name: Keys.set,
+      description: 'Jean Plank veut bien changer le salon pour cette information vitale',
+    })(
+      Command.option.channel({
+        name: Keys.channel,
+        description: 'Le nouveau salon pour cette information vitale',
+        channel_types: [ChannelType.GuildText],
+        required: true,
+      }),
+    ),
+  ),
+
+  Command.option.subcommandGroup({
+    name: Keys.activity,
+    description: 'Jean Plank est un captaine occupé et le fait savoir',
+  })(
+    Command.option.subcommand({
+      name: Keys.get,
+      description: "Jean Plank vous informe de ce qu'il est en train de faire",
+    })(),
+    Command.option.subcommand({
+      name: Keys.unset,
+      description: "Jean Plank a fini ce qu'il était en train de faire",
+    })(),
+    Command.option.subcommand({
+      name: Keys.set,
+      description: "Jean Plank annonce au monde ce qu'il est en train de faire",
+    })(
+      Command.option.string({
+        name: Keys.type,
+        description: "Le type d'activité que Jean Plank est en train de faire",
+        choices: pipe(
+          ActivityTypeBot.values,
+          List.map(a => Command.choice(a, a)),
+        ),
+        required: true,
+      }),
+      Command.option.string({
+        name: Keys.name,
+        description: "L'activité que Jean Plank est en train de faire",
+        required: true,
+      }),
+    ),
+    Command.option.subcommand({
+      name: Keys.refresh,
+      description: 'Jean Plank a parfois besoin de rappeler au monde à quel point il est occupé',
+    })(),
   ),
 )
 
-const defaultRoleCommand = Command.chatInput({
-  name: Keys.defaultrole,
-  description: "Jean Plank donne un rôle au nouveau membres d'équipages",
-  default_permission: false,
-})(
-  Command.option.subCommand({
-    name: Keys.set,
-    description: 'Jean Plank veut bien changer le rôle par défaut de ce serveur',
-  })(
-    Command.option.role({
-      name: Keys.role,
-      description: 'Le nouveau rôle par défaut',
-      required: true,
-    }),
-  ),
-)
+export const adminCommands = [adminCommand]
 
-const itsFridayCommand = Command.chatInput({
-  name: Keys.itsfriday,
-  description: "Jean Plank vous informe que nous sommes vendredi (c'est vrai)",
-  default_permission: false,
-})(
-  Command.option.subCommand({
-    name: Keys.set,
-    description: 'Jean Plank veut bien changer le salon pour cette information vitale',
-  })(
-    Command.option.channel({
-      name: Keys.channel,
-      description: 'Le nouveau salon pour cette information vitale',
-      channel_types: [ChannelType.GuildText],
-      required: true,
-    }),
-  ),
-)
-
-const birthdayCommand = Command.chatInput({
-  name: Keys.birthday,
-  description: "Jean Plank vous informe que c'est l'anniversaire de bidule",
-  default_permission: false,
-})(
-  Command.option.subCommand({
-    name: Keys.set,
-    description: 'Jean Plank veut bien changer le salon pour cette information vitale',
-  })(
-    Command.option.channel({
-      name: Keys.channel,
-      description: 'Le nouveau salon pour cette information vitale',
-      channel_types: [ChannelType.GuildText],
-      required: true,
-    }),
-  ),
-)
-
-const activityCommand = Command.chatInput({
-  name: Keys.activity,
-  description: 'Jean Plank est un captaine occupé et le fait savoir',
-  default_permission: false,
-})(
-  Command.option.subCommand({
-    name: Keys.get,
-    description: "Jean Plank vous informe de ce qu'il est en train de faire",
-  })(),
-  Command.option.subCommand({
-    name: Keys.unset,
-    description: "Jean Plank a fini ce qu'il était en train de faire",
-  })(),
-  Command.option.subCommand({
-    name: Keys.set,
-    description: "Jean Plank annonce au monde ce qu'il est en train de faire",
-  })(
-    Command.option.string({
-      name: Keys.type,
-      description: "Le type d'activité que Jean Plank est en train de faire",
-      choices: pipe(
-        ActivityTypeBot.values,
-        List.map(a => Command.choice(a, a)),
-      ),
-      required: true,
-    }),
-    Command.option.string({
-      name: Keys.name,
-      description: "L'activité que Jean Plank est en train de faire",
-      required: true,
-    }),
-  ),
-  Command.option.subCommand({
-    name: Keys.refresh,
-    description: 'Jean Plank a parfois besoin de rappeler au monde à quel point il est occupé',
-  })(),
-)
-
-export const adminCommands = [
-  stateCommand,
-  callsCommand,
-  defaultRoleCommand,
-  itsFridayCommand,
-  birthdayCommand,
-  activityCommand,
-]
+type GroupWithSubcommand = {
+  readonly subcommandGroup: string
+  readonly subcommand: string
+}
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const AdminCommandsObserver = (
   Logger: LoggerGetter,
+  admins: NonEmptyArray<DiscordUserId>,
   discord: DiscordConnector,
   botStateService: BotStateService,
   guildStateService: GuildStateService,
@@ -214,35 +213,73 @@ export const AdminCommandsObserver = (
   return ObserverWithRefinement.fromNext(
     MadEvent,
     'InteractionCreate',
-  )(event => {
-    const interaction = event.interaction
-
-    if (!interaction.isCommand()) return Future.unit
-
-    switch (interaction.commandName) {
-      case Keys.state:
-        return onState(interaction)
-      case Keys.calls:
-        return onCalls(interaction)
-      case Keys.defaultrole:
-        return onDefaultRole(interaction)
-      case Keys.itsfriday:
-        return onItsFriday(interaction)
-      case Keys.birthday:
-        return onBirthday(interaction)
-      case Keys.activity:
-        return onActivity(interaction)
-    }
-
+  )(({ interaction }) => {
+    if (interaction.isCommand()) return onCommand(interaction)
     return Future.unit
   })
+
+  function onCommand(interaction: CommandInteraction): Future<void> {
+    switch (interaction.commandName) {
+      case Keys.admin:
+        return onAdminCommand(interaction)
+    }
+    return Future.unit
+  }
+
+  function onAdminCommand(interaction: CommandInteraction): Future<void> {
+    return pipe(
+      validateAdminCommand(interaction),
+      Either.fold(
+        content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
+        onAdminSubcommandGroup(interaction),
+      ),
+    )
+  }
+
+  function validateAdminCommand(
+    interaction: CommandInteraction,
+  ): Either<string, GroupWithSubcommand> {
+    const isAdmin = pipe(
+      admins,
+      List.elem(DiscordUserId.Eq)(DiscordUserId.fromUser(interaction.user)),
+    )
+    if (!isAdmin) return Either.left('Haha ! Tu ne peux pas faire ça !')
+
+    const subcommandGroup = interaction.options.getSubcommandGroup(false)
+    const subcommand = interaction.options.getSubcommand(false)
+    if (subcommandGroup === null || subcommand === null) return Either.left('Erreur')
+
+    return Either.right({ subcommandGroup, subcommand })
+  }
+
+  function onAdminSubcommandGroup(
+    interaction: CommandInteraction,
+  ): (groupWithSubcommand: GroupWithSubcommand) => Future<void> {
+    return ({ subcommandGroup, subcommand }) => {
+      switch (subcommandGroup) {
+        case Keys.state:
+          return onState(interaction, subcommand)
+        case Keys.calls:
+          return onCalls(interaction, subcommand)
+        case Keys.defaultrole:
+          return onDefaultRole(interaction, subcommand)
+        case Keys.itsfriday:
+          return onItsFriday(interaction, subcommand)
+        case Keys.birthday:
+          return onBirthday(interaction, subcommand)
+        case Keys.activity:
+          return onActivity(interaction, subcommand)
+      }
+      return Future.unit
+    }
+  }
 
   /**
    * state
    */
 
-  function onState(interaction: CommandInteraction): Future<void> {
-    switch (interaction.options.getSubcommand(false)) {
+  function onState(interaction: CommandInteraction, subcommand: string): Future<void> {
+    switch (subcommand) {
       case Keys.get:
         return onStateGet(interaction)
     }
@@ -266,8 +303,8 @@ export const AdminCommandsObserver = (
    * calls
    */
 
-  function onCalls(interaction: CommandInteraction): Future<void> {
-    switch (interaction.options.getSubcommand(false)) {
+  function onCalls(interaction: CommandInteraction, subcommand: string): Future<void> {
+    switch (subcommand) {
       case Keys.init:
         return onCallsInit(interaction)
     }
@@ -348,8 +385,8 @@ export const AdminCommandsObserver = (
    * defaultrole
    */
 
-  function onDefaultRole(interaction: CommandInteraction): Future<void> {
-    switch (interaction.options.getSubcommand(false)) {
+  function onDefaultRole(interaction: CommandInteraction, subcommand: string): Future<void> {
+    switch (subcommand) {
       case Keys.set:
         return onDefaultRoleSet(interaction)
     }
@@ -381,8 +418,8 @@ export const AdminCommandsObserver = (
    * itsfriday
    */
 
-  function onItsFriday(interaction: CommandInteraction): Future<void> {
-    switch (interaction.options.getSubcommand(false)) {
+  function onItsFriday(interaction: CommandInteraction, subcommand: string): Future<void> {
+    switch (subcommand) {
       case Keys.set:
         return onItsFridaySet(interaction)
     }
@@ -412,8 +449,8 @@ export const AdminCommandsObserver = (
    * birthday
    */
 
-  function onBirthday(interaction: CommandInteraction): Future<void> {
-    switch (interaction.options.getSubcommand(false)) {
+  function onBirthday(interaction: CommandInteraction, subcommand: string): Future<void> {
+    switch (subcommand) {
       case Keys.set:
         return onBirthdaySet(interaction)
     }
@@ -443,8 +480,8 @@ export const AdminCommandsObserver = (
    * activity
    */
 
-  function onActivity(interaction: CommandInteraction): Future<void> {
-    switch (interaction.options.getSubcommand(false)) {
+  function onActivity(interaction: CommandInteraction, subcommand: string): Future<void> {
+    switch (subcommand) {
       case Keys.get:
         return onActivityGet(interaction)
       case Keys.unset:
