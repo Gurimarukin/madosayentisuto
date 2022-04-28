@@ -1,10 +1,12 @@
 import { pipe } from 'fp-ts/function'
 
-import type { Log } from '../../shared/models/Log'
-import { TObservable } from '../../shared/models/rx/TObservable'
+import type { Log } from '../../shared/models/log/Log'
+import type { LogsWithTotalCount } from '../../shared/models/log/LogsWithTotalCount'
+import { Sink } from '../../shared/models/rx/Sink'
 import { IO, List } from '../../shared/utils/fp'
 import { Future, toUnit } from '../../shared/utils/fp'
 
+import { constants } from '../constants'
 import { Store } from '../models/Store'
 import type { LogPersistence } from '../persistence/LogPersistence'
 
@@ -14,14 +16,16 @@ export type LogService = ReturnType<typeof LogService>
 export const LogService = (logPersistence: LogPersistence) => {
   const buffer = Store<List<Log>>([])
 
-  const list: TObservable<Log> = pipe(
-    logPersistence.list,
-    TObservable.concat(
+  const list: Future<LogsWithTotalCount> = pipe(
+    logPersistence.count,
+    Future.chain(totalCount =>
       pipe(
-        buffer.get,
-        Future.fromIOEither,
-        TObservable.fromTaskEither,
-        TObservable.chain(TObservable.fromReadonlyArray),
+        logPersistence.list({
+          skip: Math.max(0, totalCount - constants.logsLimit),
+          limit: constants.logsLimit,
+        }),
+        Sink.readonlyArray,
+        Future.map((logs): LogsWithTotalCount => ({ logs, totalCount })),
       ),
     ),
   )

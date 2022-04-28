@@ -2,8 +2,8 @@ import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
 import type { DayJs } from '../../shared/models/DayJs'
-import type { Log } from '../../shared/models/Log'
-import { LogLevel } from '../../shared/models/LogLevel'
+import type { Log } from '../../shared/models/log/Log'
+import { LogLevel } from '../../shared/models/log/LogLevel'
 import type { TObservable } from '../../shared/models/rx/TObservable'
 import type { List } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
@@ -21,6 +21,11 @@ const logMongoCodec = C.struct({
 })
 type LogMongoOutput = C.OutputOf<typeof logMongoCodec>
 
+type ListArgs = {
+  readonly skip?: number
+  readonly limit?: number
+}
+
 export type LogPersistence = ReturnType<typeof LogPersistence>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -36,15 +41,15 @@ export function LogPersistence(
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { date: -1 } }])
 
-  const list: TObservable<Log> = collection.findAll()(
-    {},
-    { sort: [[collection.path(['date']), 1]] },
-  )
+  const count: Future<number> = collection.count({})
 
   return {
     ensureIndexes,
 
-    list,
+    count,
+
+    list: ({ skip, limit }: ListArgs = {}): TObservable<Log> =>
+      collection.findAll()({}, { sort: [[collection.path(['date']), 1]], skip, limit }),
 
     insertMany: (logs: List<Log>): Future<number> =>
       pipe(

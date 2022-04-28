@@ -1,8 +1,8 @@
 import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../../../shared/models/DayJs'
-import { LogLevel } from '../../../../shared/models/LogLevel'
 import type { LogEvent } from '../../../../shared/models/event/LogEvent'
+import { LogLevel } from '../../../../shared/models/log/LogLevel'
 import type { TObserver } from '../../../../shared/models/rx/TObserver'
 import { Future } from '../../../../shared/utils/fp'
 

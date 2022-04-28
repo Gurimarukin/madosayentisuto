@@ -11,9 +11,10 @@ import type {
 
 import { apiRoutes } from '../../shared/ApiRouter'
 import { DayJs } from '../../shared/models/DayJs'
-import { Log } from '../../shared/models/Log'
 import { ClientToServerEvent } from '../../shared/models/event/ClientToServerEvent'
 import type { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
+import type { Log } from '../../shared/models/log/Log'
+import { LogsWithTotalCount } from '../../shared/models/log/LogsWithTotalCount'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../../shared/models/rx/PubSub'
 import { TObservable } from '../../shared/models/rx/TObservable'
@@ -28,6 +29,7 @@ import { useHttp } from './HttpContext'
 
 type LogContext = {
   readonly logs: List<Log>
+  readonly totalCount: number
   readonly tryRefetchInitialLogs: () => void
 }
 
@@ -36,6 +38,9 @@ const LogContext = createContext<LogContext | undefined>(undefined)
 export const LogContextProvider: React.FC = ({ children }) => {
   const { http } = useHttp()
 
+  const [logs, setLogs] = useState<List<Log>>([])
+  const [totalCount, setTotalCount] = useState(0)
+
   const initialLogsFetched = useRef(false)
   const fetchInitialLogs = useCallback(
     (): Future<void> =>
@@ -43,18 +48,17 @@ export const LogContextProvider: React.FC = ({ children }) => {
         ? Future.unit
         : pipe(
             Future.tryCatch(() =>
-              http(apiRoutes.logs.get, {}, [List.decoder(Log.apiCodec), 'Log[]']),
+              http(apiRoutes.logs.get, {}, [LogsWithTotalCount.codec, 'LogsWithTotalCount']),
             ),
-            Future.map(initialLogs => {
-              setLogs(prev => pipe(initialLogs, List.concat(prev)))
+            Future.map(init => {
+              setLogs(prev => pipe(init.logs, List.concat(prev)))
+              setTotalCount(init.totalCount)
               // eslint-disable-next-line functional/immutable-data
               initialLogsFetched.current = true
             }),
           ),
     [http],
   )
-
-  const [logs, setLogs] = useState<List<Log>>([])
 
   useEffect(() => {
     const { closeWebSocket } = pipe(
@@ -100,6 +104,7 @@ export const LogContextProvider: React.FC = ({ children }) => {
 
   const value: LogContext = {
     logs,
+    totalCount,
     tryRefetchInitialLogs,
   }
 

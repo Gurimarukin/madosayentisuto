@@ -1,6 +1,6 @@
-import { Color } from '../utils/Color'
-import { createEnum } from '../utils/createEnum'
-import type { Dict } from '../utils/fp'
+import { Color } from '../../utils/Color'
+import { createEnum } from '../../utils/createEnum'
+import type { Dict } from '../../utils/fp'
 
 const levelEnum = createEnum('debug', 'info', 'warn', 'error')
 

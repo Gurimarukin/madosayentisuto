@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
-import { LogLevel } from '../LogLevel'
+import { LogLevel } from '../log/LogLevel'
 
 const commonCodec = C.struct({})
 

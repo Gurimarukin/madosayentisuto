@@ -31,6 +31,8 @@ export const constants = {
 
   dbRetryDelay: MsDuration.seconds(10),
 
+  logsLimit: 5000,
+
   // kicks/bans
   fetchLogsLimit: 30,
   networkTolerance: MsDuration.seconds(4),

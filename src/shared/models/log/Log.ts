@@ -1,6 +1,6 @@
 import * as C from 'io-ts/Codec'
 
-import { DayJsFromISOString } from '../utils/ioTsUtils'
+import { DayJsFromISOString } from '../../utils/ioTsUtils'
 import { LogLevel } from './LogLevel'
 
 const apiCodec = C.struct({

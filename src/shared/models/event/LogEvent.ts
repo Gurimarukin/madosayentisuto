@@ -1,6 +1,6 @@
 import * as C from 'io-ts/Codec'
 
-import { LogLevel, LogLevelOrOff } from '../LogLevel'
+import { LogLevel, LogLevelOrOff } from '../log/LogLevel'
 
 const codec = C.struct({
   name: C.string,

@@ -3,14 +3,13 @@ import { flow, pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 import { WebSocketServer } from 'ws'
 
-import { Log } from '../../../shared/models/Log'
 import { ServerToClientEvent } from '../../../shared/models/event/ServerToClientEvent'
+import { LogsWithTotalCount } from '../../../shared/models/log/LogsWithTotalCount'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
-import { Sink } from '../../../shared/models/rx/Sink'
 import type { TObservable } from '../../../shared/models/rx/TObservable'
 import type { TSubject } from '../../../shared/models/rx/TSubject'
 import { PubSubUtils } from '../../../shared/utils/PubSubUtils'
-import { Either, Future, IO, List } from '../../../shared/utils/fp'
+import { Either, Future, IO } from '../../../shared/utils/fp'
 
 import { WSServerEvent } from '../../models/event/WSServerEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
@@ -65,10 +64,8 @@ export const LogController = (
   return {
     listLogs: (/* user: User */): EndedMiddleware =>
       pipe(
-        logService.list,
-        Sink.readonlyArray,
-        M.fromTaskEither,
-        M.ichain(M.jsonWithStatus(Status.OK, List.encoder(Log.apiCodec))),
+        M.fromTaskEither(logService.list),
+        M.ichain(M.jsonWithStatus(Status.OK, LogsWithTotalCount.codec)),
       ),
 
     webSocket: (/* user: User */): UpgradeHandler => (request, socket, head) =>

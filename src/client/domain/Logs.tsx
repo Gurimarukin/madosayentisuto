@@ -3,15 +3,15 @@ import { pipe } from 'fp-ts/function'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { DayJs } from '../../shared/models/DayJs'
-import { LogLevel } from '../../shared/models/LogLevel'
 import { LogEvent } from '../../shared/models/event/LogEvent'
+import { LogLevel } from '../../shared/models/log/LogLevel'
 import type { Color } from '../../shared/utils/Color'
 
 import { Header } from '../components/Header'
 import { useLog } from '../contexts/LogContext'
 
 export const Logs = (): JSX.Element => {
-  const { logs, tryRefetchInitialLogs } = useLog()
+  const { logs, totalCount, tryRefetchInitialLogs } = useLog()
 
   useEffect(() => {
     tryRefetchInitialLogs()
@@ -51,6 +51,10 @@ export const Logs = (): JSX.Element => {
       <Header>
         <div className="flex gap-8 items-center">
           <h1 className="text-3xl">Console</h1>
+          <div className="flex gap-2">
+            <span>Total logs :</span>
+            <pre>{totalCount}</pre>
+          </div>
           <div className="flex gap-2 items-center">
             <span>Niveau de log :</span>
             <select
@@ -65,14 +69,14 @@ export const Logs = (): JSX.Element => {
               ))}
             </select>
           </div>
+          <button
+            type="button"
+            onClick={scrollDown}
+            className="py-1 px-2 text-sm bg-gray1 rounded-md border border-gray4 cursor-pointer"
+          >
+            Scroll en bas
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={scrollDown}
-          className="py-1 px-2 ml-2 text-sm bg-gray1 rounded-md border border-gray4 cursor-pointer"
-        >
-          Scroll en bas
-        </button>
       </Header>
       <div
         ref={scrollRef}
