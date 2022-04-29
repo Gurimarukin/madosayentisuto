@@ -26,25 +26,27 @@ export const ScheduledEvents = (): JSX.Element =>
       <Header>
         <h1 className="text-3xl">Rappels</h1>
       </Header>
-      <table className="grid overflow-auto grow grid-cols-[auto_auto_auto_auto_1fr]">
-        <thead className="contents">
-          <tr className="contents text-lg font-bold">
-            <Th>Date</Th>
-            <Th>Auteur</Th>
-            <Th>Qui</Th>
-            <Th>Quoi</Th>
-            <Th />
-          </tr>
-        </thead>
-        <tbody className="contents">
-          {events.map((event, i) => (
-            // eslint-disable-next-line react/no-array-index-key
-            <tr key={i} className="group contents">
-              {renderEvent(event)}
+      <div className="overflow-auto grow">
+        <table className="grid grid-cols-[auto_auto_auto_auto_1fr]">
+          <thead className="contents">
+            <tr className="contents text-lg font-bold">
+              <Th>Date</Th>
+              <Th>Auteur</Th>
+              <Th>Qui</Th>
+              <Th>Quoi</Th>
+              <Th />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="contents">
+            {events.map((event, i) => (
+              // eslint-disable-next-line react/no-array-index-key
+              <tr key={i} className="group contents">
+                {renderEvent(event)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   ))
 

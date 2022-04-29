@@ -2,6 +2,8 @@
 - decouple autorole and call mention
 - select leave message chan
 - deploy: on guild join
+- admin : move some things to webapp
+- /remind: with modal?
 - Say
 - Img
 - moderators/owner
