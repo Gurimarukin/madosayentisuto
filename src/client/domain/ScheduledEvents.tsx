@@ -128,7 +128,7 @@ const renderEvent = (event: ScheduledEventView): JSX.Element => {
   }
 }
 
-const formatScheduledAt = DayJs.format('DD/MM/YYYY, HH:mm')
+const formatScheduledAt = DayJs.format('DD/MM/YYYY, HH:mm', { locale: true })
 
 const Th: React.FC = ({ children }) => <th className="flex py-3 px-5 bg-gray2">{children}</th>
 
