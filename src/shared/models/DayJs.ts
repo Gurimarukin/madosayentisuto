@@ -40,7 +40,7 @@ function of(
   return wrap((locale ? dayjs : dayjs.utc)(date, format, true))
 }
 
-const now: IO<DayJs> = pipe(dayjs, io.map(wrap))
+const now: IO<DayJs> = pipe(dayjs.utc, io.map(wrap))
 
 // tests
 

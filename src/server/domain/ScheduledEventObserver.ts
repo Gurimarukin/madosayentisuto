@@ -22,8 +22,11 @@ import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
-import type { Reminder } from '../models/scheduledEvent/Reminder'
 import type { ReminderWho } from '../models/scheduledEvent/ReminderWho'
+import type {
+  ScheduledEventItsFriday,
+  ScheduledEventReminder,
+} from '../models/scheduledEvent/ScheduledEvent'
 import { ScheduledEvent } from '../models/scheduledEvent/ScheduledEvent'
 import type { GuildStateService } from '../services/GuildStateService'
 import type { ScheduledEventService } from '../services/ScheduledEventService'
@@ -70,19 +73,18 @@ export const ScheduledEventObserver = (
   function onScheduledEvent(now: DayJs, event: ScheduledEvent): Future<void> {
     switch (event.type) {
       case 'Reminder':
-        return onReminder(now, event, event.reminder)
+        return onReminder(now, event)
       case 'ItsFriday':
         return onItsFriday(now, event)
     }
   }
 
-  function onReminder(
-    now: DayJs,
-    event: ScheduledEvent,
-    { createdBy, who, what }: Reminder,
-  ): Future<void> {
+  function onReminder(now: DayJs, event: ScheduledEventReminder): Future<void> {
     const eventStr = JSON.stringify(ScheduledEvent.codec.encode(event))
-    const { scheduledAt } = event
+    const {
+      scheduledAt,
+      reminder: { createdBy, who, what },
+    } = event
     return pipe(
       logger.debug(`Sending reminder: ${eventStr}`),
       Future.fromIOEither,
@@ -141,36 +143,36 @@ export const ScheduledEventObserver = (
       )
   }
 
-  function onItsFriday(now: DayJs, event: ScheduledEvent): Future<void> {
-    if (
-      !DayJs.Eq.equals(
-        pipe(now, DayJs.startOf('day')),
-        pipe(event.scheduledAt, DayJs.startOf('day')),
-      )
-    ) {
-      return Future.fromIOEither(
-        logger.warn(`Missed "It's friday": ${DayJs.toISOString(event.scheduledAt)}`),
-      )
-    }
-    return pipe(
-      guildStateService.listAllItsFridayChannels,
-      Future.chainFirstIOEitherK(
-        flow(
-          List.map(c => LogUtils.format(c.guild, null, c)),
-          List.mkString(' '),
-          str => logger.info(`Sending "It's friday" in channels: ${str}`),
-        ),
-      ),
-      Future.chain(Future.traverseArray(sendItsFridayMessage)),
-      Future.map(toUnit),
-    )
+  function onItsFriday(now: DayJs, event: ScheduledEventItsFriday): Future<void> {
+    const nowStartOfDay = pipe(now, DayJs.startOf('day'))
+    const scheduledAtStartOfDay = pipe(event.scheduledAt, DayJs.startOf('day'))
+    return DayJs.Eq.equals(nowStartOfDay, scheduledAtStartOfDay)
+      ? pipe(
+          guildStateService.listAllItsFridayChannels,
+          Future.chainFirstIOEitherK(
+            flow(
+              List.map(c => LogUtils.format(c.guild, null, c)),
+              List.mkString(' '),
+              str => logger.info(`Sending "It's friday" in channels: ${str}`),
+            ),
+          ),
+          Future.chain(Future.traverseArray(sendItsFridayMessage)),
+          Future.map(toUnit),
+        )
+      : Future.fromIOEither(
+          logger.warn(
+            `Missed "It's friday", now: ${DayJs.toISOString(now)}, scheduledAt: ${DayJs.toISOString(
+              event.scheduledAt,
+            )}`,
+          ),
+        )
   }
 
   function sendItsFridayMessage(channel: TextChannel): Future<void> {
     return pipe(
       DiscordConnector.sendMessage(channel, {
         content: `C'est vrai.`,
-        files: [new MessageAttachment(constants.itsFridayUrl)],
+        files: [new MessageAttachment(constants.itsFriday.videoUrl)],
       }),
       Future.chainIOEitherK(
         Maybe.fold(

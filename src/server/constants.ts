@@ -22,11 +22,6 @@ export const constants = {
 
   defaultActivity: Activity.of('PLAYING', 'hisser les voiles...'),
 
-  itsFridayUrl:
-    'https://cdn.discordapp.com/attachments/636626556734930948/909046875804545064/cestvrai.mp4',
-  // PeerTube:  https://tube.fede.re/w/gAfpve8szQ5TtiPfRqkNEi
-  // thumbnail: https://cdn.discordapp.com/attachments/636626556734930948/909048276957945886/unknown.png
-
   pollGraphWidth: 20, // chars
 
   dbRetryDelay: MsDuration.seconds(10),
@@ -43,6 +38,13 @@ export const constants = {
       start: 14,
       end: 17,
     },
+
+    videoUrl:
+      'https://cdn.discordapp.com/attachments/636626556734930948/909046875804545064/cestvrai.mp4',
+    // PeerTube:  https://tube.fede.re/w/gAfpve8szQ5TtiPfRqkNEi
+    // thumbnail: https://cdn.discordapp.com/attachments/636626556734930948/909048276957945886/unknown.png
+    imageUrl:
+      'https://cdn.discordapp.com/attachments/849299103362973777/969617031487975454/unknown.png',
   },
 
   // webapp
