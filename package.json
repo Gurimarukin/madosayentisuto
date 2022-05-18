@@ -47,7 +47,7 @@
   },
   "homepage": "https://github.com/Gurimarukin/madosayentisuto#readme",
   "dependencies": {
-    "@discordjs/rest": "0.3.0",
+    "@discordjs/rest": "0.4.1",
     "@discordjs/voice": "0.9.0",
     "@phc/argon2": "1.0.9",
     "cookie": "0.4.2",
