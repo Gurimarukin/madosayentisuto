@@ -2,8 +2,6 @@ import type {
   BaseMessageComponentOptions,
   InteractionButtonOptions,
   MessageButtonOptions,
-  MessageOptions,
-  MessagePayload,
 } from 'discord.js'
 import { MessageActionRow } from 'discord.js'
 import { random } from 'fp-ts'
@@ -16,8 +14,8 @@ import { List, Maybe } from '../../../shared/utils/fp'
 import { constants } from '../../constants'
 import type { Track } from '../../models/music/Track'
 import { MessageUtils } from '../../utils/MessageUtils'
+import type { MyMessageOptions } from '../DiscordConnector'
 
-type MyMessageOptions = string | MessagePayload | MessageOptions
 type MyButton = Required<BaseMessageComponentOptions> & MessageButtonOptions
 
 export const musicStateButtons = {

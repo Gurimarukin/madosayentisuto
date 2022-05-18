@@ -1,10 +1,11 @@
 import type { APIInteractionDataResolvedChannel, APIRole } from 'discord-api-types/v9'
-import type { GuildChannel, MessageOptions, Role, ThreadChannel } from 'discord.js'
+import type { GuildChannel, Role, ThreadChannel } from 'discord.js'
 import { MessageActionRow, MessageButton } from 'discord.js'
 
 import { StringUtils } from '../../../shared/utils/StringUtils'
 
 import { constants } from '../../constants'
+import type { MyMessageOptions } from '../DiscordConnector'
 
 export const initCallsButton = {
   subscribeId: 'callsSubscribe',
@@ -14,7 +15,7 @@ export const initCallsButton = {
 export const initCallsMessage = (
   channel: ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel,
   role: Role | APIRole,
-): MessageOptions => ({
+): MyMessageOptions => ({
   content: StringUtils.stripMargins(
     `Yoho, ${role} !
     |Tu peux t'abonner aux appels sur ce serveur en cliquant ci-dessous !

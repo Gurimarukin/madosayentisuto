@@ -1,5 +1,4 @@
 import { MessageActionRow, MessageButton } from 'discord.js'
-import type { MessageOptions } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
@@ -11,6 +10,7 @@ import type { ChoiceWithResponses } from '../../models/poll/ChoiceWithResponses'
 import type { ChoiceWithVotesCount } from '../../models/poll/ChoiceWithVotesCount'
 import { PollButton } from '../../models/poll/PollButton'
 import { MessageUtils } from '../../utils/MessageUtils'
+import type { MyMessageOptions } from '../DiscordConnector'
 
 // emojis
 
@@ -36,7 +36,7 @@ const poll = (
   question: string,
   answers: NonEmptyArray<ChoiceWithVotesCount>,
   { isAnonymous, isMultiple }: PollOptions,
-): MessageOptions => {
+): MyMessageOptions => {
   const total = pipe(
     answers,
     List.reduce(0, (acc, a) => acc + a.votesCount),
@@ -97,7 +97,7 @@ const poll = (
   }
 }
 
-const detail = (answers: NonEmptyArray<ChoiceWithResponses>): MessageOptions => ({
+const detail = (answers: NonEmptyArray<ChoiceWithResponses>): MyMessageOptions => ({
   embeds: pipe(
     answers,
     NonEmptyArray.mapWithIndex((index, { responses }) =>

@@ -3,13 +3,18 @@ import type {
   AudioPlayer,
   AudioPlayerStatus,
   AudioResource,
+  DiscordGatewayAdapterCreator,
   PlayerSubscription,
   VoiceConnection,
   VoiceConnectionStatus,
 } from '@discordjs/voice'
 import { createAudioPlayer, joinVoiceChannel } from '@discordjs/voice'
 import { entersState as discordEntersState } from '@discordjs/voice'
-import type { APIMessage, RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
+import type {
+  APIEmbed,
+  APIMessage,
+  RESTPostAPIApplicationCommandsJSONBody,
+} from 'discord-api-types/v9'
 import { Routes } from 'discord-api-types/v9'
 import type {
   AllowedThreadTypeForNewsChannel,
@@ -18,10 +23,13 @@ import type {
   ApplicationCommand,
   BaseCommandInteraction,
   BaseGuildTextChannel,
+  BaseMessageComponentOptions,
+  BufferResolvable,
   ButtonInteraction,
   ClientPresence,
   Collection,
   EmojiIdentifierResolvable,
+  FileOptions,
   Guild,
   GuildAuditLogsEntry,
   GuildAuditLogsFetchOptions,
@@ -31,7 +39,14 @@ import type {
   InteractionReplyOptions,
   InteractionUpdateOptions,
   Message,
+  MessageActionRow,
+  MessageActionRowOptions,
+  MessageAttachment,
   MessageComponentInteraction,
+  MessageEditOptions,
+  MessageEmbed,
+  MessageEmbedOptions,
+  MessageMentionOptions,
   MessageOptions,
   MessagePayload,
   MessageReaction,
@@ -51,6 +66,7 @@ import { refinement } from 'fp-ts'
 import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
+import type { Stream } from 'mongodb'
 
 import { ChannelId } from '../../shared/models/ChannelId'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
@@ -84,6 +100,21 @@ type MyThreadCreateOptions<A extends MyThreadChannelTypes> = Omit<
 > & {
   readonly type?: A
 }
+
+/* eslint-disable functional/prefer-readonly-type */
+export type MyMessageOptions = {
+  attachments?: MessageAttachment[]
+  content?: string | null
+  embeds?: (MessageEmbed | MessageEmbedOptions | APIEmbed)[]
+  files?: (FileOptions | BufferResolvable | Stream | MessageAttachment)[]
+  // flags?: BitFieldResolvable<MessageFlagsString, number>
+  allowedMentions?: MessageMentionOptions
+  components?: (
+    | MessageActionRow
+    | (Required<BaseMessageComponentOptions> & MessageActionRowOptions)
+  )[]
+}
+/* eslint-enable functional/prefer-readonly-type */
 
 export type DiscordConnector = ReturnType<typeof of>
 
@@ -320,7 +351,7 @@ const messageDelete = (message: Message): Future<boolean> =>
 
 const messageEdit = (
   message: Message,
-  options: string | MessagePayload | MessageOptions,
+  options: string | MessageEditOptions | MessagePayload,
 ): Future<Message> =>
   pipe(
     Future.tryCatch(() => message.edit(options)),
@@ -462,7 +493,7 @@ const voiceConnectionJoin = (channel: VoiceChannel | StageChannel): IO<VoiceConn
     joinVoiceChannel({
       channelId: channel.id,
       guildId: channel.guild.id,
-      adapterCreator: channel.guild.voiceAdapterCreator,
+      adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator, // TODO: on next upgrade, will this cast still be necessary
     }),
   )
 
