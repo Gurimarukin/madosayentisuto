@@ -7,6 +7,7 @@ import type {
   PartialDMChannel,
   TextChannel,
   ThreadChannel,
+  VoiceChannel,
 } from 'discord.js'
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
@@ -21,7 +22,13 @@ import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
 import { MessageUtils } from '../utils/MessageUtils'
 
-type MyChannel = PartialDMChannel | DMChannel | TextChannel | NewsChannel | ThreadChannel
+type MyChannel =
+  | DMChannel
+  | PartialDMChannel
+  | NewsChannel
+  | TextChannel
+  | ThreadChannel
+  | VoiceChannel
 
 // 'vol' & 'plagiat'
 // mention & thanks
