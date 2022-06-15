@@ -2,14 +2,14 @@
 import { pipe } from 'fp-ts/function'
 import React, { useCallback, useState } from 'react'
 
-import { apiRoutes } from '../../../shared/ApiRouter'
-import { DayJs } from '../../../shared/models/DayJs'
-import type { DiscordUserId } from '../../../shared/models/DiscordUserId'
-import { Maybe } from '../../../shared/utils/fp'
-import { DayJsFromISOString } from '../../../shared/utils/ioTsUtils'
+import { apiRoutes } from '../../../../shared/ApiRouter'
+import { DayJs } from '../../../../shared/models/DayJs'
+import type { DiscordUserId } from '../../../../shared/models/DiscordUserId'
+import { Maybe } from '../../../../shared/utils/fp'
+import { DayJsFromISOString } from '../../../../shared/utils/ioTsUtils'
 
-import { Cancel, Check, EditPencil, Prohibition } from '../../components/svgs'
-import { useHttp } from '../../contexts/HttpContext'
+import { Cancel, Check, EditPencil, Prohibition } from '../../../components/svgs'
+import { useHttp } from '../../../contexts/HttpContext'
 
 type Props = {
   readonly userId: DiscordUserId

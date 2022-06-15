@@ -13,8 +13,8 @@ import { Login } from '../domain/Login'
 import { Logs } from '../domain/Logs'
 import { ScheduledEvents } from '../domain/ScheduledEvents'
 import { Guild } from '../domain/guild/Guild'
-import { GuildEmojis } from '../domain/guild/GuildEmojis'
-import { GuildMembers } from '../domain/guild/GuildMembers'
+import { GuildEmojis } from '../domain/guild/emojis/GuildEmojis'
+import { GuildMembers } from '../domain/guild/members/GuildMembers'
 import { appParsers, appRoutes } from './AppRouter'
 
 type ElementWithTitle = Tuple<JSX.Element, Maybe<string>>

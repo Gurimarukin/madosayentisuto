@@ -6,16 +6,16 @@ import { lens, optional } from 'monocle-ts'
 import React, { useMemo } from 'react'
 import type { KeyedMutator } from 'swr'
 
-import { DayJs } from '../../../shared/models/DayJs'
-import { DiscordUserId } from '../../../shared/models/DiscordUserId'
-import type { GuildId } from '../../../shared/models/guild/GuildId'
-import { GuildView } from '../../../shared/models/guild/GuildView'
-import { MemberView } from '../../../shared/models/guild/MemberView'
-import { List, Maybe } from '../../../shared/utils/fp'
+import { DayJs } from '../../../../shared/models/DayJs'
+import { DiscordUserId } from '../../../../shared/models/DiscordUserId'
+import type { GuildId } from '../../../../shared/models/guild/GuildId'
+import { GuildView } from '../../../../shared/models/guild/GuildView'
+import { MemberView } from '../../../../shared/models/guild/MemberView'
+import { List, Maybe } from '../../../../shared/utils/fp'
 
+import type { GuildViewResponse } from '../GuildLayout'
+import { GuildLayout } from '../GuildLayout'
 import { BirthdateForm } from './BirthdateForm'
-import type { GuildViewResponse } from './GuildLayout'
-import { GuildLayout } from './GuildLayout'
 
 type Props = {
   readonly guildId: GuildId

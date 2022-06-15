@@ -1,12 +1,12 @@
 import { pipe } from 'fp-ts/function'
 import React from 'react'
 
-import { GuildEmojiId } from '../../../shared/models/guild/GuildEmojiId'
-import type { GuildId } from '../../../shared/models/guild/GuildId'
-import { Maybe } from '../../../shared/utils/fp'
+import { GuildEmojiId } from '../../../../shared/models/guild/GuildEmojiId'
+import type { GuildId } from '../../../../shared/models/guild/GuildId'
+import { Maybe } from '../../../../shared/utils/fp'
 
-import { Tooltip } from '../../components/Tooltip'
-import { GuildLayout } from './GuildLayout'
+import { Tooltip } from '../../../components/Tooltip'
+import { GuildLayout } from '../GuildLayout'
 
 type Props = {
   readonly guildId: GuildId
