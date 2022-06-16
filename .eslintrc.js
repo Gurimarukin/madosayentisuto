@@ -23,6 +23,7 @@ module.exports = {
     },
   },
   reportUnusedDisableDirectives: true,
+  ignorePatterns: ['src/**/libs/**/*.ts', 'src/**/libs/**/*.tsx'],
   rules: {
     '@typescript-eslint/array-type': ['warn', { default: 'array', readonly: 'generic' }],
     '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
