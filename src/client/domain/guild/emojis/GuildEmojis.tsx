@@ -1,14 +1,16 @@
-/* eslint-disable functional/no-expression-statement */
+/* eslint-disable functional/no-expression-statement,
+                  functional/no-return-void */
 import { pipe } from 'fp-ts/function'
-import React, { useCallback, useRef, useState } from 'react'
+import { lens } from 'monocle-ts'
+import React, { useCallback, useState } from 'react'
 
+import { GuildEmojiId } from '../../../../shared/models/guild/GuildEmojiId'
 import type { GuildEmojiView } from '../../../../shared/models/guild/GuildEmojiView'
 import type { GuildId } from '../../../../shared/models/guild/GuildId'
+import { NonEmptyArray } from '../../../../shared/utils/fp'
 import { List, Maybe } from '../../../../shared/utils/fp'
 
 import { Tooltip } from '../../../components/Tooltip'
-import type { Identifier } from '../../../libs/dnd-core'
-import type { XYCoord } from '../../../libs/react-dnd'
 import { useDrag, useDrop } from '../../../libs/react-dnd'
 import { GuildLayout } from '../GuildLayout'
 
@@ -18,132 +20,122 @@ type Props = {
 
 export const GuildEmojis = ({ guildId }: Props): JSX.Element => (
   <GuildLayout guildId={guildId} selected="emojis">
-    {guild => <Container emojis={guild.emojis} />}
+    {guild => <Tiers emojis={guild.emojis} />}
   </GuildLayout>
 )
 
-type ContainerProps = {
+type TiersProps = {
   readonly emojis: List<GuildEmojiView>
 }
 
-type Item = {
-  readonly id: number
-  readonly emoji: GuildEmojiView
+type Tier = {
+  readonly name: string // TODO: ensure unicity
+  readonly emojis: List<GuildEmojiView>
 }
 
-const Container = ({ emojis }: ContainerProps): JSX.Element => {
-  const [cards, setCards] = useState<List<Item>>(() =>
-    pipe(
-      emojis,
-      List.mapWithIndex((id, emoji) => ({ id, emoji })),
-    ),
-  )
+const tierLensEmojis = pipe(lens.id<Tier>(), lens.prop('emojis'))
+const Tier = {
+  modifyEmojis: (f: (a: List<GuildEmojiView>) => List<GuildEmojiView>): ((tier: Tier) => Tier) =>
+    pipe(tierLensEmojis, lens.modify(f)),
+}
 
-  const moveCard = useCallback((dragIndex: number, hoverIndex: number) => {
-    setCards(prevCards =>
+const Tiers = ({ emojis }: TiersProps): JSX.Element => {
+  const [tiers, setTiers] = useState<NonEmptyArray<Tier>>([
+    { name: 'S', emojis },
+    { name: 'A', emojis: [] },
+    { name: 'B', emojis: [] },
+    { name: 'C', emojis: [] },
+  ])
+
+  const moveEmojiTier = useCallback(
+    (item: DragItem, newTierIndex: number) => {
       pipe(
-        prevCards,
-        List.deleteAt(dragIndex),
-        Maybe.getOrElse(() => prevCards),
-        deleted =>
-          pipe(
-            List.lookup(dragIndex, prevCards),
-            Maybe.chain(dragged => pipe(deleted, List.insertAt(hoverIndex, dragged))),
+        emojis,
+        List.findFirst(e => e.id === item.id),
+        Maybe.map(emoji =>
+          setTiers(
+            NonEmptyArray.mapWithIndex((i, tier) =>
+              i === item.tierIndex
+                ? pipe(tier, Tier.modifyEmojis(List.filter(e => e.id !== emoji.id)))
+                : i === newTierIndex
+                ? pipe(tier, Tier.modifyEmojis(List.append(emoji)))
+                : tier,
+            ),
           ),
-        Maybe.getOrElse(() => prevCards),
-      ),
-    )
-  }, [])
-
-  const renderCard = useCallback(
-    (card: Item, index: number) => (
-      <GuildEmoji key={card.id} index={index} id={card.id} emoji={card.emoji} moveCard={moveCard} />
-    ),
-    [moveCard],
+        ),
+      )
+    },
+    [emojis],
   )
 
   return (
-    <div className="flex flex-wrap gap-6 justify-center content-start p-6 w-full">
-      {cards.map((card, i) => renderCard(card, i))}
+    <div className="p-6">
+      <ul className="grid grid-cols-[auto_auto] w-full border-t border-gray1">
+        {tiers.map((tier, i) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <TierComponent key={i} tier={tier} tierIndex={i} moveEmojiTier={moveEmojiTier} />
+        ))}
+      </ul>
     </div>
   )
 }
 
-type CardProps = {
-  readonly id: number
+type TierProps = {
+  readonly tier: Tier
+  readonly tierIndex: number
+  readonly moveEmojiTier: (item: DragItem, newTierIndex: number) => void
+}
+
+const TierComponent = ({ tier, tierIndex, moveEmojiTier }: TierProps): JSX.Element => {
+  const [, drop] = useDrop<DragItem>(() => ({
+    accept: emojiType,
+    collect: monitor => ({ isOver: monitor.isOver() }),
+    hover: (item: DragItem) => {
+      if (item.tierIndex === tierIndex) return
+
+      moveEmojiTier(item, tierIndex)
+
+      // eslint-disable-next-line functional/immutable-data
+      item.tierIndex = tierIndex
+    },
+  }))
+
+  return (
+    <li ref={drop} className="contents">
+      <span className="flex items-center p-6 min-h-[calc(7rem_+_1px)] text-2xl bg-gray2 border-x border-b border-gray1">
+        {tier.name}
+      </span>
+      <ul className="flex flex-wrap border-r border-b border-gray1">
+        {tier.emojis.map(emoji => (
+          <GuildEmoji key={GuildEmojiId.unwrap(emoji.id)} tierIndex={tierIndex} emoji={emoji} />
+        ))}
+      </ul>
+    </li>
+  )
+}
+
+type GuildEmojiProps = {
+  readonly tierIndex: number
   readonly emoji: GuildEmojiView
-  readonly index: number
-  // eslint-disable-next-line functional/no-return-void
-  readonly moveCard: (dragIndex: number, hoverIndex: number) => void
 }
 
 type DragItem = {
+  readonly id: GuildEmojiId
   // eslint-disable-next-line functional/prefer-readonly-type
-  index: number
-  readonly id: string
+  tierIndex: number
 }
 
-const emojiType = 'card' as const
+const emojiType = 'emoji' as const
 
-const GuildEmoji = ({ id, emoji, index, moveCard }: CardProps): JSX.Element => {
-  const ref = useRef<HTMLDivElement>(null)
-  const [{ handlerId }, drop] = useDrop<DragItem, void, { readonly handlerId: Identifier | null }>({
-    accept: emojiType,
-    collect: monitor => ({ handlerId: monitor.getHandlerId() }),
-    hover: (item: DragItem, monitor) => {
-      if (ref.current === null) return
-      const dragIndex = item.index
-      const hoverIndex = index
-
-      // Don't replace items with themselves
-      if (dragIndex === hoverIndex) return
-
-      // Determine rectangle on screen
-      const hoverBoundingRect = ref.current.getBoundingClientRect()
-
-      // Get horizontal center
-      const hoverCenterX = (hoverBoundingRect.right - hoverBoundingRect.left) / 2
-
-      // Determine mouse position
-      const clientOffset = monitor.getClientOffset()
-
-      // Get pixels to the left
-      const hoverClientX = (clientOffset as XYCoord).x - hoverBoundingRect.left
-
-      // Only perform the move when the mouse has crossed half of the items height
-      // When dragging downwards, only move when the cursor is below 50%
-      // When dragging upwards, only move when the cursor is above 50%
-
-      // Dragging downwards
-      if (dragIndex < hoverIndex && hoverClientX < hoverCenterX) return
-
-      // Dragging upwards
-      if (dragIndex > hoverIndex && hoverClientX > hoverCenterX) return
-
-      // Time to actually perform the action
-      moveCard(dragIndex, hoverIndex)
-
-      // Note: we're mutating the monitor item here!
-      // Generally it's better to avoid mutations,
-      // but it's good here for the sake of performance
-      // to avoid expensive index searches.
-      // eslint-disable-next-line functional/immutable-data
-      item.index = hoverIndex
-    },
-  })
-
-  const [{ isDragging }, drag] = useDrag({
+const GuildEmoji = ({ tierIndex, emoji }: GuildEmojiProps): JSX.Element => {
+  const [{ isDragging }, drag] = useDrag(() => ({
     type: emojiType,
-    item: () => ({ id, index }),
+    item: (): DragItem => ({ id: emoji.id, tierIndex }),
     collect: monitor => ({ isDragging: monitor.isDragging() }),
-  })
-
-  const opacity = isDragging ? 0 : 1
-
-  drag(drop(ref))
+  }))
 
   return (
-    <div ref={ref} data-handler-id={handlerId}>
+    <div ref={drag} style={{ opacity: isDragging ? 0 : 1 }}>
       <Tooltip
         title={pipe(
           emoji.name,
@@ -159,8 +151,7 @@ const GuildEmoji = ({ id, emoji, index, moveCard }: CardProps): JSX.Element => {
               n => `Emoji ${n}`,
             ),
           )}
-          className="object-contain w-28 h-28 border border-gray1"
-          style={{ opacity }}
+          className="object-contain w-28 h-28"
         />
       </Tooltip>
     </div>
