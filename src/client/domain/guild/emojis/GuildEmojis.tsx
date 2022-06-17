@@ -2,7 +2,7 @@
                   functional/no-return-void */
 import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 
 import { GuildEmojiId } from '../../../../shared/models/guild/GuildEmojiId'
 import type { GuildEmojiView } from '../../../../shared/models/guild/GuildEmojiView'
@@ -51,7 +51,7 @@ const Tiers = ({ emojis }: TiersProps): JSX.Element => {
     (item: DragItem, newTierIndex: number) => {
       pipe(
         emojis,
-        List.findFirst(e => e.id === item.id),
+        List.findFirst(e => e.id === item.emojiId),
         Maybe.map(emoji =>
           setTiers(
             NonEmptyArray.mapWithIndex((i, tier) =>
@@ -89,7 +89,6 @@ type TierProps = {
 const TierComponent = ({ tier, tierIndex, moveEmojiTier }: TierProps): JSX.Element => {
   const [, drop] = useDrop<DragItem>(() => ({
     accept: emojiType,
-    collect: monitor => ({ isOver: monitor.isOver() }),
     hover: (item: DragItem) => {
       if (item.tierIndex === tierIndex) return
 
@@ -120,7 +119,7 @@ type GuildEmojiProps = {
 }
 
 type DragItem = {
-  readonly id: GuildEmojiId
+  readonly emojiId: GuildEmojiId
   // eslint-disable-next-line functional/prefer-readonly-type
   tierIndex: number
 }
@@ -128,14 +127,32 @@ type DragItem = {
 const emojiType = 'emoji' as const
 
 const GuildEmoji = ({ tierIndex, emoji }: GuildEmojiProps): JSX.Element => {
+  const ref = useRef<HTMLDivElement>(null)
+  const [, drop] = useDrop<DragItem>(() => ({
+    accept: emojiType,
+    hover: (item: DragItem) => {
+      if (item.emojiId === emoji.id) return
+      if (item.tierIndex !== tierIndex) return
+
+      console.log('Emoji hover', item)
+
+      // moveEmojiTier(item, tierIndex)
+
+      // // eslint-disable-next-line functional/immutable-data
+      // item.tierIndex = tierIndex
+    },
+  }))
+
   const [{ isDragging }, drag] = useDrag(() => ({
     type: emojiType,
-    item: (): DragItem => ({ id: emoji.id, tierIndex }),
+    item: (): DragItem => ({ emojiId: emoji.id, tierIndex }),
     collect: monitor => ({ isDragging: monitor.isDragging() }),
   }))
 
+  drag(drop(ref))
+
   return (
-    <div ref={drag} style={{ opacity: isDragging ? 0 : 1 }}>
+    <div ref={ref} style={{ opacity: isDragging ? 0 : 1 }}>
       <Tooltip
         title={pipe(
           emoji.name,

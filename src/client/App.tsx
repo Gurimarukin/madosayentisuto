@@ -3,8 +3,6 @@ import React from 'react'
 import { HistoryContextProvider } from './contexts/HistoryContext'
 import { HttpContextProvider } from './contexts/HttpContext'
 import { LogContextProvider } from './contexts/LogContext'
-import { HTML5Backend } from './libs/backend-html5'
-import { DndProvider } from './libs/react-dnd'
 import { AppRouterComponent } from './router/AppRouterComponent'
 
 export const App = (): JSX.Element => (
@@ -12,9 +10,7 @@ export const App = (): JSX.Element => (
     <HistoryContextProvider>
       <HttpContextProvider>
         <LogContextProvider>
-          <DndProvider backend={HTML5Backend}>
-            <AppRouterComponent />
-          </DndProvider>
+          <AppRouterComponent />
         </LogContextProvider>
       </HttpContextProvider>
     </HistoryContextProvider>
