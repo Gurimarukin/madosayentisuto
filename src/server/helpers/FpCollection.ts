@@ -13,6 +13,7 @@ import type {
   InsertOneResult,
   MatchKeysAndValues,
   Document as MongoDocument,
+  IndexDescription as MongoIndexDescription,
   OptionalUnlessRequiredId,
   ReplaceOptions,
   UpdateOptions,
@@ -58,7 +59,7 @@ export const FpCollection = <A, O extends Dict<string, unknown>>(
         Future.chain(() =>
           collection.future(c =>
             // eslint-disable-next-line functional/prefer-readonly-type
-            c.createIndexes(indexSpecs as IndexDescription<A>[], options),
+            c.createIndexes(indexSpecs as MongoIndexDescription[], options),
           ),
         ),
         Future.map(toUnit),

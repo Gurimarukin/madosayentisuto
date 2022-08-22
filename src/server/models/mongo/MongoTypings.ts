@@ -1,4 +1,4 @@
-import type { IndexDescription as MongoIndexDescription } from 'mongodb'
+import type { IndexDirection, IndexDescription as MongoIndexDescription } from 'mongodb'
 
 export type WithoutProjection<T> = T & {
   readonly fields?: undefined
@@ -7,6 +7,6 @@ export type WithoutProjection<T> = T & {
 
 export type IndexDescription<A> = Omit<MongoIndexDescription, 'key'> & {
   readonly key: {
-    readonly [B in keyof A]?: 1 | -1 | 'text'
+    readonly [B in keyof A]?: IndexDirection
   }
 }
