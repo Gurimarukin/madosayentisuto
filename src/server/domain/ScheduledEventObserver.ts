@@ -1,11 +1,5 @@
-import type {
-  GuildMember,
-  MessageOptions,
-  PartialTextBasedChannelFields,
-  Role,
-  TextChannel,
-} from 'discord.js'
-import { MessageAttachment } from 'discord.js'
+import type { GuildMember, MessageOptions, PartialTextBasedChannelFields, Role } from 'discord.js'
+import { AttachmentBuilder } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
@@ -30,6 +24,7 @@ import type {
 import { ScheduledEvent } from '../models/scheduledEvent/ScheduledEvent'
 import type { GuildStateService } from '../services/GuildStateService'
 import type { ScheduledEventService } from '../services/ScheduledEventService'
+import type { GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 import { MessageUtils } from '../utils/MessageUtils'
@@ -136,7 +131,7 @@ export const ScheduledEventObserver = (
             author: DiscordConnector.fetchMember(guild, createdBy),
             channel: pipe(
               discord.fetchChannel(who.channel),
-              futureMaybe.filter(ChannelUtils.isBaseGuildTextChannel),
+              futureMaybe.filter(ChannelUtils.isGuildSendable),
             ),
           }),
         ),
@@ -168,11 +163,11 @@ export const ScheduledEventObserver = (
         )
   }
 
-  function sendItsFridayMessage(channel: TextChannel): Future<void> {
+  function sendItsFridayMessage(channel: GuildSendableChannel): Future<void> {
     return pipe(
       DiscordConnector.sendMessage(channel, {
         content: `C'est vrai.`,
-        files: [new MessageAttachment(constants.itsFriday.videoUrl)],
+        files: [new AttachmentBuilder(constants.itsFriday.videoUrl)],
       }),
       Future.chainIOEitherK(
         Maybe.fold(

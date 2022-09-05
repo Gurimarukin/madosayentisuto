@@ -47,8 +47,8 @@ const Members = ({ guild, response }: MembersProps): JSX.Element => {
       <table className="grid grid-cols-[auto_auto_1fr]">
         <thead className="contents">
           <tr className="contents text-lg font-bold">
-            <th className="flex py-3 px-6 bg-gray2">Pseudal</th>
-            <th className="flex py-3 px-6 bg-gray2">Date de naissance</th>
+            <th className="flex bg-gray2 py-3 px-6">Pseudal</th>
+            <th className="flex bg-gray2 py-3 px-6">Date de naissance</th>
             <th className="bg-gray2" />
           </tr>
         </thead>
@@ -57,13 +57,13 @@ const Members = ({ guild, response }: MembersProps): JSX.Element => {
             members,
             List.map(member => (
               <tr key={DiscordUserId.unwrap(member.id)} className="group contents">
-                <td className="flex gap-4 items-center py-3 px-6 group-even:bg-gray2">
+                <td className="flex items-center gap-4 py-3 px-6 group-even:bg-gray2">
                   {pipe(
                     member.avatar,
                     Maybe.fold(
                       () => null,
                       avatar => (
-                        <div className="overflow-hidden w-12 h-12 rounded-full">
+                        <div className="h-12 w-12 overflow-hidden rounded-full">
                           <img src={avatar} alt={`Avatar de ${member.name}`} />
                         </div>
                       ),

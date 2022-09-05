@@ -5,10 +5,12 @@
     "jsx": "react",
     "lib": ["ES2021", "DOM"],
     "incremental": true,
+    "skipLibCheck": true,
     "sourceMap": true,
     "noEmit": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src", "test"]
+  "include": ["src", "test"],
+  "exclude": ["node_modules"]
 }

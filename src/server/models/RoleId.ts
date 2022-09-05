@@ -1,5 +1,4 @@
-import type { APIRole } from 'discord-api-types/payloads/v9'
-import type { Role } from 'discord.js'
+import type { APIRole, Role } from 'discord.js'
 import * as C from 'io-ts/Codec'
 import type { Newtype } from 'newtype-ts'
 import { iso } from 'newtype-ts'

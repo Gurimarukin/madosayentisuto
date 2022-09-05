@@ -9,15 +9,14 @@ import type {
   APIApplicationCommandSubcommandGroupOption,
   APIApplicationCommandSubcommandOption,
   ChannelType,
-} from 'discord-api-types/payloads/v9'
-import type {
   RESTPostAPIChatInputApplicationCommandsJSONBody,
   RESTPostAPIContextMenuApplicationCommandsJSONBody,
-} from 'discord-api-types/rest/v9'
+} from 'discord.js'
+import { ApplicationCommandOptionType, ApplicationCommandType } from 'discord.js'
 import type { nonEmptyArray } from 'fp-ts'
 
-import { List } from '../../shared/utils/fp'
-import { NonEmptyArray } from '../../shared/utils/fp'
+import { List } from '../../../shared/utils/fp'
+import { NonEmptyArray } from '../../../shared/utils/fp'
 
 type CommandCommon = {
   readonly name: string
@@ -50,14 +49,17 @@ export const Command = {
     (
       ...options: List<APIApplicationCommandOption>
     ): RESTPostAPIChatInputApplicationCommandsJSONBody => ({
-      type: 1,
+      type: ApplicationCommandType.ChatInput,
       ...common,
       options: toMutable(options),
     }),
 
   message: (
     common: Omit<CommandCommon, 'description'>,
-  ): RESTPostAPIContextMenuApplicationCommandsJSONBody => ({ type: 3, ...common }),
+  ): RESTPostAPIContextMenuApplicationCommandsJSONBody => ({
+    type: ApplicationCommandType.Message,
+    ...common,
+  }),
 
   option: {
     subcommand:
@@ -65,7 +67,7 @@ export const Command = {
       (
         ...options: List<APIApplicationCommandBasicOption>
       ): APIApplicationCommandSubcommandOption => ({
-        type: 1,
+        type: ApplicationCommandOptionType.Subcommand,
         ...common,
         options: toMutable(options),
       }),
@@ -74,24 +76,30 @@ export const Command = {
       (
         ...options: List<APIApplicationCommandSubcommandOption>
       ): APIApplicationCommandSubcommandGroupOption => ({
-        type: 2,
+        type: ApplicationCommandOptionType.SubcommandGroup,
         ...common,
         options: toMutable(options),
       }),
     string: ({ choices, ...common }: OptionString): APIApplicationCommandStringOption => ({
-      type: 3,
+      type: ApplicationCommandOptionType.String,
       ...common,
       choices: toMutable(choices),
     }),
-    boolean: (common: OptionCommon): APIApplicationCommandBooleanOption => ({ type: 5, ...common }),
+    boolean: (common: OptionCommon): APIApplicationCommandBooleanOption => ({
+      type: ApplicationCommandOptionType.Boolean,
+      ...common,
+    }),
     channel: ({ channel_types, ...common }: OptionChannel): APIApplicationCommandChannelOption => ({
-      type: 7,
+      type: ApplicationCommandOptionType.Channel,
       ...common,
       channel_types: toMutable(channel_types),
     }),
-    role: (common: OptionCommon): APIApplicationCommandRoleOption => ({ type: 8, ...common }),
+    role: (common: OptionCommon): APIApplicationCommandRoleOption => ({
+      type: ApplicationCommandOptionType.Role,
+      ...common,
+    }),
     mentionable: (common: OptionCommon): APIApplicationCommandMentionableOption => ({
-      type: 9,
+      type: ApplicationCommandOptionType.Mentionable,
       ...common,
     }),
   },

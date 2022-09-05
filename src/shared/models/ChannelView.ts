@@ -1,4 +1,3 @@
-import type { BaseGuildTextChannel } from 'discord.js'
 import * as C from 'io-ts/Codec'
 
 import { ChannelId } from './ChannelId'
@@ -9,10 +8,4 @@ const codec = C.struct({
 })
 
 export type ChannelView = C.TypeOf<typeof codec>
-
-const fromChannel = (c: BaseGuildTextChannel): ChannelView => ({
-  id: ChannelId.fromChannel(c),
-  name: c.name,
-})
-
-export const ChannelView = { fromChannel, codec }
+export const ChannelView = { codec }

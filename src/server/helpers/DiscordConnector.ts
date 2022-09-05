@@ -11,25 +11,16 @@ import type {
 import { createAudioPlayer, joinVoiceChannel } from '@discordjs/voice'
 import { entersState as discordEntersState } from '@discordjs/voice'
 import type {
-  APIEmbed,
   APIMessage,
-  RESTPostAPIApplicationCommandsJSONBody,
-} from 'discord-api-types/v9'
-import { Routes } from 'discord-api-types/v9'
-import type {
   AllowedThreadTypeForNewsChannel,
   AllowedThreadTypeForTextChannel,
-  AnyChannel,
   ApplicationCommand,
-  BaseCommandInteraction,
-  BaseGuildTextChannel,
-  BaseMessageComponentOptions,
-  BufferResolvable,
   ButtonInteraction,
+  Channel,
   ClientPresence,
   Collection,
+  CommandInteraction,
   EmojiIdentifierResolvable,
-  FileOptions,
   Guild,
   GuildAuditLogsEntry,
   GuildAuditLogsFetchOptions,
@@ -39,40 +30,35 @@ import type {
   InteractionReplyOptions,
   InteractionUpdateOptions,
   Message,
-  MessageActionRow,
-  MessageActionRowOptions,
-  MessageAttachment,
   MessageComponentInteraction,
   MessageEditOptions,
-  MessageEmbed,
-  MessageEmbedOptions,
-  MessageMentionOptions,
   MessageOptions,
   MessagePayload,
   MessageReaction,
   PartialTextBasedChannelFields,
+  RESTPostAPIApplicationCommandsJSONBody,
   Role,
   RoleResolvable,
-  StageChannel,
   StartThreadOptions,
   ThreadChannel,
   ThreadCreateOptions,
   ThreadManager,
   User,
-  VoiceChannel,
 } from 'discord.js'
-import { Client, DiscordAPIError, Intents } from 'discord.js'
+import { Routes } from 'discord.js'
+import { Partials } from 'discord.js'
+import { GatewayIntentBits } from 'discord.js'
+import { Client, DiscordAPIError } from 'discord.js'
 import { refinement } from 'fp-ts'
 import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
-import type { Stream } from 'mongodb'
 
 import { ChannelId } from '../../shared/models/ChannelId'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { GuildId } from '../../shared/models/guild/GuildId'
-import { Either, Future, IO, List, Maybe } from '../../shared/utils/fp'
+import { Either, Future, IO, List, Maybe, toUnit } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
@@ -81,8 +67,10 @@ import { constants } from '../constants'
 import { MessageId } from '../models/MessageId'
 import { RoleId } from '../models/RoleId'
 import type { Activity } from '../models/botState/Activity'
+import { ActivityTypeBot } from '../models/botState/ActivityTypeBot'
 import { CommandId } from '../models/command/CommandId'
 import { PutCommandResult } from '../models/command/PutCommandResult'
+import type { GuildAudioChannel, GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { MessageUtils } from '../utils/MessageUtils'
 
@@ -91,7 +79,7 @@ type MyPartial<A> = {
   readonly fetch: () => Promise<A>
 }
 
-type MyInteraction = BaseCommandInteraction | MessageComponentInteraction
+type MyInteraction = CommandInteraction | MessageComponentInteraction
 
 type MyThreadChannelTypes = AllowedThreadTypeForNewsChannel | AllowedThreadTypeForTextChannel
 type MyThreadCreateOptions<A extends MyThreadChannelTypes> = Omit<
@@ -101,20 +89,7 @@ type MyThreadCreateOptions<A extends MyThreadChannelTypes> = Omit<
   readonly type?: A
 }
 
-/* eslint-disable functional/prefer-readonly-type */
-export type MyMessageOptions = {
-  attachments?: MessageAttachment[]
-  content?: string | null
-  embeds?: (MessageEmbed | MessageEmbedOptions | APIEmbed)[]
-  files?: (FileOptions | BufferResolvable | Stream | MessageAttachment)[]
-  // flags?: BitFieldResolvable<MessageFlagsString, number>
-  allowedMentions?: MessageMentionOptions
-  components?: (
-    | MessageActionRow
-    | (Required<BaseMessageComponentOptions> & MessageActionRowOptions)
-  )[]
-}
-/* eslint-enable functional/prefer-readonly-type */
+export type BaseMessageOptions = Pick<MessageOptions, 'components' | 'content' | 'embeds'>
 
 export type DiscordConnector = ReturnType<typeof of>
 
@@ -129,7 +104,7 @@ const of = (client: Client<true>) => {
      * Read
      */
 
-    fetchChannel: (channelId: ChannelId): Future<Maybe<AnyChannel>> =>
+    fetchChannel: (channelId: ChannelId): Future<Maybe<Channel>> =>
       pipe(
         Future.tryCatch(() => client.channels.fetch(ChannelId.unwrap(channelId))),
         Future.map(Maybe.fromNullable),
@@ -166,7 +141,8 @@ const of = (client: Client<true>) => {
           activity,
           Maybe.fold(
             () => client.user.setActivity(),
-            ({ name, type }) => client.user.setActivity(name, { type }),
+            ({ name, type }) =>
+              client.user.setActivity(name, { type: ActivityTypeBot.activityType[type] }),
           ),
         ),
       ),
@@ -177,7 +153,7 @@ const of = (client: Client<true>) => {
  * Read
  */
 
-const fetchAuditLogs = <A extends GuildAuditLogsResolvable = 'ALL'>(
+const fetchAuditLogs = <A extends GuildAuditLogsResolvable = null>(
   guild: Guild,
   options?: Omit<GuildAuditLogsFetchOptions<A>, 'limit'>,
 ): Future<Maybe<Collection<string, GuildAuditLogsEntry<A>>>> =>
@@ -207,11 +183,7 @@ const fetchMembers = (guild: Guild): Future<Collection<string, GuildMember>> =>
 const fetchMessage = (guild: Guild, messageId: MessageId): Future<Maybe<Message>> =>
   pipe(
     IO.tryCatch(() => guild.channels.cache.toJSON()),
-    IO.map(
-      List.filter(
-        pipe(ChannelUtils.isBaseGuildTextChannel, refinement.or(ChannelUtils.isThreadChannel)),
-      ),
-    ),
+    IO.map(List.filter(ChannelUtils.isGuildSendable)),
     Future.fromIOEither,
     Future.chain(fetchMessageRec(MessageId.unwrap(messageId))),
     debugLeft('fetchMessage'),
@@ -284,6 +256,7 @@ const interactionDeferReply = (
 ): Future<void> =>
   pipe(
     Future.tryCatch(() => interaction.deferReply(options)),
+    Future.map(toUnit), // TODO: maybe do something with result?
     debugLeft('interactionDeferReply'),
   )
 
@@ -319,6 +292,7 @@ const interactionReply = (
 ): Future<void> =>
   pipe(
     Future.tryCatch(() => interaction.reply(options)),
+    Future.map(toUnit), // TODO: maybe do something with result?
     Future.orElse(e =>
       isDiscordAPIError('Cannot send an empty message')(e) ? Future.unit : Future.left(e),
     ),
@@ -331,6 +305,7 @@ const interactionUpdate = (
 ): Future<void> =>
   pipe(
     Future.tryCatch(() => interaction.update(options)),
+    Future.map(toUnit), // TODO: maybe do something with result?
     Future.orElse(e =>
       isDiscordAPIError('Unknown interaction')(e) ? Future.unit : Future.left(e),
     ),
@@ -351,7 +326,7 @@ const messageDelete = (message: Message): Future<boolean> =>
 
 const messageEdit = (
   message: Message,
-  options: string | MessageEditOptions | MessagePayload,
+  options: string | MessagePayload | MessageEditOptions,
 ): Future<Message> =>
   pipe(
     Future.tryCatch(() => message.edit(options)),
@@ -428,10 +403,10 @@ const restPutApplicationGuildCommands = (
     debugLeft('restPutApplicationGuildCommands'),
   )
 
-const sendMessage = (
-  channel: PartialTextBasedChannelFields,
+const sendMessage = <InGuild extends boolean = boolean>(
+  channel: PartialTextBasedChannelFields<InGuild>,
   options: string | MessagePayload | MessageOptions,
-): Future<Maybe<Message>> =>
+): Future<Maybe<Message<InGuild>>> =>
   pipe(
     Future.tryCatch(() => channel.send(options)),
     Future.map(Maybe.some),
@@ -488,7 +463,7 @@ const threadSetArchived = (
 const voiceConnectionDestroy = (connection: VoiceConnection): IO<void> =>
   IO.tryCatch(() => connection.destroy())
 
-const voiceConnectionJoin = (channel: VoiceChannel | StageChannel): IO<VoiceConnection> =>
+const voiceConnectionJoin = (channel: GuildAudioChannel): IO<VoiceConnection> =>
   IO.tryCatch(() =>
     joinVoiceChannel({
       channelId: channel.id,
@@ -554,15 +529,21 @@ export const DiscordConnector = {
         new Promise<DiscordConnector>(resolve => {
           const client = new Client({
             intents: [
-              Intents.FLAGS.DIRECT_MESSAGES,
-              Intents.FLAGS.GUILD_BANS,
-              Intents.FLAGS.GUILD_MEMBERS,
-              Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-              Intents.FLAGS.GUILD_MESSAGES,
-              Intents.FLAGS.GUILD_VOICE_STATES,
-              Intents.FLAGS.GUILDS,
+              GatewayIntentBits.DirectMessages,
+              GatewayIntentBits.GuildBans,
+              GatewayIntentBits.GuildMembers,
+              GatewayIntentBits.GuildMessageReactions,
+              GatewayIntentBits.GuildMessages,
+              GatewayIntentBits.GuildVoiceStates,
+              GatewayIntentBits.Guilds,
             ],
-            partials: ['USER', 'CHANNEL', 'GUILD_MEMBER', 'MESSAGE', 'REACTION'],
+            partials: [
+              Partials.User,
+              Partials.Channel,
+              Partials.GuildMember,
+              Partials.Message,
+              Partials.Reaction,
+            ],
           })
           /* eslint-disable functional/no-expression-statement */
           client.once('ready', () => resolve(of(client)))
@@ -606,7 +587,7 @@ const nl = (str: string | undefined): string => (str !== undefined ? `${str}\n` 
 
 const fetchMessageRec =
   (message: string) =>
-  (channels: List<BaseGuildTextChannel | ThreadChannel>): Future<Maybe<Message>> => {
+  (channels: List<GuildSendableChannel>): Future<Maybe<Message>> => {
     if (List.isNonEmpty(channels)) {
       const [head, ...tail] = channels
       return pipe(

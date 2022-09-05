@@ -33,7 +33,7 @@ const fromGuild = (guild: Guild, state: GuildStateView, members: List<GuildMembe
   id: GuildId.fromGuild(guild),
   name: guild.name,
   state,
-  icon: Maybe.fromNullable(guild.iconURL({ dynamic: true })),
+  icon: Maybe.fromNullable(guild.iconURL()),
   members: pipe(members, List.map(MemberView.fromGuildMember)),
   emojis: guild.emojis.cache.toJSON().map(GuildEmojiView.fromGuildEmoji),
 })

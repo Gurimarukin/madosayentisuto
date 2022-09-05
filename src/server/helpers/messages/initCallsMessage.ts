@@ -1,11 +1,12 @@
-import type { APIInteractionDataResolvedChannel, APIRole } from 'discord-api-types/v9'
-import type { GuildChannel, Role, ThreadChannel } from 'discord.js'
-import { MessageActionRow, MessageButton } from 'discord.js'
+import type { APIRole, Role } from 'discord.js'
+import { ButtonStyle } from 'discord.js'
 
 import { StringUtils } from '../../../shared/utils/StringUtils'
 
 import { constants } from '../../constants'
-import type { MyMessageOptions } from '../DiscordConnector'
+import { MessageComponent } from '../../models/discord/MessageComponent'
+import type { GuildSendableChannel } from '../../utils/ChannelUtils'
+import type { BaseMessageOptions } from '../DiscordConnector'
 
 export const initCallsButton = {
   subscribeId: 'callsSubscribe',
@@ -13,25 +14,30 @@ export const initCallsButton = {
 }
 
 export const initCallsMessage = (
-  channel: ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel,
+  channel: GuildSendableChannel,
   role: Role | APIRole,
-): MyMessageOptions => ({
+): BaseMessageOptions => ({
   content: StringUtils.stripMargins(
+    // TODO: remove disable
+    /* eslint-disable @typescript-eslint/no-base-to-string */
     `Yoho, ${role} !
     |Tu peux t'abonner aux appels sur ce serveur en cliquant ci-dessous !
     |Ils seront notifiés dans le salon ${channel} (que tu devrais rendre muet).`,
   ), // ||Cliquer t'ajoute (ou t'enlève) le rôle ${role}||
+  /* eslint-enable @typescript-eslint/no-base-to-string */
   components: [
-    new MessageActionRow().addComponents(
-      new MessageButton()
-        .setCustomId(initCallsButton.subscribeId)
-        .setLabel("S'abonner aux appels")
-        .setStyle('PRIMARY')
-        .setEmoji(constants.emojis.calls),
-      new MessageButton()
-        .setCustomId(initCallsButton.unsubscribeId)
-        .setLabel(' ̶S̶e̶ ̶d̶é̶s̶a̶b̶o̶n̶n̶e̶r̶    Je suis une victime')
-        .setStyle('SECONDARY'),
-    ),
+    MessageComponent.row([
+      MessageComponent.buttonWithCustomId({
+        custom_id: initCallsButton.subscribeId,
+        style: ButtonStyle.Primary,
+        label: "S'abonner aux appels",
+        emoji: constants.emojis.calls,
+      }),
+      MessageComponent.buttonWithCustomId({
+        custom_id: initCallsButton.unsubscribeId,
+        style: ButtonStyle.Secondary,
+        label: ' ̶S̶e̶ ̶d̶é̶s̶a̶b̶o̶n̶n̶e̶r̶    Je suis une victime',
+      }),
+    ]),
   ],
 })

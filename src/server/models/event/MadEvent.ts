@@ -4,14 +4,14 @@ import type {
   Message,
   PartialGuildMember,
   PartialMessage,
-  StageChannel,
-  VoiceChannel,
   VoiceState,
 } from 'discord.js'
 
 import type { DayJs } from '../../../shared/models/DayJs'
 import { createUnion } from '../../../shared/utils/createUnion'
 import type { List } from '../../../shared/utils/fp'
+
+import type { GuildAudioChannel } from '../../utils/ChannelUtils'
 
 export type MadEvent = typeof MadEvent.T
 
@@ -28,12 +28,12 @@ export const MadEvent = createUnion({
 
   VoiceStateUpdate: (oldState: VoiceState, newState: VoiceState) => ({ oldState, newState }),
 
-  PublicCallStarted: (member: GuildMember, channel: VoiceChannel | StageChannel) => ({
+  PublicCallStarted: (member: GuildMember, channel: GuildAudioChannel) => ({
     member,
     channel,
   }),
 
-  PublicCallEnded: (member: GuildMember, channel: VoiceChannel | StageChannel) => ({
+  PublicCallEnded: (member: GuildMember, channel: GuildAudioChannel) => ({
     member,
     channel,
   }),

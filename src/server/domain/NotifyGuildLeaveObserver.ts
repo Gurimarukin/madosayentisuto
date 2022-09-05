@@ -1,4 +1,5 @@
-import type { Collection, Guild, GuildAuditLogsEntry, TextChannel } from 'discord.js'
+import { AuditLogEvent } from 'discord.js'
+import type { Collection, Guild, GuildAuditLogsEntry } from 'discord.js'
 import type { User } from 'discord.js'
 import { apply, date, number, ord, random, semigroup } from 'fp-ts'
 import type { Ord } from 'fp-ts/Ord'
@@ -7,7 +8,6 @@ import { flow, pipe } from 'fp-ts/function'
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import type { Dict } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
@@ -15,10 +15,11 @@ import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
+import type { GuildPositionableChannel, GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
-type KickOrBanAction = 'MEMBER_KICK' | 'MEMBER_BAN_ADD'
+type KickOrBanAction = AuditLogEvent.MemberKick | AuditLogEvent.MemberBanAdd
 
 type ValidEntry<A extends KickOrBanAction> = {
   readonly action: A
@@ -58,7 +59,7 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
           pipe(
             log.info(logMessage(user.tag, executor.tag, action, reason)),
             IO.chain(() =>
-              randomMessage(kickOrBanMessages[action])(boldMember, `<@${executor.id}>`),
+              randomMessage(kickOrBanMessages(action))(boldMember, `<@${executor.id}>`),
             ),
           ),
       ),
@@ -89,11 +90,11 @@ const getLastLog =
     return pipe(
       apply.sequenceS(Future.ApplyPar)({
         lastMemberKick: pipe(
-          DiscordConnector.fetchAuditLogs(guild, { type: 'MEMBER_KICK' }),
+          DiscordConnector.fetchAuditLogs(guild, { type: AuditLogEvent.MemberKick }),
           futureMaybe.chainOption(validateLogs(nowMinusNetworkTolerance, userId)),
         ),
         lastMemberBan: pipe(
-          DiscordConnector.fetchAuditLogs(guild, { type: 'MEMBER_BAN_ADD' }),
+          DiscordConnector.fetchAuditLogs(guild, { type: AuditLogEvent.MemberBanAdd }),
           futureMaybe.chainOption(validateLogs(nowMinusNetworkTolerance, userId)),
         ),
       }),
@@ -153,15 +154,15 @@ const minimum: <A>(ord_: Ord<A>) => (nea: NonEmptyArray<A>) => A = flow(
   NonEmptyArray.concatAll,
 )
 
-const channelPositionOrd = ord.contramap((c: TextChannel) => c.position)(number.Ord)
+const channelPositionOrd = ord.contramap((c: GuildPositionableChannel) => c.position)(number.Ord)
 
-const goodbyeChannel = (guild: Guild): Maybe<TextChannel> =>
+const goodbyeChannel = (guild: Guild): Maybe<GuildSendableChannel> =>
   pipe(
     Maybe.fromNullable(guild.systemChannel),
     Maybe.alt(() =>
       pipe(
         guild.channels.cache.toJSON(),
-        List.filter(ChannelUtils.isTextChannel),
+        List.filter(ChannelUtils.isGuildPositionable),
         NonEmptyArray.fromReadonlyArray,
         Maybe.map(minimum(channelPositionOrd)),
       ),
@@ -182,9 +183,9 @@ const logMessage = (
     ),
   )
   switch (action) {
-    case 'MEMBER_KICK':
+    case AuditLogEvent.MemberKick:
       return `${targetTag} got kicked by ${executorTag}${reasonStr}`
-    case 'MEMBER_BAN_ADD':
+    case AuditLogEvent.MemberBanAdd:
       return `${targetTag} got banned by ${executorTag}${reasonStr}`
   }
 }
@@ -214,13 +215,17 @@ type KickOrBanMessageGetters = NonEmptyArray<
   MessageGetter<readonly [member: string, admin: string]>
 >
 
-const kickOrBanMessages: Dict<KickOrBanAction, KickOrBanMessageGetters> = {
-  MEMBER_KICK: [
-    // (m, a) => `${m} left the guild; kicked by ${a}.`,
-    (m, a) => `${m} s'en est allé, mis à la porte par ${a}.`,
-  ],
-  MEMBER_BAN_ADD: [
-    // (m, a) => `${m} got hit with the swift hammer of justice, wielded by the mighty ${a}.`,
-    (m, a) => `Le marteau de la justice, brandi par ${a}, a frappé ${m}.`,
-  ],
+const kickOrBanMessages = (action: KickOrBanAction): KickOrBanMessageGetters => {
+  switch (action) {
+    case AuditLogEvent.MemberKick:
+      return [
+        // (m, a) => `${m} left the guild; kicked by ${a}.`,
+        (m, a) => `${m} s'en est allé, mis à la porte par ${a}.`,
+      ]
+    case AuditLogEvent.MemberBanAdd:
+      return [
+        // (m, a) => `${m} got hit with the swift hammer of justice, wielded by the mighty ${a}.`,
+        (m, a) => `Le marteau de la justice, brandi par ${a}, a frappé ${m}.`,
+      ]
+  }
 }

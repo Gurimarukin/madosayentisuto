@@ -4,9 +4,9 @@ import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefin
 import { Future, List, Maybe } from '../../shared/utils/fp'
 
 import { MadEvent } from '../models/event/MadEvent'
-import type { MusicChannel } from '../models/music/MusicState'
 import { MusicState } from '../models/music/MusicState'
 import type { GuildStateService } from '../services/GuildStateService'
+import type { GuildAudioChannel } from '../utils/ChannelUtils'
 
 // disconnect when bot is alone in channel
 
@@ -30,7 +30,7 @@ export const DisconnectVocalObserver = (cliendId: string, guildStateService: Gui
     ),
   )
 
-  function botIsAloneInChannel(channel: MusicChannel): boolean {
+  function botIsAloneInChannel(channel: GuildAudioChannel): boolean {
     return (
       channel.members.size === 1 &&
       pipe(

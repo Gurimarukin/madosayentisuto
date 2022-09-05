@@ -1,6 +1,5 @@
-import type { Guild, GuildBasedChannel, GuildMember, StageChannel, VoiceChannel } from 'discord.js'
+import type { Guild, GuildMember } from 'discord.js'
 import { refinement } from 'fp-ts'
-import type { Refinement } from 'fp-ts/Refinement'
 import { pipe } from 'fp-ts/function'
 
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
@@ -14,6 +13,7 @@ import type {
 } from '../models/event/MadEvent'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
+import type { GuildAudioChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
@@ -59,10 +59,7 @@ export const VoiceStateUpdateTransformer = (
     ),
   )
 
-  function onJoinedChannel(
-    member: GuildMember,
-    channel: VoiceChannel | StageChannel,
-  ): Future<void> {
+  function onJoinedChannel(member: GuildMember, channel: GuildAudioChannel): Future<void> {
     return pipe(
       LogUtils.pretty(logger, channel.guild).info(
         `${member.user.tag} joined the channel #${channel.name}`,
@@ -80,8 +77,8 @@ export const VoiceStateUpdateTransformer = (
 
   function onMovedChannel(
     member: GuildMember,
-    from: VoiceChannel | StageChannel,
-    to: VoiceChannel | StageChannel,
+    from: GuildAudioChannel,
+    to: GuildAudioChannel,
   ): Future<void> {
     return pipe(
       LogUtils.pretty(logger, from.guild).info(
@@ -114,7 +111,7 @@ export const VoiceStateUpdateTransformer = (
     )
   }
 
-  function onLeftChannel(member: GuildMember, channel: VoiceChannel | StageChannel): Future<void> {
+  function onLeftChannel(member: GuildMember, channel: GuildAudioChannel): Future<void> {
     return pipe(
       LogUtils.pretty(logger, channel.guild).info(
         `${member.user.tag} left the channel #${channel.name}`,
@@ -133,21 +130,15 @@ export const VoiceStateUpdateTransformer = (
   function peopleInPublicVocalChans(guild: Guild): List<GuildMember> {
     return pipe(
       guild.channels.cache.toJSON(),
-      List.filter(isPublicVocal),
+      List.filter(isPublicAudio),
       List.chain(c => c.members.toJSON()),
       List.filter(m => m.id !== clientId), // don't count bot
     )
   }
 }
 
-type VocalChannel = StageChannel | VoiceChannel
-
-const isVocal: Refinement<GuildBasedChannel, VocalChannel> = pipe(
-  ChannelUtils.isStageChannel,
-  refinement.or(ChannelUtils.isVoiceChannel),
-)
-const isPublicVocal = pipe(
-  isVocal,
+const isPublicAudio = pipe(
+  ChannelUtils.isGuildAudio,
   refinement.compose(refinementFromPredicate(ChannelUtils.isPublic)),
 )
 

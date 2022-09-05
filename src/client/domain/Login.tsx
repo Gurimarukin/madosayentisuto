@@ -50,10 +50,10 @@ export const Login = (): JSX.Element => {
   )
 
   return (
-    <div className="flex flex-col justify-center items-center h-full">
+    <div className="flex h-full flex-col items-center justify-center">
       <form
         onSubmit={handleFormSubmit}
-        className="grid grid-cols-[auto_auto] gap-3 justify-center items-center"
+        className="grid grid-cols-[auto_auto] items-center justify-center gap-3"
       >
         <label className="contents">
           <span>Nom d'utilisateur :</span>
@@ -62,7 +62,7 @@ export const Login = (): JSX.Element => {
             value={userName}
             onChange={handleUserNameChange}
             autoFocus={true}
-            className="text-center text-inherit bg-gray1 rounded-sm border-none"
+            className="rounded-sm border-none bg-gray1 text-center text-inherit"
           />
         </label>
         <label className="contents">
@@ -71,12 +71,12 @@ export const Login = (): JSX.Element => {
             type="password"
             value={password}
             onChange={handlePasswordChange}
-            className="text-center text-inherit bg-gray1 rounded-sm border-none"
+            className="rounded-sm border-none bg-gray1 text-center text-inherit"
           />
         </label>
         <button
           type="submit"
-          className="col-span-2 justify-self-center py-1 px-4 bg-gray2 rounded-sm border border-gray1"
+          className="col-span-2 justify-self-center rounded-sm border border-gray1 bg-gray2 py-1 px-4"
         >
           Connexion
         </button>

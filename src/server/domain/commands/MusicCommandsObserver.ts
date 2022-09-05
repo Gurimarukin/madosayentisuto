@@ -1,11 +1,4 @@
-import type {
-  ButtonInteraction,
-  CommandInteraction,
-  Interaction,
-  StageChannel,
-  TextBasedChannel,
-  VoiceChannel,
-} from 'discord.js'
+import type { ButtonInteraction, ChatInputCommandInteraction, Interaction } from 'discord.js'
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
@@ -17,16 +10,18 @@ import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordCo
 import type { MusicSubscription } from '../../helpers/MusicSubscription'
 import type { YtDlp } from '../../helpers/YtDlp'
 import { MusicStateMessage, musicStateButtons } from '../../helpers/messages/MusicStateMessage'
-import { Command } from '../../models/Command'
+import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import { MusicState } from '../../models/music/MusicState'
 import { Track } from '../../models/music/Track'
 import type { GuildStateService } from '../../services/GuildStateService'
+import type { GuildAudioChannel, GuildSendableChannel } from '../../utils/ChannelUtils'
+import { ChannelUtils } from '../../utils/ChannelUtils'
 
 type PlayCommand = {
-  readonly musicChannel: VoiceChannel | StageChannel
-  readonly stateChannel: TextBasedChannel
+  readonly musicChannel: GuildAudioChannel
+  readonly stateChannel: GuildSendableChannel
   readonly tracks: NonEmptyArray<Track>
 }
 
@@ -56,7 +51,7 @@ export const MusicCommandsObserver = (
       MadEvent,
       'InteractionCreate',
     )(({ interaction }) => {
-      if (interaction.isCommand()) return onCommand(interaction)
+      if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
       if (interaction.isButton()) return onButton(interaction)
       return Future.unit
     }),
@@ -64,7 +59,7 @@ export const MusicCommandsObserver = (
     validateTracks,
   }
 
-  function onCommand(interaction: CommandInteraction): Future<void> {
+  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<void> {
     switch (interaction.commandName) {
       case MusicStateMessage.Keys.play:
         return onPlayCommand(interaction)
@@ -72,7 +67,7 @@ export const MusicCommandsObserver = (
     return Future.unit
   }
 
-  function onPlayCommand(interaction: CommandInteraction): Future<void> {
+  function onPlayCommand(interaction: ChatInputCommandInteraction): Future<void> {
     const guild = interaction.guild
     if (guild === null) return Future.unit
     return pipe(
@@ -119,7 +114,7 @@ export const MusicCommandsObserver = (
   }
 
   function validatePlayCommand(
-    interaction: CommandInteraction,
+    interaction: ChatInputCommandInteraction,
     subscription: MusicSubscription,
   ): Future<Either<string, PlayCommand>> {
     return pipe(
@@ -140,7 +135,7 @@ export const MusicCommandsObserver = (
   }
 
   function validateUrlThenTracks(
-    interaction: CommandInteraction,
+    interaction: ChatInputCommandInteraction,
   ): Future<Either<string, NonEmptyArray<Track>>> {
     return pipe(
       interaction.options.getString(MusicStateMessage.Keys.track),
@@ -227,8 +222,10 @@ const validateMusicAndStateChannel = (
     Either.chain(musicChannel =>
       pipe(
         interaction.channel,
-        Either.fromNullable(
-          "Alors ça, c'est chelou : comment peut-on faire une interaction sans salon ?",
+        Maybe.fromNullable,
+        Maybe.filter(ChannelUtils.isGuildSendable),
+        Either.fromOption(
+          () => "Alors ça, c'est chelou : comment peut-on faire une interaction sans salon ?",
         ),
         Either.map(stateChannel => ({ musicChannel, stateChannel })),
       ),
@@ -238,7 +235,7 @@ const validateMusicAndStateChannel = (
 const validateMusicChannel = (
   interaction: Interaction,
   subscriptionState: MusicState,
-): Either<string, VoiceChannel | StageChannel> =>
+): Either<string, GuildAudioChannel> =>
   pipe(
     interaction.member instanceof GuildMember
       ? Maybe.fromNullable(interaction.member.voice.channel)

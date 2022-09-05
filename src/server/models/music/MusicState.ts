@@ -1,15 +1,14 @@
 import type { AudioPlayer, PlayerSubscription, VoiceConnection } from '@discordjs/voice'
-import type { Message, StageChannel, VoiceChannel } from 'discord.js'
+import type { Message } from 'discord.js'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { pipe } from 'fp-ts/function'
 
 import { createUnion } from '../../../shared/utils/createUnion'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
+import type { GuildAudioChannel } from '../../utils/ChannelUtils'
 import { AudioPlayerState } from './AudioPlayerState'
 import type { Track } from './Track'
-
-export type MusicChannel = VoiceChannel | StageChannel
 
 export type MusicState = typeof u.T
 
@@ -20,20 +19,20 @@ export type MusicStateConnected = typeof u.Connected.T
 type CommonArgs = {
   readonly playing: Maybe<Track>
   readonly queue: List<Track>
-  readonly message: Maybe<Message>
+  readonly message: Maybe<Message<true>>
   readonly pendingEvent: Maybe<string> // because when we call /play, message.thread doesn't exist yet
 }
 
 type DisconnectedArgs = CommonArgs
 
 type ConnectingArgs = CommonArgs & {
-  readonly channel: MusicChannel
+  readonly channel: GuildAudioChannel
   readonly voiceConnection: VoiceConnection
   readonly audioPlayer: AudioPlayer
 }
 
 type ConnectedArgs = CommonArgs & {
-  readonly channel: MusicChannel
+  readonly channel: GuildAudioChannel
   readonly voiceConnection: VoiceConnection
   readonly audioPlayerState: AudioPlayerState
   readonly subscription: Maybe<PlayerSubscription>
@@ -53,14 +52,14 @@ const empty: MusicState = u.Disconnected({
 })
 
 const connecting =
-  (channel: MusicChannel, voiceConnection: VoiceConnection, audioPlayer: AudioPlayer) =>
+  (channel: GuildAudioChannel, voiceConnection: VoiceConnection, audioPlayer: AudioPlayer) =>
   ({ playing, queue, message, pendingEvent }: MusicState): MusicStateConnecting =>
     u.Connecting({ playing, queue, message, pendingEvent, channel, voiceConnection, audioPlayer })
 
 const connected =
   (
     audioPlayer: AudioPlayer,
-    channel: MusicChannel,
+    channel: GuildAudioChannel,
     voiceConnection: VoiceConnection,
     subscription: Maybe<PlayerSubscription>,
   ) =>
@@ -76,7 +75,7 @@ const connected =
       subscription,
     })
 
-const getChannel = (state: MusicState): Maybe<MusicChannel> => {
+const getChannel = (state: MusicState): Maybe<GuildAudioChannel> => {
   switch (state.type) {
     case 'Disconnected':
       return Maybe.none
@@ -119,7 +118,7 @@ const queueTracks =
   })
 
 const setMessage =
-  (message: Maybe<Message>) =>
+  (message: Maybe<Message<true>>) =>
   (state: MusicState): MusicState => ({ ...state, message })
 
 const setPendingEvent =

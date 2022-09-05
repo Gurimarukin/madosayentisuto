@@ -34,126 +34,128 @@ import { Store } from '../models/Store'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { IndexDescription, WithoutProjection } from '../models/mongo/MongoTypings'
 
-export type FpCollection = ReturnType<typeof FpCollection>
+export type FpCollection = ReturnType<ReturnType<ReturnType<typeof FpCollection>>>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const FpCollection = <A, O extends Dict<string, unknown>>(
-  logger: LoggerType,
-  collection: MongoCollection,
-  codecWithName: Tuple<Codec<unknown, OptionalUnlessRequiredId<O>, A>, string>,
-) => {
-  const [codec, codecName] = codecWithName
+export const FpCollection =
+  (logger: LoggerType) =>
+  <A, O extends Dict<string, unknown>>(
+    codecWithName: Tuple<Codec<unknown, OptionalUnlessRequiredId<O>, A>, string>,
+  ) =>
+  (collection: MongoCollection<O>) => {
+    const [codec, codecName] = codecWithName
 
-  return {
-    collection,
+    return {
+      collection,
 
-    path: FpCollectionHelpers.getPath<O>(),
+      path: FpCollectionHelpers.getPath<O>(),
 
-    ensureIndexes: (
-      indexSpecs: List<IndexDescription<A>>,
-      options: { readonly session?: ClientSession } = {},
-    ): Future<void> =>
-      pipe(
-        logger.info('Ensuring indexes'),
-        Future.fromIOEither,
-        Future.chain(() =>
+      ensureIndexes: (
+        indexSpecs: List<IndexDescription<A>>,
+        options: { readonly session?: ClientSession } = {},
+      ): Future<void> =>
+        pipe(
+          logger.info('Ensuring indexes'),
+          Future.fromIOEither,
+          Future.chain(() =>
+            collection.future(c =>
+              c.createIndexes(List.toMutable(indexSpecs as List<MongoIndexDescription>), options),
+            ),
+          ),
+          Future.map(toUnit),
+        ),
+
+      insertOne: (doc: A, options: InsertOneOptions = {}): Future<InsertOneResult<O>> => {
+        const encoded = codec.encode(doc)
+        return pipe(
+          collection.future(c => c.insertOne(encoded, options)),
+          Future.chainFirstIOEitherK(() => logger.debug('Inserted', JSON.stringify(encoded))),
+        )
+      },
+
+      insertMany: (docs: List<A>, options: BulkWriteOptions = {}): Future<InsertManyResult<O>> => {
+        const encoded = docs.map(codec.encode)
+        return pipe(
+          collection.future(c => c.insertMany(encoded, options)),
+          Future.chainFirstIOEitherK(res =>
+            logger.debug(`Inserted ${res.insertedCount} documents`),
+          ),
+        )
+      },
+
+      updateOne: (filter: Filter<O>, doc: A, options: UpdateOptions = {}): Future<UpdateResult> => {
+        const encoded = codec.encode(doc)
+        return pipe(
           collection.future(c =>
-            // eslint-disable-next-line functional/prefer-readonly-type
-            c.createIndexes(indexSpecs as MongoIndexDescription[], options),
+            c.updateOne(filter, { $set: encoded as MatchKeysAndValues<O> }, options),
+          ),
+          Future.chainFirstIOEitherK(() => logger.debug('Updated', JSON.stringify(encoded))),
+        )
+      },
+
+      replaceOne: (
+        filter: Filter<O>,
+        doc: A,
+        options: ReplaceOptions = {},
+      ): Future<UpdateResult | MongoDocument> => {
+        const encoded = codec.encode(doc)
+        return pipe(
+          collection.future(c => c.replaceOne(filter, encoded as O, options)),
+          Future.chainFirstIOEitherK(() => logger.debug('Replaced', JSON.stringify(encoded))),
+        )
+      },
+
+      count: (filter: Filter<O>): Future<number> =>
+        collection.future(c => c.countDocuments(filter)),
+
+      findOne: (
+        filter: Filter<O>,
+        options: WithoutProjection<FindOptions<O>> = {},
+      ): Future<Maybe<A>> =>
+        pipe(
+          collection.future(c => c.findOne(filter, options)),
+          Future.chainFirstIOEitherK(res => logger.debug('Found one', JSON.stringify(res))),
+          Future.map(Maybe.fromNullable),
+          futureMaybe.chain(u =>
+            pipe(
+              codec.decode(u),
+              Either.bimap(decodeError(codecName)(u), Maybe.some),
+              Future.fromEither,
+            ),
           ),
         ),
-        Future.map(toUnit),
-      ),
 
-    insertOne: (doc: A, options: InsertOneOptions = {}): Future<InsertOneResult<O>> => {
-      const encoded = codec.encode(doc)
-      return pipe(
-        collection.future(c => c.insertOne(encoded, options)),
-        Future.chainFirstIOEitherK(() => logger.debug('Inserted', JSON.stringify(encoded))),
-      )
-    },
+      findAll,
 
-    insertMany: (docs: List<A>, options: BulkWriteOptions = {}): Future<InsertManyResult<O>> => {
-      const encoded = docs.map(codec.encode)
-      return pipe(
-        collection.future(c => c.insertMany(encoded, options)),
-        Future.chainFirstIOEitherK(res => logger.debug(`Inserted ${res.insertedCount} documents`)),
-      )
-    },
-
-    updateOne: (filter: Filter<O>, doc: A, options: UpdateOptions = {}): Future<UpdateResult> => {
-      const encoded = codec.encode(doc)
-      return pipe(
-        collection.future(c =>
-          c.updateOne(filter, { $set: encoded as MatchKeysAndValues<O> }, options),
+      deleteOne: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
+        pipe(
+          collection.future(c => c.deleteOne(filter, options)),
+          Future.chainFirstIOEitherK(res => logger.debug(`Deleted ${res.deletedCount} documents`)),
         ),
-        Future.chainFirstIOEitherK(() => logger.debug('Updated', JSON.stringify(encoded))),
-      )
-    },
 
-    replaceOne: (
-      filter: Filter<O>,
-      doc: A,
-      options: ReplaceOptions = {},
-    ): Future<UpdateResult | MongoDocument> => {
-      const encoded = codec.encode(doc)
-      return pipe(
-        collection.future(c => c.replaceOne(filter, encoded as O, options)),
-        Future.chainFirstIOEitherK(() => logger.debug('Replaced', JSON.stringify(encoded))),
-      )
-    },
-
-    count: (filter: Filter<O>): Future<number> => collection.future(c => c.countDocuments(filter)),
-
-    findOne: (
-      filter: Filter<O>,
-      options: WithoutProjection<FindOptions<O>> = {},
-    ): Future<Maybe<A>> =>
-      pipe(
-        collection.future(c => c.findOne(filter, options)),
-        Future.chainFirstIOEitherK(res => logger.debug('Found one', JSON.stringify(res))),
-        Future.map(Maybe.fromNullable),
-        futureMaybe.chain(u =>
-          pipe(
-            codec.decode(u),
-            Either.bimap(decodeError(codecName)(u), Maybe.some),
-            Future.fromEither,
-          ),
+      deleteMany: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
+        pipe(
+          collection.future(c => c.deleteMany(filter, options)),
+          Future.chainFirstIOEitherK(res => logger.debug(`Deleted ${res.deletedCount} documents`)),
         ),
-      ),
 
-    findAll,
+      drop: (): Future<boolean> =>
+        pipe(
+          collection.future(c => c.drop()),
+          Future.chainFirstIOEitherK(() => logger.debug('Dropped collection')),
+        ),
+    }
 
-    deleteOne: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
-      pipe(
-        collection.future(c => c.deleteOne(filter, options)),
-        Future.chainFirstIOEitherK(res => logger.debug(`Deleted ${res.deletedCount} documents`)),
-      ),
-
-    deleteMany: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
-      pipe(
-        collection.future(c => c.deleteMany(filter, options)),
-        Future.chainFirstIOEitherK(res => logger.debug(`Deleted ${res.deletedCount} documents`)),
-      ),
-
-    drop: (): Future<boolean> =>
-      pipe(
-        collection.future(c => c.drop()),
-        Future.chainFirstIOEitherK(() => logger.debug('Dropped collection')),
-      ),
+    function findAll(): (query: Filter<O>, options?: FindOptions<O>) => TObservable<A>
+    function findAll<B>([decoder, decoderName]: Tuple<Decoder<unknown, B>, string>): (
+      query: Filter<O>,
+      options?: FindOptions<O>,
+    ) => TObservable<B>
+    function findAll<B>(
+      [decoder, decoderName] = codecWithName as Tuple<Decoder<unknown, B>, string>,
+    ): (query: Filter<O>, options?: FindOptions<O>) => TObservable<B> {
+      return fpCollectionHelpersFindAll(logger, collection, [decoder, decoderName])
+    }
   }
-
-  function findAll(): (query: Filter<O>, options?: FindOptions<O>) => TObservable<A>
-  function findAll<B>([decoder, decoderName]: Tuple<Decoder<unknown, B>, string>): (
-    query: Filter<O>,
-    options?: FindOptions<O>,
-  ) => TObservable<B>
-  function findAll<B>(
-    [decoder, decoderName] = codecWithName as Tuple<Decoder<unknown, B>, string>,
-  ): (query: Filter<O>, options?: FindOptions<O>) => TObservable<B> {
-    return fpCollectionHelpersFindAll(logger, collection, [decoder, decoderName])
-  }
-}
 
 type Path<S> = {
   <
@@ -185,7 +187,7 @@ const getPath = <A>(): Path<A> => List.mkString('.')
 const fpCollectionHelpersFindAll =
   <O, B>(
     logger: LoggerType,
-    collection: MongoCollection,
+    collection: MongoCollection<O>,
     [decoder, decoderName]: Tuple<Decoder<unknown, B>, string>,
   ) =>
   (query: Filter<O>, options?: FindOptions<O>): TObservable<B> => {

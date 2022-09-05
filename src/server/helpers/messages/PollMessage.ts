@@ -1,4 +1,4 @@
-import { MessageActionRow, MessageButton } from 'discord.js'
+import { ButtonStyle } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
@@ -6,11 +6,13 @@ import { StringUtils } from '../../../shared/utils/StringUtils'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import { constants } from '../../constants'
+import type { ButtonWithCustomIdOptions } from '../../models/discord/MessageComponent'
+import { MessageComponent } from '../../models/discord/MessageComponent'
 import type { ChoiceWithResponses } from '../../models/poll/ChoiceWithResponses'
 import type { ChoiceWithVotesCount } from '../../models/poll/ChoiceWithVotesCount'
 import { PollButton } from '../../models/poll/PollButton'
 import { MessageUtils } from '../../utils/MessageUtils'
-import type { MyMessageOptions } from '../DiscordConnector'
+import type { BaseMessageOptions } from '../DiscordConnector'
 
 // emojis
 
@@ -36,7 +38,7 @@ const poll = (
   question: string,
   answers: NonEmptyArray<ChoiceWithVotesCount>,
   { isAnonymous, isMultiple }: PollOptions,
-): MyMessageOptions => {
+): BaseMessageOptions => {
   const total = pipe(
     answers,
     List.reduce(0, (acc, a) => acc + a.votesCount),
@@ -75,29 +77,28 @@ const poll = (
       }),
     ],
     components: [
-      new MessageActionRow().addComponents(
-        ...pipe(
-          answers,
-          List.mapWithIndex(index => {
-            const res = new MessageButton()
-              .setCustomId(PollButton.format(PollButton.of(index)))
-              .setStyle('SECONDARY')
-
-            return pipe(
+      pipe(
+        answers,
+        NonEmptyArray.mapWithIndex(index =>
+          MessageComponent.buttonWithCustomId({
+            custom_id: PollButton.format(PollButton.of(index)),
+            style: ButtonStyle.Secondary,
+            ...pipe(
               getEmoji(index),
-              Maybe.fold(
-                () => res.setLabel(`${index}`),
-                emoji => res.setEmoji(emoji),
+              Maybe.fold<string, Pick<ButtonWithCustomIdOptions, 'label' | 'emoji'>>(
+                () => ({ label: `${index}` }),
+                emoji => ({ emoji }),
               ),
-            )
+            ),
           }),
         ),
+        MessageComponent.row,
       ),
     ],
   }
 }
 
-const detail = (answers: NonEmptyArray<ChoiceWithResponses>): MyMessageOptions => ({
+const detail = (answers: NonEmptyArray<ChoiceWithResponses>): BaseMessageOptions => ({
   embeds: pipe(
     answers,
     NonEmptyArray.mapWithIndex((index, { responses }) =>

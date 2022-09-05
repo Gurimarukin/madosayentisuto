@@ -6,7 +6,7 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { Migration } from '../models/migration/Migration'
-import type { MongoCollection } from '../models/mongo/MongoCollection'
+import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 import type { MigrationPersistence } from '../persistence/MigrationPersistence'
 import { Migration202203281837 } from './migration/Migration202203281837'
 import { Migration202204011827 } from './migration/Migration202204011827'
@@ -16,7 +16,7 @@ export type MigrationService = ReturnType<typeof MigrationService>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const MigrationService = (
   Logger: LoggerGetter,
-  mongoCollection: (collName: string) => MongoCollection,
+  mongoCollection: MongoCollectionGetter,
   migrationPersistence: MigrationPersistence,
 ) => {
   const logger = Logger('MigrationService')

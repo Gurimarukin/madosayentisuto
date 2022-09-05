@@ -1,4 +1,4 @@
-import type { GuildMember, StageChannel, VoiceChannel } from 'discord.js'
+import type { GuildMember } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
@@ -9,6 +9,7 @@ import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStateService } from '../services/GuildStateService'
+import type { GuildAudioChannel } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -32,10 +33,7 @@ export const NotifyVoiceCallObserver = (
     }
   })
 
-  function onPublicCallStarted(
-    member: GuildMember,
-    channel: VoiceChannel | StageChannel,
-  ): Future<void> {
+  function onPublicCallStarted(member: GuildMember, channel: GuildAudioChannel): Future<void> {
     const log = LogUtils.pretty(logger, member.guild)
     return pipe(
       log.info(`Call started in 📢${channel.name} by ${member.user.tag}`),
@@ -58,10 +56,7 @@ export const NotifyVoiceCallObserver = (
     )
   }
 
-  function onPublicCallEnded(
-    member: GuildMember,
-    channel: VoiceChannel | StageChannel,
-  ): Future<void> {
+  function onPublicCallEnded(member: GuildMember, channel: GuildAudioChannel): Future<void> {
     const log = LogUtils.pretty(logger, member.guild)
     return pipe(
       log.info(`Call ended in 📢${channel.name} by ${member.user.tag}`),

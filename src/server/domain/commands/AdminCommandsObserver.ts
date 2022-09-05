@@ -1,18 +1,14 @@
 import type {
-  APIInteractionDataResolvedChannel,
   APIInteractionGuildMember,
+  APIPartialChannel,
   APIRole,
-} from 'discord-api-types/payloads/v9'
-import { ChannelType } from 'discord-api-types/payloads/v9'
-import type {
-  CommandInteraction,
+  ChatInputCommandInteraction,
   Guild,
-  GuildChannel,
   GuildMember,
   Message,
   TextBasedChannel,
-  ThreadChannel,
 } from 'discord.js'
+import { ChannelType } from 'discord.js'
 import { Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
@@ -32,16 +28,17 @@ import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { initCallsMessage } from '../../helpers/messages/initCallsMessage'
-import { Command } from '../../models/Command'
 import { RoleId } from '../../models/RoleId'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
+import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { Calls } from '../../models/guildState/Calls'
 import type { GuildState } from '../../models/guildState/GuildState'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { BotStateService } from '../../services/BotStateService'
 import type { GuildStateService } from '../../services/GuildStateService'
+import type { GuildSendableChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { LogUtils } from '../../utils/LogUtils'
 
@@ -214,11 +211,11 @@ export const AdminCommandsObserver = (
     MadEvent,
     'InteractionCreate',
   )(({ interaction }) => {
-    if (interaction.isCommand()) return onCommand(interaction)
+    if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
     return Future.unit
   })
 
-  function onCommand(interaction: CommandInteraction): Future<void> {
+  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<void> {
     switch (interaction.commandName) {
       case Keys.admin:
         return onAdminCommand(interaction)
@@ -226,7 +223,7 @@ export const AdminCommandsObserver = (
     return Future.unit
   }
 
-  function onAdminCommand(interaction: CommandInteraction): Future<void> {
+  function onAdminCommand(interaction: ChatInputCommandInteraction): Future<void> {
     return pipe(
       validateAdminCommand(interaction),
       Either.fold(
@@ -237,7 +234,7 @@ export const AdminCommandsObserver = (
   }
 
   function validateAdminCommand(
-    interaction: CommandInteraction,
+    interaction: ChatInputCommandInteraction,
   ): Either<string, GroupWithSubcommand> {
     const isAdmin = pipe(
       admins,
@@ -253,7 +250,7 @@ export const AdminCommandsObserver = (
   }
 
   function onAdminSubcommandGroup(
-    interaction: CommandInteraction,
+    interaction: ChatInputCommandInteraction,
   ): (groupWithSubcommand: GroupWithSubcommand) => Future<void> {
     return ({ subcommandGroup, subcommand }) => {
       switch (subcommandGroup) {
@@ -278,7 +275,7 @@ export const AdminCommandsObserver = (
    * state
    */
 
-  function onState(interaction: CommandInteraction, subcommand: string): Future<void> {
+  function onState(interaction: ChatInputCommandInteraction, subcommand: string): Future<void> {
     switch (subcommand) {
       case Keys.get:
         return onStateGet(interaction)
@@ -286,7 +283,7 @@ export const AdminCommandsObserver = (
     return Future.unit
   }
 
-  function onStateGet(interaction: CommandInteraction): Future<void> {
+  function onStateGet(interaction: ChatInputCommandInteraction): Future<void> {
     return pipe(
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
       Future.map(() => Maybe.fromNullable(interaction.guild)),
@@ -303,7 +300,7 @@ export const AdminCommandsObserver = (
    * calls
    */
 
-  function onCalls(interaction: CommandInteraction, subcommand: string): Future<void> {
+  function onCalls(interaction: ChatInputCommandInteraction, subcommand: string): Future<void> {
     switch (subcommand) {
       case Keys.init:
         return onCallsInit(interaction)
@@ -311,7 +308,7 @@ export const AdminCommandsObserver = (
     return Future.unit
   }
 
-  function onCallsInit(interaction: CommandInteraction): Future<void> {
+  function onCallsInit(interaction: ChatInputCommandInteraction): Future<void> {
     const maybeGuild = Maybe.fromNullable(interaction.guild)
     return pipe(
       DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
@@ -345,7 +342,7 @@ export const AdminCommandsObserver = (
       sendInitMessage(commandChannel, channel, role),
       futureMaybe.matchE(
         () =>
-          ChannelUtils.isNamedChannel(commandChannel)
+          ChannelUtils.isNamed(commandChannel)
             ? pipe(
                 DiscordConnector.sendPrettyMessage(
                   author,
@@ -361,7 +358,7 @@ export const AdminCommandsObserver = (
 
   function sendInitMessage(
     commandChannel: TextBasedChannel,
-    callsChannel: ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel,
+    callsChannel: GuildSendableChannel,
     role: Role | APIRole,
   ): Future<Maybe<Message>> {
     return DiscordConnector.sendMessage(commandChannel, initCallsMessage(callsChannel, role))
@@ -385,7 +382,10 @@ export const AdminCommandsObserver = (
    * defaultrole
    */
 
-  function onDefaultRole(interaction: CommandInteraction, subcommand: string): Future<void> {
+  function onDefaultRole(
+    interaction: ChatInputCommandInteraction,
+    subcommand: string,
+  ): Future<void> {
     switch (subcommand) {
       case Keys.set:
         return onDefaultRoleSet(interaction)
@@ -393,7 +393,7 @@ export const AdminCommandsObserver = (
     return Future.unit
   }
 
-  function onDefaultRoleSet(interaction: CommandInteraction): Future<void> {
+  function onDefaultRoleSet(interaction: ChatInputCommandInteraction): Future<void> {
     return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
@@ -418,7 +418,7 @@ export const AdminCommandsObserver = (
    * itsfriday
    */
 
-  function onItsFriday(interaction: CommandInteraction, subcommand: string): Future<void> {
+  function onItsFriday(interaction: ChatInputCommandInteraction, subcommand: string): Future<void> {
     switch (subcommand) {
       case Keys.set:
         return onItsFridaySet(interaction)
@@ -426,7 +426,7 @@ export const AdminCommandsObserver = (
     return Future.unit
   }
 
-  function onItsFridaySet(interaction: CommandInteraction): Future<void> {
+  function onItsFridaySet(interaction: ChatInputCommandInteraction): Future<void> {
     return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
@@ -449,7 +449,7 @@ export const AdminCommandsObserver = (
    * birthday
    */
 
-  function onBirthday(interaction: CommandInteraction, subcommand: string): Future<void> {
+  function onBirthday(interaction: ChatInputCommandInteraction, subcommand: string): Future<void> {
     switch (subcommand) {
       case Keys.set:
         return onBirthdaySet(interaction)
@@ -457,7 +457,7 @@ export const AdminCommandsObserver = (
     return Future.unit
   }
 
-  function onBirthdaySet(interaction: CommandInteraction): Future<void> {
+  function onBirthdaySet(interaction: ChatInputCommandInteraction): Future<void> {
     return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
@@ -480,7 +480,7 @@ export const AdminCommandsObserver = (
    * activity
    */
 
-  function onActivity(interaction: CommandInteraction, subcommand: string): Future<void> {
+  function onActivity(interaction: ChatInputCommandInteraction, subcommand: string): Future<void> {
     switch (subcommand) {
       case Keys.get:
         return onActivityGet(interaction)
@@ -494,7 +494,7 @@ export const AdminCommandsObserver = (
     return Future.unit
   }
 
-  function onActivityGet(interaction: CommandInteraction): Future<void> {
+  function onActivityGet(interaction: ChatInputCommandInteraction): Future<void> {
     return withFollowUp(interaction)(
       pipe(
         botStateService.find(),
@@ -504,7 +504,7 @@ export const AdminCommandsObserver = (
     )
   }
 
-  function onActivityUnset(interaction: CommandInteraction): Future<void> {
+  function onActivityUnset(interaction: ChatInputCommandInteraction): Future<void> {
     return withFollowUp(interaction)(
       pipe(
         botStateService.unsetActivity(),
@@ -513,7 +513,7 @@ export const AdminCommandsObserver = (
     )
   }
 
-  function onActivitySet(interaction: CommandInteraction): Future<void> {
+  function onActivitySet(interaction: ChatInputCommandInteraction): Future<void> {
     return withFollowUp(interaction)(
       pipe(
         ValidatedNea.sequenceS({
@@ -530,7 +530,7 @@ export const AdminCommandsObserver = (
     )
   }
 
-  function onActivityRefresh(interaction: CommandInteraction): Future<void> {
+  function onActivityRefresh(interaction: ChatInputCommandInteraction): Future<void> {
     return withFollowUp(interaction)(
       pipe(
         botStateService.discordSetActivityFromDb(),
@@ -543,7 +543,9 @@ export const AdminCommandsObserver = (
    * Helpers
    */
 
-  function withFollowUp(interaction: CommandInteraction): (f: Future<string>) => Future<void> {
+  function withFollowUp(
+    interaction: ChatInputCommandInteraction,
+  ): (f: Future<string>) => Future<void> {
     return f =>
       pipe(
         DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
@@ -568,9 +570,7 @@ export const AdminCommandsObserver = (
     )
   }
 
-  function fetchChannel(
-    maybeChannel: Maybe<ThreadChannel | APIInteractionDataResolvedChannel | GuildChannel>,
-  ): Future<Maybe<TextChannel>> {
+  function fetchChannel(maybeChannel: Maybe<APIPartialChannel>): Future<Maybe<TextChannel>> {
     return pipe(
       futureMaybe.fromOption(maybeChannel),
       futureMaybe.chain(channel =>
@@ -578,7 +578,7 @@ export const AdminCommandsObserver = (
           ? Future.right(Maybe.some(channel))
           : pipe(
               discord.fetchChannel(ChannelId.fromChannel(channel)),
-              Future.map(Maybe.filter(ChannelUtils.isTextChannel)),
+              Future.map(Maybe.filter(ChannelUtils.isGuildText)),
             ),
       ),
     )
@@ -632,6 +632,8 @@ const formatState = ({
   )
 
 const formatCalls = ({ message, channel, role }: Calls): string =>
+  // TODO: remove disable
+  // eslint-disable-next-line @typescript-eslint/no-base-to-string
   `${role} - ${channel} - <${message.url}>`
 
 const formatActivity = ({ type, name }: Activity): string => `\`${type} ${name}\``

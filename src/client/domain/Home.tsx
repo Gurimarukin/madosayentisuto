@@ -14,18 +14,18 @@ import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
 const guildsDecoder = List.decoder(GuildViewShort.codec)
 
 export const Home = (): JSX.Element => (
-  <div className="flex overflow-auto flex-col h-full">
+  <div className="flex h-full flex-col overflow-auto">
     <div className="flex justify-center p-6">
       <h1 className="text-6xl">Bot Jean Plank</h1>
     </div>
-    <div className="flex flex-col grow items-center p-4">
+    <div className="flex grow flex-col items-center p-4">
       {basicAsyncRenderer(useMySWR(apiRoutes.guilds.get, {}, [guildsDecoder, 'GuildViewShort[]']))(
         guilds => (
           <div className="flex flex-col gap-14 self-stretch">
             <Guilds guilds={guilds} />
             <div className="flex flex-col gap-3">
               <h2 className="text-3xl">Général</h2>
-              <ul className="flex flex-col gap-3 pl-9 text-xl list-disc">
+              <ul className="flex list-disc flex-col gap-3 pl-9 text-xl">
                 <li>
                   <Link to={appRoutes.scheduledEvents} className="underline">
                     Évènements
@@ -52,23 +52,23 @@ type GuildsProps = {
 const Guilds = ({ guilds }: GuildsProps): JSX.Element => (
   <div className="flex flex-col gap-3">
     <h2 className="text-3xl">Serveurs</h2>
-    <ul className="flex flex-wrap gap-5 items-center">
+    <ul className="flex flex-wrap items-center gap-5">
       {guilds.map(guild => (
         <li key={GuildId.unwrap(guild.id)}>
           <Link
             to={appRoutes.guild.index(guild.id)}
-            className="flex flex-col gap-2 items-center p-5 pb-3 bg-gray2 rounded-xl border-4 border-gray1 shadow-lg"
+            className="flex flex-col items-center gap-2 rounded-xl border-4 border-gray1 bg-gray2 p-5 pb-3 shadow-lg"
           >
             {pipe(
               guild.icon,
               Maybe.fold(
                 () => null,
                 icon => (
-                  <div className="overflow-hidden w-32 h-32 rounded-lg">
+                  <div className="h-32 w-32 overflow-hidden rounded-lg">
                     <img
                       src={icon}
                       alt={`Icone du serveur ${guild.name}`}
-                      className="object-cover w-full h-full"
+                      className="h-full w-full object-cover"
                     />
                   </div>
                 ),

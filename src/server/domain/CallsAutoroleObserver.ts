@@ -1,5 +1,4 @@
-import type { APIInteractionGuildMember } from 'discord-api-types/payloads/v9'
-import type { ButtonInteraction, Guild } from 'discord.js'
+import type { APIInteractionGuildMember, ButtonInteraction, Guild } from 'discord.js'
 import { GuildMember } from 'discord.js'
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'

@@ -15,7 +15,7 @@ export type UserView = C.TypeOf<typeof codec>
 const fromUser = (u: User): UserView => ({
   id: DiscordUserId.fromUser(u),
   tag: u.tag,
-  avatar: Maybe.fromNullable(u.displayAvatarURL({ dynamic: true })),
+  avatar: Maybe.fromNullable(u.displayAvatarURL()),
 })
 
 export const UserView = { fromUser, codec }

@@ -1,5 +1,4 @@
-import type { APIMessage } from 'discord-api-types/v9'
-import type { Message, PartialMessage } from 'discord.js'
+import type { APIMessage, Message, PartialMessage } from 'discord.js'
 import * as C from 'io-ts/Codec'
 import type { Newtype } from 'newtype-ts'
 import { iso } from 'newtype-ts'

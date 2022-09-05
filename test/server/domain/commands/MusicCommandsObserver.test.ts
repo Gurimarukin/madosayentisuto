@@ -1,16 +1,21 @@
+import { pipe } from 'fp-ts/function'
+
 import type { LoggerType } from '../../../../src/shared/models/LoggerType'
 import { MsDuration } from '../../../../src/shared/models/MsDuration'
-import { Either, Maybe, NonEmptyArray } from '../../../../src/shared/utils/fp'
+import { Either, IO, Maybe, NonEmptyArray } from '../../../../src/shared/utils/fp'
 
+import { Config } from '../../../../src/server/Config'
 import { MusicCommandsObserver } from '../../../../src/server/domain/commands/MusicCommandsObserver'
 import { YtDlp } from '../../../../src/server/helpers/YtDlp'
 import { Track } from '../../../../src/server/models/music/Track'
 import type { GuildStateService } from '../../../../src/server/services/GuildStateService'
 
 describe('validateTracks', () => {
+  const { ytDlpPath } = pipe(Config.load, IO.runUnsafe)
+
   const { validateTracks } = MusicCommandsObserver(
     () => ({} as LoggerType),
-    YtDlp('/usr/local/bin/yt-dlp'),
+    YtDlp(ytDlpPath),
     {} as GuildStateService,
   )
 
@@ -53,7 +58,7 @@ describe('validateTracks', () => {
     }))
 
   it('should search', () =>
-    validateTracks('sardo nerveux')().then(res => {
+    validateTracks('sardoche le nerveux')().then(res => {
       expect(res).toStrictEqual(
         Either.right(
           Either.right(
@@ -74,7 +79,7 @@ describe('validateTracks', () => {
       expect(res).toStrictEqual(
         Either.left(
           Error(
-            `Command failed with exit code 1: /usr/local/bin/yt-dlp https://dl.blbl.ch --dump-single-json --default-search ytsearch --abort-on-error`,
+            `Command failed with exit code 1: ${ytDlpPath} https://dl.blbl.ch --dump-single-json --default-search ytsearch --abort-on-error`,
           ),
         ),
       )

@@ -7,8 +7,7 @@ import { Future } from '../../shared/utils/fp'
 import { FpCollection } from '../helpers/FpCollection'
 import { MessageId } from '../models/MessageId'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
-import type { MongoCollection } from '../models/mongo/MongoCollection'
-import type { PollQuestionOutput } from '../models/poll/PollQuestion'
+import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 import { PollQuestion } from '../models/poll/PollQuestion'
 import { ThreadWithMessage } from '../models/poll/ThreadWithMessage'
 
@@ -17,13 +16,11 @@ export type PollQuestionPersistence = ReturnType<typeof PollQuestionPersistence>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollQuestionPersistence = (
   Logger: LoggerGetter,
-  mongoCollection: (collName: string) => MongoCollection,
+  mongoCollection: MongoCollectionGetter,
 ) => {
   const logger = Logger('PollQuestionPersistence')
-  const collection = FpCollection<PollQuestion, PollQuestionOutput>(
-    logger,
+  const collection = FpCollection(logger)([PollQuestion.codec, 'PollQuestion'])(
     mongoCollection('pollQuestion'),
-    [PollQuestion.codec, 'PollQuestion'],
   )
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([

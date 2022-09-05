@@ -9,8 +9,7 @@ import { List } from '../../shared/utils/fp'
 import { FpCollection } from '../helpers/FpCollection'
 import { MessageId } from '../models/MessageId'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
-import type { MongoCollection } from '../models/mongo/MongoCollection'
-import type { PollResponseOutput } from '../models/poll/PollResponse'
+import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 import { PollResponse } from '../models/poll/PollResponse'
 
 export type PollResponsePersistence = ReturnType<typeof PollResponsePersistence>
@@ -18,13 +17,11 @@ export type PollResponsePersistence = ReturnType<typeof PollResponsePersistence>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollResponsePersistence = (
   Logger: LoggerGetter,
-  mongoCollection: (collName: string) => MongoCollection,
+  mongoCollection: MongoCollectionGetter,
 ) => {
   const logger = Logger('PollResponsePersistence')
-  const collection = FpCollection<PollResponse, PollResponseOutput>(
-    logger,
+  const collection = FpCollection(logger)([PollResponse.codec, 'PollResponse'])(
     mongoCollection('pollResponse'),
-    [PollResponse.codec, 'PollResponse'],
   )
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([

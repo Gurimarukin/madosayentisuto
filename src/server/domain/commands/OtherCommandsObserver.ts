@@ -1,4 +1,4 @@
-import type { CommandInteraction } from 'discord.js'
+import type { ChatInputCommandInteraction } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
@@ -7,7 +7,7 @@ import { StringUtils } from '../../../shared/utils/StringUtils'
 import { Either, Future } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import { Command } from '../../models/Command'
+import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 
 const Keys = {
@@ -40,11 +40,11 @@ export const OtherCommandsObserver = () => {
     MadEvent,
     'InteractionCreate',
   )(({ interaction }) => {
-    if (interaction.isCommand()) return onCommand(interaction)
+    if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
     return Future.unit
   })
 
-  function onCommand(interaction: CommandInteraction): Future<void> {
+  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<void> {
     switch (interaction.commandName) {
       case Keys.ping:
         return onPing(interaction)
@@ -54,11 +54,11 @@ export const OtherCommandsObserver = () => {
     return Future.unit
   }
 
-  function onPing(interaction: CommandInteraction): Future<void> {
+  function onPing(interaction: ChatInputCommandInteraction): Future<void> {
     return DiscordConnector.interactionReply(interaction, { content: 'pong', ephemeral: true })
   }
 
-  function onRandomCase(interaction: CommandInteraction): Future<void> {
+  function onRandomCase(interaction: ChatInputCommandInteraction): Future<void> {
     return pipe(
       D.string.decode(interaction.options.getString(Keys.message)),
       Either.bimap(

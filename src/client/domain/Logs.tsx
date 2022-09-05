@@ -48,26 +48,26 @@ export const Logs = (): JSX.Element => {
   }, [logs, isFollowingScroll, scrollDown])
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       <Header>
-        <div className="flex gap-8 items-center">
+        <div className="flex items-center gap-8">
           <h1 className="text-3xl">Console</h1>
           <div className="flex gap-2">
             <span>Total logs :</span>
             <pre>{totalCount}</pre>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-2">
             <span>Niveau de log :</span>
             <select
               value={selectedLevel}
               onChange={handleChange}
-              className="py-1 font-mono text-sm text-gray1 bg-gray4 rounded-sm border-none"
+              className="rounded-sm border-none bg-gray4 py-1 font-mono text-sm text-gray1"
             >
               {pipe(
                 LogLevel.values,
                 List.filter(l => l !== 'debug'),
                 List.map(level => (
-                  <option key={level} value={level} className="font-mono text-xs cursor-pointer">
+                  <option key={level} value={level} className="cursor-pointer font-mono text-xs">
                     {level.toUpperCase()}
                   </option>
                 )),
@@ -77,7 +77,7 @@ export const Logs = (): JSX.Element => {
           <button
             type="button"
             onClick={scrollDown}
-            className="py-1 px-2 text-sm bg-gray1 rounded-md border border-gray4 cursor-pointer"
+            className="cursor-pointer rounded-md border border-gray4 bg-gray1 py-1 px-2 text-sm"
           >
             Scroll en bas
           </button>
@@ -86,9 +86,9 @@ export const Logs = (): JSX.Element => {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="overflow-x-hidden overflow-y-auto grow pt-2 pr-4 pb-6 pl-3 bg-black"
+        className="grow overflow-y-auto overflow-x-hidden bg-black pt-2 pr-4 pb-6 pl-3"
       >
-        <pre className="grid grid-cols-[min-content_min-content_1fr] gap-x-3 w-full text-sm">
+        <pre className="grid w-full grid-cols-[min-content_min-content_1fr] gap-x-3 text-sm">
           {filteredLogs.map(({ date, name, level, message }, i) => (
             // eslint-disable-next-line react/no-array-index-key
             <div key={i} className="contents">

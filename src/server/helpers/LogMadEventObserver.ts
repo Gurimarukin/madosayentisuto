@@ -1,4 +1,3 @@
-import type { StageChannel, VoiceChannel } from 'discord.js'
 import util from 'util'
 
 import type { LoggerType } from '../../shared/models/LoggerType'
@@ -6,6 +5,7 @@ import type { TObserver } from '../../shared/models/rx/TObserver'
 import { Future } from '../../shared/utils/fp'
 
 import type { MadEvent } from '../models/event/MadEvent'
+import type { GuildAudioChannel } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
 const { format } = LogUtils
@@ -26,7 +26,7 @@ export const LogMadEventObserver = (logger: LoggerType): TObserver<MadEvent> => 
             event.interaction.user,
             event.interaction.channel,
           )} ${
-            event.interaction.isCommand()
+            event.interaction.isChatInputCommand()
               ? event.interaction
               : event.interaction.isButton()
               ? `Button("${event.interaction.customId}")`
@@ -63,5 +63,5 @@ export const LogMadEventObserver = (logger: LoggerType): TObserver<MadEvent> => 
   },
 })
 
-const maybeChannel = (channel: VoiceChannel | StageChannel | null): string =>
+const maybeChannel = (channel: GuildAudioChannel | null): string =>
   channel === null ? 'null' : `#${channel.name}`

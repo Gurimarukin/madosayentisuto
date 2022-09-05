@@ -12,7 +12,7 @@ import { VideosMetadata } from '../models/music/VideosMetadata'
 export type YtDlp = ReturnType<typeof YtDlp>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const YtDlp = (binaryPath: string) => {
+export const YtDlp = (binaryPath?: string) => {
   const ytDlpExec = createYtDlp(binaryPath)
 
   return {

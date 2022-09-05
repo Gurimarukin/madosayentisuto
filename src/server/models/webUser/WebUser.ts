@@ -18,6 +18,5 @@ const of = (id: WebUserId, userName: UserName, password: HashedPassword): WebUse
 })
 
 export type WebUser = C.TypeOf<typeof codec>
-export type WebUserOutput = C.OutputOf<typeof codec>
 
 export const WebUser = { codec, of }

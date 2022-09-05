@@ -1,5 +1,4 @@
-import type { APIPartialChannel } from 'discord-api-types/payloads/v9'
-import type { AnyChannel, Channel } from 'discord.js'
+import type { APIPartialChannel } from 'discord.js'
 import * as C from 'io-ts/Codec'
 import type { Newtype } from 'newtype-ts'
 import { iso } from 'newtype-ts'
@@ -10,8 +9,7 @@ export type ChannelId = Newtype<{ readonly ChannelId: unique symbol }, string>
 
 const { wrap, unwrap } = iso<ChannelId>()
 
-const fromChannel = (channel: AnyChannel | Channel | APIPartialChannel): ChannelId =>
-  wrap(channel.id)
+const fromChannel = (channel: APIPartialChannel): ChannelId => wrap(channel.id)
 
 const codec = fromNewtype<ChannelId>(C.string)
 

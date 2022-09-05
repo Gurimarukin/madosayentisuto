@@ -1,14 +1,12 @@
-import type { APIMessage } from 'discord-api-types/payloads/v9'
-import { Message } from 'discord.js'
-import type { Guild, ThreadChannel } from 'discord.js'
+import { Message, ThreadAutoArchiveDuration } from 'discord.js'
 import type {
-  ButtonInteraction,
-  CommandInteraction,
-  Interaction,
-  MessageContextMenuInteraction,
-  PartialMessage,
-  User,
+  APIMessage,
+  ChatInputCommandInteraction,
+  Guild,
+  MessageContextMenuCommandInteraction,
+  ThreadChannel,
 } from 'discord.js'
+import type { ButtonInteraction, Interaction, PartialMessage, User } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
@@ -28,8 +26,8 @@ import { futureMaybe } from '../../../shared/utils/futureMaybe'
 import type { Config } from '../../Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { PollMessage } from '../../helpers/messages/PollMessage'
-import { Command } from '../../models/Command'
 import { MessageId } from '../../models/MessageId'
+import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import { ChoiceWithResponses } from '../../models/poll/ChoiceWithResponses'
@@ -118,14 +116,14 @@ export const PollCommandsObserver = (
 
   // onInteraction
   function onInteraction(interaction: Interaction): Future<void> {
-    if (interaction.isCommand()) return onCommand(interaction)
+    if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
     if (interaction.isButton()) return onButton(interaction)
-    if (interaction.isMessageContextMenu()) return onMessageContextMenu(interaction)
+    if (interaction.isMessageContextMenuCommand()) return onMessageContextMenu(interaction)
     return Future.unit
   }
 
-  // onCommand
-  function onCommand(interaction: CommandInteraction): Future<void> {
+  // onChatInputCommand
+  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<void> {
     switch (interaction.commandName) {
       case Keys.poll:
         return onPollCommand(interaction)
@@ -134,7 +132,7 @@ export const PollCommandsObserver = (
   }
 
   // onPollCommand
-  function onPollCommand(interaction: CommandInteraction): Future<void> {
+  function onPollCommand(interaction: ChatInputCommandInteraction): Future<void> {
     return pipe(
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: false }),
       Future.map(() => Maybe.fromNullable(interaction.options.getString(Keys.question))),
@@ -149,7 +147,7 @@ export const PollCommandsObserver = (
   }
 
   function initPoll(
-    interaction: CommandInteraction,
+    interaction: ChatInputCommandInteraction,
     user: User,
     question: string,
     choices: NonEmptyArray<string>,
@@ -400,7 +398,7 @@ export const PollCommandsObserver = (
   }
 
   function getThread(thread: ChannelId): Future<Maybe<ThreadChannel>> {
-    return pipe(discord.fetchChannel(thread), futureMaybe.filter(ChannelUtils.isThreadChannel))
+    return pipe(discord.fetchChannel(thread), futureMaybe.filter(ChannelUtils.isThread))
   }
 
   function reInitDetailMessage(
@@ -432,7 +430,7 @@ export const PollCommandsObserver = (
     return pipe(
       DiscordConnector.messageStartThread(pollMessage, {
         name: threadName,
-        autoArchiveDuration: 'MAX',
+        autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
       }),
       Future.chain(thread => initDetailMessageFromThread(choices, thread)),
     )
@@ -479,7 +477,7 @@ export const PollCommandsObserver = (
   }
 
   // onMessageContextMenu
-  function onMessageContextMenu(interaction: MessageContextMenuInteraction): Future<void> {
+  function onMessageContextMenu(interaction: MessageContextMenuCommandInteraction): Future<void> {
     return pipe(
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
       Future.chain(() => removePollIfAllowed(interaction)),
@@ -491,7 +489,9 @@ export const PollCommandsObserver = (
     )
   }
 
-  function removePollIfAllowed(interaction: MessageContextMenuInteraction): Future<Maybe<string>> {
+  function removePollIfAllowed(
+    interaction: MessageContextMenuCommandInteraction,
+  ): Future<Maybe<string>> {
     const messageId = MessageId.fromMessage(interaction.targetMessage)
     return pipe(
       pollService.lookupQuestionByMessage(messageId),
@@ -552,7 +552,7 @@ export const PollCommandsObserver = (
         threadId =>
           pipe(
             discord.fetchChannel(threadId),
-            futureMaybe.filter(ChannelUtils.isThreadChannel),
+            futureMaybe.filter(ChannelUtils.isThread),
             futureMaybe.chainTaskEitherK(DiscordConnector.threadDelete),
             Future.map(Maybe.getOrElse(() => false)),
             Future.chainIOEitherK(success =>
@@ -597,7 +597,7 @@ export const PollCommandsObserver = (
   }
 }
 
-const getChoices = (interaction: CommandInteraction): NonEmptyArray<string> =>
+const getChoices = (interaction: ChatInputCommandInteraction): NonEmptyArray<string> =>
   pipe(
     Keys.choices,
     List.filterMap(choice => pipe(interaction.options.getString(choice), Maybe.fromNullable)),

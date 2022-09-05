@@ -22,11 +22,11 @@ export const ScheduledEvents = (): JSX.Element =>
       'ScheduledEventView[]',
     ]),
   )(events => (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       <Header>
         <h1 className="text-3xl">Rappels</h1>
       </Header>
-      <div className="overflow-auto grow">
+      <div className="grow overflow-auto">
         <table className="grid grid-cols-[auto_auto_auto_auto_1fr]">
           <thead className="contents">
             <tr className="contents text-lg font-bold">
@@ -62,7 +62,7 @@ const renderEvent = (event: ScheduledEventView): JSX.Element => {
               Maybe.fold(
                 () => null,
                 avatar => (
-                  <div className="overflow-hidden w-7 h-7 rounded-full">
+                  <div className="h-7 w-7 overflow-hidden rounded-full">
                     <img src={avatar} alt={`Avatar de ${event.createdBy.tag}`} />
                   </div>
                 ),
@@ -91,11 +91,11 @@ const renderEvent = (event: ScheduledEventView): JSX.Element => {
                             <Tooltip
                               title={<span className="whitespace-nowrap">{guild.name}</span>}
                             >
-                              <div className="overflow-hidden w-8 h-8 rounded-md">
+                              <div className="h-8 w-8 overflow-hidden rounded-md">
                                 <img
                                   src={icon}
                                   alt={`Icone du serveur ${guild.name}`}
-                                  className="object-cover w-full h-full"
+                                  className="h-full w-full object-cover"
                                 />
                               </div>
                             </Tooltip>
@@ -130,7 +130,7 @@ const renderEvent = (event: ScheduledEventView): JSX.Element => {
 
 const formatScheduledAt = DayJs.format('DD/MM/YYYY, HH:mm', { locale: true })
 
-const Th: React.FC = ({ children }) => <th className="flex py-3 px-5 bg-gray2">{children}</th>
+const Th: React.FC = ({ children }) => <th className="flex bg-gray2 py-3 px-5">{children}</th>
 
 type TdProps = {
   readonly className?: string

@@ -1,4 +1,4 @@
-import type { ApplicationCommandType } from 'discord-api-types/payloads/v9'
+import type { ApplicationCommandType } from 'discord.js'
 import * as D from 'io-ts/Decoder'
 
 import { GuildId } from '../../../shared/models/guild/GuildId'

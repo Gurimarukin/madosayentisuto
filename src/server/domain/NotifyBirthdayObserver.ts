@@ -1,4 +1,4 @@
-import type { Guild, GuildMember, TextChannel } from 'discord.js'
+import type { Guild, GuildMember } from 'discord.js'
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
@@ -17,6 +17,7 @@ import { MadEvent } from '../models/event/MadEvent'
 import type { MemberBirthdate } from '../models/member/MemberBirthdate'
 import type { GuildStateService } from '../services/GuildStateService'
 import type { MemberBirthdateService } from '../services/MemberBirthdateService'
+import type { GuildSendableChannel } from '../utils/ChannelUtils'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const NotifyBirthdayObserver = (
@@ -81,7 +82,7 @@ export const NotifyBirthdayObserver = (
 
   function notifyMembersForChannel(
     now: DayJs,
-    channel: TextChannel,
+    channel: GuildSendableChannel,
     members: NonEmptyArray<Tuple<GuildMember, DayJs>>,
   ): Future<void> {
     return pipe(

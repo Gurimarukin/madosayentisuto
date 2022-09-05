@@ -1,6 +1,16 @@
+import type { Guild, Role, User } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
+import type { DayJs } from '../../../shared/models/DayJs'
+import type { ScheduledEventViewReminder } from '../../../shared/models/ScheduledEventView'
+import { UserView } from '../../../shared/models/UserView'
+import { GuildViewShort } from '../../../shared/models/guild/GuildViewShort'
+import { RoleView } from '../../../shared/models/guild/RoleView'
+import { Maybe } from '../../../shared/utils/fp'
+
+import type { NamedChannel } from '../../utils/ChannelUtils'
+import { ChannelUtils } from '../../utils/ChannelUtils'
 import { DayJsFromDate } from '../../utils/ioTsUtils'
 import { Reminder as ReminderType } from './Reminder'
 
@@ -29,7 +39,6 @@ const codec = pipe(
 )
 
 export type ScheduledEvent = C.TypeOf<typeof codec>
-export type ScheduledEventOutput = C.OutputOf<typeof codec>
 
 type Common = C.TypeOf<typeof commonCodec>
 
@@ -39,8 +48,39 @@ export type ScheduledEventItsFriday = Common & C.TypeOf<typeof itsFridayCodec>
 type ReminderArgs = Omit<ScheduledEventReminder, 'type'>
 type ItsFridayArgs = Omit<ScheduledEventItsFriday, 'type'>
 
+type ToViewArgs = {
+  readonly scheduledAt: DayJs
+  readonly createdBy: User
+  readonly who: Maybe<{
+    readonly guild: Guild
+    readonly role: Role
+    readonly channel: NamedChannel
+  }>
+  readonly what: string
+}
+
 export const ScheduledEvent = {
   Reminder: (args: ReminderArgs): ScheduledEventReminder => ({ type: 'Reminder', ...args }),
   ItsFriday: (args: ItsFridayArgs): ScheduledEventItsFriday => ({ type: 'ItsFriday', ...args }),
   codec,
+
+  reminderToView: ({
+    scheduledAt,
+    createdBy,
+    who,
+    what,
+  }: ToViewArgs): ScheduledEventViewReminder => ({
+    type: 'Reminder',
+    scheduledAt,
+    createdBy: UserView.fromUser(createdBy),
+    who: pipe(
+      who,
+      Maybe.map(({ guild, channel, role }) => ({
+        guild: GuildViewShort.fromGuild(guild),
+        channel: ChannelUtils.toView(channel),
+        role: RoleView.fromRole(role),
+      })),
+    ),
+    what,
+  }),
 }

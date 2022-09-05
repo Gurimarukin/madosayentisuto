@@ -26,7 +26,7 @@ export const DeployCommandsObserver = (
 ) => {
   const logger = Logger('DeployCommandsObserver')
 
-  const rest = new REST({ version: '9' }).setToken(config.secret)
+  const rest = new REST().setToken(config.secret)
 
   const commands = List.flatten([
     adminCommands,

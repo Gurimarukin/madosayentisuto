@@ -8,7 +8,7 @@ import { constants } from './constants'
 import { JwtHelper } from './helpers/JwtHelper'
 import { YtDlp } from './helpers/YtDlp'
 import type { LoggerObservable } from './models/logger/LoggerObservable'
-import { MongoCollection } from './models/mongo/MongoCollection'
+import { MongoCollectionGetter } from './models/mongo/MongoCollection'
 import { WithDb } from './models/mongo/WithDb'
 import { BotStatePersistence } from './persistence/BotStatePersistence'
 import { GuildStatePersistence } from './persistence/GuildStatePersistence'
@@ -30,7 +30,7 @@ const of = (
   config: Config,
   loggerObservable: LoggerObservable,
   withDb: WithDb,
-  mongoCollection: (collName: string) => MongoCollection,
+  mongoCollection: MongoCollectionGetter,
 ) => {
   const { Logger } = loggerObservable
 
@@ -75,7 +75,7 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
     dbName: config.db.dbName,
   })
 
-  const mongoCollection: (collName: string) => MongoCollection = MongoCollection.fromWithDb(withDb)
+  const mongoCollection: MongoCollectionGetter = MongoCollectionGetter.fromWithDb(withDb)
 
   const context = of(config, loggerObservable, withDb, mongoCollection)
   const {

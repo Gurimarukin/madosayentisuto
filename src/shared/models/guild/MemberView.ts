@@ -19,7 +19,7 @@ const fromGuildMember = (member: GuildMember): MemberView => ({
   id: DiscordUserId.fromUser(member.user),
   name: member.displayName,
   color: member.displayHexColor,
-  avatar: Maybe.fromNullable(member.user.displayAvatarURL({ dynamic: true })),
+  avatar: Maybe.fromNullable(member.user.displayAvatarURL()),
   birthdate: Maybe.none,
 })
 

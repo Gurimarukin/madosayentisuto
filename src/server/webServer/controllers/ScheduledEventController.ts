@@ -11,6 +11,7 @@ import { futureMaybe } from '../../../shared/utils/futureMaybe'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import { TObjectId } from '../../models/mongo/TObjectId'
+import { ScheduledEvent } from '../../models/scheduledEvent/ScheduledEvent'
 import type { ScheduledEventWithId } from '../../models/scheduledEvent/ScheduledEventWithId'
 import type { ScheduledEventService } from '../../services/ScheduledEventService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
@@ -55,7 +56,7 @@ export const ScheduledEventController = (
                       guild: Future.fromIOEither(discord.getGuild(who.guild)),
                       channel: pipe(
                         discord.fetchChannel(who.channel),
-                        futureMaybe.filter(ChannelUtils.isBaseGuildTextChannel),
+                        futureMaybe.filter(ChannelUtils.isNamed),
                       ),
                     }),
                     futureMaybe.bind('role', ({ guild }) =>
@@ -67,7 +68,7 @@ export const ScheduledEventController = (
             ),
           }),
           futureMaybe.map(({ createdBy, who }) =>
-            ScheduledEventView.reminderFromParsed({
+            ScheduledEvent.reminderToView({
               scheduledAt: event.scheduledAt,
               createdBy,
               who,

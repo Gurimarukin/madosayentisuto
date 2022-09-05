@@ -10,7 +10,7 @@ import { Future } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
-import type { MongoCollection } from '../models/mongo/MongoCollection'
+import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 import { DayJsFromDate } from '../utils/ioTsUtils'
 
 const logMongoCodec = C.struct({
@@ -19,7 +19,6 @@ const logMongoCodec = C.struct({
   level: LogLevel.codec,
   message: C.string,
 })
-type LogMongoOutput = C.OutputOf<typeof logMongoCodec>
 
 type ListArgs = {
   readonly skip?: number
@@ -29,15 +28,9 @@ type ListArgs = {
 export type LogPersistence = ReturnType<typeof LogPersistence>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export function LogPersistence(
-  Logger: LoggerGetter,
-  mongoCollection: (collName: string) => MongoCollection,
-) {
+export function LogPersistence(Logger: LoggerGetter, mongoCollection: MongoCollectionGetter) {
   const logger = Logger('LogPersistence')
-  const collection = FpCollection<Log, LogMongoOutput>(logger, mongoCollection('log'), [
-    logMongoCodec,
-    'ConsoleLog',
-  ])
+  const collection = FpCollection(logger)([logMongoCodec, 'ConsoleLog'])(mongoCollection('log'))
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { date: -1 } }])
 

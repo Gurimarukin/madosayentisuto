@@ -1,20 +1,13 @@
 import type {
   AudioPlayer,
-  AudioPlayerEvents,
+  AudioPlayerState as DiscordAudioPlayerState,
   VoiceConnection,
-  VoiceConnectionEvents,
+  VoiceConnectionState,
 } from '@discordjs/voice'
 import { AudioPlayerStatus } from '@discordjs/voice'
 import { VoiceConnectionStatus } from '@discordjs/voice'
-import type {
-  Guild,
-  Message,
-  StageChannel,
-  TextBasedChannel,
-  ThreadChannel,
-  User,
-  VoiceChannel,
-} from 'discord.js'
+import type { Guild, Message, ThreadChannel, User } from 'discord.js'
+import { ThreadAutoArchiveDuration } from 'discord.js'
 import { apply } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { flow, pipe } from 'fp-ts/function'
@@ -36,15 +29,35 @@ import { AudioPlayerState } from '../models/music/AudioPlayerState'
 import type { MusicStateConnected } from '../models/music/MusicState'
 import { MusicState } from '../models/music/MusicState'
 import type { Track } from '../models/music/Track'
-import type { LoggableChannel } from '../utils/LogUtils'
+import type { GuildAudioChannel, GuildSendableChannel, NamedChannel } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 import { DiscordConnector } from './DiscordConnector'
 import type { YtDlp } from './YtDlp'
 import { MusicStateMessage } from './messages/MusicStateMessage'
 
-type MusicChannel = VoiceChannel | StageChannel
-
 const threadName = 'D-Jean Plank'
+
+/* eslint-disable functional/no-return-void */
+type VoiceConnectionEvents = {
+  readonly error: (error: Error) => void
+} & {
+  readonly [S in VoiceConnectionStatus]: (
+    oldState: VoiceConnectionState,
+    newState: VoiceConnectionState & { readonly status: S },
+  ) => void
+}
+
+type AudioPlayerEvents = {
+  readonly error: (error: Error) => void
+} & {
+  readonly [S in AudioPlayerStatus]: (
+    oldState: DiscordAudioPlayerState,
+    newState: DiscordAudioPlayerState & {
+      readonly status: S
+    },
+  ) => void
+}
+/* eslint-enable functional/no-return-void */
 
 export type MusicSubscription = ReturnType<typeof MusicSubscription>
 
@@ -66,8 +79,8 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
 
   function queueTracks(
     author: User,
-    musicChannel: MusicChannel,
-    stateChannel: TextBasedChannel,
+    musicChannel: GuildAudioChannel,
+    stateChannel: GuildSendableChannel,
     tracks: NonEmptyArray<Track>,
   ): Future<void> {
     if (musicChannel.guild.id !== guild.id) {
@@ -148,7 +161,10 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
     )
   }
 
-  function connect(musicChannel: MusicChannel, stateChannel: TextBasedChannel): Future<void> {
+  function connect(
+    musicChannel: GuildAudioChannel,
+    stateChannel: GuildSendableChannel,
+  ): Future<void> {
     const { observable, subject } = PubSub<MusicEvent>()
 
     const sub = PubSubUtils.subscribeWithRefinement(logger, observable)
@@ -258,7 +274,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
   }
 
   function cleanMessageAndPlayer(currentState: MusicState): Future<void> {
-    const log = (chan?: LoggableChannel): LoggerType => LogUtils.pretty(logger, guild, null, chan)
+    const log = (chan?: NamedChannel): LoggerType => LogUtils.pretty(logger, guild, null, chan)
 
     const orElse = Future.orElseIOEitherK(e => logger.warn(e.stack))
 
@@ -429,7 +445,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
   }
 }
 
-const sendStateMessage = (stateChannel: TextBasedChannel): Future<Maybe<Message>> =>
+const sendStateMessage = (stateChannel: GuildSendableChannel): Future<Maybe<Message<true>>> =>
   pipe(
     MusicStateMessage.connecting,
     Future.fromIOEither,
@@ -442,14 +458,14 @@ const createStateThread = (maybeMessage: Maybe<Message>): Future<Maybe<ThreadCha
     futureMaybe.chainTaskEitherK(message =>
       DiscordConnector.messageStartThread(message, {
         name: threadName,
-        autoArchiveDuration: 60,
+        autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
       }),
     ),
   )
 
 const joinVoiceChannel = (
   subject: TSubject<MusicEvent>,
-  channel: MusicChannel,
+  channel: GuildAudioChannel,
 ): IO<VoiceConnection> =>
   pipe(
     DiscordConnector.voiceConnectionJoin(channel),

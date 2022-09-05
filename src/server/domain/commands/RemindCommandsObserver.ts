@@ -1,6 +1,11 @@
-import type { APIRole } from 'discord-api-types/payloads/v9'
 import { Role } from 'discord.js'
-import type { CommandInteraction, Guild, TextBasedChannel, User } from 'discord.js'
+import type {
+  APIRole,
+  ChatInputCommandInteraction,
+  Guild,
+  TextBasedChannel,
+  User,
+} from 'discord.js'
 import { apply, ord } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
@@ -15,8 +20,8 @@ import { Future, Maybe } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import { Command } from '../../models/Command'
 import { RoleId } from '../../models/RoleId'
+import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { ReminderWho } from '../../models/scheduledEvent/ReminderWho'
 import type { ScheduledEventReminder } from '../../models/scheduledEvent/ScheduledEvent'
@@ -60,11 +65,11 @@ export const RemindCommandsObserver = (scheduledEventService: ScheduledEventServ
     MadEvent,
     'InteractionCreate',
   )(({ interaction }) => {
-    if (interaction.isCommand()) return onCommand(interaction)
+    if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
     return Future.unit
   })
 
-  function onCommand(interaction: CommandInteraction): Future<void> {
+  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<void> {
     switch (interaction.commandName) {
       case Keys.remind:
         return onRemind(interaction)
@@ -72,7 +77,7 @@ export const RemindCommandsObserver = (scheduledEventService: ScheduledEventServ
     return Future.unit
   }
 
-  function onRemind(interaction: CommandInteraction): Future<void> {
+  function onRemind(interaction: ChatInputCommandInteraction): Future<void> {
     const [who, fetchRole] = parseWho(
       interaction.guild,
       interaction.options.getRole(Keys.who),
@@ -120,7 +125,7 @@ export const RemindCommandsObserver = (scheduledEventService: ScheduledEventServ
                   Either.right(
                     `Rappel pour ${whoMention} le **${pipe(
                       e.scheduledAt,
-                      DayJs.format('DD/MM/YYYY, HH:mm'),
+                      DayJs.format('DD/MM/YYYY, HH:mm', { locale: true }),
                     )}** : *${e.reminder.what}*`,
                   ),
                 )
@@ -133,7 +138,7 @@ export const RemindCommandsObserver = (scheduledEventService: ScheduledEventServ
 }
 
 const parseReminder = (
-  interaction: CommandInteraction,
+  interaction: ChatInputCommandInteraction,
   who: Maybe<ReminderWho>,
   now: DayJs,
 ): Either<string, ScheduledEventReminder> =>

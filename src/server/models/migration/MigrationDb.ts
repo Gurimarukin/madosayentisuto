@@ -18,7 +18,6 @@ const codec = pipe(
 )
 
 export type MigrationDb = C.TypeOf<typeof codec>
-export type MigrationDbOutput = C.OutputOf<typeof codec>
 
 export const MigrationDb = { codec }
 

@@ -1,5 +1,4 @@
-import type { APIUser } from 'discord-api-types/v9'
-import type { User } from 'discord.js'
+import type { APIUser, User } from 'discord.js'
 import type { eq } from 'fp-ts'
 import { ord, string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'

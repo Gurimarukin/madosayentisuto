@@ -3,23 +3,19 @@ import { pipe } from 'fp-ts/function'
 import { Future, Maybe } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import type { BotStateOutput } from '../models/botState/BotState'
 import { BotState } from '../models/botState/BotState'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
-import type { MongoCollection } from '../models/mongo/MongoCollection'
+import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 
 export type BotStatePersistence = ReturnType<typeof BotStatePersistence>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const BotStatePersistence = (
   Logger: LoggerGetter,
-  mongoCollection: (collName: string) => MongoCollection,
+  mongoCollection: MongoCollectionGetter,
 ) => {
   const logger = Logger('BotStatePersistence')
-  const collection = FpCollection<BotState, BotStateOutput>(logger, mongoCollection('botState'), [
-    BotState.codec,
-    'BotState',
-  ])
+  const collection = FpCollection(logger)([BotState.codec, 'BotState'])(mongoCollection('botState'))
 
   return {
     find: (): Future<BotState> =>

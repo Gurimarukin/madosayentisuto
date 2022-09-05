@@ -7,9 +7,8 @@ import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
-import type { MongoCollection } from '../models/mongo/MongoCollection'
+import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 import { TObjectId } from '../models/mongo/TObjectId'
-import type { ScheduledEventOutput } from '../models/scheduledEvent/ScheduledEvent'
 import { ScheduledEvent } from '../models/scheduledEvent/ScheduledEvent'
 import { ScheduledEventWithId } from '../models/scheduledEvent/ScheduledEventWithId'
 import { DayJsFromDate } from '../utils/ioTsUtils'
@@ -19,13 +18,11 @@ export type ScheduledEventPersistence = ReturnType<typeof ScheduledEventPersiste
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function ScheduledEventPersistence(
   Logger: LoggerGetter,
-  mongoCollection: (collName: string) => MongoCollection,
+  mongoCollection: MongoCollectionGetter,
 ) {
   const logger = Logger('ScheduledEventPersistence')
-  const collection = FpCollection<ScheduledEvent, ScheduledEventOutput>(
-    logger,
+  const collection = FpCollection(logger)([ScheduledEvent.codec, 'ScheduledEvent'])(
     mongoCollection('scheduledEvent'),
-    [ScheduledEvent.codec, 'ScheduledEvent'],
   )
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { scheduledAt: -1 } }])

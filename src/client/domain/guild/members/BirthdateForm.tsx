@@ -104,8 +104,8 @@ export const BirthdateForm = ({
   )
 
   return (
-    <form onSubmit={handleFormSubmit} className="flex gap-x-3 justify-center items-center h-full">
-      <div className="flex justify-center w-[12ch]">
+    <form onSubmit={handleFormSubmit} className="flex h-full items-center justify-center gap-x-3">
+      <div className="flex w-[12ch] justify-center">
         {isEditing ? (
           <input
             ref={onInputMount}
@@ -113,7 +113,7 @@ export const BirthdateForm = ({
             value={value}
             onChange={handleInputChange}
             autoFocus={true}
-            className="pl-2 w-full text-inherit bg-gray1 rounded-sm border-none"
+            className="w-full rounded-sm border-none bg-gray1 pl-2 text-inherit"
           />
         ) : (
           <span className="w-full">
@@ -127,7 +127,7 @@ export const BirthdateForm = ({
           </span>
         )}
       </div>
-      <div className="flex gap-x-1 justify-between w-16">
+      <div className="flex w-16 justify-between gap-x-1">
         {isLoading ? (
           <pre>loading...</pre>
         ) : isEditing ? (

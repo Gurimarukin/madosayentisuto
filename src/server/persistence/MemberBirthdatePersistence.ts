@@ -8,22 +8,19 @@ import { Future, List } from '../../shared/utils/fp'
 import { FpCollection } from '../helpers/FpCollection'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { Birthdate } from '../models/member/Birthdate'
-import type { MemberBirthdateOutput } from '../models/member/MemberBirthdate'
 import { MemberBirthdate } from '../models/member/MemberBirthdate'
-import type { MongoCollection } from '../models/mongo/MongoCollection'
+import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 
 export type MemberBirthdatePersistence = ReturnType<typeof MemberBirthdatePersistence>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const MemberBirthdatePersistence = (
   Logger: LoggerGetter,
-  mongoCollection: (collName: string) => MongoCollection,
+  mongoCollection: MongoCollectionGetter,
 ) => {
   const logger = Logger('MemberBirthdatePersistence')
-  const collection = FpCollection<MemberBirthdate, MemberBirthdateOutput>(
-    logger,
+  const collection = FpCollection(logger)([MemberBirthdate.codec, 'MemberBirthdate'])(
     mongoCollection('memberBirthdate'),
-    [MemberBirthdate.codec, 'MemberBirthdate'],
   )
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { id: -1 }, unique: true }])

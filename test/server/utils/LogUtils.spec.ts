@@ -5,7 +5,7 @@ import type { ChannelUtils } from '../../../src/server/utils/ChannelUtils'
 import { LogUtils } from '../../../src/server/utils/LogUtils'
 
 const { __testableFormat } = LogUtils
-const format = __testableFormat(refinement.id() as typeof ChannelUtils.isNamedChannel)
+const format = __testableFormat(refinement.id() as typeof ChannelUtils.isNamed)
 
 describe('LogUtils.format', () => {
   it('should format', () => {

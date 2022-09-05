@@ -17,6 +17,7 @@ import type { CallsDb } from '../models/guildState/db/CallsDb'
 import { GuildStateDb } from '../models/guildState/db/GuildStateDb'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStatePersistence } from '../persistence/GuildStatePersistence'
+import type { GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
@@ -38,10 +39,10 @@ export const GuildStateService = (
 
   const cache = new Map<GuildId, GuildState>()
 
-  const listAllItsFridayChannels = pipe(
+  const listAllItsFridayChannels: Future<List<GuildSendableChannel>> = pipe(
     guildStatePersistence.listAllItsFridayChannels(),
     Future.chain(Future.traverseArray(itsFridayChannel => discord.fetchChannel(itsFridayChannel))),
-    Future.map(flow(List.compact, List.filter(ChannelUtils.isTextChannel))),
+    Future.map(flow(List.compact, List.filter(ChannelUtils.isGuildSendable))),
   )
 
   return {
@@ -62,7 +63,8 @@ export const GuildStateService = (
     setItsFridayChannel: (guild: Guild, channel: TextChannel): Future<GuildState> =>
       setLens(guild, 'itsFridayChannel', Maybe.some(channel)),
 
-    getBirthdayChannel: (guild: Guild): Future<Maybe<TextChannel>> => get(guild, 'birthdayChannel'),
+    getBirthdayChannel: (guild: Guild): Future<Maybe<GuildSendableChannel>> =>
+      get(guild, 'birthdayChannel'),
 
     setBirthdayChannel: (guild: Guild, channel: TextChannel): Future<GuildState> =>
       setLens(guild, 'birthdayChannel', Maybe.some(channel)),
@@ -207,8 +209,8 @@ export const GuildStateService = (
       apply.sequenceS(Future.ApplyPar)({
         calls: chainFutureT(calls, fetchCalls(guild)),
         defaultRole: chainFutureT(defaultRole, id => DiscordConnector.fetchRole(guild, id)),
-        itsFridayChannel: chainFutureT(itsFridayChannel, fetchTextChannel),
-        birthdayChannel: chainFutureT(birthdayChannel, fetchTextChannel),
+        itsFridayChannel: chainFutureT(itsFridayChannel, fetchGuildSendableChannel),
+        birthdayChannel: chainFutureT(birthdayChannel, fetchGuildSendableChannel),
       })
   }
 
@@ -216,15 +218,15 @@ export const GuildStateService = (
     return ({ message, channel, role }) =>
       apply.sequenceS(futureMaybe.ApplyPar)({
         message: DiscordConnector.fetchMessage(guild, message),
-        channel: fetchTextChannel(channel),
+        channel: fetchGuildSendableChannel(channel),
         role: DiscordConnector.fetchRole(guild, role),
       })
   }
 
-  function fetchTextChannel(channelId: ChannelId): Future<Maybe<TextChannel>> {
+  function fetchGuildSendableChannel(channelId: ChannelId): Future<Maybe<GuildSendableChannel>> {
     return pipe(
       discord.fetchChannel(channelId),
-      Future.map(Maybe.filter(ChannelUtils.isTextChannel)),
+      Future.map(Maybe.filter(ChannelUtils.isGuildSendable)),
     )
   }
 }

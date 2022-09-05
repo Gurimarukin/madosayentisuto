@@ -68,7 +68,7 @@ export const AppRouterComponent = (): JSX.Element => {
 
 // TODO: move to own file?
 const NotFound = (): JSX.Element => (
-  <div className="flex flex-col gap-4 items-center p-6">
+  <div className="flex flex-col items-center gap-4 p-6">
     <p className="text-xl">Cette page n'existe pas.</p>
     <Link to={appRoutes.index} className="underline">
       Accueil

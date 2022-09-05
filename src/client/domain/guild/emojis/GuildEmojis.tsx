@@ -70,7 +70,7 @@ const Tiers = ({ emojis }: TiersProps): JSX.Element => {
 
   return (
     <div className="p-6">
-      <ul className="grid grid-cols-[auto_auto] w-full border-t border-gray1">
+      <ul className="grid w-full grid-cols-[auto_auto] border-t border-gray1">
         {tiers.map((tier, i) => (
           // eslint-disable-next-line react/no-array-index-key
           <TierComponent key={i} tier={tier} tierIndex={i} moveEmojiTier={moveEmojiTier} />
@@ -101,7 +101,7 @@ const TierComponent = ({ tier, tierIndex, moveEmojiTier }: TierProps): JSX.Eleme
 
   return (
     <li ref={drop} className="contents">
-      <span className="flex items-center p-6 min-h-[calc(7rem_+_1px)] text-2xl bg-gray2 border-x border-b border-gray1">
+      <span className="flex min-h-[calc(7rem_+_1px)] items-center border-x border-b border-gray1 bg-gray2 p-6 text-2xl">
         {tier.name}
       </span>
       <ul className="flex flex-wrap border-r border-b border-gray1">
@@ -168,7 +168,7 @@ const GuildEmoji = ({ tierIndex, emoji }: GuildEmojiProps): JSX.Element => {
               n => `Emoji ${n}`,
             ),
           )}
-          className="object-contain w-28 h-28"
+          className="h-28 w-28 object-contain"
         />
       </Tooltip>
     </div>

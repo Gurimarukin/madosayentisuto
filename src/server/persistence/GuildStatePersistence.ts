@@ -14,7 +14,7 @@ import {
   GuildStateDbOnlyItsFridayChannel,
 } from '../models/guildState/db/GuildStateDb'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
-import type { MongoCollection } from '../models/mongo/MongoCollection'
+import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 
 type Projection = Partial<Dict<keyof GuildStateDbOutput, 1>>
 
@@ -23,13 +23,11 @@ export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const GuildStatePersistence = (
   Logger: LoggerGetter,
-  mongoCollection: (collName: string) => MongoCollection,
+  mongoCollection: MongoCollectionGetter,
 ) => {
   const logger = Logger('GuildStatePersistence')
-  const collection = FpCollection<GuildStateDb, GuildStateDbOutput>(
-    logger,
+  const collection = FpCollection(logger)([GuildStateDb.codec, 'GuildStateDb'])(
     mongoCollection('guildState'),
-    [GuildStateDb.codec, 'GuildStateDb'],
   )
 
   const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { id: -1 }, unique: true }])

@@ -26,7 +26,7 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
   const { data: guild, ...rest } = response
 
   return (
-    <div className="flex flex-col w-full h-full">
+    <div className="flex h-full w-full flex-col">
       <Header>
         {guild !== undefined ? (
           <>
@@ -37,20 +37,20 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
                 icon => (
                   <Link
                     to={appRoutes.guild.index(guildId)}
-                    className="overflow-hidden w-12 h-12 rounded-lg"
+                    className="h-12 w-12 overflow-hidden rounded-lg"
                   >
                     <img src={icon} alt={`Icône du serveur ${guild.name}`} />
                   </Link>
                 ),
               ),
             )}
-            <Link to={appRoutes.guild.index(guildId)} className="text-3xl border-gray4">
+            <Link to={appRoutes.guild.index(guildId)} className="border-gray4 text-3xl">
               {guild.name}
             </Link>
             <span>•</span>
             <Link
               to={appRoutes.guild.members(guildId)}
-              className={`text-xl border-b ${
+              className={`border-b text-xl ${
                 selected === 'members' ? 'border-gray4' : 'border-transparent'
               } pt-2 pb-1`}
             >
@@ -59,7 +59,7 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
             <span>•</span>
             <Link
               to={appRoutes.guild.emojis(guildId)}
-              className={`text-xl border-b ${
+              className={`border-b text-xl ${
                 selected === 'emojis' ? 'border-gray4' : 'border-transparent'
               } pt-2 pb-1`}
             >
@@ -68,7 +68,7 @@ export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element
           </>
         ) : null}
       </Header>
-      <div className="flex overflow-auto grow justify-center">
+      <div className="flex grow justify-center overflow-auto">
         {basicAsyncRenderer(response)(g => children?.(g, rest))}
       </div>
     </div>

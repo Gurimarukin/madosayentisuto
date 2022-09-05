@@ -1,9 +1,3 @@
-import type {
-  BaseMessageComponentOptions,
-  InteractionButtonOptions,
-  MessageButtonOptions,
-} from 'discord.js'
-import { MessageActionRow } from 'discord.js'
 import { random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
@@ -12,11 +6,10 @@ import { IO } from '../../../shared/utils/fp'
 import { List, Maybe } from '../../../shared/utils/fp'
 
 import { constants } from '../../constants'
+import { MessageComponent } from '../../models/discord/MessageComponent'
 import type { Track } from '../../models/music/Track'
 import { MessageUtils } from '../../utils/MessageUtils'
-import type { MyMessageOptions } from '../DiscordConnector'
-
-type MyButton = Required<BaseMessageComponentOptions> & MessageButtonOptions
+import type { BaseMessageOptions } from '../DiscordConnector'
 
 export const musicStateButtons = {
   playPauseId: 'musicPlayPause',
@@ -31,22 +24,27 @@ const images = {
     'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
 }
 
-const button = (
-  customId: string,
-  label: string,
-  emoji: string,
-  style: InteractionButtonOptions['style'] = 'SECONDARY',
-): MyButton => ({ type: 'BUTTON', customId, label, emoji, style })
+const pauseButton = MessageComponent.buttonWithCustomId({
+  custom_id: musicStateButtons.playPauseId,
+  label: 'Pause',
+  emoji: constants.emojis.pause,
+})
+const playButton = MessageComponent.buttonWithCustomId({
+  custom_id: musicStateButtons.playPauseId,
+  label: 'Lecture',
+  emoji: constants.emojis.play,
+})
+const nextButton = MessageComponent.buttonWithCustomId({
+  custom_id: musicStateButtons.nextId,
+  label: 'Suivant',
+  emoji: constants.emojis.next,
+})
 
-const pauseButton = button(musicStateButtons.playPauseId, 'Pause', constants.emojis.pause)
-const playButton = button(musicStateButtons.playPauseId, 'Lecture', constants.emojis.play)
-const nextButton = button(musicStateButtons.nextId, 'Suivant', constants.emojis.next)
-
-const connecting: IO<MyMessageOptions> = pipe(
+const connecting: IO<BaseMessageOptions> = pipe(
   random.randomElem(images.jpDjGifs),
   IO.fromIO,
   IO.map(
-    (image): MyMessageOptions => ({
+    (image): BaseMessageOptions => ({
       embeds: [
         MessageUtils.safeEmbed({
           color: constants.messagesColor,
@@ -56,10 +54,10 @@ const connecting: IO<MyMessageOptions> = pipe(
         }),
       ],
       components: [
-        new MessageActionRow().addComponents(
+        MessageComponent.row([
           { ...playButton, disabled: true },
           { ...nextButton, disabled: true },
-        ),
+        ]),
       ],
     }),
   ),
@@ -69,12 +67,12 @@ const playing = (
   current: Maybe<Track>,
   queue: List<Track>,
   isPlaying: boolean,
-): IO<MyMessageOptions> =>
+): IO<BaseMessageOptions> =>
   pipe(
     random.randomElem(images.jpDjGifs),
     IO.fromIO,
     IO.map(
-      (image): MyMessageOptions => ({
+      (image): BaseMessageOptions => ({
         embeds: [
           MessageUtils.safeEmbed({
             color: constants.messagesColor,
@@ -130,9 +128,7 @@ const playing = (
             image: MessageUtils.image(image),
           }),
         ],
-        components: [
-          new MessageActionRow().addComponents(isPlaying ? pauseButton : playButton, nextButton),
-        ],
+        components: [MessageComponent.row([isPlaying ? pauseButton : playButton, nextButton])],
       }),
     ),
   )

@@ -13,6 +13,5 @@ const of = (activity: Maybe<Activity>): BotState => ({ activity })
 const empty: BotState = of(Maybe.none)
 
 export type BotState = C.TypeOf<typeof codec>
-export type BotStateOutput = C.OutputOf<typeof codec>
 
 export const BotState = { codec, of, empty }
