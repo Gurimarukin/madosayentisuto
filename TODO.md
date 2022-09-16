@@ -2,6 +2,7 @@
 - decouple autorole and call mention
 - select leave message chan
 - deploy: on guild join
+- global ping (and other commands?)
 - admin : move some things to webapp
 - /remind: with modal?
 - Say

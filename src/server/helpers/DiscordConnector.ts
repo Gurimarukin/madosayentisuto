@@ -536,6 +536,7 @@ export const DiscordConnector = {
               GatewayIntentBits.GuildMessages,
               GatewayIntentBits.GuildVoiceStates,
               GatewayIntentBits.Guilds,
+              GatewayIntentBits.MessageContent,
             ],
             partials: [
               Partials.User,
