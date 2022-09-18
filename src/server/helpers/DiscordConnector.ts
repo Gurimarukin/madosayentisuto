@@ -52,12 +52,14 @@ import { Client, DiscordAPIError } from 'discord.js'
 import { refinement } from 'fp-ts'
 import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
+import type { Decoder } from 'io-ts/Decoder'
 import * as D from 'io-ts/Decoder'
 
 import { ChannelId } from '../../shared/models/ChannelId'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { GuildId } from '../../shared/models/guild/GuildId'
+import type { NonEmptyArray, Tuple } from '../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, toUnit } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
@@ -69,7 +71,8 @@ import { RoleId } from '../models/RoleId'
 import type { Activity } from '../models/botState/Activity'
 import { ActivityTypeBot } from '../models/botState/ActivityTypeBot'
 import { CommandId } from '../models/command/CommandId'
-import { PutCommandResult } from '../models/command/PutCommandResult'
+import { GlobalPutCommandResult } from '../models/command/putCommandResult/GlobalPutCommandResult'
+import { GuildPutCommandResult } from '../models/command/putCommandResult/GuildPutCommandResult'
 import type { GuildAudioChannel, GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { MessageUtils } from '../utils/MessageUtils'
@@ -376,32 +379,46 @@ const roleRemove = (
     debugLeft('roleRemove'),
   )
 
-const restPutApplicationGuildCommands = (
-  rest: REST,
-  clientId: string,
-  guildId: GuildId,
-  commands: List<RESTPostAPIApplicationCommandsJSONBody>,
-): Future<Separated<ReadonlyArray<Error>, List<PutCommandResult>>> =>
-  pipe(
-    Future.tryCatch(() =>
-      rest.put(Routes.applicationGuildCommands(clientId, GuildId.unwrap(guildId)), {
-        body: commands,
-      }),
-    ),
-    Future.chain(u =>
-      pipe(
-        D.UnknownArray.decode(u),
-        Either.mapLeft(decodeError('UnknownArray')(u)),
-        Future.fromEither,
+const restPutApplicationCommands =
+  (rest: REST, clientId: string) =>
+  (
+    body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
+  ): Future<Separated<ReadonlyArray<Error>, List<GlobalPutCommandResult>>> =>
+    decodeFutureArrayResult(
+      Future.tryCatch(() => rest.put(Routes.applicationCommands(clientId), { body })),
+    )([GlobalPutCommandResult.decoder, 'GlobalPutCommandResult'])('restPutApplicationCommands')
+
+const restPutApplicationGuildCommands =
+  (rest: REST, clientId: string, guildId: GuildId) =>
+  (
+    body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
+  ): Future<Separated<ReadonlyArray<Error>, List<GuildPutCommandResult>>> =>
+    decodeFutureArrayResult(
+      Future.tryCatch(() =>
+        rest.put(Routes.applicationGuildCommands(clientId, GuildId.unwrap(guildId)), { body }),
       ),
-    ),
-    Future.map(
-      List.partitionMap(u =>
-        pipe(PutCommandResult.codec.decode(u), Either.mapLeft(decodeError('PutCommandResult')(u))),
+    )([GuildPutCommandResult.decoder, 'GuildPutCommandResult'])('restPutApplicationGuildCommands')
+
+const decodeFutureArrayResult =
+  (f: Future<unknown>) =>
+  <A>([decoder, decoderName]: Tuple<Decoder<unknown, A>, string>) =>
+  (debugLeftName: string): Future<Separated<ReadonlyArray<Error>, List<A>>> =>
+    pipe(
+      f,
+      Future.chain(u =>
+        pipe(
+          D.UnknownArray.decode(u),
+          Either.mapLeft(decodeError('UnknownArray')(u)),
+          Future.fromEither,
+        ),
       ),
-    ),
-    debugLeft('restPutApplicationGuildCommands'),
-  )
+      Future.map(
+        List.partitionMap(u =>
+          pipe(decoder.decode(u), Either.mapLeft(decodeError(decoderName)(u))),
+        ),
+      ),
+      debugLeft(debugLeftName),
+    )
 
 const sendMessage = <InGuild extends boolean = boolean>(
   channel: PartialTextBasedChannelFields<InGuild>,
@@ -511,6 +528,7 @@ export const DiscordConnector = {
   messageEdit,
   messageReact,
   messageStartThread,
+  restPutApplicationCommands,
   restPutApplicationGuildCommands,
   roleAdd,
   roleRemove,

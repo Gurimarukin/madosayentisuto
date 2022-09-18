@@ -1,16 +1,15 @@
 import type { ApplicationCommandType } from 'discord.js'
 import * as D from 'io-ts/Decoder'
 
-import { GuildId } from '../../../shared/models/guild/GuildId'
-import { createEnum } from '../../../shared/utils/createEnum'
-import { List, Maybe } from '../../../shared/utils/fp'
+import { createEnum } from '../../../../shared/utils/createEnum'
+import { List, Maybe } from '../../../../shared/utils/fp'
 
-import { ApplicationId } from '../ApplicationId'
-import { CommandId } from './CommandId'
+import { ApplicationId } from '../../ApplicationId'
+import { CommandId } from '../CommandId'
 
 const { codec: applicationCommandTypeCodec } = createEnum<ApplicationCommandType>(1, 2, 3)
 
-const codec = D.struct({
+const decoder = D.struct({
   id: CommandId.codec,
   application_id: ApplicationId.codec,
   version: D.string,
@@ -19,9 +18,8 @@ const codec = D.struct({
   type: applicationCommandTypeCodec,
   name: D.string,
   description: D.string,
-  guild_id: GuildId.codec,
   options: Maybe.decoder(List.decoder(D.id<unknown>())),
 })
 
-export type PutCommandResult = D.TypeOf<typeof codec>
-export const PutCommandResult = { codec }
+export type GlobalPutCommandResult = D.TypeOf<typeof decoder>
+export const GlobalPutCommandResult = { decoder }

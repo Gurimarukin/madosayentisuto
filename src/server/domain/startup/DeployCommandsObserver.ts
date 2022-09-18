@@ -5,11 +5,11 @@ import { pipe } from 'fp-ts/function'
 
 import { GuildId } from '../../../shared/models/guild/GuildId'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
-import { Future, IO, List, toUnit } from '../../../shared/utils/fp'
+import { Future, IO, List, NonEmptyArray, toUnit } from '../../../shared/utils/fp'
 
 import type { ClientConfig } from '../../Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import type { PutCommandResult } from '../../models/command/PutCommandResult'
+import type { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import { adminCommands } from '../commands/AdminCommandsObserver'
@@ -28,37 +28,66 @@ export const DeployCommandsObserver = (
 
   const rest = new REST().setToken(config.secret)
 
-  const commands = List.flatten([
-    adminCommands,
-    musicCommands,
-    otherCommands,
-    pollCommands,
-    remindCommands,
-  ])
+  const { right: globalCommands, left: guildCommands } = pipe(
+    [adminCommands, musicCommands, otherCommands, pollCommands, remindCommands],
+    List.flatten,
+    List.partition(cmd => cmd.isGlobal),
+  )
 
   return ObserverWithRefinement.fromNext(
     MadEvent,
     'AppStarted',
   )(() =>
     pipe(
-      Future.fromIOEither(discord.listGuilds),
-      Future.chain(Future.traverseArray(putCommandsForGuild)),
-      Future.chainIOEitherK(() => logger.info('Ensured commands')),
+      deployGlobalCommands(),
+      Future.chain(deployGuildCommands),
+      Future.chainIOEitherK(() => logger.info('Deployed commands')),
     ),
   )
 
-  function putCommandsForGuild(guild: Guild): Future<void> {
-    const guildId = GuildId.fromGuild(guild)
-    return pipe(
-      DiscordConnector.restPutApplicationGuildCommands(rest, config.id, guildId, commands),
-      Future.chain(logDecodeErrors),
-      Future.orElseIOEitherK(e =>
-        logger.warn(`Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${e.stack}`),
-      ),
-    )
+  function deployGlobalCommands(): Future<void> {
+    if (List.isNonEmpty(globalCommands)) {
+      return pipe(
+        globalCommands,
+        NonEmptyArray.map(command => command.value),
+        DiscordConnector.restPutApplicationCommands(rest, config.id),
+        Future.chain(logDecodeErrors),
+        Future.orElseIOEitherK(e => logger.warn(`Failed to deploy global commands\n${e.stack}`)),
+        Future.chainIOEitherK(() => logger.debug('Deployed global commands')),
+      )
+    }
+    return Future.fromIOEither(logger.debug('No global commands to deploy'))
   }
 
-  function logDecodeErrors({ left }: Separated<List<Error>, List<PutCommandResult>>): Future<void> {
+  function deployGuildCommands(): Future<void> {
+    if (List.isNonEmpty(guildCommands)) {
+      return pipe(
+        Future.fromIOEither(discord.listGuilds),
+        Future.chain(Future.traverseArray(putCommandsForGuild(guildCommands))),
+        Future.chainIOEitherK(() => logger.debug('Deployed guild commands')),
+      )
+    }
+    return Future.fromIOEither(logger.debug('No guild commands to deploy'))
+  }
+
+  function putCommandsForGuild(
+    guildCommands_: NonEmptyArray<Command>,
+  ): (guild: Guild) => Future<void> {
+    return guild => {
+      const guildId = GuildId.fromGuild(guild)
+      return pipe(
+        guildCommands_,
+        NonEmptyArray.map(command => command.value),
+        DiscordConnector.restPutApplicationGuildCommands(rest, config.id, guildId),
+        Future.chain(logDecodeErrors),
+        Future.orElseIOEitherK(e =>
+          logger.warn(`Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${e.stack}`),
+        ),
+      )
+    }
+  }
+
+  function logDecodeErrors({ left }: Separated<List<Error>, unknown>): Future<void> {
     return pipe(
       left,
       IO.traverseSeqArray(e => logger.warn(e.message)),

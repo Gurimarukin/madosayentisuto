@@ -9,6 +9,7 @@ import type {
   APIApplicationCommandSubcommandGroupOption,
   APIApplicationCommandSubcommandOption,
   ChannelType,
+  RESTPostAPIApplicationCommandsJSONBody,
   RESTPostAPIChatInputApplicationCommandsJSONBody,
   RESTPostAPIContextMenuApplicationCommandsJSONBody,
 } from 'discord.js'
@@ -18,9 +19,17 @@ import type { nonEmptyArray } from 'fp-ts'
 import { List } from '../../../shared/utils/fp'
 import { NonEmptyArray } from '../../../shared/utils/fp'
 
+export type Command<
+  A extends RESTPostAPIApplicationCommandsJSONBody = RESTPostAPIApplicationCommandsJSONBody,
+> = {
+  readonly isGlobal: boolean
+  readonly value: A
+}
+
 type CommandCommon = {
   readonly name: string
   readonly description: string
+  readonly isGlobal?: boolean // default: false
 }
 
 type OptionCommon = {
@@ -43,23 +52,34 @@ type OptionChannel = OptionCommon & {
   readonly channel_types?: List<Exclude<ChannelType, ChannelType.DM | ChannelType.GroupDM>>
 }
 
+const of = <A extends RESTPostAPIApplicationCommandsJSONBody>(
+  isGlobal: boolean,
+  value: A,
+): Command<A> => ({ isGlobal, value })
+
 export const Command = {
   chatInput:
-    (common: CommandCommon) =>
+    ({ isGlobal = false, ...common }: CommandCommon) =>
     (
       ...options: List<APIApplicationCommandOption>
-    ): RESTPostAPIChatInputApplicationCommandsJSONBody => ({
-      type: ApplicationCommandType.ChatInput,
-      ...common,
-      options: toMutable(options),
-    }),
+    ): Command<RESTPostAPIChatInputApplicationCommandsJSONBody> =>
+      of(isGlobal, {
+        type: ApplicationCommandType.ChatInput,
+        ...common,
+        options: toMutable(options),
+      }),
 
-  message: (
-    common: Omit<CommandCommon, 'description'>,
-  ): RESTPostAPIContextMenuApplicationCommandsJSONBody => ({
-    type: ApplicationCommandType.Message,
-    ...common,
-  }),
+  message: ({
+    isGlobal = false,
+    ...common
+  }: Omit<
+    CommandCommon,
+    'description'
+  >): Command<RESTPostAPIContextMenuApplicationCommandsJSONBody> =>
+    of(isGlobal, {
+      type: ApplicationCommandType.Message,
+      ...common,
+    }),
 
   option: {
     subcommand:

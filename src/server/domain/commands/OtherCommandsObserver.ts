@@ -19,11 +19,13 @@ const Keys = {
 const pingCommand = Command.chatInput({
   name: Keys.ping,
   description: 'Jean Plank répond pong',
+  isGlobal: true,
 })()
 
 const randomCaseCommand = Command.chatInput({
   name: Keys.randomcase,
   description: 'Jean Plank vous prend pour un débile',
+  isGlobal: true,
 })(
   Command.option.string({
     name: Keys.message,
