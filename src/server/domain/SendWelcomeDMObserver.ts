@@ -8,10 +8,10 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
+import { MessageComponent } from '../models/discord/MessageComponent'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { LogUtils } from '../utils/LogUtils'
-import { MessageUtils } from '../utils/MessageUtils'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const SendWelcomeDMObserver = (Logger: LoggerGetter) => {
@@ -44,15 +44,15 @@ const welcomeMessage = (member: GuildMember): MessageOptions => ({
     |C'est comme OSS 117 mais en pirate.`,
   ),
   embeds: [
-    MessageUtils.safeEmbed({
+    MessageComponent.safeEmbed({
       color: constants.messagesColor,
       title: 'Jean Plank',
       url: 'https://jeanplank.blbl.ch',
-      thumbnail: MessageUtils.thumbnail(
+      thumbnail: MessageComponent.thumbnail(
         'https://cdn.discordapp.com/attachments/636626556734930948/707502811600125962/thumbnail.jpg',
       ),
       description: 'Tout le monde doit payer !',
-      image: MessageUtils.image(
+      image: MessageComponent.image(
         'https://cdn.discordapp.com/attachments/636626556734930948/707499903450087464/aide.jpg',
       ),
     }),

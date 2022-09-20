@@ -73,9 +73,10 @@ import { ActivityTypeBot } from '../models/botState/ActivityTypeBot'
 import { CommandId } from '../models/command/CommandId'
 import { GlobalPutCommandResult } from '../models/command/putCommandResult/GlobalPutCommandResult'
 import { GuildPutCommandResult } from '../models/command/putCommandResult/GuildPutCommandResult'
+import { MessageComponent } from '../models/discord/MessageComponent'
+import type { MyModal } from '../models/discord/Modal'
 import type { GuildAudioChannel, GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
-import { MessageUtils } from '../utils/MessageUtils'
 
 type MyPartial<A> = {
   readonly partial: boolean
@@ -302,6 +303,12 @@ const interactionReply = (
     debugLeft('interactionReply'),
   )
 
+const interactionShowModal = (interaction: CommandInteraction, modal: MyModal): Future<void> =>
+  pipe(
+    Future.tryCatch(() => interaction.showModal(modal)),
+    debugLeft('interactionShowModal'),
+  )
+
 const interactionUpdate = (
   interaction: ButtonInteraction,
   options: string | MessagePayload | InteractionUpdateOptions = {},
@@ -442,7 +449,7 @@ const sendPrettyMessage = (
 ): Future<Maybe<Message>> =>
   sendMessage(channel, {
     ...options,
-    embeds: [MessageUtils.safeEmbed({ color: constants.messagesColor, description: message })],
+    embeds: [MessageComponent.safeEmbed({ color: constants.messagesColor, description: message })],
   })
 
 const threadDelete = (thread: ThreadChannel): Future<boolean> =>
@@ -523,6 +530,7 @@ export const DiscordConnector = {
   interactionEditReply,
   interactionFollowUp,
   interactionReply,
+  interactionShowModal,
   interactionUpdate,
   messageDelete,
   messageEdit,

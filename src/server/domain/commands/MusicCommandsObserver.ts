@@ -221,8 +221,7 @@ const validateMusicAndStateChannel = (
     validateMusicChannel(interaction, subscriptionState),
     Either.chain(musicChannel =>
       pipe(
-        interaction.channel,
-        Maybe.fromNullable,
+        Maybe.fromNullable(interaction.channel),
         Maybe.filter(ChannelUtils.isGuildSendable),
         Either.fromOption(
           () => "Alors ça, c'est chelou : comment peut-on faire une interaction sans salon ?",

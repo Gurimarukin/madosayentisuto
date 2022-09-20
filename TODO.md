@@ -3,8 +3,7 @@
 - select leave message chan
 - deploy: on guild join
 - admin : move some things to webapp
-- /remind: with modal?
-- Say
+- modal?
 - Img
 - moderators/owner
 - generalize bot
@@ -18,6 +17,8 @@
 - TObservable.subscribe
 - try to override declaration types to use GuildId, TSnowflake, ...
 - logs id
+- autocomplete for /remind date
+- remove disables
 
 ---
 

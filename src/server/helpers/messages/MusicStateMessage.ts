@@ -8,7 +8,6 @@ import { List, Maybe } from '../../../shared/utils/fp'
 import { constants } from '../../constants'
 import { MessageComponent } from '../../models/discord/MessageComponent'
 import type { Track } from '../../models/music/Track'
-import { MessageUtils } from '../../utils/MessageUtils'
 import type { BaseMessageOptions } from '../DiscordConnector'
 
 export const musicStateButtons = {
@@ -46,11 +45,11 @@ const connecting: IO<BaseMessageOptions> = pipe(
   IO.map(
     (image): BaseMessageOptions => ({
       embeds: [
-        MessageUtils.safeEmbed({
+        MessageComponent.safeEmbed({
           color: constants.messagesColor,
-          author: MessageUtils.author('Chargement...'),
-          thumbnail: MessageUtils.thumbnail(images.jpPerdu),
-          image: MessageUtils.image(image),
+          author: MessageComponent.author('Chargement...'),
+          thumbnail: MessageComponent.thumbnail(images.jpPerdu),
+          image: MessageComponent.image(image),
         }),
       ],
       components: [
@@ -74,9 +73,9 @@ const playing = (
     IO.map(
       (image): BaseMessageOptions => ({
         embeds: [
-          MessageUtils.safeEmbed({
+          MessageComponent.safeEmbed({
             color: constants.messagesColor,
-            author: MessageUtils.author('En cours de lecture :'),
+            author: MessageComponent.author('En cours de lecture :'),
             title: pipe(
               current,
               Maybe.map(t => t.title),
@@ -98,10 +97,10 @@ const playing = (
               current,
               Maybe.chain(t => t.thumbnail),
               Maybe.getOrElse(() => images.jpPerdu),
-              MessageUtils.thumbnail,
+              MessageComponent.thumbnail,
             ),
             fields: [
-              MessageUtils.field(
+              MessageComponent.field(
                 constants.emptyChar,
                 pipe(
                   queue,
@@ -125,7 +124,7 @@ const playing = (
                 ),
               ),
             ],
-            image: MessageUtils.image(image),
+            image: MessageComponent.image(image),
           }),
         ],
         components: [MessageComponent.row([isPlaying ? pauseButton : playButton, nextButton])],

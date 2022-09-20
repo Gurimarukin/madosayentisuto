@@ -10,7 +10,7 @@ import { Future, NonEmptyArray, toUnit } from '../../../../shared/utils/fp'
 import { futureMaybe } from '../../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../../helpers/DiscordConnector'
-import { MessageUtils } from '../../../utils/MessageUtils'
+import { MessageComponent } from '../../discord/MessageComponent'
 
 type DiscordDMCompact = {
   readonly discordDMIsCompact: boolean
@@ -48,4 +48,7 @@ const formatDMCompact = (name: string, level: LogLevel, msg: string): string => 
 }
 
 const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageOptions =>
-  MessageUtils.singleSafeEmbed({ color: LogLevel.hexColor[level], description: `${name} - ${msg}` })
+  MessageComponent.singleSafeEmbed({
+    color: LogLevel.hexColor[level],
+    description: `${name} - ${msg}`,
+  })

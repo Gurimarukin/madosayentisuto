@@ -14,6 +14,7 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
+import { MessageComponent } from '../models/discord/MessageComponent'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { ReminderWho } from '../models/scheduledEvent/ReminderWho'
@@ -27,7 +28,6 @@ import type { ScheduledEventService } from '../services/ScheduledEventService'
 import type { GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
-import { MessageUtils } from '../utils/MessageUtils'
 
 type ReminderWhoParsed = {
   readonly role: Role
@@ -216,10 +216,10 @@ const reminderMessage = ({ now, scheduledAt, what, r }: ReminderMessage): Messag
       Maybe.toUndefined,
     ),
     embeds: [
-      MessageUtils.safeEmbed({
+      MessageComponent.safeEmbed({
         color: constants.messagesColor,
         fields: [
-          MessageUtils.field(
+          MessageComponent.field(
             'Rappel',
             pipe(
               [

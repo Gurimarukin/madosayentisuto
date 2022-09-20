@@ -19,8 +19,8 @@ import { Future } from '../../shared/utils/fp'
 import type { CaptainConfig } from '../Config'
 import { constants } from '../constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
+import { MessageComponent } from '../models/discord/MessageComponent'
 import { MadEvent } from '../models/event/MadEvent'
-import { MessageUtils } from '../utils/MessageUtils'
 
 type MyChannel =
   | DMChannel
@@ -92,7 +92,7 @@ const send =
     pipe(DiscordConnector.sendMessage(channel, message), Future.map(toUnit))
 
 const sendIDontLikeThieves = send(
-  MessageUtils.singleSafeEmbed({
+  MessageComponent.singleSafeEmbed({
     title: "J'aime pas trop les voleurs et les fils de pute.",
     url: 'http://george-abitbol.fr/v/374a915e',
     color: constants.messagesColor,

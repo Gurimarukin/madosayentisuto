@@ -8,8 +8,7 @@ import type {
   Message,
   TextBasedChannel,
 } from 'discord.js'
-import { ChannelType } from 'discord.js'
-import { Role, TextChannel, User } from 'discord.js'
+import { ChannelType, Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
@@ -59,6 +58,8 @@ const Keys = {
   get: 'get',
   set: 'set',
   unset: 'unset',
+  say: 'say',
+  what: 'what',
 }
 
 const adminCommand = Command.chatInput({
@@ -188,12 +189,23 @@ const adminCommand = Command.chatInput({
       description: 'Jean Plank a parfois besoin de rappeler au monde à quel point il est occupé',
     })(),
   ),
+
+  Command.option.subcommand({
+    name: Keys.say,
+    description: 'Faites dire quelque chose à Jean Plank',
+  })(
+    Command.option.string({
+      name: Keys.what,
+      description: "Ce qu'il faut dire",
+      required: true,
+    }),
+  ),
 )
 
 export const adminCommands = [adminCommand]
 
 type GroupWithSubcommand = {
-  readonly subcommandGroup: string
+  readonly subcommandGroup: Maybe<string>
   readonly subcommand: string
 }
 
@@ -228,7 +240,7 @@ export const AdminCommandsObserver = (
       validateAdminCommand(interaction),
       Either.fold(
         content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
-        onAdminSubcommandGroup(interaction),
+        onValidatedAdminCommand(interaction),
       ),
     )
   }
@@ -242,17 +254,31 @@ export const AdminCommandsObserver = (
     )
     if (!isAdmin) return Either.left('Haha ! Tu ne peux pas faire ça !')
 
-    const subcommandGroup = interaction.options.getSubcommandGroup(false)
+    const subcommandGroup = Maybe.fromNullable(interaction.options.getSubcommandGroup(false))
     const subcommand = interaction.options.getSubcommand(false)
-    if (subcommandGroup === null || subcommand === null) return Either.left('Erreur')
+    if (subcommand === null) return Either.left('Erreur')
 
     return Either.right({ subcommandGroup, subcommand })
   }
 
-  function onAdminSubcommandGroup(
+  function onValidatedAdminCommand(
     interaction: ChatInputCommandInteraction,
   ): (groupWithSubcommand: GroupWithSubcommand) => Future<void> {
-    return ({ subcommandGroup, subcommand }) => {
+    return ({ subcommandGroup, subcommand }) =>
+      pipe(
+        subcommandGroup,
+        Maybe.fold(
+          () => onAdminSubcommandOnly(interaction, subcommand),
+          onAdminSubcommand(interaction, subcommand),
+        ),
+      )
+  }
+
+  function onAdminSubcommand(
+    interaction: ChatInputCommandInteraction,
+    subcommand: string,
+  ): (subcommandGroup: string) => Future<void> {
+    return subcommandGroup => {
       switch (subcommandGroup) {
         case Keys.state:
           return onState(interaction, subcommand)
@@ -269,6 +295,17 @@ export const AdminCommandsObserver = (
       }
       return Future.unit
     }
+  }
+
+  function onAdminSubcommandOnly(
+    interaction: ChatInputCommandInteraction,
+    subcommand: string,
+  ): Future<void> {
+    switch (subcommand) {
+      case Keys.say:
+        return onSay(interaction)
+    }
+    return Future.unit
   }
 
   /**
@@ -535,6 +572,47 @@ export const AdminCommandsObserver = (
       pipe(
         botStateService.discordSetActivityFromDb(),
         Future.map(() => 'Activity refreshed'),
+      ),
+    )
+  }
+
+  /**
+   * say
+   */
+
+  function onSay(interaction: ChatInputCommandInteraction): Future<void> {
+    return withFollowUp(interaction)(
+      pipe(
+        apply.sequenceS(Either.Apply)({
+          message: pipe(
+            interaction.options.getString(Keys.what),
+            Either.fromNullable(Error(`Missing option "${Keys.what}" for command "say"`)),
+          ),
+          channel: pipe(
+            Maybe.fromNullable(interaction.channel),
+            Maybe.filter(ChannelUtils.isGuildSendable),
+            Either.fromOption(() => Error(`Invalid or missing channel for command "say"`)),
+          ),
+        }),
+        Future.fromEither,
+        Future.chain(({ message, channel }) =>
+          pipe(
+            DiscordConnector.sendMessage(channel, message),
+            Future.map(
+              Maybe.fold(
+                () =>
+                  pipe(
+                    // TODO: remove disable
+                    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                    logger.warn(`Couldn't say message in channel ${channel}`),
+                    IO.map(() => 'Error'),
+                  ),
+                () => IO.right('Done'),
+              ),
+            ),
+            Future.chain(Future.fromIOEither),
+          ),
+        ),
       ),
     )
   }

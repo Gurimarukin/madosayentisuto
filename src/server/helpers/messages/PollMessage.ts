@@ -11,7 +11,6 @@ import { MessageComponent } from '../../models/discord/MessageComponent'
 import type { ChoiceWithResponses } from '../../models/poll/ChoiceWithResponses'
 import type { ChoiceWithVotesCount } from '../../models/poll/ChoiceWithVotesCount'
 import { PollButton } from '../../models/poll/PollButton'
-import { MessageUtils } from '../../utils/MessageUtils'
 import type { BaseMessageOptions } from '../DiscordConnector'
 
 // emojis
@@ -61,7 +60,7 @@ const poll = (
 
   return {
     embeds: [
-      MessageUtils.safeEmbed({
+      MessageComponent.safeEmbed({
         title: question,
         description: StringUtils.stripMargins(
           `${answersStr}
@@ -102,7 +101,7 @@ const detail = (answers: NonEmptyArray<ChoiceWithResponses>): BaseMessageOptions
   embeds: pipe(
     answers,
     NonEmptyArray.mapWithIndex((index, { responses }) =>
-      MessageUtils.safeEmbed({
+      MessageComponent.safeEmbed({
         description: `${pipe(
           getEmoji(index),
           Maybe.getOrElse(() => `${index}`),
