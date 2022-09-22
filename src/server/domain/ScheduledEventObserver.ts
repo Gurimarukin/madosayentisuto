@@ -1,4 +1,9 @@
-import type { GuildMember, MessageOptions, PartialTextBasedChannelFields, Role } from 'discord.js'
+import type {
+  BaseMessageOptions,
+  GuildMember,
+  PartialTextBasedChannelFields,
+  Role,
+} from 'discord.js'
 import { AttachmentBuilder } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
@@ -196,7 +201,7 @@ type ReminderMessage = {
   }>
 }
 
-const reminderMessage = ({ now, scheduledAt, what, r }: ReminderMessage): MessageOptions => {
+const reminderMessage = ({ now, scheduledAt, what, r }: ReminderMessage): BaseMessageOptions => {
   const authorStr = pipe(
     r,
     Maybe.map(({ author }) => `*Créé par ${author}*`),

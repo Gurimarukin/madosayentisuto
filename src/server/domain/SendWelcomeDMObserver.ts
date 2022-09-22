@@ -1,4 +1,4 @@
-import type { GuildMember, MessageOptions } from 'discord.js'
+import type { BaseMessageOptions, GuildMember } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
@@ -36,7 +36,7 @@ export const SendWelcomeDMObserver = (Logger: LoggerGetter) => {
   })
 }
 
-const welcomeMessage = (member: GuildMember): MessageOptions => ({
+const welcomeMessage = (member: GuildMember): BaseMessageOptions => ({
   content: StringUtils.stripMargins(
     `Ha ha !
     |Tu as rejoint le serveur **${member.guild.name}**, quelle erreur !

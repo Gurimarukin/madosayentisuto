@@ -1,4 +1,4 @@
-import type { MessageOptions } from 'discord.js'
+import type { BaseMessageOptions } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
 import type { DiscordUserId } from '../../../../shared/models/DiscordUserId'
@@ -22,7 +22,7 @@ export const DiscordDMLogObserver = (
   discord: DiscordConnector,
 ): TObserver<LogEvent> => ({
   next: ({ name, level, message }) => {
-    const options: string | MessageOptions = discordDMIsCompact
+    const options: string | BaseMessageOptions = discordDMIsCompact
       ? formatDMCompact(name, level, message)
       : formatDMEmbed(name, level, message)
     return pipe(
@@ -47,7 +47,7 @@ const formatDMCompact = (name: string, level: LogLevel, msg: string): string => 
   return pipe(res, StringUtils.ellipse(2000))
 }
 
-const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageOptions =>
+const formatDMEmbed = (name: string, level: LogLevel, msg: string): BaseMessageOptions =>
   MessageComponent.singleSafeEmbed({
     color: LogLevel.hexColor[level],
     description: `${name} - ${msg}`,

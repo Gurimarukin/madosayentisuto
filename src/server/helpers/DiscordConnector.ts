@@ -31,8 +31,8 @@ import type {
   InteractionUpdateOptions,
   Message,
   MessageComponentInteraction,
+  MessageCreateOptions,
   MessageEditOptions,
-  MessageOptions,
   MessagePayload,
   MessageReaction,
   PartialTextBasedChannelFields,
@@ -41,8 +41,6 @@ import type {
   RoleResolvable,
   StartThreadOptions,
   ThreadChannel,
-  ThreadCreateOptions,
-  ThreadManager,
   User,
 } from 'discord.js'
 import { Routes } from 'discord.js'
@@ -86,14 +84,14 @@ type MyPartial<A> = {
 type MyInteraction = CommandInteraction | MessageComponentInteraction
 
 type MyThreadChannelTypes = AllowedThreadTypeForNewsChannel | AllowedThreadTypeForTextChannel
-type MyThreadCreateOptions<A extends MyThreadChannelTypes> = Omit<
-  ThreadCreateOptions<A>,
-  'type'
-> & {
-  readonly type?: A
-}
+// type MyThreadCreateOptions<A extends MyThreadChannelTypes> = Omit<
+//   ThreadCreateOptions<A>,
+//   'type'
+// > & {
+//   readonly type?: A
+// }
 
-export type BaseMessageOptions = Pick<MessageOptions, 'components' | 'content' | 'embeds'>
+// export type BaseMessageOptions = Pick<MessageOptions, 'components' | 'content' | 'embeds'>
 
 export type DiscordConnector = ReturnType<typeof of>
 
@@ -429,7 +427,7 @@ const decodeFutureArrayResult =
 
 const sendMessage = <InGuild extends boolean = boolean>(
   channel: PartialTextBasedChannelFields<InGuild>,
-  options: string | MessagePayload | MessageOptions,
+  options: string | MessagePayload | MessageCreateOptions,
 ): Future<Maybe<Message<InGuild>>> =>
   pipe(
     Future.tryCatch(() => channel.send(options)),
@@ -445,7 +443,7 @@ const sendMessage = <InGuild extends boolean = boolean>(
 const sendPrettyMessage = (
   channel: PartialTextBasedChannelFields,
   message: string,
-  options: MessageOptions = {},
+  options: Omit<MessageCreateOptions, 'embeds'> = {},
 ): Future<Maybe<Message>> =>
   sendMessage(channel, {
     ...options,
@@ -462,16 +460,6 @@ const threadDelete = (thread: ThreadChannel): Future<boolean> =>
         : Future.left(e),
     ),
     debugLeft('threadDelete'),
-  )
-
-const threadsCreate = <A extends MyThreadChannelTypes>(
-  threads: ThreadManager<A>,
-  options: MyThreadCreateOptions<A>,
-): Future<Maybe<ThreadChannel>> =>
-  pipe(
-    Future.tryCatch(() => threads.create(options)),
-    Future.map(Maybe.some),
-    debugLeft('threadsCreate'),
   )
 
 const threadSetArchived = (
@@ -506,8 +494,38 @@ const voiceConnectionSubscribe = (
   )
 
 /**
- * DiscordConnector
+ * constructor
  */
+
+const fromConfig = (config: ClientConfig): Future<DiscordConnector> =>
+  Future.tryCatch(
+    () =>
+      new Promise<DiscordConnector>(resolve => {
+        const client = new Client({
+          intents: [
+            GatewayIntentBits.DirectMessages,
+            GatewayIntentBits.GuildBans,
+            GatewayIntentBits.GuildMembers,
+            GatewayIntentBits.GuildMessageReactions,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.GuildVoiceStates,
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.MessageContent,
+          ],
+          partials: [
+            Partials.User,
+            Partials.Channel,
+            Partials.GuildMember,
+            Partials.Message,
+            Partials.Reaction,
+          ],
+        })
+        /* eslint-disable functional/no-expression-statement */
+        client.once('ready', () => resolve(of(client)))
+        client.login(config.secret)
+        /* eslint-enable functional/no-expression-statement */
+      }),
+  )
 
 export const DiscordConnector = {
   fetchAuditLogs,
@@ -543,41 +561,12 @@ export const DiscordConnector = {
   sendMessage,
   sendPrettyMessage,
   threadDelete,
-  threadsCreate,
   threadSetArchived,
   voiceConnectionDestroy,
   voiceConnectionJoin,
   voiceConnectionSubscribe,
 
-  fromConfig: (config: ClientConfig): Future<DiscordConnector> =>
-    Future.tryCatch(
-      () =>
-        new Promise<DiscordConnector>(resolve => {
-          const client = new Client({
-            intents: [
-              GatewayIntentBits.DirectMessages,
-              GatewayIntentBits.GuildBans,
-              GatewayIntentBits.GuildMembers,
-              GatewayIntentBits.GuildMessageReactions,
-              GatewayIntentBits.GuildMessages,
-              GatewayIntentBits.GuildVoiceStates,
-              GatewayIntentBits.Guilds,
-              GatewayIntentBits.MessageContent,
-            ],
-            partials: [
-              Partials.User,
-              Partials.Channel,
-              Partials.GuildMember,
-              Partials.Message,
-              Partials.Reaction,
-            ],
-          })
-          /* eslint-disable functional/no-expression-statement */
-          client.once('ready', () => resolve(of(client)))
-          client.login(config.secret)
-          /* eslint-enable functional/no-expression-statement */
-        }),
-    ),
+  fromConfig,
 }
 
 /**

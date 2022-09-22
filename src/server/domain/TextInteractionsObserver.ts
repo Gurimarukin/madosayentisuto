@@ -1,7 +1,7 @@
 import type {
   DMChannel,
   Message,
-  MessageOptions,
+  MessageCreateOptions,
   MessagePayload,
   NewsChannel,
   PartialDMChannel,
@@ -86,19 +86,19 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
   }
 }
 
-const send =
-  (message: string | MessagePayload | MessageOptions) =>
+const sendMessage =
+  (message: string | MessagePayload | MessageCreateOptions) =>
   (channel: MyChannel): Future<void> =>
     pipe(DiscordConnector.sendMessage(channel, message), Future.map(toUnit))
 
-const sendIDontLikeThieves = send(
+const sendIDontLikeThieves = sendMessage(
   MessageComponent.singleSafeEmbed({
     title: "J'aime pas trop les voleurs et les fils de pute.",
     url: 'http://george-abitbol.fr/v/374a915e',
     color: constants.messagesColor,
   }),
 )
-const sendNoNeedToThankMe = send('Haha ! Inutile de me remercier...')
+const sendNoNeedToThankMe = sendMessage('Haha ! Inutile de me remercier...')
 
 const cleanMessage = (message: string): List<string> =>
   message

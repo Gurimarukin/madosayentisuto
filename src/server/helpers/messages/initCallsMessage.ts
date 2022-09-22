@@ -1,4 +1,4 @@
-import type { APIRole, Role } from 'discord.js'
+import type { APIRole, BaseMessageOptions, Role } from 'discord.js'
 import { ButtonStyle } from 'discord.js'
 
 import { StringUtils } from '../../../shared/utils/StringUtils'
@@ -6,7 +6,6 @@ import { StringUtils } from '../../../shared/utils/StringUtils'
 import { constants } from '../../constants'
 import { MessageComponent } from '../../models/discord/MessageComponent'
 import type { GuildSendableChannel } from '../../utils/ChannelUtils'
-import type { BaseMessageOptions } from '../DiscordConnector'
 
 export const initCallsButton = {
   subscribeId: 'callsSubscribe',

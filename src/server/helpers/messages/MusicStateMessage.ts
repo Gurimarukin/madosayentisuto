@@ -1,3 +1,4 @@
+import type { BaseMessageOptions } from 'discord.js'
 import { random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
@@ -8,7 +9,6 @@ import { List, Maybe } from '../../../shared/utils/fp'
 import { constants } from '../../constants'
 import { MessageComponent } from '../../models/discord/MessageComponent'
 import type { Track } from '../../models/music/Track'
-import type { BaseMessageOptions } from '../DiscordConnector'
 
 export const musicStateButtons = {
   playPauseId: 'musicPlayPause',

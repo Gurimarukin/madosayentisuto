@@ -1,3 +1,4 @@
+import type { BaseMessageOptions } from 'discord.js'
 import { ButtonStyle } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
@@ -11,7 +12,6 @@ import { MessageComponent } from '../../models/discord/MessageComponent'
 import type { ChoiceWithResponses } from '../../models/poll/ChoiceWithResponses'
 import type { ChoiceWithVotesCount } from '../../models/poll/ChoiceWithVotesCount'
 import { PollButton } from '../../models/poll/PollButton'
-import type { BaseMessageOptions } from '../DiscordConnector'
 
 // emojis
 
