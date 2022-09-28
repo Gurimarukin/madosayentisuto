@@ -3,8 +3,8 @@ import { pipe } from 'fp-ts/function'
 
 import { Future, IO } from '../shared/utils/fp'
 
-import { Config } from './Config'
 import { Context } from './Context'
+import { Config } from './config/Config'
 import { LoggerObservable } from './models/logger/LoggerObservable'
 import { ConsoleLogObserver } from './models/logger/observers/ConsoleLogObserver'
 import { UserService } from './services/UserService'

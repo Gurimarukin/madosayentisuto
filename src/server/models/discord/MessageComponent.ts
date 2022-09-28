@@ -20,7 +20,7 @@ import { flow, pipe } from 'fp-ts/function'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import { List, NonEmptyArray } from '../../../shared/utils/fp'
 
-import { constants } from '../../constants'
+import { constants } from '../../config/constants'
 
 type UrlHeightWidthProxy = {
   readonly url?: string

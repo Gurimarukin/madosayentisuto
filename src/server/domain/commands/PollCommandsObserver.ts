@@ -23,7 +23,7 @@ import { NonEmptyArray } from '../../../shared/utils/fp'
 import { Future } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
-import type { Config } from '../../Config'
+import type { Config } from '../../config/Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { PollMessage } from '../../helpers/messages/PollMessage'
 import { MessageId } from '../../models/MessageId'
@@ -572,7 +572,9 @@ export const PollCommandsObserver = (
     return pipe(
       messages,
       List.filterMap(m =>
-        m.guild !== null && m.author?.id === config.client.id
+        m.guild !== null &&
+        m.author !== null &&
+        DiscordUserId.fromUser(m.author) === config.client.id
           ? Maybe.some(MessageId.fromMessage(m))
           : Maybe.none,
       ),

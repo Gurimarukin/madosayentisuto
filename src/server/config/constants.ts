@@ -1,7 +1,7 @@
-import { MsDuration } from '../shared/models/MsDuration'
-import { Color } from '../shared/utils/Color'
+import { MsDuration } from '../../shared/models/MsDuration'
+import { Color } from '../../shared/utils/Color'
 
-import { Activity } from './models/botState/Activity'
+import { Activity } from '../models/botState/Activity'
 
 export const constants = {
   emptyChar: '\u200B',
@@ -27,6 +27,8 @@ export const constants = {
   dbRetryDelay: MsDuration.seconds(10),
 
   logsLimit: 5000,
+
+  elevatorDelay: MsDuration.seconds(30),
 
   // kicks/bans
   fetchLogsLimit: 30,

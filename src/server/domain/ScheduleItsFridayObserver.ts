@@ -7,7 +7,7 @@ import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefin
 import { StringUtils } from '../../shared/utils/StringUtils'
 import { Future, IO } from '../../shared/utils/fp'
 
-import { constants } from '../constants'
+import { constants } from '../config/constants'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { ScheduledEvent } from '../models/scheduledEvent/ScheduledEvent'

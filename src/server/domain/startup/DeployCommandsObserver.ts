@@ -7,7 +7,7 @@ import { GuildId } from '../../../shared/models/guild/GuildId'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { Future, IO, List, NonEmptyArray, toUnit } from '../../../shared/utils/fp'
 
-import type { ClientConfig } from '../../Config'
+import type { ClientConfig } from '../../config/Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'

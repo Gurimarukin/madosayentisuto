@@ -7,7 +7,7 @@ import type { GuildStateView } from '../../../shared/models/guild/GuildStateView
 import { RoleView } from '../../../shared/models/guild/RoleView'
 import { Maybe } from '../../../shared/utils/fp'
 
-import type { MusicSubscription } from '../../helpers/MusicSubscription'
+import type { AudioSubscription } from '../../helpers/AudioSubscription'
 import type { GuildSendableChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { Calls } from './Calls'
@@ -18,7 +18,7 @@ export type GuildState = {
   readonly defaultRole: Maybe<Role>
   readonly itsFridayChannel: Maybe<GuildSendableChannel>
   readonly birthdayChannel: Maybe<GuildSendableChannel>
-  readonly subscription: Maybe<MusicSubscription>
+  readonly subscription: Maybe<AudioSubscription>
 }
 
 const empty = (id: GuildId): GuildState => ({

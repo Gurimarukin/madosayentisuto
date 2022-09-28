@@ -12,13 +12,13 @@ const { format } = LogUtils
 
 export const LogMadEventObserver = (logger: LoggerType): TObserver<MadEvent> => ({
   next: event => {
-    const message = ((): string | undefined => {
+    const message = ((): string | null => {
       switch (event.type) {
         case 'AppStarted':
           return ''
 
         case 'CronJob':
-          return
+          return null
 
         case 'InteractionCreate':
           return `${format(
@@ -43,9 +43,14 @@ export const LogMadEventObserver = (logger: LoggerType): TObserver<MadEvent> => 
             event.oldState.member?.user ?? event.newState.member?.user,
           )} ${maybeChannel(event.oldState.channel)} > ${maybeChannel(event.newState.channel)}`
 
-        case 'PublicCallStarted':
-        case 'PublicCallEnded':
-          return format(event.channel.guild, event.member.user, event.channel)
+        case 'AudioChannelConnected':
+        case 'AudioChannelDisconnected':
+          return `${format(event.channel.guild, event.member.user)} 📢${event.channel.name}`
+
+        case 'AudioChannelMoved':
+          return `${format(event.from.guild, event.member.user)} 📢${event.from.name} > 📢${
+            event.to.name
+          }`
 
         case 'MessageCreate':
           return `${format(event.message.guild, event.message.author, event.message.channel)} ${
@@ -58,10 +63,10 @@ export const LogMadEventObserver = (logger: LoggerType): TObserver<MadEvent> => 
           } message${event.messages.length < 2 ? '' : 's'}`
       }
     })()
-    if (message !== undefined) return Future.fromIOEither(logger.info('✉️ ', event.type, message))
+    if (message !== null) return Future.fromIOEither(logger.info('✉️ ', event.type, message))
     return Future.unit
   },
 })
 
 const maybeChannel = (channel: GuildAudioChannel | null): string =>
-  channel === null ? 'null' : `#${channel.name}`
+  channel === null ? 'null' : `📢${channel.name}`

@@ -8,8 +8,8 @@ import { GuildId } from '../../shared/models/guild/GuildId'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
+import { AudioSubscription } from '../helpers/AudioSubscription'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import { MusicSubscription } from '../helpers/MusicSubscription'
 import type { YtDlp } from '../helpers/YtDlp'
 import type { Calls } from '../models/guildState/Calls'
 import { GuildState } from '../models/guildState/GuildState'
@@ -69,14 +69,14 @@ export const GuildStateService = (
     setBirthdayChannel: (guild: Guild, channel: TextChannel): Future<GuildState> =>
       setLens(guild, 'birthdayChannel', Maybe.some(channel)),
 
-    getSubscription: (guild: Guild): Future<MusicSubscription> =>
+    getSubscription: (guild: Guild): Future<AudioSubscription> =>
       pipe(
         get(guild, 'subscription'),
         Future.fromIOEither,
         Future.map(
           flow(
             Maybe.flatten,
-            Maybe.getOrElse(() => MusicSubscription(Logger, ytDlp, guild)),
+            Maybe.getOrElse(() => AudioSubscription(Logger, ytDlp, guild)),
           ),
         ),
         Future.chainFirst(subscription => setLens(guild, 'subscription', Maybe.some(subscription))),

@@ -6,9 +6,9 @@ import { StringUtils } from '../../../shared/utils/StringUtils'
 import { IO } from '../../../shared/utils/fp'
 import { List, Maybe } from '../../../shared/utils/fp'
 
-import { constants } from '../../constants'
+import { constants } from '../../config/constants'
+import type { Track } from '../../models/audio/music/Track'
 import { MessageComponent } from '../../models/discord/MessageComponent'
-import type { Track } from '../../models/music/Track'
 
 export const musicStateButtons = {
   playPauseId: 'musicPlayPause',
@@ -62,10 +62,14 @@ const connecting: IO<BaseMessageOptions> = pipe(
   ),
 )
 
+type IsPaused = {
+  readonly isPaused: boolean
+}
+
 const playing = (
   current: Maybe<Track>,
   queue: List<Track>,
-  isPlaying: boolean,
+  { isPaused }: IsPaused,
 ): IO<BaseMessageOptions> =>
   pipe(
     random.randomElem(images.jpDjGifs),
@@ -127,7 +131,7 @@ const playing = (
             image: MessageComponent.image(image),
           }),
         ],
-        components: [MessageComponent.row([isPlaying ? pauseButton : playButton, nextButton])],
+        components: [MessageComponent.row([isPaused ? playButton : pauseButton, nextButton])],
       }),
     ),
   )

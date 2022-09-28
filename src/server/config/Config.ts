@@ -2,22 +2,22 @@ import type * as dotenv from 'dotenv'
 import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
-import { DiscordUserId } from '../shared/models/DiscordUserId'
-import { ValidatedNea } from '../shared/models/ValidatedNea'
-import { LogLevelOrOff } from '../shared/models/log/LogLevel'
-import { loadDotEnv } from '../shared/utils/config/loadDotEnv'
-import { parseConfig } from '../shared/utils/config/parseConfig'
-import { Either, IO } from '../shared/utils/fp'
-import type { List, NonEmptyArray, Try } from '../shared/utils/fp'
-import { Maybe } from '../shared/utils/fp'
-import { URLFromString } from '../shared/utils/ioTsUtils'
+import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import { ValidatedNea } from '../../shared/models/ValidatedNea'
+import { LogLevelOrOff } from '../../shared/models/log/LogLevel'
+import { loadDotEnv } from '../../shared/utils/config/loadDotEnv'
+import { parseConfig } from '../../shared/utils/config/parseConfig'
+import { Either, IO } from '../../shared/utils/fp'
+import type { List, NonEmptyArray, Try } from '../../shared/utils/fp'
+import { Maybe } from '../../shared/utils/fp'
+import { URLFromString } from '../../shared/utils/ioTsUtils'
 
 import {
   ArrayFromString,
   BooleanFromString,
   NonEmptyArrayFromString,
   NumberFromString,
-} from './utils/ioTsUtils'
+} from '../utils/ioTsUtils'
 
 const { seqS } = ValidatedNea
 
@@ -34,7 +34,7 @@ export type Config = {
 }
 
 export type ClientConfig = {
-  readonly id: string
+  readonly id: DiscordUserId
   readonly secret: string
 }
 
@@ -75,7 +75,7 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
       ytDlpPath: r(D.string)('YTDLP_PATH'),
       jwtSecret: r(D.string)('JWT_SECRET'),
       client: seqS<ClientConfig>({
-        id: r(D.string)('CLIENT_ID'),
+        id: r(DiscordUserId.codec)('CLIENT_ID'),
         secret: r(D.string)('CLIENT_SECRET'),
       }),
       admins: r(NonEmptyArrayFromString.decoder(DiscordUserId.codec))('ADMINS'),
@@ -105,6 +105,6 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
     }),
   )
 
-const load = pipe(loadDotEnv, IO.map(parse), IO.chain(IO.fromEither))
+const load: IO<Config> = pipe(loadDotEnv, IO.map(parse), IO.chain(IO.fromEither))
 
 export const Config = { load }

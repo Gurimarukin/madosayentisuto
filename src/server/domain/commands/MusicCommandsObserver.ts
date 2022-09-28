@@ -6,15 +6,15 @@ import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRe
 import { Either, List, NonEmptyArray, toUnit } from '../../../shared/utils/fp'
 import { Future, Maybe } from '../../../shared/utils/fp'
 
+import type { AudioSubscription } from '../../helpers/AudioSubscription'
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
-import type { MusicSubscription } from '../../helpers/MusicSubscription'
 import type { YtDlp } from '../../helpers/YtDlp'
 import { MusicStateMessage, musicStateButtons } from '../../helpers/messages/MusicStateMessage'
+import { AudioState } from '../../models/audio/AudioState'
+import { Track } from '../../models/audio/music/Track'
 import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
-import { MusicState } from '../../models/music/MusicState'
-import { Track } from '../../models/music/Track'
 import type { GuildStateService } from '../../services/GuildStateService'
 import type { GuildAudioChannel, GuildSendableChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
@@ -110,12 +110,12 @@ export const MusicCommandsObserver = (
   }
 
   function onNextButton(interaction: ButtonInteraction): Future<void> {
-    return buttonCommon(interaction, subscription => subscription.nextTrack(interaction.user))
+    return buttonCommon(interaction, subscription => subscription.playNextTrack(interaction.user))
   }
 
   function validatePlayCommand(
     interaction: ChatInputCommandInteraction,
-    subscription: MusicSubscription,
+    subscription: AudioSubscription,
   ): Future<Either<string, PlayCommand>> {
     return pipe(
       subscription.getState,
@@ -171,7 +171,7 @@ export const MusicCommandsObserver = (
 
   function buttonCommon(
     interaction: ButtonInteraction,
-    f: (suscription: MusicSubscription) => Future<boolean>,
+    f: (suscription: AudioSubscription) => Future<boolean>,
   ): Future<void> {
     const guild = interaction.guild
     if (guild === null) return Future.unit
@@ -215,7 +215,7 @@ export const MusicCommandsObserver = (
 
 const validateMusicAndStateChannel = (
   interaction: Interaction,
-  subscriptionState: MusicState,
+  subscriptionState: AudioState,
 ): Either<string, Pick<PlayCommand, 'musicChannel' | 'stateChannel'>> =>
   pipe(
     validateMusicChannel(interaction, subscriptionState),
@@ -233,7 +233,7 @@ const validateMusicAndStateChannel = (
 
 const validateMusicChannel = (
   interaction: Interaction,
-  subscriptionState: MusicState,
+  subscriptionState: AudioState,
 ): Either<string, GuildAudioChannel> =>
   pipe(
     interaction.member instanceof GuildMember
@@ -244,7 +244,7 @@ const validateMusicChannel = (
       musicChannel =>
         pipe(
           subscriptionState,
-          MusicState.getChannel,
+          AudioState.getChannel,
           Maybe.every(c => c.id === musicChannel.id),
         ),
       () => 'Haha ! Il faut être dans mon salon pour faire ça !',

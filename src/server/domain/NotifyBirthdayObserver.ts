@@ -11,7 +11,7 @@ import { Maybe } from '../../shared/utils/fp'
 import { Future, List } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import { constants } from '../constants'
+import { constants } from '../config/constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
 import type { MemberBirthdate } from '../models/member/MemberBirthdate'

@@ -28,12 +28,15 @@ export const MadEvent = createUnion({
 
   VoiceStateUpdate: (oldState: VoiceState, newState: VoiceState) => ({ oldState, newState }),
 
-  PublicCallStarted: (member: GuildMember, channel: GuildAudioChannel) => ({
+  AudioChannelConnected: (member: GuildMember, channel: GuildAudioChannel) => ({ member, channel }),
+
+  AudioChannelMoved: (member: GuildMember, from: GuildAudioChannel, to: GuildAudioChannel) => ({
     member,
-    channel,
+    from,
+    to,
   }),
 
-  PublicCallEnded: (member: GuildMember, channel: GuildAudioChannel) => ({
+  AudioChannelDisconnected: (member: GuildMember, channel: GuildAudioChannel) => ({
     member,
     channel,
   }),
@@ -49,7 +52,8 @@ export type MadEventInteractionCreate = typeof MadEvent.InteractionCreate.T
 export type MadEventGuildMemberAdd = typeof MadEvent.GuildMemberAdd.T
 export type MadEventGuildMemberRemove = typeof MadEvent.GuildMemberRemove.T
 export type MadEventVoiceStateUpdate = typeof MadEvent.VoiceStateUpdate.T
-export type MadEventPublicCallStarted = typeof MadEvent.PublicCallStarted.T
-export type MadEventPublicCallEnded = typeof MadEvent.PublicCallEnded.T
+export type MadEventAudioChannelConnected = typeof MadEvent.AudioChannelConnected.T
+export type MadEventAudioChannelMoved = typeof MadEvent.AudioChannelMoved.T
+export type MadEventAudioChannelDisconnected = typeof MadEvent.AudioChannelDisconnected.T
 export type MadEventMessageCreate = typeof MadEvent.MessageCreate.T
 export type MadEventMessageDelete = typeof MadEvent.MessageDelete.T

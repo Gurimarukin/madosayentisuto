@@ -7,7 +7,7 @@ import { Sink } from '../../shared/models/rx/Sink'
 import { IO, List } from '../../shared/utils/fp'
 import { Future, toUnit } from '../../shared/utils/fp'
 
-import { constants } from '../constants'
+import { constants } from '../config/constants'
 import { Store } from '../models/Store'
 import type { LogPersistence } from '../persistence/LogPersistence'
 

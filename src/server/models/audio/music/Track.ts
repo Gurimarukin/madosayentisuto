@@ -1,4 +1,4 @@
-import type { Maybe } from '../../../shared/utils/fp'
+import type { Maybe } from '../../../../shared/utils/fp'
 
 export type Track = {
   readonly title: string

@@ -9,7 +9,7 @@ import type { Maybe } from '../../shared/utils/fp'
 import { Future, toUnit } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import { constants } from '../constants'
+import { constants } from '../config/constants'
 import type { JwtHelper } from '../helpers/JwtHelper'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { TokenContent } from '../models/webUser/TokenContent'

@@ -7,7 +7,7 @@ import { create as createYtDlp } from 'youtube-dl-exec'
 import { Either, Future, IO } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
-import { VideosMetadata } from '../models/music/VideosMetadata'
+import { VideosMetadata } from '../models/audio/music/VideosMetadata'
 
 export type YtDlp = ReturnType<typeof YtDlp>
 

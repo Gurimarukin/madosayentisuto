@@ -62,8 +62,8 @@ import { Either, Future, IO, List, Maybe, toUnit } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
-import type { ClientConfig } from '../Config'
-import { constants } from '../constants'
+import type { ClientConfig } from '../config/Config'
+import { constants } from '../config/constants'
 import { MessageId } from '../models/MessageId'
 import { RoleId } from '../models/RoleId'
 import type { Activity } from '../models/botState/Activity'
@@ -385,22 +385,27 @@ const roleRemove = (
   )
 
 const restPutApplicationCommands =
-  (rest: REST, clientId: string) =>
+  (rest: REST, clientId: DiscordUserId) =>
   (
     body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
   ): Future<Separated<ReadonlyArray<Error>, List<GlobalPutCommandResult>>> =>
     decodeFutureArrayResult(
-      Future.tryCatch(() => rest.put(Routes.applicationCommands(clientId), { body })),
+      Future.tryCatch(() =>
+        rest.put(Routes.applicationCommands(DiscordUserId.unwrap(clientId)), { body }),
+      ),
     )([GlobalPutCommandResult.decoder, 'GlobalPutCommandResult'])('restPutApplicationCommands')
 
 const restPutApplicationGuildCommands =
-  (rest: REST, clientId: string, guildId: GuildId) =>
+  (rest: REST, clientId: DiscordUserId, guildId: GuildId) =>
   (
     body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
   ): Future<Separated<ReadonlyArray<Error>, List<GuildPutCommandResult>>> =>
     decodeFutureArrayResult(
       Future.tryCatch(() =>
-        rest.put(Routes.applicationGuildCommands(clientId, GuildId.unwrap(guildId)), { body }),
+        rest.put(
+          Routes.applicationGuildCommands(DiscordUserId.unwrap(clientId), GuildId.unwrap(guildId)),
+          { body },
+        ),
       ),
     )([GuildPutCommandResult.decoder, 'GuildPutCommandResult'])('restPutApplicationGuildCommands')
 

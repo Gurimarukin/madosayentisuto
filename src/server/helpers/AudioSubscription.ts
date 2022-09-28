@@ -17,18 +17,19 @@ import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefin
 import { PubSub } from '../../shared/models/rx/PubSub'
 import type { TSubject } from '../../shared/models/rx/TSubject'
 import { PubSubUtils } from '../../shared/utils/PubSubUtils'
-import { NonEmptyArray, toUnit } from '../../shared/utils/fp'
+import { NonEmptyArray, toUnit, todo } from '../../shared/utils/fp'
 import { List } from '../../shared/utils/fp'
-import { Future, IO, Maybe } from '../../shared/utils/fp'
+import { IO } from '../../shared/utils/fp'
+import { Future, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { Store } from '../models/Store'
+import type { AudioStateConnected } from '../models/audio/AudioState'
+import { AudioState } from '../models/audio/AudioState'
+import { AudioStateType } from '../models/audio/AudioStateType'
+import type { Track } from '../models/audio/music/Track'
 import { MusicEvent } from '../models/event/MusicEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
-import { AudioPlayerState } from '../models/music/AudioPlayerState'
-import type { MusicStateConnected } from '../models/music/MusicState'
-import { MusicState } from '../models/music/MusicState'
-import type { Track } from '../models/music/Track'
 import type { GuildAudioChannel, GuildSendableChannel, NamedChannel } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 import { DiscordConnector } from './DiscordConnector'
@@ -59,57 +60,62 @@ type AudioPlayerEvents = {
 }
 /* eslint-enable functional/no-return-void */
 
-export type MusicSubscription = ReturnType<typeof MusicSubscription>
+export type AudioSubscription = ReturnType<typeof AudioSubscription>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Guild) => {
-  const logger = Logger(`MusicSubscription-${guild.name}#${guild.id}`)
+export const AudioSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Guild) => {
+  const logger = Logger(`AudioSubscription-${guild.name}#${guild.id}`)
 
-  const musicState = Store<MusicState>(MusicState.empty)
+  const audioState = Store<AudioState>(AudioState.empty)
+
+  const getState: IO<AudioState> = audioState.get
+
+  const disconnect: Future<void> = pipe(
+    audioState.get,
+    Future.fromIOEither,
+    Future.chain(voiceConnectionDestroy),
+  )
 
   return {
-    getState: musicState.get,
+    getState,
+    disconnect,
+
     queueTracks,
-    nextTrack,
+    playNextTrack,
     playPauseTrack,
-    disconnect: (): Future<void> =>
-      pipe(musicState.get, Future.fromIOEither, Future.chain(voiceConnectionDestroy)),
+
     stringify,
   }
 
   function queueTracks(
     author: User,
-    musicChannel: GuildAudioChannel,
+    audioChannel: GuildAudioChannel,
     stateChannel: GuildSendableChannel,
     tracks: NonEmptyArray<Track>,
   ): Future<void> {
-    if (musicChannel.guild.id !== guild.id) {
-      return Future.left(Error('Called playSong with wrong guild'))
-    }
-
-    const event = addedTracksEvent(author, tracks)
+    const event = Events.addedTracks(author, tracks)
     return pipe(
-      musicState.modify(
-        flow(MusicState.queueTracks(tracks), MusicState.setPendingEvent(Maybe.some(event))),
+      audioState.modify(
+        flow(AudioState.queueTracks(tracks), AudioState.setPendingEvent(Maybe.some(event))),
       ),
       Future.fromIOEither,
-      Future.chainFirst(refreshMessage),
+      Future.chainFirst(refreshMusicMessage),
       Future.chain(newState => {
         switch (newState.type) {
           case 'Disconnected':
-            return connect(musicChannel, stateChannel)
+            return connect(audioChannel, stateChannel)
 
           case 'Connecting':
           case 'Connected':
-            return logEventToThread(newState, event)
+            return logEventToThread(newState)(event)
         }
       }),
     )
   }
 
-  function nextTrack(author: User): Future<boolean> {
+  function playNextTrack(author: User): Future<boolean> {
     return pipe(
-      musicState.get,
+      audioState.get,
       Future.fromIOEither,
       Future.chain(state => {
         switch (state.type) {
@@ -118,15 +124,18 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
             return Future.right(false)
 
           case 'Connected':
-            return pipe(
-              List.isEmpty(state.queue)
-                ? voiceConnectionDestroy(state)
-                : apply.sequenceT(Future.ApplyPar)(
-                    logEventToThread(state, skippedTrackEvent(author, state)),
-                    playFirstTrackFromQueue(state),
-                  ),
-              Future.map<unknown, boolean>(() => true),
-            )
+            if (AudioStateType.is('Music')(state.value)) {
+              return pipe(
+                List.isEmpty(state.value.queue)
+                  ? voiceConnectionDestroy(state)
+                  : apply.sequenceT(Future.ApplyPar)(
+                      logEventToThread(state)(Events.skippedTrack(author, state)),
+                      playFirstTrackFromQueue(state),
+                    ),
+                Future.map<unknown, boolean>(() => true),
+              )
+            }
+            return Future.right(false)
         }
       }),
     )
@@ -134,28 +143,29 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
 
   function playPauseTrack(): Future<boolean> {
     return pipe(
-      musicState.get,
+      audioState.get,
       Future.fromIOEither,
-      Future.chain(s => {
-        switch (s.type) {
+      Future.chain(state => {
+        switch (state.type) {
           case 'Disconnected':
           case 'Connecting':
             return Future.right(false)
 
           case 'Connected':
-            const audioPlayer = s.audioPlayerState.value
-            switch (s.audioPlayerState.type) {
-              case 'Playing':
-                return updateAudioPlayerState(
-                  DiscordConnector.audioPlayerPause(audioPlayer),
-                  MusicState.setAudioPlayerStatePaused,
-                )
-              case 'Paused':
+            if (AudioStateType.is('Music')(state.value)) {
+              const audioPlayer = state.audioPlayer
+              if (state.value.isPaused) {
                 return updateAudioPlayerState(
                   DiscordConnector.audioPlayerUnpause(audioPlayer),
-                  MusicState.setAudioPlayerStatePlaying,
+                  AudioState.setAudioPlayerStatePlaying,
                 )
+              }
+              return updateAudioPlayerState(
+                DiscordConnector.audioPlayerPause(audioPlayer),
+                AudioState.setAudioPlayerStatePaused,
+              )
             }
+            return Future.right(false)
         }
       }),
     )
@@ -174,18 +184,15 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
       sendStateMessage(stateChannel),
       Future.chain(message =>
         pipe(
-          musicState.modify(MusicState.setMessage(message)),
+          audioState.modify(AudioState.setMessage(message)),
           Future.fromIOEither,
           Future.chainFirst(() => createStateThread(message)),
         ),
       ),
       Future.chain(state =>
         pipe(
-          state.pendingEvent,
-          Maybe.fold(
-            () => Future.unit,
-            pendingEvent => logEventToThread(state, pendingEvent),
-          ),
+          AudioState.getPendingEvent(state),
+          Maybe.fold(() => Future.unit, logEventToThread(state)),
         ),
       ),
       Future.chainIOEitherK(() =>
@@ -196,7 +203,13 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
           }),
           IO.apFirst(subscribe),
           IO.chain(({ voiceConnection, audioPlayer }) =>
-            musicState.modify(MusicState.connecting(musicChannel, voiceConnection, audioPlayer)),
+            audioState.modify(
+              flow(
+                AudioState.getValue,
+                Maybe.getOrElseW(() => AudioStateType.musicEmpty),
+                AudioState.connecting(musicChannel, voiceConnection, audioPlayer),
+              ),
+            ),
           ),
         ),
       ),
@@ -213,6 +226,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
       'ConnectionDestroyed',
       'PlayerIdle',
     )(event => {
+      console.log('>>>>> lifecycleObserver:', event.type)
       switch (event.type) {
         case 'ConnectionReady':
           return onConnectionReady()
@@ -229,58 +243,78 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
 
   function onConnectionReady(): Future<void> {
     return pipe(
-      musicState.get,
+      audioState.get,
       Future.fromIOEither,
-      Future.chain(s => {
-        switch (s.type) {
+      Future.chain(state => {
+        switch (state.type) {
           case 'Disconnected':
           case 'Connected':
             return Future.fromIOEither(
-              logger.warn(`Inconsistent state: onConnectionReady while state was ${s.type}`),
+              logger.warn(`Inconsistent state: onConnectionReady while state was ${state.type}`),
             )
 
           case 'Connecting':
-            if (List.isEmpty(s.queue)) return voiceConnectionDestroy(s)
+            switch (state.value.type) {
+              case 'Music':
+                if (List.isEmpty(state.value.queue)) return voiceConnectionDestroy(state)
 
-            return pipe(
-              IO.Do,
-              IO.apS(
-                'subscription',
-                DiscordConnector.voiceConnectionSubscribe(s.voiceConnection, s.audioPlayer),
-              ),
-              IO.bind('connected', ({ subscription }) =>
-                musicState.modify(
-                  MusicState.connected(s.audioPlayer, s.channel, s.voiceConnection, subscription),
-                ),
-              ),
-              Future.fromIOEither,
-              Future.chain(({ subscription, connected }) =>
-                pipe(
-                  subscription,
-                  Maybe.fold(
-                    () => Future.fromIOEither(logger.error('Subscription failed')),
-                    () => playFirstTrackFromQueue(connected),
+                return pipe(
+                  IO.Do,
+                  IO.apS(
+                    'subscription',
+                    DiscordConnector.voiceConnectionSubscribe(
+                      state.voiceConnection,
+                      state.audioPlayer,
+                    ),
                   ),
-                ),
-              ),
-            )
+                  IO.bind('connected', ({ subscription }) =>
+                    audioState.modify(
+                      flow(
+                        AudioState.getValue,
+                        Maybe.getOrElseW(() => AudioStateType.musicEmpty),
+                        AudioState.connected(
+                          state.audioPlayer,
+                          state.channel,
+                          state.voiceConnection,
+                          subscription,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Future.fromIOEither,
+                  Future.chain(({ subscription, connected }) =>
+                    pipe(
+                      subscription,
+                      Maybe.fold(
+                        () => Future.fromIOEither(logger.error('Subscription failed')),
+                        () => playFirstTrackFromQueue(connected),
+                      ),
+                    ),
+                  ),
+                )
+
+              case 'Elevator':
+                return todo()
+            }
         }
       }),
     )
   }
 
   function onConnectionDisconnectedOrDestroyed(): Future<void> {
-    return pipe(musicState.get, Future.fromIOEither, Future.chain(cleanMessageAndPlayer))
+    return pipe(audioState.get, Future.fromIOEither, Future.chain(cleanMessageAndPlayer))
   }
 
-  function cleanMessageAndPlayer(currentState: MusicState): Future<void> {
+  function cleanMessageAndPlayer(currentState: AudioState): Future<void> {
     const log = (chan?: NamedChannel): LoggerType => LogUtils.pretty(logger, guild, null, chan)
 
     const orElse = Future.orElseIOEitherK(e => logger.warn(e.stack))
 
+    const message = AudioState.getMessage(currentState)
+
     const threadDelete = pipe(
-      currentState.message,
-      Maybe.chain(message => Maybe.fromNullable(message.thread)),
+      message,
+      Maybe.chain(m => Maybe.fromNullable(m.thread)),
       Maybe.fold(
         () => Future.unit,
         thread =>
@@ -296,7 +330,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
     )
 
     const messageDelete = pipe(
-      currentState.message,
+      message,
       Maybe.fold(
         () => Future.unit,
         msg =>
@@ -312,8 +346,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
       orElse,
     )
     const audioPlayerStop = pipe(
-      currentState,
-      MusicState.getAudioPlayer,
+      AudioState.getAudioPlayer(currentState),
       Maybe.fold(() => IO.unit, flow(DiscordConnector.audioPlayerStop, IO.map(toUnit))),
       Future.fromIOEither,
       orElse,
@@ -321,47 +354,56 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
 
     return pipe(
       apply.sequenceT(Future.ApplyPar)(threadDelete, messageDelete, audioPlayerStop),
-      Future.chainIOEitherK(() => musicState.set(MusicState.empty)),
+      Future.chainIOEitherK(() => audioState.set(AudioState.empty)),
       Future.map(toUnit),
     )
   }
 
   function onPlayerIdle(): Future<void> {
     return pipe(
-      musicState.get,
+      audioState.get,
       Future.fromIOEither,
-      Future.chain(s => {
-        switch (s.type) {
+      Future.chain(state => {
+        switch (state.type) {
           case 'Disconnected':
           case 'Connecting':
             return Future.fromIOEither(
-              logger.warn(`Inconsistent state: onPlayerIdle while state was ${s.type}`),
+              logger.warn(`Inconsistent state: onPlayerIdle while state was ${state.type}`),
             )
 
           case 'Connected':
-            if (List.isEmpty(s.queue)) return voiceConnectionDestroy(s)
+            switch (state.value.type) {
+              case 'Music':
+                if (List.isEmpty(state.value.queue)) return voiceConnectionDestroy(state)
 
-            return playFirstTrackFromQueue(s)
+                return playFirstTrackFromQueue(state)
+
+              case 'Elevator':
+                return todo()
+            }
         }
       }),
     )
   }
 
-  function playFirstTrackFromQueue({
-    audioPlayerState: { value: audioPlayer },
-  }: MusicStateConnected): Future<void> {
+  function playFirstTrackFromQueue(state: AudioStateConnected): Future<void> {
     return pipe(
-      musicState.get,
-      IO.map(({ queue }) => queue),
+      audioState.get,
+      IO.map(
+        flow(
+          AudioState.getQueue,
+          Maybe.getOrElse((): List<Track> => List.empty),
+        ),
+      ),
       Future.fromIOEither,
       Future.chain(
         List.matchLeft(
           () => Future.unit,
           (head, tail) =>
             pipe(
-              musicState.modify(MusicState.setQueue(tail)),
+              audioState.modify(AudioState.setQueue(tail)),
               Future.fromIOEither,
-              Future.chain(() => playTrackNow(audioPlayer, head)),
+              Future.chain(() => playTrackNow(state.audioPlayer, head)),
             ),
         ),
       ),
@@ -376,20 +418,22 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
       ),
       Future.chain(() =>
         updateState(
-          flow(MusicState.setPlaying(Maybe.some(track)), MusicState.setAudioPlayerStatePlaying),
+          flow(
+            AudioState.setCurrentTrack(Maybe.some(track)),
+            AudioState.setAudioPlayerStatePlaying,
+          ),
         ),
       ),
     )
   }
 
-  function updateState(f: Endomorphism<MusicState>): Future<void> {
-    return pipe(musicState.modify(f), Future.fromIOEither, Future.chain(refreshMessage))
+  function updateState(f: Endomorphism<AudioState>): Future<void> {
+    return pipe(audioState.modify(f), Future.fromIOEither, Future.chain(refreshMusicMessage))
   }
 
-  function voiceConnectionDestroy(currentState: MusicState): Future<void> {
+  function voiceConnectionDestroy(currentState: AudioState): Future<void> {
     return pipe(
-      currentState,
-      MusicState.getVoiceConnection,
+      AudioState.getVoiceConnection(currentState),
       Maybe.fold(() => IO.unit, DiscordConnector.voiceConnectionDestroy),
       Future.fromIOEither,
       Future.orElseIOEitherK(e => (isAlreadyDestroyedError(e) ? IO.unit : logger.warn(e.stack))),
@@ -398,7 +442,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
 
   function updateAudioPlayerState(
     audioPlayerEffect: IO<boolean>,
-    update: Endomorphism<MusicState>,
+    update: Endomorphism<AudioState>,
   ): Future<boolean> {
     return pipe(
       audioPlayerEffect,
@@ -441,7 +485,7 @@ export const MusicSubscription = (Logger: LoggerGetter, ytDlp: YtDlp, guild: Gui
   // }
 
   function stringify(): string {
-    return `<MusicSubscription[${guild.name}]>`
+    return `<AudioSubscription[${guild.name}]>`
   }
 }
 
@@ -500,58 +544,62 @@ const createAudioPlayer = (subject: TSubject<MusicEvent>): IO<AudioPlayer> =>
     }),
   )
 
-const refreshMessage = (state: MusicState): Future<void> => {
-  const { message: maybeMessage, playing, queue } = state
-
-  const isPlaying =
-    MusicState.is('Connected')(state) && AudioPlayerState.is('Playing')(state.audioPlayerState)
-
-  return pipe(
+const refreshMusicMessage: (state: AudioState) => Future<void> = flow(
+  AudioState.getValue,
+  Maybe.filter(AudioStateType.is('Music')),
+  futureMaybe.fromOption,
+  futureMaybe.chain(({ isPaused, currentTrack, queue, message }) =>
     apply.sequenceS(futureMaybe.ApplyPar)({
-      message: futureMaybe.fromOption(maybeMessage),
-      options: futureMaybe.fromIOEither(MusicStateMessage.playing(playing, queue, isPlaying)),
+      message: futureMaybe.fromOption(message),
+      options: futureMaybe.fromIOEither(
+        MusicStateMessage.playing(currentTrack, queue, { isPaused }),
+      ),
     }),
-    futureMaybe.chainTaskEitherK(({ message, options }) =>
-      DiscordConnector.messageEdit(message, options),
-    ),
-    Future.map(toUnit),
-  )
-}
+  ),
+  futureMaybe.chainTaskEitherK(({ message, options }) =>
+    DiscordConnector.messageEdit(message, options),
+  ),
+  Future.map(toUnit),
+)
 
-const logEventToThread = (state: MusicState, message: string): Future<void> =>
-  pipe(
-    state.message,
-    Maybe.chain(m => Maybe.fromNullable(m.thread)),
-    Maybe.fold(
-      () => Future.unit,
-      thread => pipe(DiscordConnector.sendPrettyMessage(thread, message), Future.map(toUnit)),
-    ),
-  )
-
-const addedTracksEvent = (author: User, tracks: NonEmptyArray<Track>): string => {
-  const tracksStr = ((): string => {
-    if (tracks.length === 1) {
-      const head = NonEmptyArray.head(tracks)
-      return ` [${head.title}](${head.url})`
-    }
-    return pipe(
-      tracks,
-      List.map(t => `• [${t.title}](${t.url})`),
-      List.mkString('\n', '\n', ''),
+const logEventToThread =
+  (state: AudioState) =>
+  (message: string): Future<void> =>
+    pipe(
+      AudioState.getMessage(state),
+      Maybe.chain(m => Maybe.fromNullable(m.thread)),
+      Maybe.fold(
+        () => Future.unit,
+        thread => pipe(DiscordConnector.sendPrettyMessage(thread, message), Future.map(toUnit)),
+      ),
     )
-  })()
-  return `**${author}** a ajouté${tracksStr}`
-}
 
-const skippedTrackEvent = (author: User, state: MusicState): string => {
-  const additional = pipe(
-    state.playing,
-    Maybe.fold(
-      () => '',
-      t => `...\n*...et a interrompu [${t.title}](${t.url})*`,
-    ),
-  )
-  return `**${author}** est passé au morceau suivant${additional}`
+const Events = {
+  addedTracks: (author: User, tracks: NonEmptyArray<Track>): string => {
+    const tracksStr = ((): string => {
+      if (tracks.length === 1) {
+        const head = NonEmptyArray.head(tracks)
+        return ` [${head.title}](${head.url})`
+      }
+      return pipe(
+        tracks,
+        List.map(t => `• [${t.title}](${t.url})`),
+        List.mkString('\n', '\n', ''),
+      )
+    })()
+    return `**${author}** a ajouté${tracksStr}`
+  },
+
+  skippedTrack: (author: User, state: AudioState): string => {
+    const additional = pipe(
+      AudioState.getCurrentTrack(state),
+      Maybe.fold(
+        () => '',
+        t => `...\n*...et a interrompu [${t.title}](${t.url})*`,
+      ),
+    )
+    return `**${author}** est passé au morceau suivant${additional}`
+  },
 }
 
 const isAlreadyDestroyedError = (e: Error): boolean =>

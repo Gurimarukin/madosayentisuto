@@ -8,10 +8,11 @@ import { PubSubUtils } from '../shared/utils/PubSubUtils'
 import { IO } from '../shared/utils/fp'
 
 import type { Context } from './Context'
-import { constants } from './constants'
+import { constants } from './config/constants'
 import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
 import { CallsAutoroleObserver } from './domain/CallsAutoroleObserver'
 import { DisconnectVocalObserver } from './domain/DisconnectVocalObserver'
+import { ElevatorObserver } from './domain/ElevatorObserver'
 import { MusicThreadCleanObserver } from './domain/MusicThreadCleanObserver'
 import { NotifyBirthdayObserver } from './domain/NotifyBirthdayObserver'
 import { NotifyGuildLeaveObserver } from './domain/NotifyGuildLeaveObserver'
@@ -68,8 +69,8 @@ export const Application = (
     scheduledEventPersistence,
     userPersistence,
     healthCheckService,
-    ytDlp,
     jwtHelper,
+    ytDlp,
   }: Context,
 ): IO<void> => {
   const { Logger } = loggerObservable
@@ -141,10 +142,11 @@ export const Application = (
       sub(ActivityStatusObserver(botStateService)),
       sub(CallsAutoroleObserver(Logger, guildStateService)),
       sub(DisconnectVocalObserver(clientId, guildStateService)),
+      sub(ElevatorObserver(Logger)),
       sub(MusicThreadCleanObserver(Logger, clientId, guildStateService)),
       sub(NotifyBirthdayObserver(discord, guildStateService, memberBirthdateService)),
       sub(NotifyGuildLeaveObserver(Logger)),
-      sub(NotifyVoiceCallObserver(Logger, guildStateService)),
+      sub(NotifyVoiceCallObserver(Logger, clientId, guildStateService)),
       sub(ScheduledEventObserver(Logger, discord, scheduledEventService, guildStateService)),
       sub(ScheduleItsFridayObserver(Logger, scheduledEventService)),
       sub(SendWelcomeDMObserver(Logger)),
@@ -156,7 +158,7 @@ export const Application = (
       sub(logsObserver.madEventObserver),
       publishDiscordEvents(discord, madEventsPubSub.subject),
       scheduleCronJob(Logger, madEventsPubSub.subject),
-      sub(VoiceStateUpdateTransformer(Logger, clientId, madEventsPubSub.subject)),
+      sub(VoiceStateUpdateTransformer(clientId, madEventsPubSub.subject)),
     ),
     IO.chain(() => startWebServer(Logger, config.http, routes)),
     IO.chain(() => madEventsPubSub.subject.next(MadEvent.AppStarted())),

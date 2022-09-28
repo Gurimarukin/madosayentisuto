@@ -16,8 +16,8 @@ import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefin
 import { List, toUnit } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
-import type { CaptainConfig } from '../Config'
-import { constants } from '../constants'
+import type { CaptainConfig } from '../config/Config'
+import { constants } from '../config/constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MessageComponent } from '../models/discord/MessageComponent'
 import { MadEvent } from '../models/event/MadEvent'

@@ -183,7 +183,7 @@ export const IO = {
       Future.runUnsafe(f)
     }),
   runUnsafe: ioRunUnsafe,
-  delay:
+  setTimeout:
     (delay: MsDuration) =>
     (io_: IO<void>): IO<NodeJS.Timeout> =>
       IO.tryCatch(() => setTimeout(() => pipe(io_, ioRunUnsafe), MsDuration.unwrap(delay))),

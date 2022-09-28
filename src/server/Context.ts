@@ -3,8 +3,9 @@ import { identity, pipe } from 'fp-ts/function'
 import { StringUtils } from '../shared/utils/StringUtils'
 import { Future } from '../shared/utils/fp'
 
-import type { Config } from './Config'
-import { constants } from './constants'
+import type { Config } from './config/Config'
+import { Resources } from './config/Resources'
+import { constants } from './config/constants'
 import { JwtHelper } from './helpers/JwtHelper'
 import { YtDlp } from './helpers/YtDlp'
 import type { LoggerObservable } from './models/logger/LoggerObservable'
@@ -28,6 +29,7 @@ export type Context = ReturnType<typeof of>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const of = (
   config: Config,
+  resources: Resources,
   loggerObservable: LoggerObservable,
   withDb: WithDb,
   mongoCollection: MongoCollectionGetter,
@@ -46,11 +48,12 @@ const of = (
 
   const healthCheckService = HealthCheckService(healthCheckPersistence)
 
-  const ytDlp = YtDlp(config.ytDlpPath)
   const jwtHelper = JwtHelper(config.jwtSecret)
+  const ytDlp = YtDlp(config.ytDlpPath)
 
   return {
     config,
+    resources,
     loggerObservable,
     botStatePersistence,
     logPersistence,
@@ -61,8 +64,8 @@ const of = (
     scheduledEventPersistence,
     userPersistence,
     healthCheckService,
-    ytDlp,
     jwtHelper,
+    ytDlp,
   }
 }
 
@@ -70,50 +73,54 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
   const { Logger } = loggerObservable
   const logger = Logger('Context')
 
-  const withDb = WithDb.of({
-    url: `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`,
-    dbName: config.db.dbName,
-  })
+  return pipe(Resources.load, Future.chain(loadContext))
 
-  const mongoCollection: MongoCollectionGetter = MongoCollectionGetter.fromWithDb(withDb)
+  function loadContext(resources: Resources): Future<Context> {
+    const withDb = WithDb.of({
+      url: `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`,
+      dbName: config.db.dbName,
+    })
 
-  const context = of(config, loggerObservable, withDb, mongoCollection)
-  const {
-    guildStatePersistence,
-    logPersistence,
-    memberBirthdatePersistence,
-    pollQuestionPersistence,
-    pollResponsePersistence,
-    scheduledEventPersistence,
-    userPersistence,
-    healthCheckService,
-  } = context
+    const mongoCollection: MongoCollectionGetter = MongoCollectionGetter.fromWithDb(withDb)
 
-  const migrationPersistence = MigrationPersistence(Logger, mongoCollection)
+    const context = of(config, resources, loggerObservable, withDb, mongoCollection)
+    const {
+      guildStatePersistence,
+      logPersistence,
+      memberBirthdatePersistence,
+      pollQuestionPersistence,
+      pollResponsePersistence,
+      scheduledEventPersistence,
+      userPersistence,
+      healthCheckService,
+    } = context
 
-  const migrationService = MigrationService(Logger, mongoCollection, migrationPersistence)
+    const migrationPersistence = MigrationPersistence(Logger, mongoCollection)
 
-  return pipe(
-    logger.info('Ensuring indexes'),
-    Future.fromIOEither,
-    Future.chain(() => waitDatabaseReady()),
-    Future.chain(() => migrationService.applyMigrations),
-    Future.chain(() =>
-      Future.sequenceArray([
-        guildStatePersistence.ensureIndexes,
-        logPersistence.ensureIndexes,
-        memberBirthdatePersistence.ensureIndexes,
-        pollQuestionPersistence.ensureIndexes,
-        pollResponsePersistence.ensureIndexes,
-        scheduledEventPersistence.ensureIndexes,
-        userPersistence.ensureIndexes,
-      ]),
-    ),
-    Future.chainIOEitherK(() => logger.info('Ensured indexes')),
-    Future.map(() => context),
-  )
+    const migrationService = MigrationService(Logger, mongoCollection, migrationPersistence)
 
-  function waitDatabaseReady(): Future<boolean> {
+    return pipe(
+      logger.info('Ensuring indexes'),
+      Future.fromIOEither,
+      Future.chain(() => waitDatabaseReady(healthCheckService)),
+      Future.chain(() => migrationService.applyMigrations),
+      Future.chain(() =>
+        Future.sequenceArray([
+          guildStatePersistence.ensureIndexes,
+          logPersistence.ensureIndexes,
+          memberBirthdatePersistence.ensureIndexes,
+          pollQuestionPersistence.ensureIndexes,
+          pollResponsePersistence.ensureIndexes,
+          scheduledEventPersistence.ensureIndexes,
+          userPersistence.ensureIndexes,
+        ]),
+      ),
+      Future.chainIOEitherK(() => logger.info('Ensured indexes')),
+      Future.map(() => context),
+    )
+  }
+
+  function waitDatabaseReady(healthCheckService: HealthCheckService): Future<boolean> {
     return pipe(
       healthCheckService.check(),
       Future.orElse(() =>
@@ -124,7 +131,9 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
             )} before next try`,
           ),
           Future.fromIOEither,
-          Future.chain(() => pipe(waitDatabaseReady(), Future.delay(constants.dbRetryDelay))),
+          Future.chain(() =>
+            pipe(waitDatabaseReady(healthCheckService), Future.delay(constants.dbRetryDelay)),
+          ),
         ),
       ),
       Future.filterOrElse(identity, () => Error("HealthCheck wasn't success")),

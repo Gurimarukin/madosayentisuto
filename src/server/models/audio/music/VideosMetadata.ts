@@ -2,8 +2,8 @@ import { pipe } from 'fp-ts/function'
 import type { Decoder } from 'io-ts/Decoder'
 import * as D from 'io-ts/Decoder'
 
-import { List, NonEmptyArray } from '../../../shared/utils/fp'
-import { Maybe } from '../../../shared/utils/fp'
+import { List, NonEmptyArray } from '../../../../shared/utils/fp'
+import { Maybe } from '../../../../shared/utils/fp'
 
 type MetadataType = 'video' | 'playlist'
 

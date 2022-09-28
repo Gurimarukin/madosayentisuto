@@ -6,7 +6,7 @@ import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
-import { constants } from '../../constants'
+import { constants } from '../../config/constants'
 import type { ButtonWithCustomIdOptions } from '../../models/discord/MessageComponent'
 import { MessageComponent } from '../../models/discord/MessageComponent'
 import type { ChoiceWithResponses } from '../../models/poll/ChoiceWithResponses'

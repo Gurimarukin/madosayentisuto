@@ -22,7 +22,7 @@ import {
   toUnit,
 } from '../../shared/utils/fp'
 
-import type { HttpConfig } from '../Config'
+import type { HttpConfig } from '../config/Config'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { EndedMiddleware, MyMiddleware } from './models/MyMiddleware'
 import { MyMiddleware as M } from './models/MyMiddleware'
