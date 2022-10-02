@@ -1,17 +1,14 @@
 import type { AudioPlayer, PlayerSubscription, VoiceConnection } from '@discordjs/voice'
-import type { Message } from 'discord.js'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { flow, pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 import type { Lens } from 'monocle-ts/Lens'
 
 import { createUnion } from '../../../shared/utils/createUnion'
-import type { List, NonEmptyArray } from '../../../shared/utils/fp'
 import { Maybe } from '../../../shared/utils/fp'
 
-import type { GuildAudioChannel, GuildSendableChannel } from '../../utils/ChannelUtils'
+import type { GuildAudioChannel } from '../../utils/ChannelUtils'
 import { AudioStateType } from './AudioStateType'
-import type { Track } from './music/Track'
 
 export type AudioState = typeof u.T
 
@@ -48,7 +45,7 @@ const u = createUnion({
   Connected: (args: ConnectedArgs) => args,
 })
 
-const empty: AudioStateDisconnected = u.Disconnected({ value: AudioStateType.musicEmpty })
+const empty: AudioStateDisconnected = u.Disconnected({ value: AudioStateType.Music.empty })
 
 const connecting =
   (channel: GuildAudioChannel, voiceConnection: VoiceConnection, audioPlayer: AudioPlayer) =>
@@ -75,52 +72,13 @@ const getAudioStateConnect = (state: AudioState): Maybe<AudioStateConnect> => {
   }
 }
 
-const getChannel = flow(
-  getAudioStateConnect,
-  Maybe.map(connect => connect.channel),
-)
-
-const getVoiceConnection = flow(
-  getAudioStateConnect,
-  Maybe.map(connect => connect.voiceConnection),
-)
-
-const getAudioPlayer = flow(
-  getAudioStateConnect,
-  Maybe.map(connect => connect.audioPlayer),
-)
-
 const valueLens: Lens<AudioState, AudioStateType> = pipe(lens.id<AudioState>(), lens.prop('value'))
-
-const getMusicCurrentTrack = flow(valueLens.get, AudioStateType.getMusicCurrentTrack)
-const getMusicQueue = flow(valueLens.get, AudioStateType.getMusicQueue)
-const getMusicMessage = flow(valueLens.get, AudioStateType.getMusicMessage)
-const getMusicPendingEvent = flow(valueLens.get, AudioStateType.getMusicPendingEvent)
 
 const modifyValue = (f: Endomorphism<AudioStateType>): Endomorphism<AudioState> =>
   pipe(valueLens, lens.modify(f))
 
-const setMusicPlaying = modifyValue(AudioStateType.setMusicPlaying)
-const setMusicPaused = modifyValue(AudioStateType.setMusicPaused)
-
-const setMusicCurrentTrack = (currentTrack: Maybe<Track>): Endomorphism<AudioState> =>
-  modifyValue(AudioStateType.setMusicCurrentTrack(currentTrack))
-
-const setMusicQueue = (queue: List<Track>): Endomorphism<AudioState> =>
-  modifyValue(AudioStateType.setMusicQueue(queue))
-
-const setMusicMessageChannel = (
-  messageChannel: Maybe<GuildSendableChannel>,
-): Endomorphism<AudioState> => modifyValue(AudioStateType.setMusicMessageChannel(messageChannel))
-
-const setMusicMessage = (message: Maybe<Message<true>>): Endomorphism<AudioState> =>
-  modifyValue(AudioStateType.setMusicMessage(message))
-
-const setMusicPendingEvent = (pendingEvent: Maybe<string>): Endomorphism<AudioState> =>
-  modifyValue(AudioStateType.setMusicPendingEvent(pendingEvent))
-
-const musicQueueTracks = (tracks: NonEmptyArray<Track>): Endomorphism<AudioState> =>
-  modifyValue(AudioStateType.musicQueueTracks(tracks))
+// const setMusicPlaying = modifyValue(AudioStateType.setMusicPlaying)
+// const setMusicPaused = modifyValue(AudioStateType.setMusicPaused)
 
 export const AudioState = {
   is: u.is,
@@ -129,31 +87,59 @@ export const AudioState = {
   connecting,
   connected,
 
-  getChannel,
-  getVoiceConnection,
-  getAudioPlayer,
-
-  getMusicCurrentTrack,
-  getMusicQueue,
-  getMusicMessage,
-  getMusicPendingEvent,
-
-  setMusicCurrentTrack,
-  setMusicQueue,
-  setMusicMessageChannel,
-  setMusicMessage,
-  setMusicPendingEvent,
-  setMusicPlaying,
-  setMusicPaused,
-  musicQueueTracks,
-
   value: {
     set: valueLens.set,
+
+    Music: {
+      isPaused: {
+        set: flow(AudioStateType.Music.isPaused.set, modifyValue),
+      },
+      currentTrack: {
+        get: flow(valueLens.get, AudioStateType.Music.currentTrack.get),
+        set: flow(AudioStateType.Music.currentTrack.set, modifyValue),
+      },
+      queue: {
+        get: flow(valueLens.get, AudioStateType.Music.queue.get),
+        set: flow(AudioStateType.Music.queue.set, modifyValue),
+        concat: flow(AudioStateType.Music.queue.concat, modifyValue),
+      },
+      messageChannel: {
+        set: flow(AudioStateType.Music.messageChannel.set, modifyValue),
+      },
+      message: {
+        get: flow(valueLens.get, AudioStateType.Music.message.get),
+        set: flow(AudioStateType.Music.message.set, modifyValue),
+      },
+      pendingEvent: {
+        get: flow(valueLens.get, AudioStateType.Music.pendingEvent.get),
+        set: flow(AudioStateType.Music.pendingEvent.set, modifyValue),
+      },
+    },
+
     Elevator: {
       currentFile: {
         get: flow(valueLens.get, AudioStateType.Elevator.currentFile.get),
         set: flow(AudioStateType.Elevator.currentFile.set, modifyValue),
       },
     },
+  },
+
+  channel: {
+    get: flow(
+      getAudioStateConnect,
+      Maybe.map(connect => connect.channel),
+    ),
+  },
+  voiceConnection: {
+    get: flow(
+      getAudioStateConnect,
+      Maybe.map(connect => connect.voiceConnection),
+    ),
+  },
+  audioPlayer: {
+    get: flow(
+      getAudioStateConnect,
+      Maybe.map(connect => connect.audioPlayer),
+    ),
   },
 }

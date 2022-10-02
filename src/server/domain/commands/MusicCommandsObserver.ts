@@ -242,7 +242,7 @@ const validateMusicChannel = (
       musicChannel =>
         pipe(
           subscriptionState,
-          AudioState.getChannel,
+          AudioState.channel.get,
           Maybe.every(c => c.id === musicChannel.id),
         ),
       () => 'Haha ! Il faut être dans mon salon pour faire ça !',

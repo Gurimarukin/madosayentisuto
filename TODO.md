@@ -10,7 +10,6 @@
 - webapp
   - tier-list
 - commands register: unsubscribe when done?
-- elevator
 - `NotUsed`?
 - `Either.toError`?
 - TObservable.subscribe

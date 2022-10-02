@@ -66,26 +66,6 @@ const getElevatorOptional = (stateType: AudioStateType): Maybe<AudioStateTypeEle
   }
 }
 
-const getMusicCurrentTrack = flow(
-  getMusicOptional,
-  Maybe.chain(music => music.currentTrack),
-)
-
-const getMusicQueue = flow(
-  getMusicOptional,
-  Maybe.map(music => music.queue),
-)
-
-const getMusicMessage = flow(
-  getMusicOptional,
-  Maybe.chain(music => music.message),
-)
-
-const getMusicPendingEvent: (stateType: AudioStateType) => Maybe<string> = flow(
-  getMusicOptional,
-  Maybe.chain(music => music.pendingEvent),
-)
-
 type ToMusic = (stateType: AudioStateType) => AudioStateTypeMusic
 
 const modifyToMusic =
@@ -107,26 +87,6 @@ const musicMessageChannelLens = pipe(lens.id<AudioStateTypeMusic>(), lens.prop('
 const musicMessageLens = pipe(lens.id<AudioStateTypeMusic>(), lens.prop('message'))
 const musicPendingEventLens = pipe(lens.id<AudioStateTypeMusic>(), lens.prop('pendingEvent'))
 
-const setMusicPlaying: ToMusic = modifyToMusic(musicIsPausedLens.set(false))
-const setMusicPaused: ToMusic = modifyToMusic(musicIsPausedLens.set(true))
-
-const setMusicCurrentTrack = (currentTrack: Maybe<Track>): ToMusic =>
-  modifyToMusic(musicCurrentTrackLens.set(currentTrack))
-
-const setMusicQueue = (queue: List<Track>): ToMusic => modifyToMusic(musicQueueLens.set(queue))
-
-const setMusicMessageChannel = (messageChannel: Maybe<GuildSendableChannel>): ToMusic =>
-  modifyToMusic(musicMessageChannelLens.set(messageChannel))
-
-const setMusicMessage = (message: Maybe<Message<true>>): ToMusic =>
-  modifyToMusic(musicMessageLens.set(message))
-
-const setMusicPendingEvent = (pendingEvent: Maybe<string>): ToMusic =>
-  modifyToMusic(musicPendingEventLens.set(pendingEvent))
-
-const musicQueueTracks = (tracks: NonEmptyArray<Track>): ToMusic =>
-  modifyToMusic(pipe(musicQueueLens, lens.modify(NonEmptyArray.concat(tracks))))
-
 type ToElevator = (stateType: AudioStateType) => AudioStateTypeElevator
 
 const modifyToElevator =
@@ -143,26 +103,49 @@ const modifyToElevator =
 
 const elevatorCurrentFileLens = pipe(lens.id<AudioStateTypeElevator>(), lens.prop('currentFile'))
 
-const elevatorCurrentFileSet = flow(elevatorCurrentFileLens.set, modifyToElevator)
-
 export const AudioStateType = {
   is: u.is,
 
-  musicEmpty,
+  Music: {
+    empty: musicEmpty,
 
-  getMusicCurrentTrack,
-  getMusicQueue,
-  getMusicMessage,
-  getMusicPendingEvent,
-
-  setMusicPlaying,
-  setMusicPaused,
-  setMusicCurrentTrack,
-  setMusicQueue,
-  setMusicMessageChannel,
-  setMusicMessage,
-  setMusicPendingEvent,
-  musicQueueTracks,
+    isPaused: {
+      set: flow(musicIsPausedLens.set, modifyToMusic),
+    },
+    currentTrack: {
+      get: flow(
+        getMusicOptional,
+        Maybe.chain(music => music.currentTrack),
+      ),
+      set: flow(musicCurrentTrackLens.set, modifyToMusic),
+    },
+    queue: {
+      get: flow(
+        getMusicOptional,
+        Maybe.map(music => music.queue),
+      ),
+      set: flow(musicQueueLens.set, modifyToMusic),
+      concat: (tracks: NonEmptyArray<Track>): ToMusic =>
+        modifyToMusic(pipe(musicQueueLens, lens.modify(NonEmptyArray.concat(tracks)))),
+    },
+    messageChannel: {
+      set: flow(musicMessageChannelLens.set, modifyToMusic),
+    },
+    message: {
+      get: flow(
+        getMusicOptional,
+        Maybe.chain(music => music.message),
+      ),
+      set: flow(musicMessageLens.set, modifyToMusic),
+    },
+    pendingEvent: {
+      get: flow(
+        getMusicOptional,
+        Maybe.chain(music => music.pendingEvent),
+      ),
+      set: flow(musicPendingEventLens.set, modifyToMusic),
+    },
+  },
 
   Elevator: {
     empty: elevatorEmpty,
@@ -171,7 +154,7 @@ export const AudioStateType = {
         getElevatorOptional,
         Maybe.chain(elevator => elevator.currentFile),
       ),
-      set: elevatorCurrentFileSet,
+      set: flow(elevatorCurrentFileLens.set, modifyToElevator),
     },
   },
 }

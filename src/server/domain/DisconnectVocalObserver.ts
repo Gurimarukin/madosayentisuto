@@ -9,8 +9,6 @@ import { MadEvent } from '../models/event/MadEvent'
 import type { GuildStateService } from '../services/GuildStateService'
 import type { GuildAudioChannel } from '../utils/ChannelUtils'
 
-// disconnect when bot is alone in channel
-
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const DisconnectVocalObserver = (
   clientId: DiscordUserId,
@@ -29,7 +27,7 @@ export const DisconnectVocalObserver = (
       Future.apS('subscription', guildStateService.getSubscription(event.member.guild)),
       Future.bind('state', ({ subscription }) => Future.fromIO(subscription.getState)),
       Future.chain(({ subscription, state }) =>
-        pipe(state, AudioState.getChannel, Maybe.exists(shouldDisconnect(state)))
+        pipe(state, AudioState.channel.get, Maybe.exists(shouldDisconnect(state)))
           ? subscription.disconnect
           : Future.unit,
       ),

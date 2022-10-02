@@ -53,7 +53,7 @@ export const MusicThreadCleanObserver = (
     return pipe(
       guildStateService.getSubscription(guild),
       Future.chainIOK(subscription => subscription.getState),
-      Future.map(AudioState.getMusicMessage),
+      Future.map(AudioState.value.Music.message.get),
       futureMaybe.chain(message => futureMaybe.fromNullable(message.thread)),
     )
   }

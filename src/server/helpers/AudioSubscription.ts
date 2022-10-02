@@ -108,9 +108,9 @@ export const AudioSubscription = (
       io.chain(oldState => {
         const newState = pipe(
           oldState,
-          AudioState.musicQueueTracks(tracks),
-          AudioState.setMusicMessageChannel(Maybe.some(stateChannel)),
-          AudioState.setMusicPendingEvent(Maybe.some(event)),
+          AudioState.value.Music.queue.concat(tracks),
+          AudioState.value.Music.messageChannel.set(Maybe.some(stateChannel)),
+          AudioState.value.Music.pendingEvent.set(Maybe.some(event)),
         )
         return pipe(
           audioState.set(newState),
@@ -186,12 +186,12 @@ export const AudioSubscription = (
               if (state.value.isPaused) {
                 return updateAudioPlayerState(
                   DiscordConnector.audioPlayerUnpause(audioPlayer),
-                  AudioState.setMusicPlaying,
+                  AudioState.value.Music.isPaused.set(false),
                 )
               }
               return updateAudioPlayerState(
                 DiscordConnector.audioPlayerPause(audioPlayer),
-                AudioState.setMusicPaused,
+                AudioState.value.Music.isPaused.set(true),
               )
             }
             return Future.right(false)
@@ -264,7 +264,7 @@ export const AudioSubscription = (
           sendStateMessage,
           Future.chain(message =>
             pipe(
-              audioState.modify(AudioState.setMusicMessage(message)),
+              audioState.modify(AudioState.value.Music.message.set(message)),
               Future.fromIO,
               Future.chainFirst(() => createStateThread(message)),
             ),
@@ -273,7 +273,8 @@ export const AudioSubscription = (
       ),
       Future.chainFirst(s =>
         pipe(
-          AudioState.getMusicPendingEvent(s),
+          s,
+          AudioState.value.Music.pendingEvent.get,
           Maybe.fold(() => Future.unit, logEventToThread(s)),
         ),
       ),
@@ -374,7 +375,7 @@ export const AudioSubscription = (
 
     const orElse = Future.orElseIOEitherK(e => logger.warn(e.stack))
 
-    const message = AudioState.getMusicMessage(currentState)
+    const message = AudioState.value.Music.message.get(currentState)
 
     const threadDelete = pipe(
       message,
@@ -410,7 +411,8 @@ export const AudioSubscription = (
       orElse,
     )
     const audioPlayerStop = pipe(
-      AudioState.getAudioPlayer(currentState),
+      currentState,
+      AudioState.audioPlayer.get,
       Maybe.fold(() => IO.unit, flow(DiscordConnector.audioPlayerStop, IO.map(toUnit))),
       Future.fromIOEither,
       orElse,
@@ -453,10 +455,10 @@ export const AudioSubscription = (
   function playMusicFirstTrackFromQueue(state: AudioState): Future<void> {
     return pipe(
       apply.sequenceS(Maybe.Apply)({
-        audioPlayer: AudioState.getAudioPlayer(state),
+        audioPlayer: AudioState.audioPlayer.get(state),
         musicQueue: pipe(
           state,
-          AudioState.getMusicQueue,
+          AudioState.value.Music.queue.get,
           Maybe.chain(NonEmptyArray.fromReadonlyArray),
           Maybe.map(NonEmptyArray.unprepend),
         ),
@@ -465,7 +467,7 @@ export const AudioSubscription = (
         () => Future.unit,
         ({ audioPlayer, musicQueue: [head, tail] }) =>
           pipe(
-            audioState.modify(AudioState.setMusicQueue(tail)),
+            audioState.modify(AudioState.value.Music.queue.set(tail)),
             Future.fromIO,
             Future.chain(() => playTrackNow(audioPlayer, head)),
           ),
@@ -492,7 +494,10 @@ export const AudioSubscription = (
       ),
       Future.chain(() =>
         updateState(
-          flow(AudioState.setMusicCurrentTrack(Maybe.some(track)), AudioState.setMusicPlaying),
+          flow(
+            AudioState.value.Music.currentTrack.set(Maybe.some(track)),
+            AudioState.value.Music.isPaused.set(false),
+          ),
         ),
       ),
     )
@@ -513,7 +518,8 @@ export const AudioSubscription = (
 
   function voiceConnectionDestroy(currentState: AudioState): Future<void> {
     return pipe(
-      AudioState.getVoiceConnection(currentState),
+      currentState,
+      AudioState.voiceConnection.get,
       Maybe.fold(() => IO.unit, DiscordConnector.voiceConnectionDestroy),
       Future.fromIOEither,
       Future.orElseIOEitherK(e => (isAlreadyDestroyedError(e) ? IO.unit : logger.warn(e.stack))),
@@ -644,7 +650,8 @@ const logEventToThread =
   (state: AudioState) =>
   (message: string): Future<void> =>
     pipe(
-      AudioState.getMusicMessage(state),
+      state,
+      AudioState.value.Music.message.get,
       Maybe.chain(m => Maybe.fromNullable(m.thread)),
       Maybe.fold(
         () => Future.unit,
@@ -670,7 +677,8 @@ const Events = {
 
   skippedTrack: (author: User, state: AudioState): string => {
     const additional = pipe(
-      AudioState.getMusicCurrentTrack(state),
+      state,
+      AudioState.value.Music.currentTrack.get,
       Maybe.fold(
         () => '',
         t => `...\n*...et a interrompu [${t.title}](${t.url})*`,
