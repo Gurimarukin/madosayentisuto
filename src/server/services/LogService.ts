@@ -1,10 +1,10 @@
-import { apply } from 'fp-ts'
+import { apply, io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import type { Log } from '../../shared/models/log/Log'
 import type { LogsWithTotalCount } from '../../shared/models/log/LogsWithTotalCount'
 import { Sink } from '../../shared/models/rx/Sink'
-import { IO, List } from '../../shared/utils/fp'
+import { List } from '../../shared/utils/fp'
 import { Future, toUnit } from '../../shared/utils/fp'
 
 import { constants } from '../config/constants'
@@ -35,7 +35,8 @@ export const LogService = (logPersistence: LogPersistence) => {
     }),
     Future.chain(({ logs, totalCount }) =>
       pipe(
-        Future.fromIOEither(buffer.get),
+        buffer.get,
+        Future.fromIO,
         Future.map(
           (bufferLogs): LogsWithTotalCount => ({
             logs: pipe(logs, List.concat(bufferLogs)),
@@ -46,12 +47,12 @@ export const LogService = (logPersistence: LogPersistence) => {
     ),
   )
 
-  const addLog = (log: Log): IO<void> => pipe(buffer.modify(List.append(log)), IO.map(toUnit))
+  const addLog = (log: Log): io.IO<void> => pipe(buffer.modify(List.append(log)), io.map(toUnit))
 
   const saveLogs: Future<void> = pipe(
     buffer.get,
-    IO.chainFirst(() => buffer.set([])),
-    Future.fromIOEither,
+    io.chainFirst(() => buffer.set([])),
+    Future.fromIO,
     Future.chain(logs =>
       pipe(
         logPersistence.insertMany(logs),
@@ -59,7 +60,7 @@ export const LogService = (logPersistence: LogPersistence) => {
         Future.orElse(() =>
           pipe(
             buffer.modify(newLogs => pipe(logs, List.concat(newLogs))),
-            Future.fromIOEither,
+            Future.fromIO,
             Future.map(toUnit),
           ),
         ),

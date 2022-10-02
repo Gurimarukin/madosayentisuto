@@ -1,4 +1,5 @@
 import type { Message } from 'discord.js'
+import type { Endomorphism } from 'fp-ts/Endomorphism'
 import { flow, pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
@@ -7,17 +8,20 @@ import { NonEmptyArray } from '../../../shared/utils/fp'
 import { List } from '../../../shared/utils/fp'
 import { Maybe } from '../../../shared/utils/fp'
 
+import type { GuildSendableChannel } from '../../utils/ChannelUtils'
 import type { MyFile } from '../FileOrDir'
 import type { Track } from './music/Track'
 
 export type AudioStateType = typeof u.T
 
-type AudioStateTypeMusic = typeof u.Music.T
+export type AudioStateTypeMusic = typeof u.Music.T
+export type AudioStateTypeElevator = typeof u.Elevator.T
 
 type MusicArgs = {
   readonly isPaused: boolean
   readonly currentTrack: Maybe<Track>
   readonly queue: List<Track>
+  readonly messageChannel: Maybe<GuildSendableChannel>
   readonly message: Maybe<Message<true>>
   readonly pendingEvent: Maybe<string> // because when we call /play, message.thread doesn't exist yet, so keep it here until we created thread
 }
@@ -35,8 +39,13 @@ const musicEmpty: AudioStateTypeMusic = u.Music({
   isPaused: false,
   currentTrack: Maybe.none,
   queue: List.empty,
+  messageChannel: Maybe.none,
   message: Maybe.none,
   pendingEvent: Maybe.none,
+})
+
+const elevatorEmpty: AudioStateTypeElevator = u.Elevator({
+  currentFile: Maybe.none,
 })
 
 const getMusicOptional = (stateType: AudioStateType): Maybe<AudioStateTypeMusic> => {
@@ -48,30 +57,39 @@ const getMusicOptional = (stateType: AudioStateType): Maybe<AudioStateTypeMusic>
   }
 }
 
-const getCurrentTrack = flow(
+const getElevatorOptional = (stateType: AudioStateType): Maybe<AudioStateTypeElevator> => {
+  switch (stateType.type) {
+    case 'Music':
+      return Maybe.none
+    case 'Elevator':
+      return Maybe.some(stateType)
+  }
+}
+
+const getMusicCurrentTrack = flow(
   getMusicOptional,
   Maybe.chain(music => music.currentTrack),
 )
 
-const getQueue = flow(
+const getMusicQueue = flow(
   getMusicOptional,
   Maybe.map(music => music.queue),
 )
 
-const getMessage = flow(
+const getMusicMessage = flow(
   getMusicOptional,
   Maybe.chain(music => music.message),
 )
 
-const getPendingEvent: (stateType: AudioStateType) => Maybe<string> = flow(
+const getMusicPendingEvent: (stateType: AudioStateType) => Maybe<string> = flow(
   getMusicOptional,
   Maybe.chain(music => music.pendingEvent),
 )
 
 type ToMusic = (stateType: AudioStateType) => AudioStateTypeMusic
 
-const modifyStateToMusic =
-  (f: (s: AudioStateTypeMusic) => AudioStateTypeMusic): ToMusic =>
+const modifyToMusic =
+  (f: Endomorphism<AudioStateTypeMusic>): ToMusic =>
   stateType => {
     switch (stateType.type) {
       case 'Music':
@@ -85,41 +103,75 @@ const modifyStateToMusic =
 const musicIsPausedLens = pipe(lens.id<AudioStateTypeMusic>(), lens.prop('isPaused'))
 const musicCurrentTrackLens = pipe(lens.id<AudioStateTypeMusic>(), lens.prop('currentTrack'))
 const musicQueueLens = pipe(lens.id<AudioStateTypeMusic>(), lens.prop('queue'))
+const musicMessageChannelLens = pipe(lens.id<AudioStateTypeMusic>(), lens.prop('messageChannel'))
 const musicMessageLens = pipe(lens.id<AudioStateTypeMusic>(), lens.prop('message'))
 const musicPendingEventLens = pipe(lens.id<AudioStateTypeMusic>(), lens.prop('pendingEvent'))
 
-const setPlaying: ToMusic = modifyStateToMusic(musicIsPausedLens.set(false))
-const setPaused: ToMusic = modifyStateToMusic(musicIsPausedLens.set(true))
+const setMusicPlaying: ToMusic = modifyToMusic(musicIsPausedLens.set(false))
+const setMusicPaused: ToMusic = modifyToMusic(musicIsPausedLens.set(true))
 
-const setCurrentTrack = (currentTrack: Maybe<Track>): ToMusic =>
-  modifyStateToMusic(musicCurrentTrackLens.set(currentTrack))
+const setMusicCurrentTrack = (currentTrack: Maybe<Track>): ToMusic =>
+  modifyToMusic(musicCurrentTrackLens.set(currentTrack))
 
-const setQueue = (queue: List<Track>): ToMusic => modifyStateToMusic(musicQueueLens.set(queue))
+const setMusicQueue = (queue: List<Track>): ToMusic => modifyToMusic(musicQueueLens.set(queue))
 
-const setMessage = (message: Maybe<Message<true>>): ToMusic =>
-  modifyStateToMusic(musicMessageLens.set(message))
+const setMusicMessageChannel = (messageChannel: Maybe<GuildSendableChannel>): ToMusic =>
+  modifyToMusic(musicMessageChannelLens.set(messageChannel))
 
-const setPendingEvent = (pendingEvent: Maybe<string>): ToMusic =>
-  modifyStateToMusic(musicPendingEventLens.set(pendingEvent))
+const setMusicMessage = (message: Maybe<Message<true>>): ToMusic =>
+  modifyToMusic(musicMessageLens.set(message))
 
-const queueTracks = (tracks: NonEmptyArray<Track>): ToMusic =>
-  modifyStateToMusic(pipe(musicQueueLens, lens.modify(NonEmptyArray.concat(tracks))))
+const setMusicPendingEvent = (pendingEvent: Maybe<string>): ToMusic =>
+  modifyToMusic(musicPendingEventLens.set(pendingEvent))
+
+const musicQueueTracks = (tracks: NonEmptyArray<Track>): ToMusic =>
+  modifyToMusic(pipe(musicQueueLens, lens.modify(NonEmptyArray.concat(tracks))))
+
+type ToElevator = (stateType: AudioStateType) => AudioStateTypeElevator
+
+const modifyToElevator =
+  (f: Endomorphism<AudioStateTypeElevator>): ToElevator =>
+  stateType => {
+    switch (stateType.type) {
+      case 'Music':
+        // if it's Music, transform to Elevator
+        return f(elevatorEmpty)
+      case 'Elevator':
+        return f(stateType)
+    }
+  }
+
+const elevatorCurrentFileLens = pipe(lens.id<AudioStateTypeElevator>(), lens.prop('currentFile'))
+
+const elevatorCurrentFileSet = flow(elevatorCurrentFileLens.set, modifyToElevator)
 
 export const AudioStateType = {
   is: u.is,
 
   musicEmpty,
 
-  getCurrentTrack,
-  getQueue,
-  getMessage,
-  getPendingEvent,
+  getMusicCurrentTrack,
+  getMusicQueue,
+  getMusicMessage,
+  getMusicPendingEvent,
 
-  setPlaying,
-  setPaused,
-  setCurrentTrack,
-  setQueue,
-  setMessage,
-  setPendingEvent,
-  queueTracks,
+  setMusicPlaying,
+  setMusicPaused,
+  setMusicCurrentTrack,
+  setMusicQueue,
+  setMusicMessageChannel,
+  setMusicMessage,
+  setMusicPendingEvent,
+  musicQueueTracks,
+
+  Elevator: {
+    empty: elevatorEmpty,
+    currentFile: {
+      get: flow(
+        getElevatorOptional,
+        Maybe.chain(elevator => elevator.currentFile),
+      ),
+      set: elevatorCurrentFileSet,
+    },
+  },
 }

@@ -1,4 +1,4 @@
-import { random } from 'fp-ts'
+import { io, random } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
@@ -34,7 +34,8 @@ export const ScheduleItsFridayObserver = (
   function scheduleItsFriday(now: DayJs): Future<void> {
     return pipe(
       randomTime(now),
-      IO.chainFirst(scheduledAt =>
+      Future.fromIO,
+      Future.chainFirstIOEitherK(scheduledAt =>
         logger.info(
           `Scheduling "It's friday" at ${pipe(scheduledAt, DayJs.format('HH:mm:ss'))} (in ${pipe(
             scheduledAt,
@@ -43,7 +44,6 @@ export const ScheduleItsFridayObserver = (
           )})`,
         ),
       ),
-      Future.fromIOEither,
       Future.chain(scheduledAt =>
         scheduledEventService.create(ScheduledEvent.ItsFriday({ createdAt: now, scheduledAt })),
       ),
@@ -54,11 +54,10 @@ export const ScheduleItsFridayObserver = (
   }
 }
 
-function randomTime(now: DayJs): IO<DayJs> {
+function randomTime(now: DayJs): io.IO<DayJs> {
   const todayRangeStart = pipe(now, DayJs.startOf('hour'), DayJs.hour.set(rangeStart))
   return pipe(
     random.randomRange(0, MsDuration.unwrap(MsDuration.hours(rangeEnd - rangeStart))),
-    IO.fromIO,
-    IO.map(n => pipe(todayRangeStart, DayJs.add(MsDuration.wrap(n)))),
+    io.map(n => pipe(todayRangeStart, DayJs.add(MsDuration.wrap(n)))),
   )
 }

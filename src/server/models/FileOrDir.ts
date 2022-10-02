@@ -1,3 +1,5 @@
+import { eq, string } from 'fp-ts'
+import type { Eq } from 'fp-ts/Eq'
 import { pipe } from 'fp-ts/function'
 import type fs from 'fs'
 import nodePath from 'path'
@@ -39,6 +41,11 @@ const myFileFromPath = (path: string): MyFile =>
     dirname: nodePath.dirname(path),
   })
 
+const myFileEq: Eq<MyFile> = pipe(
+  string.Eq,
+  eq.contramap(f => f.path),
+)
+
 export const MyFile = {
   of: ({ path, basename, dirname }: Omit<MyFile, '_tag'>): MyFile => ({
     _tag: 'File',
@@ -56,6 +63,8 @@ export const MyFile = {
 
   stringify: ({ path, basename, dirname }: MyFile): string =>
     `File(${path}, ${basename}, ${dirname})`,
+
+  Eq: myFileEq,
 }
 
 const dirOf = (path: string): Dir => ({ _tag: 'Dir', path })

@@ -10,6 +10,7 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { AudioSubscription } from '../helpers/AudioSubscription'
 import { DiscordConnector } from '../helpers/DiscordConnector'
+import type { ResourcesHelper } from '../helpers/ResourcesHelper'
 import type { YtDlp } from '../helpers/YtDlp'
 import type { Calls } from '../models/guildState/Calls'
 import { GuildState } from '../models/guildState/GuildState'
@@ -32,6 +33,7 @@ export type GuildStateService = ReturnType<typeof GuildStateService>
 export const GuildStateService = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
+  resourcesHelper: ResourcesHelper,
   ytDlp: YtDlp,
   guildStatePersistence: GuildStatePersistence,
 ) => {
@@ -76,7 +78,7 @@ export const GuildStateService = (
         Future.map(
           flow(
             Maybe.flatten,
-            Maybe.getOrElse(() => AudioSubscription(Logger, ytDlp, guild)),
+            Maybe.getOrElse(() => AudioSubscription(Logger, resourcesHelper, ytDlp, guild)),
           ),
         ),
         Future.chainFirst(subscription => setLens(guild, 'subscription', Maybe.some(subscription))),

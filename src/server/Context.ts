@@ -7,6 +7,7 @@ import type { Config } from './config/Config'
 import { Resources } from './config/Resources'
 import { constants } from './config/constants'
 import { JwtHelper } from './helpers/JwtHelper'
+import { ResourcesHelper } from './helpers/ResourcesHelper'
 import { YtDlp } from './helpers/YtDlp'
 import type { LoggerObservable } from './models/logger/LoggerObservable'
 import { MongoCollectionGetter } from './models/mongo/MongoCollection'
@@ -49,11 +50,11 @@ const of = (
   const healthCheckService = HealthCheckService(healthCheckPersistence)
 
   const jwtHelper = JwtHelper(config.jwtSecret)
+  const resourcesHelper = ResourcesHelper.of(resources)
   const ytDlp = YtDlp(config.ytDlpPath)
 
   return {
     config,
-    resources,
     loggerObservable,
     botStatePersistence,
     logPersistence,
@@ -65,6 +66,7 @@ const of = (
     userPersistence,
     healthCheckService,
     jwtHelper,
+    resourcesHelper,
     ytDlp,
   }
 }

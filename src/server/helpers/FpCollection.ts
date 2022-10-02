@@ -196,7 +196,7 @@ const fpCollectionHelpersFindAll =
       collection.observable(coll => coll.find(query, options).stream()),
       TObservable.map(u => pipe(decoder.decode(u), Either.mapLeft(decodeError(decoderName)(u)))),
       TObservable.flattenTry,
-      TObservable.chainFirstIOEitherK(() => count.modify(n => n + 1)),
+      TObservable.chainFirstIOK(() => count.modify(n => n + 1)),
       TObservable.map(Maybe.some),
       TObservable.concat(
         pipe(
@@ -204,6 +204,7 @@ const fpCollectionHelpersFindAll =
           Future.chainFirstIOEitherK(() =>
             pipe(
               count.get,
+              IO.fromIO,
               IO.chain(n => logger.debug(`Found all ${n} documents`)),
             ),
           ),

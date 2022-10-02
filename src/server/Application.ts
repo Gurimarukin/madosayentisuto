@@ -70,6 +70,7 @@ export const Application = (
     userPersistence,
     healthCheckService,
     jwtHelper,
+    resourcesHelper,
     ytDlp,
   }: Context,
 ): IO<void> => {
@@ -80,7 +81,13 @@ export const Application = (
 
   const botStateService = BotStateService(Logger, discord, botStatePersistence)
   const logService = LogService(logPersistence)
-  const guildStateService = GuildStateService(Logger, discord, ytDlp, guildStatePersistence)
+  const guildStateService = GuildStateService(
+    Logger,
+    discord,
+    resourcesHelper,
+    ytDlp,
+    guildStatePersistence,
+  )
   const memberBirthdateService = MemberBirthdateService(memberBirthdatePersistence)
   const pollService = PollService(pollQuestionPersistence, pollResponsePersistence)
   const scheduledEventService = ScheduledEventService(scheduledEventPersistence)
@@ -142,7 +149,7 @@ export const Application = (
       sub(ActivityStatusObserver(botStateService)),
       sub(CallsAutoroleObserver(Logger, guildStateService)),
       sub(DisconnectVocalObserver(clientId, guildStateService)),
-      sub(ElevatorObserver(Logger)),
+      sub(ElevatorObserver(guildStateService)),
       sub(MusicThreadCleanObserver(Logger, clientId, guildStateService)),
       sub(NotifyBirthdayObserver(discord, guildStateService, memberBirthdateService)),
       sub(NotifyGuildLeaveObserver(Logger)),

@@ -18,41 +18,43 @@ export const DisconnectVocalObserver = (
 ) => {
   return ObserverWithRefinement.fromNext(
     MadEvent,
+    'AudioChannelConnected',
     'AudioChannelMoved',
     'AudioChannelDisconnected',
   )(event => {
     if (DiscordUserId.fromUser(event.member.user) === clientId) return Future.unit
 
-    const channelLeft = ((): GuildAudioChannel => {
-      switch (event.type) {
-        case 'AudioChannelMoved':
-          return event.from
-        case 'AudioChannelDisconnected':
-          return event.channel
-      }
-    })()
-
     return pipe(
       Future.Do,
-      Future.apS('subscription', guildStateService.getSubscription(channelLeft.guild)),
-      Future.bind('maybeChannel', ({ subscription }) =>
-        pipe(subscription.getState, Future.fromIOEither, Future.map(AudioState.getChannel)),
-      ),
-      Future.chain(({ subscription, maybeChannel }) =>
-        pipe(maybeChannel, Maybe.exists(botIsAloneInChannel))
+      Future.apS('subscription', guildStateService.getSubscription(event.member.guild)),
+      Future.bind('state', ({ subscription }) => Future.fromIO(subscription.getState)),
+      Future.chain(({ subscription, state }) =>
+        pipe(state, AudioState.getChannel, Maybe.exists(shouldDisconnect(state)))
           ? subscription.disconnect
           : Future.unit,
       ),
     )
   })
 
-  function botIsAloneInChannel(channel: GuildAudioChannel): boolean {
-    return (
-      channel.members.size === 1 &&
-      pipe(
-        channel.members.toJSON(),
-        List.every(member => DiscordUserId.fromUser(member.user) === clientId),
-      )
+  function shouldDisconnect(state: AudioState): (channel: GuildAudioChannel) => boolean {
+    return channel =>
+      botIsConnectedToChannel(channel) &&
+      ((): boolean => {
+        const botIsAloneInChannel = channel.members.size === 1
+
+        switch (state.value.type) {
+          case 'Music':
+            return botIsAloneInChannel
+          case 'Elevator':
+            return botIsAloneInChannel || 3 <= channel.members.size // more than one member with the bot
+        }
+      })()
+  }
+
+  function botIsConnectedToChannel(channel: GuildAudioChannel): boolean {
+    return pipe(
+      channel.members.toJSON(),
+      List.some(member => DiscordUserId.fromUser(member.user) === clientId),
     )
   }
 }

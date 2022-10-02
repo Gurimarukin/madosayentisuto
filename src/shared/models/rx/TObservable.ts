@@ -1,3 +1,4 @@
+import type { io } from 'fp-ts'
 import { observable } from 'fp-ts-rxjs'
 import type { Predicate } from 'fp-ts/Predicate'
 import type { Refinement } from 'fp-ts/Refinement'
@@ -74,6 +75,8 @@ const chainFirst = observable.chainFirst as unknown as <A, B>(
 const chainFirstTaskEitherK = <A, B>(
   f: (a: A) => Future<B>,
 ): ((fa: TObservable<A>) => TObservable<A>) => chainFirst(flow(f, fromTaskEither))
+const chainFirstIOK = <A, B>(f: (a: A) => io.IO<B>): ((fa: TObservable<A>) => TObservable<A>) =>
+  chainFirstTaskEitherK(flow(f, Future.fromIO))
 const chainFirstIOEitherK = <A, B>(f: (a: A) => IO<B>): ((fa: TObservable<A>) => TObservable<A>) =>
   chainFirstTaskEitherK(flow(f, Future.fromIOEither))
 
@@ -105,6 +108,7 @@ export const TObservable = {
   chainIOEitherK,
   chainFirst,
   chainFirstTaskEitherK,
+  chainFirstIOK,
   chainFirstIOEitherK,
   filter,
   filterMap,

@@ -123,6 +123,7 @@ export const NotifyVoiceCallObserver = (
   function peopleInPublicAudioChans(guild: Guild): List<GuildMember> {
     return pipe(
       GuildHelper.membersInPublicAudioChans(guild),
+      List.chain(([, members]) => members),
       List.filter(member => DiscordUserId.fromUser(member.user) !== clientId),
     )
   }

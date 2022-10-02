@@ -32,7 +32,7 @@ export const LogObserver = (
           : pipe(
               serverToClientEventSubject.next(ServerToClientEvent.Log({ name, level, message })),
               IO.chain(() => IO.fromIO(DayJs.now)),
-              IO.chain(date => logService.addLog({ date, name, level, message })),
+              IO.chainIOK(date => logService.addLog({ date, name, level, message })),
               Future.fromIOEither,
             ),
     },

@@ -1,26 +1,27 @@
-import { IO } from '../../shared/utils/fp'
+import type { io } from 'fp-ts'
 
 export type Store<A> = {
-  readonly get: IO<A>
-  readonly set: <B extends A>(a: B) => IO<B>
-  readonly modify: <B extends A>(f: (s: A) => B) => IO<B>
+  readonly get: io.IO<A>
+  readonly set: <B extends A>(a: B) => io.IO<B>
+  readonly modify: <B extends A>(f: (s: A) => B) => io.IO<B>
 }
 
 export const Store = <A>(init: A): Store<A> => {
   // eslint-disable-next-line functional/no-let
   let value = init
 
-  const modify = <B extends A>(f: (s: A) => B): IO<B> =>
-    IO.fromIO(() => {
+  const modify =
+    <B extends A>(f: (s: A) => B): io.IO<B> =>
+    () => {
       const newValue = f(value)
       // eslint-disable-next-line functional/no-expression-statement
-      value = f(value)
+      value = newValue
       return newValue
-    })
+    }
 
   return {
-    get: IO.fromIO(() => value),
-    set: <B extends A>(a: B): IO<B> => modify(() => a),
+    get: () => value,
+    set: <B extends A>(a: B): io.IO<B> => modify(() => a),
     modify,
   }
 }

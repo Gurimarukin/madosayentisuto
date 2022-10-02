@@ -7,6 +7,7 @@ import type { MyFile } from '../models/FileOrDir'
 import { FileOrDir } from '../models/FileOrDir'
 import { Dir } from '../models/FileOrDir'
 import { FsUtils } from '../utils/FsUtils'
+import { constants } from './constants'
 
 export type Resources = {
   readonly music: {
@@ -21,12 +22,15 @@ const loadDir = (dir: Dir): Future<NonEmptyArray<MyFile>> =>
     FsUtils.readdir(dir),
     Future.chain(
       flow(
-        List.filter(FileOrDir.isFile),
+        List.filter(isMusicFile),
         NonEmptyArray.fromReadonlyArray,
         Future.fromOption(() => Error(`No file found in directory: ${dir.path}`)),
       ),
     ),
   )
+
+const isMusicFile = (f: FileOrDir): f is MyFile =>
+  FileOrDir.isFile(f) && constants.elevator.musicExtension.test(f.basename)
 
 const load: Future<Resources> = pipe(
   apply.sequenceS(Future.ApplicativePar)({

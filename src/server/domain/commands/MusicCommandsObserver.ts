@@ -119,7 +119,7 @@ export const MusicCommandsObserver = (
   ): Future<Either<string, PlayCommand>> {
     return pipe(
       subscription.getState,
-      Future.fromIOEither,
+      Future.fromIO,
       Future.chain(subscriptionState =>
         pipe(
           validateMusicAndStateChannel(interaction, subscriptionState),
@@ -178,9 +178,7 @@ export const MusicCommandsObserver = (
     return pipe(
       Future.Do,
       Future.apS('subscription', guildStateService.getSubscription(guild)),
-      Future.bind('subscriptionState', ({ subscription }) =>
-        Future.fromIOEither(subscription.getState),
-      ),
+      Future.bind('subscriptionState', ({ subscription }) => Future.fromIO(subscription.getState)),
       Future.chain(({ subscription, subscriptionState }) =>
         pipe(
           validateMusicChannel(interaction, subscriptionState),

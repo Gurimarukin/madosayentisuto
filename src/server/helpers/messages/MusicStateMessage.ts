@@ -1,9 +1,8 @@
 import type { BaseMessageOptions } from 'discord.js'
-import { random } from 'fp-ts'
+import { io, random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import { IO } from '../../../shared/utils/fp'
 import { List, Maybe } from '../../../shared/utils/fp'
 
 import { constants } from '../../config/constants'
@@ -39,10 +38,9 @@ const nextButton = MessageComponent.buttonWithCustomId({
   emoji: constants.emojis.next,
 })
 
-const connecting: IO<BaseMessageOptions> = pipe(
+const connecting: io.IO<BaseMessageOptions> = pipe(
   random.randomElem(images.jpDjGifs),
-  IO.fromIO,
-  IO.map(
+  io.map(
     (image): BaseMessageOptions => ({
       embeds: [
         MessageComponent.safeEmbed({
@@ -70,11 +68,10 @@ const playing = (
   current: Maybe<Track>,
   queue: List<Track>,
   { isPaused }: IsPaused,
-): IO<BaseMessageOptions> =>
+): io.IO<BaseMessageOptions> =>
   pipe(
     random.randomElem(images.jpDjGifs),
-    IO.fromIO,
-    IO.map(
+    io.map(
       (image): BaseMessageOptions => ({
         embeds: [
           MessageComponent.safeEmbed({

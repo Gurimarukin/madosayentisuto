@@ -28,7 +28,10 @@ export const constants = {
 
   logsLimit: 5000,
 
-  elevatorDelay: MsDuration.seconds(30),
+  elevator: {
+    delay: MsDuration.seconds(5),
+    musicExtension: /\.(ogg|opus|mp3)$/,
+  },
 
   // kicks/bans
   fetchLogsLimit: 30,

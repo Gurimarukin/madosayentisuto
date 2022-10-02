@@ -13,7 +13,6 @@
 - elevator
 - `NotUsed`?
 - `Either.toError`?
-- Store: IO > io.IO?
 - TObservable.subscribe
 - try to override declaration types to use GuildId, TSnowflake, ...
 - logs id

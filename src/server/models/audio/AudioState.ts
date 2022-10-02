@@ -9,7 +9,7 @@ import { createUnion } from '../../../shared/utils/createUnion'
 import type { List, NonEmptyArray } from '../../../shared/utils/fp'
 import { Maybe } from '../../../shared/utils/fp'
 
-import type { GuildAudioChannel } from '../../utils/ChannelUtils'
+import type { GuildAudioChannel, GuildSendableChannel } from '../../utils/ChannelUtils'
 import { AudioStateType } from './AudioStateType'
 import type { Track } from './music/Track'
 
@@ -21,8 +21,11 @@ export type AudioStateConnected = typeof u.Connected.T
 
 type AudioStateConnect = AudioStateConnecting | AudioStateConnected
 
-type ConnectArgs = {
+type CommonArgs = {
   readonly value: AudioStateType
+}
+
+type ConnectArgs = {
   readonly channel: GuildAudioChannel
   readonly voiceConnection: VoiceConnection
   readonly audioPlayer: AudioPlayer
@@ -30,15 +33,14 @@ type ConnectArgs = {
 
 //
 
-type DisconnectedArgs = {
-  readonly value: Maybe<AudioStateType>
-}
+type DisconnectedArgs = CommonArgs
 
-type ConnectingArgs = ConnectArgs
+type ConnectingArgs = CommonArgs & ConnectArgs
 
-type ConnectedArgs = ConnectArgs & {
-  readonly subscription: Maybe<PlayerSubscription>
-}
+type ConnectedArgs = CommonArgs &
+  ConnectArgs & {
+    readonly subscription: Maybe<PlayerSubscription>
+  }
 
 const u = createUnion({
   Disconnected: (args: DisconnectedArgs) => args,
@@ -46,11 +48,11 @@ const u = createUnion({
   Connected: (args: ConnectedArgs) => args,
 })
 
-const empty: AudioStateDisconnected = u.Disconnected({ value: Maybe.none })
+const empty: AudioStateDisconnected = u.Disconnected({ value: AudioStateType.musicEmpty })
 
 const connecting =
   (channel: GuildAudioChannel, voiceConnection: VoiceConnection, audioPlayer: AudioPlayer) =>
-  (value: AudioStateType): AudioStateConnecting =>
+  ({ value }: AudioState): AudioStateConnecting =>
     u.Connecting({ channel, voiceConnection, audioPlayer, value })
 
 const connected =
@@ -60,39 +62,8 @@ const connected =
     voiceConnection: VoiceConnection,
     subscription: Maybe<PlayerSubscription>,
   ) =>
-  (value: AudioStateType): AudioStateConnected =>
+  ({ value }: AudioState): AudioStateConnected =>
     u.Connected({ channel, voiceConnection, audioPlayer, value, subscription })
-
-const getValue = (state: AudioState): Maybe<AudioStateType> => {
-  switch (state.type) {
-    case 'Disconnected':
-      return state.value
-    case 'Connecting':
-    case 'Connected':
-      return Maybe.some(state.value)
-  }
-}
-
-const modifyValue =
-  (f: Endomorphism<AudioStateType>) =>
-  (state: AudioState): AudioState => {
-    switch (state.type) {
-      case 'Disconnected':
-        return pipe(
-          disconnectedValueLens,
-          lens.modify(
-            flow(
-              Maybe.getOrElseW(() => AudioStateType.musicEmpty),
-              f,
-              Maybe.some,
-            ),
-          ),
-        )(state)
-      case 'Connecting':
-      case 'Connected':
-        return pipe(connectValueLens, lens.modify(f))(state)
-    }
-  }
 
 const getAudioStateConnect = (state: AudioState): Maybe<AudioStateConnect> => {
   switch (state.type) {
@@ -119,28 +90,37 @@ const getAudioPlayer = flow(
   Maybe.map(connect => connect.audioPlayer),
 )
 
-const getCurrentTrack = flow(getValue, Maybe.chain(AudioStateType.getCurrentTrack))
-const getQueue = flow(getValue, Maybe.chain(AudioStateType.getQueue))
-const getMessage = flow(getValue, Maybe.chain(AudioStateType.getMessage))
-const getPendingEvent = flow(getValue, Maybe.chain(AudioStateType.getPendingEvent))
+const valueLens: Lens<AudioState, AudioStateType> = pipe(lens.id<AudioState>(), lens.prop('value'))
 
-const queueTracks = (tracks: NonEmptyArray<Track>): Endomorphism<AudioState> =>
-  modifyValue(AudioStateType.queueTracks(tracks))
+const getMusicCurrentTrack = flow(valueLens.get, AudioStateType.getMusicCurrentTrack)
+const getMusicQueue = flow(valueLens.get, AudioStateType.getMusicQueue)
+const getMusicMessage = flow(valueLens.get, AudioStateType.getMusicMessage)
+const getMusicPendingEvent = flow(valueLens.get, AudioStateType.getMusicPendingEvent)
 
-const setAudioPlayerStatePlaying = modifyValue(AudioStateType.setPlaying)
-const setAudioPlayerStatePaused = modifyValue(AudioStateType.setPaused)
+const modifyValue = (f: Endomorphism<AudioStateType>): Endomorphism<AudioState> =>
+  pipe(valueLens, lens.modify(f))
 
-const setCurrentTrack = (currentTrack: Maybe<Track>): Endomorphism<AudioState> =>
-  modifyValue(AudioStateType.setCurrentTrack(currentTrack))
+const setMusicPlaying = modifyValue(AudioStateType.setMusicPlaying)
+const setMusicPaused = modifyValue(AudioStateType.setMusicPaused)
 
-const setQueue = (queue: List<Track>): Endomorphism<AudioState> =>
-  modifyValue(AudioStateType.setQueue(queue))
+const setMusicCurrentTrack = (currentTrack: Maybe<Track>): Endomorphism<AudioState> =>
+  modifyValue(AudioStateType.setMusicCurrentTrack(currentTrack))
 
-const setMessage = (message: Maybe<Message<true>>): Endomorphism<AudioState> =>
-  modifyValue(AudioStateType.setMessage(message))
+const setMusicQueue = (queue: List<Track>): Endomorphism<AudioState> =>
+  modifyValue(AudioStateType.setMusicQueue(queue))
 
-const setPendingEvent = (pendingEvent: Maybe<string>): Endomorphism<AudioState> =>
-  modifyValue(AudioStateType.setPendingEvent(pendingEvent))
+const setMusicMessageChannel = (
+  messageChannel: Maybe<GuildSendableChannel>,
+): Endomorphism<AudioState> => modifyValue(AudioStateType.setMusicMessageChannel(messageChannel))
+
+const setMusicMessage = (message: Maybe<Message<true>>): Endomorphism<AudioState> =>
+  modifyValue(AudioStateType.setMusicMessage(message))
+
+const setMusicPendingEvent = (pendingEvent: Maybe<string>): Endomorphism<AudioState> =>
+  modifyValue(AudioStateType.setMusicPendingEvent(pendingEvent))
+
+const musicQueueTracks = (tracks: NonEmptyArray<Track>): Endomorphism<AudioState> =>
+  modifyValue(AudioStateType.musicQueueTracks(tracks))
 
 export const AudioState = {
   is: u.is,
@@ -149,31 +129,31 @@ export const AudioState = {
   connecting,
   connected,
 
-  getValue,
-
   getChannel,
   getVoiceConnection,
   getAudioPlayer,
-  getCurrentTrack,
-  getQueue,
-  getMessage,
-  getPendingEvent,
 
-  queueTracks,
-  setCurrentTrack,
-  setQueue,
-  setMessage,
-  setPendingEvent,
-  setAudioPlayerStatePlaying,
-  setAudioPlayerStatePaused,
+  getMusicCurrentTrack,
+  getMusicQueue,
+  getMusicMessage,
+  getMusicPendingEvent,
+
+  setMusicCurrentTrack,
+  setMusicQueue,
+  setMusicMessageChannel,
+  setMusicMessage,
+  setMusicPendingEvent,
+  setMusicPlaying,
+  setMusicPaused,
+  musicQueueTracks,
+
+  value: {
+    set: valueLens.set,
+    Elevator: {
+      currentFile: {
+        get: flow(valueLens.get, AudioStateType.Elevator.currentFile.get),
+        set: flow(AudioStateType.Elevator.currentFile.set, modifyValue),
+      },
+    },
+  },
 }
-
-const disconnectedValueLens: Lens<AudioStateDisconnected, Maybe<AudioStateType>> = pipe(
-  lens.id<AudioStateDisconnected>(),
-  lens.prop('value'),
-)
-
-const connectValueLens: Lens<AudioStateConnect, AudioStateType> = pipe(
-  lens.id<AudioStateConnect>(),
-  lens.prop('value'),
-)
