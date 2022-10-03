@@ -30,7 +30,7 @@ export const constants = {
 
   elevator: {
     delay: MsDuration.seconds(5),
-    musicExtension: /\.(ogg|opus|mp3)$/,
+    musicExtension: /\.(ogg|webm)$/,
   },
 
   // kicks/bans

@@ -83,16 +83,6 @@ type MyPartial<A> = {
 
 type MyInteraction = CommandInteraction | MessageComponentInteraction
 
-type MyThreadChannelTypes = AllowedThreadTypeForNewsChannel | AllowedThreadTypeForTextChannel
-// type MyThreadCreateOptions<A extends MyThreadChannelTypes> = Omit<
-//   ThreadCreateOptions<A>,
-//   'type'
-// > & {
-//   readonly type?: A
-// }
-
-// export type BaseMessageOptions = Pick<MessageOptions, 'components' | 'content' | 'embeds'>
-
 export type DiscordConnector = ReturnType<typeof of>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

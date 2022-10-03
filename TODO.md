@@ -18,6 +18,8 @@
 - autocomplete for /remind date
 - remove disables
 
+- Fixed elevator playlist
+
 ---
 
 - watch together -> c mor (pour l'instant)
