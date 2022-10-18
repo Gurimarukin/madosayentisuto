@@ -4,11 +4,11 @@ import { pipe } from 'fp-ts/function'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import type { Maybe } from '../../shared/utils/fp'
-import { Future, toUnit } from '../../shared/utils/fp'
+import { Future, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import { AudioState } from '../models/audio/AudioState'
+import { NewAudioState } from '../models/audio/NewAudioState'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStateService } from '../services/GuildStateService'
@@ -35,25 +35,27 @@ export const MusicThreadCleanObserver = (
         futureMaybe.chainTaskEitherK(() => DiscordConnector.messageDelete(message)),
         futureMaybe.chainTaskEitherK(success =>
           success
-            ? Future.unit
+            ? Future.notUsed
             : Future.fromIOEither(
                 LogUtils.pretty(logger, message.guild, message.author, message.channel).info(
                   "Couldn't delete message in music thread",
                 ),
               ),
         ),
-        Future.map(toUnit),
+        Future.map(toNotUsed),
       )
     }
 
-    return Future.unit
+    return Future.notUsed
   })
 
   function getSubscriptionThread(guild: Guild): Future<Maybe<ThreadChannel>> {
     return pipe(
       guildStateService.getSubscription(guild),
-      Future.chainIOK(subscription => subscription.getState),
-      Future.map(AudioState.value.Music.message.get),
+      Future.chainIOK(subscription => subscription.getAudioState),
+      futureMaybe.fromTaskEither,
+      futureMaybe.filter(NewAudioState.isMusicValue),
+      futureMaybe.chainOption(state => state.value.message),
       futureMaybe.chain(message => futureMaybe.fromNullable(message.thread)),
     )
   }

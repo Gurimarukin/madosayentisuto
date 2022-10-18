@@ -2,9 +2,10 @@ import type { ChatInputCommandInteraction } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
+import type { NotUsed } from '../../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import { Either, Future } from '../../../shared/utils/fp'
+import { Either, Future, toNotUsed } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { Command } from '../../models/discord/Command'
@@ -43,24 +44,27 @@ export const OtherCommandsObserver = () => {
     'InteractionCreate',
   )(({ interaction }) => {
     if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
-    return Future.unit
+    return Future.notUsed
   })
 
-  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<void> {
+  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     switch (interaction.commandName) {
       case Keys.ping:
         return onPing(interaction)
       case Keys.randomcase:
         return onRandomCase(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
-  function onPing(interaction: ChatInputCommandInteraction): Future<void> {
-    return DiscordConnector.interactionReply(interaction, { content: 'pong', ephemeral: true })
+  function onPing(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    return pipe(
+      DiscordConnector.interactionReply(interaction, { content: 'pong', ephemeral: true }),
+      Future.map(toNotUsed),
+    )
   }
 
-  function onRandomCase(interaction: ChatInputCommandInteraction): Future<void> {
+  function onRandomCase(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return pipe(
       D.string.decode(interaction.options.getString(Keys.message)),
       Either.bimap(
@@ -72,6 +76,7 @@ export const OtherCommandsObserver = () => {
       Future.chain(content =>
         DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
       ),
+      Future.map(toNotUsed),
     )
   }
 }

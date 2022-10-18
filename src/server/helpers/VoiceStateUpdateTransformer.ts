@@ -48,7 +48,7 @@ export const VoiceStateUpdateTransformer = (
 
         return Maybe.none
       }),
-      Maybe.fold(() => IO.unit, subject.next),
+      Maybe.fold(() => IO.notUsed, subject.next),
       Future.fromIOEither,
     ),
   )

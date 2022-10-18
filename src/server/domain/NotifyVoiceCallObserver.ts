@@ -2,8 +2,9 @@ import type { Guild, GuildMember } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import type { NotUsed } from '../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { Future, IO, List, toUnit } from '../../shared/utils/fp'
+import { Future, IO, List, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
@@ -29,7 +30,7 @@ export const NotifyVoiceCallObserver = (
     'AudioChannelMoved',
     'AudioChannelDisconnected',
   )(event => {
-    if (DiscordUserId.fromUser(event.member.user) === clientId) return Future.unit
+    if (DiscordUserId.fromUser(event.member.user) === clientId) return Future.notUsed
 
     switch (event.type) {
       case 'AudioChannelConnected':
@@ -43,17 +44,20 @@ export const NotifyVoiceCallObserver = (
     }
   })
 
-  function onAudioChannelConnected(member: GuildMember, channel: GuildAudioChannel): Future<void> {
+  function onAudioChannelConnected(
+    member: GuildMember,
+    channel: GuildAudioChannel,
+  ): Future<NotUsed> {
     return ChannelUtils.isPublic(channel) && peopleInPublicAudioChans(member.guild).length === 1
       ? onPublicCallStarted(member, channel)
-      : Future.unit
+      : Future.notUsed
   }
 
   function onAudioChannelMoved(
     member: GuildMember,
     from: GuildAudioChannel,
     to: GuildAudioChannel,
-  ): Future<void> {
+  ): Future<NotUsed> {
     const inPublicChans = peopleInPublicAudioChans(member.guild)
 
     if (ChannelUtils.isPrivate(from) && ChannelUtils.isPublic(to) && inPublicChans.length === 1) {
@@ -64,19 +68,19 @@ export const NotifyVoiceCallObserver = (
       return onPublicCallEnded(member, to)
     }
 
-    return Future.unit
+    return Future.notUsed
   }
 
   function onAudioChannelDisconnected(
     member: GuildMember,
     channel: GuildAudioChannel,
-  ): Future<void> {
+  ): Future<NotUsed> {
     return ChannelUtils.isPublic(channel) && List.isEmpty(peopleInPublicAudioChans(member.guild))
       ? onPublicCallEnded(member, channel)
-      : Future.unit
+      : Future.notUsed
   }
 
-  function onPublicCallStarted(member: GuildMember, channel: GuildAudioChannel): Future<void> {
+  function onPublicCallStarted(member: GuildMember, channel: GuildAudioChannel): Future<NotUsed> {
     const log = LogUtils.pretty(logger, member.guild)
     return pipe(
       log.info(`Call started in 📢${channel.name} by ${member.user.tag}`),
@@ -90,16 +94,16 @@ export const NotifyVoiceCallObserver = (
           ),
           futureMaybe.match(
             () => log.warn(`Couldn't send call started notification in #${calls.channel.name}`),
-            () => IO.unit,
+            () => IO.notUsed,
           ),
           Future.chain(Future.fromIOEither),
         ),
       ),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 
-  function onPublicCallEnded(member: GuildMember, channel: GuildAudioChannel): Future<void> {
+  function onPublicCallEnded(member: GuildMember, channel: GuildAudioChannel): Future<NotUsed> {
     const log = LogUtils.pretty(logger, member.guild)
     return pipe(
       log.info(`Call ended in 📢${channel.name} by ${member.user.tag}`),
@@ -110,12 +114,12 @@ export const NotifyVoiceCallObserver = (
           DiscordConnector.sendMessage(calls.channel, `Un appel s'est terminé.`),
           futureMaybe.match(
             () => log.warn(`Couldn't send call ended notification in #${calls.channel.name}`),
-            () => IO.unit,
+            () => IO.notUsed,
           ),
           Future.chain(Future.fromIOEither),
         ),
       ),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 

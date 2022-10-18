@@ -2,14 +2,13 @@ import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
 import { DayJs } from '../../shared/models/DayJs'
+import type { NotUsed } from '../../shared/models/NotUsed'
 import type { LogEvent } from '../../shared/models/event/LogEvent'
 import { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import type { TObserver } from '../../shared/models/rx/TObserver'
 import type { TSubject } from '../../shared/models/rx/TSubject'
-import { toUnit } from '../../shared/utils/fp'
-import { IO } from '../../shared/utils/fp'
-import { Future } from '../../shared/utils/fp'
+import { Future, IO, toNotUsed } from '../../shared/utils/fp'
 
 import type { MadEventCronJob } from '../models/event/MadEvent'
 import { MadEvent } from '../models/event/MadEvent'
@@ -28,7 +27,7 @@ export const LogObserver = (
     logEventObserver: {
       next: ({ name, level, message }) =>
         level === 'debug'
-          ? Future.unit
+          ? Future.notUsed
           : pipe(
               serverToClientEventSubject.next(ServerToClientEvent.Log({ name, level, message })),
               IO.chain(() => IO.fromIO(DayJs.now)),
@@ -42,13 +41,13 @@ export const LogObserver = (
       'CronJob',
     )(({ date }) =>
       pipe(
-        pipe(date, DayJs.isHourSharp(0)) ? cleanOldLogs(date) : Future.unit,
+        pipe(date, DayJs.isHourSharp(0)) ? cleanOldLogs(date) : Future.notUsed,
         Future.chain(() => logService.saveLogs),
       ),
     ),
   }
 
-  function cleanOldLogs(date: DayJs): Future<void> {
+  function cleanOldLogs(date: DayJs): Future<NotUsed> {
     return pipe(
       date,
       pipe(
@@ -56,7 +55,7 @@ export const LogObserver = (
         lens.modify(d => d - 1),
       ),
       logService.deleteBeforeDate,
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 }

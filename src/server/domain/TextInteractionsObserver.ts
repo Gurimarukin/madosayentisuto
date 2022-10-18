@@ -12,9 +12,9 @@ import type {
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
+import type { NotUsed } from '../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { List, toUnit } from '../../shared/utils/fp'
-import { Future } from '../../shared/utils/fp'
+import { Future, List, toNotUsed } from '../../shared/utils/fp'
 
 import type { CaptainConfig } from '../config/Config'
 import { constants } from '../config/constants'
@@ -41,7 +41,7 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
   )(event => {
     const message = event.message
 
-    if (message.author.id === discord.client.user.id) return Future.unit
+    if (message.author.id === discord.client.user.id) return Future.notUsed
 
     const cleanedWords = cleanMessage(message.content)
 
@@ -49,7 +49,7 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
 
     if (isMentioned(message, cleanedWords)) return reactToMention(message, cleanedWords)
 
-    return Future.unit
+    return Future.notUsed
   })
 
   function containsVolAndPlagiat(message: List<string>): boolean {
@@ -72,10 +72,10 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
     )
   }
 
-  function reactToMention(message: Message, cleanedWords: List<string>): Future<void> {
+  function reactToMention(message: Message, cleanedWords: List<string>): Future<NotUsed> {
     if (containsThanks(cleanedWords)) return sendNoNeedToThankMe(message.channel)
 
-    return Future.unit
+    return Future.notUsed
   }
 
   function containsThanks(message: List<string>): boolean {
@@ -88,8 +88,8 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
 
 const sendMessage =
   (message: string | MessagePayload | MessageCreateOptions) =>
-  (channel: MyChannel): Future<void> =>
-    pipe(DiscordConnector.sendMessage(channel, message), Future.map(toUnit))
+  (channel: MyChannel): Future<NotUsed> =>
+    pipe(DiscordConnector.sendMessage(channel, message), Future.map(toNotUsed))
 
 const sendIDontLikeThieves = sendMessage(
   MessageComponent.singleSafeEmbed({

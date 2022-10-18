@@ -14,9 +14,9 @@ type DetAudioPlayerState<S extends AudioPlayerState['status']> = AudioPlayerStat
   readonly status: S
 }
 
-export type MusicEvent = typeof MusicEvent.T
+type AudioEvent = typeof AudioEvent.T
 
-export const MusicEvent = createUnion({
+const AudioEvent = createUnion({
   // VoiceConnection
   ConnectionError: (error: Error) => ({ error }),
   ConnectionSignalling: (
@@ -64,16 +64,18 @@ export const MusicEvent = createUnion({
   ) => ({ oldState, newState }),
 })
 
-export type MusicEventConnectionError = typeof MusicEvent.ConnectionError.T
-export type MusicEventConnectionSignalling = typeof MusicEvent.ConnectionSignalling.T
-export type MusicEventConnectionConnecting = typeof MusicEvent.ConnectionConnecting.T
-export type MusicEventConnectionReady = typeof MusicEvent.ConnectionReady.T
-export type MusicEventConnectionDisconnected = typeof MusicEvent.ConnectionDisconnected.T
-export type MusicEventConnectionDestroyed = typeof MusicEvent.ConnectionDestroyed.T
+export { AudioEvent }
 
-export type MusicEventPlayerError = typeof MusicEvent.PlayerError.T
-export type MusicEventPlayerIdle = typeof MusicEvent.PlayerIdle.T
-export type MusicEventPlayerBuffering = typeof MusicEvent.PlayerBuffering.T
-export type MusicEventPlayerPaused = typeof MusicEvent.PlayerPaused.T
-export type MusicEventPlayerPlaying = typeof MusicEvent.PlayerPlaying.T
-export type MusicEventPlayerAutoPaused = typeof MusicEvent.PlayerAutoPaused.T
+export type AudioEventConnectionError = typeof AudioEvent.ConnectionError.T
+export type AudioEventConnectionSignalling = typeof AudioEvent.ConnectionSignalling.T
+export type AudioEventConnectionConnecting = typeof AudioEvent.ConnectionConnecting.T
+export type AudioEventConnectionReady = typeof AudioEvent.ConnectionReady.T
+export type AudioEventConnectionDisconnected = typeof AudioEvent.ConnectionDisconnected.T
+export type AudioEventConnectionDestroyed = typeof AudioEvent.ConnectionDestroyed.T
+
+export type AudioEventPlayerError = typeof AudioEvent.PlayerError.T
+export type AudioEventPlayerIdle = typeof AudioEvent.PlayerIdle.T
+export type AudioEventPlayerBuffering = typeof AudioEvent.PlayerBuffering.T
+export type AudioEventPlayerPaused = typeof AudioEvent.PlayerPaused.T
+export type AudioEventPlayerPlaying = typeof AudioEvent.PlayerPlaying.T
+export type AudioEventPlayerAutoPaused = typeof AudioEvent.PlayerAutoPaused.T

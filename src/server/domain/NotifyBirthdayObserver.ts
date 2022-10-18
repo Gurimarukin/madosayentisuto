@@ -4,11 +4,10 @@ import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import type { NotUsed } from '../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import { NonEmptyArray, Tuple, toUnit } from '../../shared/utils/fp'
-import { Maybe } from '../../shared/utils/fp'
-import { Future, List } from '../../shared/utils/fp'
+import { Future, List, Maybe, NonEmptyArray, Tuple, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { constants } from '../config/constants'
@@ -33,25 +32,25 @@ export const NotifyBirthdayObserver = (
       ? pipe(
           memberBirthdateService.listForDate(date),
           Future.chain(members =>
-            List.isNonEmpty(members) ? notifyMembers(date, members) : Future.unit,
+            List.isNonEmpty(members) ? notifyMembers(date, members) : Future.notUsed,
           ),
         )
-      : Future.unit,
+      : Future.notUsed,
   )
 
-  function notifyMembers(now: DayJs, members: NonEmptyArray<MemberBirthdate>): Future<void> {
+  function notifyMembers(now: DayJs, members: NonEmptyArray<MemberBirthdate>): Future<NotUsed> {
     return pipe(
       discord.listGuilds,
       Future.fromIOEither,
       Future.chain(Future.traverseArray(maybeNotifyMembersForGuild(now, members))),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 
   function maybeNotifyMembersForGuild(
     now: DayJs,
     memberBirthdates: NonEmptyArray<MemberBirthdate>,
-  ): (guild: Guild) => Future<void> {
+  ): (guild: Guild) => Future<NotUsed> {
     return guild =>
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
@@ -76,7 +75,7 @@ export const NotifyBirthdayObserver = (
         futureMaybe.chainTaskEitherK(({ channel, members }) =>
           notifyMembersForChannel(now, channel, members),
         ),
-        Future.map(toUnit),
+        Future.map(toNotUsed),
       )
   }
 
@@ -84,7 +83,7 @@ export const NotifyBirthdayObserver = (
     now: DayJs,
     channel: GuildSendableChannel,
     members: NonEmptyArray<Tuple<GuildMember, DayJs>>,
-  ): Future<void> {
+  ): Future<NotUsed> {
     return pipe(
       members,
       Future.traverseArray(member =>
@@ -98,7 +97,7 @@ export const NotifyBirthdayObserver = (
           ),
         ),
       ),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 }

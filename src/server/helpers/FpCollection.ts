@@ -191,7 +191,7 @@ const fpCollectionHelpersFindAll =
     [decoder, decoderName]: Tuple<Decoder<unknown, B>, string>,
   ) =>
   (query: Filter<O>, options?: FindOptions<O>): TObservable<B> => {
-    const count = Store(0)
+    const count = Store<number>(0)
     return pipe(
       collection.observable(coll => coll.find(query, options).stream()),
       TObservable.map(u => pipe(decoder.decode(u), Either.mapLeft(decodeError(decoderName)(u)))),

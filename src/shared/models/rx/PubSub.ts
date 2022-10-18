@@ -1,6 +1,7 @@
+import { pipe } from 'fp-ts/function'
 import { Subject } from 'rxjs'
 
-import { IO } from '../../utils/fp'
+import { IO, toNotUsed } from '../../utils/fp'
 import type { TObservable } from './TObservable'
 import type { TSubject } from './TSubject'
 
@@ -19,7 +20,11 @@ export const PubSub = <A>(): PubSub<A> => {
 
   return {
     subject: {
-      next: a => IO.tryCatch(() => subject.next(a)),
+      next: a =>
+        pipe(
+          IO.tryCatch(() => subject.next(a)),
+          IO.map(toNotUsed),
+        ),
       complete: IO.tryCatch(() => subject.complete()),
     },
     observable: subject.asObservable(),

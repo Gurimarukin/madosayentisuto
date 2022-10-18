@@ -2,9 +2,11 @@ import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { Future, List, Maybe } from '../../shared/utils/fp'
+import { Future, List } from '../../shared/utils/fp'
 
-import { AudioState } from '../models/audio/AudioState'
+import type { NewAudioStateConnect } from '../models/audio/NewAudioState'
+import { NewAudioState } from '../models/audio/NewAudioState'
+import type { NewAudioStateValue } from '../models/audio/NewAudioStateValue'
 import { MadEvent } from '../models/event/MadEvent'
 import type { GuildStateService } from '../services/GuildStateService'
 import type { GuildAudioChannel } from '../utils/ChannelUtils'
@@ -20,22 +22,23 @@ export const DisconnectVocalObserver = (
     'AudioChannelMoved',
     'AudioChannelDisconnected',
   )(event => {
-    if (DiscordUserId.fromUser(event.member.user) === clientId) return Future.unit
+    if (DiscordUserId.fromUser(event.member.user) === clientId) return Future.notUsed
 
     return pipe(
       Future.Do,
       Future.apS('subscription', guildStateService.getSubscription(event.member.guild)),
-      Future.bind('state', ({ subscription }) => Future.fromIO(subscription.getState)),
+      Future.bind('state', ({ subscription }) => Future.fromIO(subscription.getAudioState)),
       Future.chain(({ subscription, state }) =>
-        pipe(state, AudioState.channel.get, Maybe.exists(shouldDisconnect(state)))
+        NewAudioState.isConnect(state) && shouldDisconnect(state)
           ? subscription.disconnect
-          : Future.unit,
+          : Future.notUsed,
       ),
     )
   })
 
-  function shouldDisconnect(state: AudioState): (channel: GuildAudioChannel) => boolean {
-    return channel =>
+  function shouldDisconnect(state: NewAudioStateConnect<NewAudioStateValue>): boolean {
+    const { channel } = state
+    return (
       botIsConnectedToChannel(channel) &&
       ((): boolean => {
         const botIsAloneInChannel = channel.members.size === 1
@@ -47,6 +50,7 @@ export const DisconnectVocalObserver = (
             return botIsAloneInChannel || 3 <= channel.members.size // more than one member with the bot
         }
       })()
+    )
   }
 
   function botIsConnectedToChannel(channel: GuildAudioChannel): boolean {

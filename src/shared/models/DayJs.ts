@@ -5,7 +5,6 @@ import utcPlugin from 'dayjs/plugin/utc'
 import type { eq } from 'fp-ts'
 import { io, ord } from 'fp-ts'
 import type { Endomorphism } from 'fp-ts/Endomorphism'
-import type { IO } from 'fp-ts/IO'
 import { identity, pipe } from 'fp-ts/function'
 import type { Lens } from 'monocle-ts/Lens'
 import type { Newtype } from 'newtype-ts'
@@ -40,7 +39,7 @@ function of(
   return wrap((locale ? dayjs : dayjs.utc)(date, format, true))
 }
 
-const now: IO<DayJs> = pipe(dayjs.utc, io.map(wrap))
+const now: io.IO<DayJs> = pipe(dayjs.utc, io.map(wrap))
 
 // tests
 

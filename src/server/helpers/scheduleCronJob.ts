@@ -2,9 +2,10 @@ import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
+import type { NotUsed } from '../../shared/models/NotUsed'
 import type { TSubject } from '../../shared/models/rx/TSubject'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import { Future, IO, toUnit } from '../../shared/utils/fp'
+import { Future, IO, toNotUsed } from '../../shared/utils/fp'
 
 import type { MadEventCronJob } from '../models/event/MadEvent'
 import { MadEvent } from '../models/event/MadEvent'
@@ -15,7 +16,7 @@ const cronJobInterval = MsDuration.minute(1)
 export const scheduleCronJob = (
   Logger: LoggerGetter,
   subject: TSubject<MadEventCronJob>,
-): IO<void> => {
+): IO<NotUsed> => {
   const logger = Logger('scheduleCronJob')
 
   return pipe(
@@ -32,7 +33,7 @@ export const scheduleCronJob = (
         )} (interval: ${StringUtils.prettyMs(cronJobInterval)})`,
       ),
     ),
-    IO.chain(untilNextMinute =>
+    IO.chainIOK(untilNextMinute =>
       pipe(
         setCronJobInterval(),
         Future.fromIOEither,
@@ -42,7 +43,7 @@ export const scheduleCronJob = (
     ),
   )
 
-  function setCronJobInterval(): IO<void> {
+  function setCronJobInterval(): IO<NotUsed> {
     return pipe(
       publishEvent(),
       IO.chain(() =>
@@ -50,11 +51,11 @@ export const scheduleCronJob = (
           setInterval(() => pipe(publishEvent(), IO.runUnsafe), MsDuration.unwrap(cronJobInterval)),
         ),
       ),
-      IO.map(toUnit),
+      IO.map(toNotUsed),
     )
   }
 
-  function publishEvent(): IO<void> {
+  function publishEvent(): IO<NotUsed> {
     return pipe(
       DayJs.now,
       IO.fromIO,

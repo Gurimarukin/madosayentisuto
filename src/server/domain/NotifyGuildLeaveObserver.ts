@@ -1,14 +1,14 @@
+import type { Collection, Guild, GuildAuditLogsEntry, User } from 'discord.js'
 import { AuditLogEvent } from 'discord.js'
-import type { Collection, Guild, GuildAuditLogsEntry } from 'discord.js'
-import type { User } from 'discord.js'
 import { apply, date, io, number, ord, random, semigroup } from 'fp-ts'
 import type { Ord } from 'fp-ts/Ord'
 import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import type { NotUsed } from '../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { constants } from '../config/constants'
@@ -68,7 +68,7 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
     )
   })
 
-  function sendMessage(guild: Guild): (futureMessage: Future<string>) => Future<void> {
+  function sendMessage(guild: Guild): (futureMessage: Future<string>) => Future<NotUsed> {
     return futureMessage =>
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
@@ -78,7 +78,7 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
         futureMaybe.chain(({ channel, message }) =>
           DiscordConnector.sendPrettyMessage(channel, message),
         ),
-        Future.map(toUnit),
+        Future.map(toNotUsed),
       )
   }
 }

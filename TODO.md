@@ -10,7 +10,7 @@
 - webapp
   - tier-list
 - commands register: unsubscribe when done?
-- `NotUsed`?
+- `NotUsed`? (remove `toUnit`, check for `<void>` in `fp.ts`)
 - `Either.toError`?
 - TObservable.subscribe
 - try to override declaration types to use GuildId, TSnowflake, ...

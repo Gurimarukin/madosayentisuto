@@ -1,4 +1,3 @@
-import { Role } from 'discord.js'
 import type {
   APIRole,
   ChatInputCommandInteraction,
@@ -6,6 +5,7 @@ import type {
   TextBasedChannel,
   User,
 } from 'discord.js'
+import { Role } from 'discord.js'
 import { apply, ord } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
@@ -13,10 +13,10 @@ import { ChannelId } from '../../../shared/models/ChannelId'
 import { DayJs } from '../../../shared/models/DayJs'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { MsDuration } from '../../../shared/models/MsDuration'
+import type { NotUsed } from '../../../shared/models/NotUsed'
 import { GuildId } from '../../../shared/models/guild/GuildId'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
-import { Dict, Either, List, Tuple } from '../../../shared/utils/fp'
-import { Future, Maybe } from '../../../shared/utils/fp'
+import { Dict, Either, Future, List, Maybe, Tuple, toNotUsed } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
@@ -67,18 +67,18 @@ export const RemindCommandsObserver = (scheduledEventService: ScheduledEventServ
     'InteractionCreate',
   )(({ interaction }) => {
     if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
-    return Future.unit
+    return Future.notUsed
   })
 
-  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<void> {
+  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     switch (interaction.commandName) {
       case Keys.remind:
         return onRemind(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
-  function onRemind(interaction: ChatInputCommandInteraction): Future<void> {
+  function onRemind(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     const [who, fetchRole] = parseWho(
       interaction.guild,
       interaction.options.getRole(Keys.who),
@@ -108,6 +108,7 @@ export const RemindCommandsObserver = (scheduledEventService: ScheduledEventServ
             }),
         ),
       ),
+      Future.map(toNotUsed),
     )
   }
 

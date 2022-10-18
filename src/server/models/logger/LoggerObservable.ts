@@ -3,9 +3,9 @@ import type * as rxjs from 'rxjs'
 import util from 'util'
 
 import type { LoggerType } from '../../../shared/models/LoggerType'
+import type { NotUsed } from '../../../shared/models/NotUsed'
 import { LogEvent } from '../../../shared/models/event/LogEvent'
-import type { LogLevel } from '../../../shared/models/log/LogLevel'
-import type { LogLevelOrOff } from '../../../shared/models/log/LogLevel'
+import type { LogLevel, LogLevelOrOff } from '../../../shared/models/log/LogLevel'
 import { PubSub } from '../../../shared/models/rx/PubSub'
 import { TObservable } from '../../../shared/models/rx/TObservable'
 import type { TObserver } from '../../../shared/models/rx/TObserver'
@@ -41,8 +41,8 @@ const init = (): LoggerObservable => {
       ),
   }
 
-  function log(name: string, level: LogLevel, message: string): IO<void> {
-    return pipe(logEventPubSub.subject.next({ name, level, message }))
+  function log(name: string, level: LogLevel, message: string): IO<NotUsed> {
+    return logEventPubSub.subject.next({ name, level, message })
   }
 }
 

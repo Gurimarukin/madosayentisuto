@@ -10,11 +10,11 @@ import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import type { DiscordUserId } from '../../shared/models/DiscordUserId'
+import type { NotUsed } from '../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { Sink } from '../../shared/models/rx/Sink'
 import { TObservable } from '../../shared/models/rx/TObservable'
-import { Future, IO, List, NonEmptyArray, toUnit } from '../../shared/utils/fp'
-import { Maybe } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { constants } from '../config/constants'
@@ -65,12 +65,12 @@ export const ScheduledEventObserver = (
       TObservable.chainTaskEitherK(scheduledEventService.removeByIds),
       Sink.reduce(0, (acc, n) => acc + n),
       Future.chainIOEitherK(count =>
-        count === 0 ? IO.unit : logger.info(`Sent ${count} scheduled events`),
+        count === 0 ? IO.notUsed : logger.info(`Sent ${count} scheduled events`),
       ),
     ),
   )
 
-  function onScheduledEvent(now: DayJs, event: ScheduledEvent): Future<void> {
+  function onScheduledEvent(now: DayJs, event: ScheduledEvent): Future<NotUsed> {
     switch (event.type) {
       case 'Reminder':
         return onReminder(now, event)
@@ -79,7 +79,7 @@ export const ScheduledEventObserver = (
     }
   }
 
-  function onReminder(now: DayJs, event: ScheduledEventReminder): Future<void> {
+  function onReminder(now: DayJs, event: ScheduledEventReminder): Future<NotUsed> {
     const eventStr = JSON.stringify(ScheduledEvent.codec.encode(event))
     const {
       scheduledAt,
@@ -117,7 +117,7 @@ export const ScheduledEventObserver = (
       Future.chainIOEitherK(
         Maybe.fold(
           () => logger.warn(`Failed to send reminder: ${eventStr}`),
-          () => IO.unit,
+          () => IO.notUsed,
         ),
       ),
     )
@@ -143,7 +143,7 @@ export const ScheduledEventObserver = (
       )
   }
 
-  function onItsFriday(now: DayJs, event: ScheduledEventItsFriday): Future<void> {
+  function onItsFriday(now: DayJs, event: ScheduledEventItsFriday): Future<NotUsed> {
     const nowStartOfDay = pipe(now, DayJs.startOf('day'))
     const scheduledAtStartOfDay = pipe(event.scheduledAt, DayJs.startOf('day'))
     return DayJs.Eq.equals(nowStartOfDay, scheduledAtStartOfDay)
@@ -157,7 +157,7 @@ export const ScheduledEventObserver = (
             ),
           ),
           Future.chain(Future.traverseArray(sendItsFridayMessage)),
-          Future.map(toUnit),
+          Future.map(toNotUsed),
         )
       : Future.fromIOEither(
           logger.warn(
@@ -168,7 +168,7 @@ export const ScheduledEventObserver = (
         )
   }
 
-  function sendItsFridayMessage(channel: GuildSendableChannel): Future<void> {
+  function sendItsFridayMessage(channel: GuildSendableChannel): Future<NotUsed> {
     return pipe(
       DiscordConnector.sendMessage(channel, {
         content: `C'est vrai.`,
@@ -184,7 +184,7 @@ export const ScheduledEventObserver = (
                 channel,
               )}`,
             ),
-          () => IO.unit,
+          () => IO.notUsed,
         ),
       ),
     )

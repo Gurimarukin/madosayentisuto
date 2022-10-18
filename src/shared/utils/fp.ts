@@ -1,4 +1,4 @@
-import type { io } from 'fp-ts'
+import type { io, nonEmptyArray } from 'fp-ts'
 import {
   either,
   ioEither,
@@ -10,19 +10,18 @@ import {
   task,
   taskEither,
 } from 'fp-ts'
-import type { nonEmptyArray } from 'fp-ts'
 import type { Predicate } from 'fp-ts/Predicate'
 import type { Refinement } from 'fp-ts/Refinement'
 import type { Lazy } from 'fp-ts/function'
-import { identity } from 'fp-ts/function'
-import { flow, pipe } from 'fp-ts/function'
-import * as C_ from 'io-ts/Codec'
+import { flow, identity, pipe } from 'fp-ts/function'
 import type { Codec } from 'io-ts/Codec'
-import * as D from 'io-ts/Decoder'
+import * as C_ from 'io-ts/Codec'
 import type { Decoder } from 'io-ts/Decoder'
+import * as D from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
 
 import { MsDuration } from '../models/MsDuration'
+import { NotUsed } from '../models/NotUsed'
 
 export const todo = (...[]: List<unknown>): never => {
   // eslint-disable-next-line functional/no-throw-statement
@@ -36,16 +35,17 @@ export const inspect =
     return a
   }
 
-// eslint-disable-next-line functional/no-return-void
-export const noop = (): void => undefined
-
 // a Future is an IO
 export type NonIO<A> = A extends io.IO<unknown> ? never : A
 
-type NonIONonUnit<A> = A extends void ? never : NonIO<A>
+type NonIONonVoid<A> = A extends void ? never : NonIO<A>
+type NonIONonNotUsed<A> = A extends NotUsed ? never : NonIO<A>
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars, functional/no-return-void
-export const toUnit = <A>(_: NonIONonUnit<A>): void => undefined
+export const toUnit = <A>(_: NonIONonVoid<A>): void => undefined
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const toNotUsed = <A>(_: NonIONonNotUsed<A>): NotUsed => NotUsed
 
 export type Dict<K extends string, A> = readonlyRecord.ReadonlyRecord<K, A>
 export const Dict = readonlyRecord
@@ -145,6 +145,8 @@ export const Try = {
     ),
 }
 
+const futureUnit: Future<void> = taskEither.right(undefined)
+const futureNotUsed: Future<NotUsed> = taskEither.right(NotUsed)
 export type Future<A> = task.Task<Try<A>>
 export const Future = {
   ...taskEither,
@@ -160,7 +162,15 @@ export const Future = {
       pipe(fa, taskEither.orElse(flow(f, Future.fromIOEither))),
   fromIO: taskEither.fromIO as <A>(fa: io.IO<A>) => Future<A>,
   tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, Either.toError),
-  unit: taskEither.right(undefined) as Future<void>,
+  unit: futureUnit,
+  notUsed: futureNotUsed,
+  todo: (...args: List<unknown>): Future<never> =>
+    taskEither.fromEither(Try.tryCatch(() => todo(args))),
+  run: (f: Future<NotUsed>, onError: (e: Error) => io.IO<NotUsed>): Promise<NotUsed> =>
+    pipe(f, task.chain(either.fold(flow(onError, task.fromIO), task.of)))(),
+  /**
+   * @deprecated
+   */
   runUnsafe: <A>(fa: Future<A>): Promise<A> => pipe(fa, task.map(Try.getUnsafe))(),
   delay:
     <A>(ms: MsDuration) =>
@@ -168,7 +178,12 @@ export const Future = {
       pipe(future, task.delay(MsDuration.unwrap(ms))),
 }
 
+const ioUnit: IO<void> = ioEither.right(undefined)
+const ioNotUsed: IO<NotUsed> = ioEither.right(NotUsed)
 const ioFromIO: <A>(fa: io.IO<A>) => IO<A> = ioEither.fromIO
+/**
+ * @deprecated
+ */
 const ioRunUnsafe = <A>(ioA: IO<A>): A => Try.getUnsafe(ioA())
 export type IO<A> = io.IO<Try<A>>
 export const IO = {
@@ -176,16 +191,36 @@ export const IO = {
   right: ioEither.right as <A>(a: A) => IO<A>,
   tryCatch: <A>(a: Lazy<A>): IO<A> => ioEither.tryCatch(a, Either.toError),
   fromIO: ioFromIO,
-  unit: ioEither.right(undefined) as IO<void>,
-  runFutureUnsafe: (f: Future<void>): IO<void> =>
-    ioFromIO(() => {
+  unit: ioUnit,
+  notUsed: ioNotUsed,
+  runFuture:
+    (onError: (e: Error) => io.IO<NotUsed>) =>
+    (f: Future<NotUsed>): io.IO<NotUsed> =>
+    () => {
+      // eslint-disable-next-line functional/no-expression-statement
+      Future.run(f, onError)
+      return NotUsed
+    },
+  /**
+   * @deprecated
+   */
+  runFutureUnsafe:
+    (f: Future<NotUsed>): io.IO<NotUsed> =>
+    () => {
       // eslint-disable-next-line functional/no-expression-statement
       Future.runUnsafe(f)
-    }),
+      return NotUsed
+    },
+  /**
+   * @deprecated
+   */
   runUnsafe: ioRunUnsafe,
-  setTimeout:
+  /**
+   * @deprecated
+   */
+  setTimeoutUnsafe:
     (delay: MsDuration) =>
-    (io_: IO<void>): IO<NodeJS.Timeout> =>
+    (io_: IO<NotUsed>): IO<NodeJS.Timeout> =>
       IO.tryCatch(() => setTimeout(() => pipe(io_, ioRunUnsafe), MsDuration.unwrap(delay))),
 }
 

@@ -3,9 +3,10 @@ import type { Guild } from 'discord.js'
 import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
 
+import type { NotUsed } from '../../../shared/models/NotUsed'
 import { GuildId } from '../../../shared/models/guild/GuildId'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
-import { Future, IO, List, NonEmptyArray, toUnit } from '../../../shared/utils/fp'
+import { Future, IO, List, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
 
 import type { ClientConfig } from '../../config/Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
@@ -45,7 +46,7 @@ export const DeployCommandsObserver = (
     ),
   )
 
-  function deployGlobalCommands(): Future<void> {
+  function deployGlobalCommands(): Future<NotUsed> {
     if (List.isNonEmpty(globalCommands)) {
       return pipe(
         globalCommands,
@@ -59,7 +60,7 @@ export const DeployCommandsObserver = (
     return Future.fromIOEither(logger.debug('No global commands to deploy'))
   }
 
-  function deployGuildCommands(): Future<void> {
+  function deployGuildCommands(): Future<NotUsed> {
     if (List.isNonEmpty(guildCommands)) {
       return pipe(
         Future.fromIOEither(discord.listGuilds),
@@ -72,7 +73,7 @@ export const DeployCommandsObserver = (
 
   function putCommandsForGuild(
     guildCommands_: NonEmptyArray<Command>,
-  ): (guild: Guild) => Future<void> {
+  ): (guild: Guild) => Future<NotUsed> {
     return guild => {
       const guildId = GuildId.fromGuild(guild)
       return pipe(
@@ -87,12 +88,12 @@ export const DeployCommandsObserver = (
     }
   }
 
-  function logDecodeErrors({ left }: Separated<List<Error>, unknown>): Future<void> {
+  function logDecodeErrors({ left }: Separated<List<Error>, unknown>): Future<NotUsed> {
     return pipe(
       left,
       IO.traverseSeqArray(e => logger.warn(e.message)),
       Future.fromIOEither,
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 }

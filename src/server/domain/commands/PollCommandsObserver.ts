@@ -1,26 +1,24 @@
-import { Message, ThreadAutoArchiveDuration } from 'discord.js'
 import type {
   APIMessage,
+  ButtonInteraction,
   ChatInputCommandInteraction,
   Guild,
+  Interaction,
   MessageContextMenuCommandInteraction,
+  PartialMessage,
   ThreadChannel,
+  User,
 } from 'discord.js'
-import type { ButtonInteraction, Interaction, PartialMessage, User } from 'discord.js'
+import { Message, ThreadAutoArchiveDuration } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
 import { ChannelId } from '../../../shared/models/ChannelId'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
+import type { NotUsed } from '../../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
-import { IO } from '../../../shared/utils/fp'
-import { Tuple } from '../../../shared/utils/fp'
-import { toUnit } from '../../../shared/utils/fp'
-import { List } from '../../../shared/utils/fp'
-import { Maybe } from '../../../shared/utils/fp'
-import { NonEmptyArray } from '../../../shared/utils/fp'
-import { Future } from '../../../shared/utils/fp'
+import { Future, IO, List, Maybe, NonEmptyArray, Tuple, toNotUsed } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import type { Config } from '../../config/Config'
@@ -115,24 +113,24 @@ export const PollCommandsObserver = (
   })
 
   // onInteraction
-  function onInteraction(interaction: Interaction): Future<void> {
+  function onInteraction(interaction: Interaction): Future<NotUsed> {
     if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
     if (interaction.isButton()) return onButton(interaction)
     if (interaction.isMessageContextMenuCommand()) return onMessageContextMenu(interaction)
-    return Future.unit
+    return Future.notUsed
   }
 
   // onChatInputCommand
-  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<void> {
+  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     switch (interaction.commandName) {
       case Keys.poll:
         return onPollCommand(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
   // onPollCommand
-  function onPollCommand(interaction: ChatInputCommandInteraction): Future<void> {
+  function onPollCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return pipe(
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: false }),
       Future.map(() => Maybe.fromNullable(interaction.options.getString(Keys.question))),
@@ -142,7 +140,7 @@ export const PollCommandsObserver = (
           isMultiple: interaction.options.getBoolean(Keys.multiple) ?? false,
         }),
       ),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 
@@ -152,9 +150,9 @@ export const PollCommandsObserver = (
     question: string,
     choices: NonEmptyArray<string>,
     { isAnonymous, isMultiple }: IsAnonymous & IsMultiple,
-  ): Future<void> {
+  ): Future<NotUsed> {
     const guild = interaction.guild
-    if (guild === null) return Future.unit
+    if (guild === null) return Future.notUsed
 
     const options = PollMessage.poll(
       question,
@@ -192,19 +190,19 @@ export const PollCommandsObserver = (
         }),
       ),
       futureMaybe.matchE(
-        () => Future.unit,
+        () => Future.notUsed,
         success =>
-          success ? Future.unit : Future.fromIOEither(logger.warn('Failed to create poll')),
+          success ? Future.notUsed : Future.fromIOEither(logger.warn('Failed to create poll')),
       ),
     )
   }
 
   // onButton
-  function onButton(interaction: ButtonInteraction): Future<void> {
+  function onButton(interaction: ButtonInteraction): Future<NotUsed> {
     return pipe(
       PollButton.parse(interaction.customId),
       Maybe.fold(
-        () => Future.unit,
+        () => Future.notUsed,
         button =>
           pipe(
             DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
@@ -216,7 +214,7 @@ export const PollCommandsObserver = (
             Future.chain(content =>
               DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
             ),
-            Future.map(toUnit),
+            Future.map(toNotUsed),
           ),
       ),
     )
@@ -281,7 +279,7 @@ export const PollCommandsObserver = (
     return pipe(
       pollService.removeResponsesForUser(poll.message, user),
       Future.chainIOEitherK(count =>
-        count === toRemove ? IO.unit : logger.warn('Weird responses deletion count'),
+        count === toRemove ? IO.notUsed : logger.warn('Weird responses deletion count'),
       ),
       Future.map(() =>
         pipe(
@@ -301,7 +299,7 @@ export const PollCommandsObserver = (
       pipe(
         pollService.createResponse(PollResponse.of(poll.message, user, choiceIndex)),
         Future.chainIOEitherK(success =>
-          success ? IO.unit : logger.warn('Failed to add response'),
+          success ? IO.notUsed : logger.warn('Failed to add response'),
         ),
         Future.map(() =>
           pipe(
@@ -324,7 +322,7 @@ export const PollCommandsObserver = (
     return pipe(
       pollService.removeResponse(PollResponse.of(poll.message, user, choiceIndex)),
       Future.chainIOEitherK(success =>
-        success ? IO.unit : logger.warn('Failed to remove response'),
+        success ? IO.notUsed : logger.warn('Failed to remove response'),
       ),
       Future.map(() =>
         pipe(
@@ -340,14 +338,14 @@ export const PollCommandsObserver = (
     )
   }
 
-  function refreshMessages(guild: Guild): (poll: Poll) => Future<void> {
+  function refreshMessages(guild: Guild): (poll: Poll) => Future<NotUsed> {
     return poll =>
       pipe(
         apply.sequenceT(Future.ApplyPar)(
           refreshPollMessage(guild, poll),
           refreshDetailMessage(guild, poll),
         ),
-        Future.map(toUnit),
+        Future.map(toNotUsed),
       )
   }
 
@@ -360,7 +358,7 @@ export const PollCommandsObserver = (
             LogUtils.pretty(logger, guild).warn(
               `Couldn't fetch poll message ${MessageId.unwrap(poll.message)}`,
             ),
-          () => IO.unit,
+          () => IO.notUsed,
         ),
       ),
       futureMaybe.chainTaskEitherK(message =>
@@ -376,8 +374,8 @@ export const PollCommandsObserver = (
     )
   }
 
-  function refreshDetailMessage(guild: Guild, poll: Poll): Future<void> {
-    if (poll.isAnonymous) return Future.unit
+  function refreshDetailMessage(guild: Guild, poll: Poll): Future<NotUsed> {
+    if (poll.isAnonymous) return Future.notUsed
 
     return pipe(
       futureMaybe.fromOption(poll.detail),
@@ -393,7 +391,7 @@ export const PollCommandsObserver = (
           ),
         ),
       ),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 
@@ -404,7 +402,7 @@ export const PollCommandsObserver = (
   function reInitDetailMessage(
     guild: Guild,
     poll: Poll,
-  ): (thread: Maybe<ThreadChannel>) => Future<void> {
+  ): (thread: Maybe<ThreadChannel>) => Future<NotUsed> {
     return maybeThread =>
       pipe(
         DiscordConnector.fetchMessage(guild, poll.message),
@@ -419,7 +417,7 @@ export const PollCommandsObserver = (
           ),
         ),
         futureMaybe.chainTaskEitherK(detail => pollService.setPollDetail(poll.message, detail)),
-        Future.map(toUnit),
+        Future.map(toNotUsed),
       )
   }
 
@@ -456,11 +454,11 @@ export const PollCommandsObserver = (
     )
   }
 
-  function editDetailMessage(message: Message, poll: Poll, threadId: ChannelId): Future<void> {
+  function editDetailMessage(message: Message, poll: Poll, threadId: ChannelId): Future<NotUsed> {
     const messageEdit = DiscordConnector.messageEdit(message, PollMessage.detail(poll.choices))
     return pipe(
       messageEdit,
-      Future.map(toUnit),
+      Future.map(toNotUsed),
       Future.orElse(e =>
         e.message.split('\n')[1] === 'DiscordAPIError: Thread is archived'
           ? pipe(
@@ -469,7 +467,7 @@ export const PollCommandsObserver = (
                 DiscordConnector.threadSetArchived(thread, false),
               ),
               futureMaybe.chainTaskEitherK(() => messageEdit),
-              Future.map(toUnit),
+              Future.map(toNotUsed),
             )
           : Future.left(e),
       ),
@@ -477,7 +475,9 @@ export const PollCommandsObserver = (
   }
 
   // onMessageContextMenu
-  function onMessageContextMenu(interaction: MessageContextMenuCommandInteraction): Future<void> {
+  function onMessageContextMenu(
+    interaction: MessageContextMenuCommandInteraction,
+  ): Future<NotUsed> {
     return pipe(
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
       Future.chain(() => removePollIfAllowed(interaction)),
@@ -485,7 +485,7 @@ export const PollCommandsObserver = (
       Future.chain(content =>
         DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
       ),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 
@@ -544,11 +544,11 @@ export const PollCommandsObserver = (
     )
   }
 
-  function removeThread(guild: Guild, maybeThread: Maybe<ChannelId>): Future<void> {
+  function removeThread(guild: Guild, maybeThread: Maybe<ChannelId>): Future<NotUsed> {
     return pipe(
       maybeThread,
       Maybe.fold(
-        () => Future.unit,
+        () => Future.notUsed,
         threadId =>
           pipe(
             discord.fetchChannel(threadId),
@@ -557,7 +557,7 @@ export const PollCommandsObserver = (
             Future.map(Maybe.getOrElse(() => false)),
             Future.chainIOEitherK(success =>
               success
-                ? IO.unit
+                ? IO.notUsed
                 : LogUtils.pretty(logger, guild).info(
                     `Couldn't delete poll thread ${ChannelId.unwrap(threadId)}`,
                   ),
@@ -568,7 +568,7 @@ export const PollCommandsObserver = (
   }
 
   // onMessageDelete
-  function onMessageDelete(messages: List<Message | PartialMessage>): Future<void> {
+  function onMessageDelete(messages: List<Message | PartialMessage>): Future<NotUsed> {
     return pipe(
       messages,
       List.filterMap(m =>
@@ -580,12 +580,12 @@ export const PollCommandsObserver = (
       ),
       NonEmptyArray.fromReadonlyArray,
       Maybe.fold(
-        () => Future.unit,
+        () => Future.notUsed,
         toRemove =>
           pipe(
             pollService.removePollForMessages(toRemove),
             Future.chainIOEitherK(({ removedQuestions, removedResponses }) => {
-              if (removedQuestions === 0) return IO.unit
+              if (removedQuestions === 0) return IO.notUsed
               if (removedQuestions === toRemove.length) {
                 return logger.info(
                   `Removed polls: ${removedQuestions} questions, ${removedResponses} responses`,

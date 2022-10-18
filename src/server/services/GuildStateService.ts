@@ -4,6 +4,7 @@ import { flow, pipe } from 'fp-ts/function'
 import type { Lens } from 'monocle-ts/Lens'
 
 import type { ChannelId } from '../../shared/models/ChannelId'
+import type { NotUsed } from '../../shared/models/NotUsed'
 import { GuildId } from '../../shared/models/guild/GuildId'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
@@ -109,18 +110,18 @@ export const GuildStateService = (
   ): Future<GuildState> {
     return pipe(
       cacheUpdateAt(guild, update),
-      Future.chainFirstIOEitherK(newState => {
+      Future.chainFirstIOK(newState => {
         const log = LogUtils.pretty(logger, guild)
 
         // upsert new state, but don't wait until it's done; immediatly return state from cache
         return pipe(
           guildStatePersistence.upsert(GuildStateDb.fromGuildState(newState)),
-          Future.chainIOEitherK(success => (success ? IO.unit : logError())),
+          Future.chainIOEitherK(success => (success ? IO.notUsed : logError())),
           Future.orElseIOEitherK(e => logError('-', e)),
           IO.runFutureUnsafe,
         )
 
-        function logError(...u: List<unknown>): IO<void> {
+        function logError(...u: List<unknown>): IO<NotUsed> {
           return log.error('Failed to upsert state', ...u)
         }
       }),

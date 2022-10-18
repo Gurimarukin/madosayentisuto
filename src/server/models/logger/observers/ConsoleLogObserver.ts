@@ -4,14 +4,18 @@ import { DayJs } from '../../../../shared/models/DayJs'
 import type { LogEvent } from '../../../../shared/models/event/LogEvent'
 import { LogLevel } from '../../../../shared/models/log/LogLevel'
 import type { TObserver } from '../../../../shared/models/rx/TObserver'
-import { Future } from '../../../../shared/utils/fp'
+import { Future, toNotUsed } from '../../../../shared/utils/fp'
 
 export const ConsoleLogObserver: TObserver<LogEvent> = {
   next: ({ name, level, message }) =>
-    pipe(DayJs.now, Future.fromIO, Future.map(flow(format(name, level, message), console.log))),
+    pipe(
+      DayJs.now,
+      Future.fromIO,
+      Future.map(flow(consoleLogFormat(name, level, message), console.log, toNotUsed)),
+    ),
 }
 
-const format =
+export const consoleLogFormat =
   (name: string, level: LogLevel, msg: string) =>
   (now: DayJs): string => {
     const withName = `${name} - ${msg}`

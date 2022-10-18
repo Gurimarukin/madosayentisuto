@@ -30,7 +30,7 @@ export const SendWelcomeDMObserver = (Logger: LoggerGetter) => {
       Future.chain(() => DiscordConnector.sendMessage(member, welcomeMessage(member))),
       futureMaybe.matchE(
         () => Future.fromIOEither(log.warn(`Couldn't send greeting DM to ${member.user.tag}`)),
-        () => Future.unit,
+        () => Future.notUsed,
       ),
     )
   })

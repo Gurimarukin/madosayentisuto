@@ -9,7 +9,7 @@ import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRe
 import type { TObservable } from '../../../shared/models/rx/TObservable'
 import type { TSubject } from '../../../shared/models/rx/TSubject'
 import { PubSubUtils } from '../../../shared/utils/PubSubUtils'
-import { Either, Future, IO } from '../../../shared/utils/fp'
+import { Either, Future, IO, toNotUsed } from '../../../shared/utils/fp'
 
 import { WSServerEvent } from '../../models/event/WSServerEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
@@ -52,6 +52,7 @@ export const LogController = (
                 Either.mapLeft(unknownToError),
                 Future.fromEither,
                 Future.chainIOEitherK(encodedJson => IO.tryCatch(() => ws.send(encodedJson))),
+                Future.map(toNotUsed),
               ),
             }),
           ),

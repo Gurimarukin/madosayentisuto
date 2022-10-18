@@ -81,7 +81,7 @@ export const ScheduledEventController = (
                 logger.warn(
                   `Failed to create view for scheduled event ${TObjectId.unwrap(event._id)}`,
                 ),
-              () => IO.unit,
+              () => IO.notUsed,
             ),
           ),
         )

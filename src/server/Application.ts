@@ -1,6 +1,7 @@
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
+import type { NotUsed } from '../shared/models/NotUsed'
 import type { ServerToClientEvent } from '../shared/models/event/ServerToClientEvent'
 import { ObserverWithRefinement } from '../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../shared/models/rx/PubSub'
@@ -73,7 +74,7 @@ export const Application = (
     resourcesHelper,
     ytDlp,
   }: Context,
-): IO<void> => {
+): IO<NotUsed> => {
   const { Logger } = loggerObservable
   const logger = Logger('Application')
 
@@ -149,7 +150,7 @@ export const Application = (
       sub(ActivityStatusObserver(botStateService)),
       sub(CallsAutoroleObserver(Logger, guildStateService)),
       sub(DisconnectVocalObserver(clientId, guildStateService)),
-      sub(ElevatorObserver(guildStateService)),
+      sub(ElevatorObserver(Logger, guildStateService)),
       sub(MusicThreadCleanObserver(Logger, clientId, guildStateService)),
       sub(NotifyBirthdayObserver(discord, guildStateService, memberBirthdateService)),
       sub(NotifyGuildLeaveObserver(Logger)),

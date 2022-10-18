@@ -6,7 +6,7 @@ import type { LogEvent } from '../../../../shared/models/event/LogEvent'
 import { LogLevel } from '../../../../shared/models/log/LogLevel'
 import type { TObserver } from '../../../../shared/models/rx/TObserver'
 import { StringUtils } from '../../../../shared/utils/StringUtils'
-import { Future, NonEmptyArray, toUnit } from '../../../../shared/utils/fp'
+import { Future, NonEmptyArray, toNotUsed } from '../../../../shared/utils/fp'
 import { futureMaybe } from '../../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../../helpers/DiscordConnector'
@@ -33,7 +33,7 @@ export const DiscordDMLogObserver = (
           futureMaybe.chain(user => DiscordConnector.sendMessage(user, options)),
         ),
       ),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   },
 })
