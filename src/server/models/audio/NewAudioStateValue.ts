@@ -51,13 +51,15 @@ const NewAudioStateValue = {
     },
 }
 
+const musicIsPausedLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('isPaused'))
+const musicCurrentTrackLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('currentTrack'))
 const musicQueueLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('queue'))
+const musicMessageChannelLens = pipe(
+  lens.id<NewAudioStateValueMusic>(),
+  lens.prop('messageChannel'),
+)
 const musicMessageLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('message'))
 const musicPendingEventsLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('pendingEvents'))
-
-const setMessage: (
-  message: Maybe<Message<true>>,
-) => (value: NewAudioStateValueMusic) => NewAudioStateValueMusic = musicMessageLens.set
 
 const NewAudioStateValueMusic = {
   empty: (messageChannel: GuildSendableChannel): NewAudioStateValueMusic =>
@@ -79,9 +81,12 @@ const NewAudioStateValueMusic = {
       pipe(musicPendingEventsLens, lens.modify(List.append(event))),
     ),
 
-  emptyQueue: musicQueueLens.set(List.empty),
+  emptyPendingEvents: musicPendingEventsLens.set(List.empty),
 
-  setMessage,
+  setIsPaused: musicIsPausedLens.set,
+  setCurrentTrack: musicCurrentTrackLens.set,
+  setQueue: musicQueueLens.set,
+  setMessage: musicMessageLens.set,
 }
 
 const elevatorCurrentFileLens = pipe(

@@ -8,7 +8,7 @@ import type { Lens } from 'monocle-ts/Lens'
 import type { Maybe } from '../../../shared/utils/fp'
 
 import type { GuildAudioChannel } from '../../utils/ChannelUtils'
-import type { NewAudioStateValueMusic } from './NewAudioStateValue'
+import type { NewAudioStateValueElevator, NewAudioStateValueMusic } from './NewAudioStateValue'
 import { NewAudioStateValue } from './NewAudioStateValue'
 
 type NewAudioState<A extends NewAudioStateValue> =
@@ -159,16 +159,46 @@ const NewAudioState = {
   isMusicValue,
 
   fold,
-
-  modifyValue,
 }
 
-function modifyValue<
+type FoldValueArgs<
+  T extends NewAudioStateConnect<NewAudioStateValueMusic>,
+  U extends NewAudioStateConnect<NewAudioStateValueElevator>,
+  A,
+  B,
+> = {
+  readonly onMusic: (state: T) => A
+  readonly onElevator: (state: U) => B
+}
+
+// TODO: we could probably generalize it to all Connect, but we only need Connecting for now.
+function foldValue<A, B = A>({
+  onMusic,
+  onElevator,
+}: FoldValueArgs<
+  NewAudioStateConnecting<NewAudioStateValueMusic>,
+  NewAudioStateConnecting<NewAudioStateValueElevator>,
+  A,
+  B
+>): (state: NewAudioStateConnecting<NewAudioStateValue>) => A | B {
+  return state => {
+    switch (state.value.type) {
+      case 'Music':
+        return onMusic(state as NewAudioStateConnecting<NewAudioStateValueMusic>)
+      case 'Elevator':
+        return onElevator(state as NewAudioStateConnecting<NewAudioStateValueElevator>)
+    }
+  }
+}
+
+const modifyValue = <
   A extends NewAudioStateValue,
   B extends NewAudioStateValue,
   T extends NewAudioStateConnect<A>,
   U extends NewAudioStateConnect<B>,
->(f: (value: A) => B): (state: T) => U {
+>(
+  f: (value: A) => B,
+): ((state: T) => U) => {
   const res: (s: NewAudioStateConnect<A>) => NewAudioStateConnect<A> = pipe(
     connectValueLens<A>(),
     lens.modify(f as unknown as (a: A) => A),
@@ -177,6 +207,7 @@ function modifyValue<
 }
 
 const NewAudioStateConnect = {
+  foldValue,
   modifyValue,
 }
 
@@ -191,18 +222,3 @@ export {
 
 const connectValueLens = <A extends NewAudioStateValue>(): Lens<NewAudioStateConnect<A>, A> =>
   pipe(lens.id<NewAudioStateConnect<A>>(), lens.prop('value'))
-
-// function preConnectingValueLens<A extends NewAudioStateValue>(): Lens<
-//   NewAudioStatePreConnecting<A>,
-//   A
-// > {
-//   return pipe(lens.id<NewAudioStatePreConnecting<A>>(), lens.prop('value'))
-// }
-
-function connectingValueLens<A extends NewAudioStateValue>(): Lens<NewAudioStateConnecting<A>, A> {
-  return pipe(lens.id<NewAudioStateConnecting<A>>(), lens.prop('value'))
-}
-
-function connectedValueLens<A extends NewAudioStateValue>(): Lens<NewAudioStateConnected<A>, A> {
-  return pipe(lens.id<NewAudioStateConnected<A>>(), lens.prop('value'))
-}

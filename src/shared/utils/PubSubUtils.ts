@@ -42,22 +42,20 @@ const publish_ =
       IO.map(toNotUsed),
     )
 
-const subscribe =
-  <A>(logger: LoggerType, observable: TObservable<A>) =>
-  (observer: TObserver<A>): IO<rxjs.Subscription> =>
-    pipe(
-      observable,
-      TObservable.subscribe({
-        next: flow(
-          observer.next,
-          Future.orElseIOEitherK(e => logger.error(e.stack)),
-        ),
-      }),
-    )
+const subscribe = <A>(
+  logger: LoggerType,
+  observer: TObserver<A>,
+): ((observable: TObservable<A>) => IO<rxjs.Subscription>) =>
+  TObservable.subscribe({
+    next: flow(
+      observer.next,
+      Future.orElseIOEitherK(e => logger.error(e.stack)),
+    ),
+  })
 
 const subscribeWithRefinement =
   <A>(logger: LoggerType, observable: TObservable<A>) =>
   <B extends A>({ observer, refinement }: ObserverWithRefinement<A, B>): IO<rxjs.Subscription> =>
-    subscribe(logger, pipe(observable, TObservable.filter(refinement)))(observer)
+    subscribe(logger, observer)(pipe(observable, TObservable.filter(refinement)))
 
 export const PubSubUtils = { publish: publish_, subscribe, subscribeWithRefinement }
