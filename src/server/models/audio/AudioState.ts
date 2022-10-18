@@ -23,7 +23,7 @@ declare module 'fp-ts/HKT' {
   }
 }
 
-type AudioState<A extends AudioStateValue> =
+type AudioState<A extends AudioStateValue = AudioStateValue> =
   | AudioStateDisconnected
   | AudioStateConnecting<A>
   | AudioStateConnected<A>
@@ -57,7 +57,10 @@ type AudioStateConnected<A extends AudioStateValue> = {
 
 type AudioStateConnectedURIS = AudioStateConnectingURI | AudioStateConnectedURI
 
-type AudioStateConnect<A extends AudioStateValue> = Kind<AudioStateConnectedURIS, A>
+type AudioStateConnect<A extends AudioStateValue = AudioStateValue> = Kind<
+  AudioStateConnectedURIS,
+  A
+>
 
 const disconnected: AudioState<never> = { type: 'Disconnected' }
 
@@ -101,10 +104,7 @@ const isConnected = <A extends AudioStateValue>(
   state: AudioState<A>,
 ): state is AudioStateConnected<A> => state.type === 'Connected'
 
-const isConnect: Refinement<
-  AudioState<AudioStateValue>,
-  AudioStateConnect<AudioStateValue>
-> = refinement.not(isDisconnected)
+const isConnect: Refinement<AudioState, AudioStateConnect> = refinement.not(isDisconnected)
 
 const isMusicValue = pipe(
   isConnect,

@@ -1,6 +1,6 @@
 import type {
   AudioPlayer,
-  AudioPlayerState as DiscordAudioPlayerState,
+  AudioPlayerState,
   VoiceConnection,
   VoiceConnectionState,
 } from '@discordjs/voice'
@@ -57,8 +57,8 @@ type AudioPlayerEvents = {
   readonly error: (error: Error) => void
 } & {
   readonly [S in AudioPlayerStatus]: (
-    oldState: DiscordAudioPlayerState,
-    newState: DiscordAudioPlayerState & {
+    oldState: AudioPlayerState,
+    newState: AudioPlayerState & {
       readonly status: S
     },
   ) => void
@@ -86,11 +86,11 @@ export const AudioSubscription = (
 ) => {
   const logger = Logger(`AudioSubscription-${guild.name}#${guild.id}`)
 
-  const audioState = Store<AudioState<AudioStateValue>>(AudioState.disconnected)
+  const audioState = Store<AudioState>(AudioState.disconnected)
 
   const stateReducers = AsyncQueue<NotUsed>(LogUtils.onError(logger))
 
-  const getAudioState: io.IO<AudioState<AudioStateValue>> = audioState.get
+  const getAudioState: io.IO<AudioState> = audioState.get
 
   const disconnect: Future<NotUsed> = pipe(
     audioState.get,
@@ -245,9 +245,7 @@ export const AudioSubscription = (
     )
   }
 
-  function onConnectionReady(
-    state: AudioState<AudioStateValue>,
-  ): Future<AudioState<AudioStateValue>> {
+  function onConnectionReady(state: AudioState): Future<AudioState> {
     switch (state.type) {
       case 'Disconnected':
         return pipe(
@@ -304,9 +302,7 @@ export const AudioSubscription = (
     )
   }
 
-  function onConnectionDisconnectedOrDestroyed(
-    state: AudioState<AudioStateValue>,
-  ): Future<AudioState<AudioStateValue>> {
+  function onConnectionDisconnectedOrDestroyed(state: AudioState): Future<AudioState> {
     if (AudioState.isDisconnected(state)) return Future.right(state)
 
     const log = (chan?: NamedChannel): LoggerType => LogUtils.pretty(logger, guild, null, chan)
@@ -365,7 +361,7 @@ export const AudioSubscription = (
     )
   }
 
-  function onPlayerIdle(state: AudioState<AudioStateValue>): Future<AudioState<AudioStateValue>> {
+  function onPlayerIdle(state: AudioState): Future<AudioState> {
     switch (state.type) {
       case 'Disconnected':
         return Future.right(state)
@@ -398,9 +394,7 @@ export const AudioSubscription = (
    * Helpers
    */
 
-  function queueStateReducer(
-    f: (oldState: AudioState<AudioStateValue>) => Future<AudioState<AudioStateValue>>,
-  ): IO<NotUsed> {
+  function queueStateReducer(f: (oldState: AudioState) => Future<AudioState>): IO<NotUsed> {
     return stateReducers.queue(
       pipe(
         audioState.get,
@@ -629,8 +623,8 @@ const sendMusicMessageAndStartThread = (
   )
 
 const refreshMusicMessageAndSendPendingEvents = (
-  oldAndNewState: OldAndNewState<AudioState<AudioStateValue>>,
-): Future<AudioState<AudioStateValue>> => {
+  oldAndNewState: OldAndNewState<AudioState>,
+): Future<AudioState> => {
   const { oldState, newState } = oldAndNewState
 
   if (!AudioState.isMusicValue(newState)) return Future.right(newState)
@@ -649,10 +643,7 @@ const refreshMusicMessageAndSendPendingEvents = (
 }
 
 const refreshMusicMessage =
-  ({
-    oldState,
-    newState,
-  }: OldAndNewState<AudioState<AudioStateValue>, AudioStateConnect<AudioStateValueMusic>>) =>
+  ({ oldState, newState }: OldAndNewState<AudioState, AudioStateConnect<AudioStateValueMusic>>) =>
   (message: Message<true>): Future<void> => {
     const newDeps = MusicMessageDeps.fromState(newState)
 
@@ -710,7 +701,7 @@ const isAlreadyDestroyedError = (e: Error): boolean =>
   e.message === 'Cannot destroy VoiceConnection - it has already been destroyed'
 
 type MusicMessageDeps = {
-  readonly type: AudioState<AudioStateValue>['type']
+  readonly type: AudioState['type']
   readonly currentTrack: Maybe<Track>
   readonly queue: List<Track>
   readonly isPaused: boolean

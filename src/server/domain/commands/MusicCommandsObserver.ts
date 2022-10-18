@@ -11,7 +11,6 @@ import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordCo
 import type { YtDlp } from '../../helpers/YtDlp'
 import { MusicStateMessage, musicStateButtons } from '../../helpers/messages/MusicStateMessage'
 import { AudioState } from '../../models/audio/AudioState'
-import type { AudioStateValue } from '../../models/audio/AudioStateValue'
 import { Track } from '../../models/audio/music/Track'
 import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
@@ -218,7 +217,7 @@ export const MusicCommandsObserver = (
 
 const validateAudioAndStateChannel = (
   interaction: Interaction,
-  state: AudioState<AudioStateValue>,
+  state: AudioState,
 ): Either<string, Pick<PlayCommand, 'musicChannel' | 'stateChannel'>> =>
   pipe(
     validateAudioChannel(interaction, state),
@@ -236,7 +235,7 @@ const validateAudioAndStateChannel = (
 
 const validateAudioChannel = (
   interaction: Interaction,
-  state: AudioState<AudioStateValue>,
+  state: AudioState,
 ): Either<string, GuildAudioChannel> =>
   pipe(
     interaction.member instanceof GuildMember

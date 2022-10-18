@@ -6,7 +6,6 @@ import { Future, List } from '../../shared/utils/fp'
 
 import type { AudioStateConnect } from '../models/audio/AudioState'
 import { AudioState } from '../models/audio/AudioState'
-import type { AudioStateValue } from '../models/audio/AudioStateValue'
 import { MadEvent } from '../models/event/MadEvent'
 import type { GuildStateService } from '../services/GuildStateService'
 import type { GuildAudioChannel } from '../utils/ChannelUtils'
@@ -36,7 +35,7 @@ export const DisconnectVocalObserver = (
     )
   })
 
-  function shouldDisconnect(state: AudioStateConnect<AudioStateValue>): boolean {
+  function shouldDisconnect(state: AudioStateConnect): boolean {
     const { channel } = state
     return (
       botIsConnectedToChannel(channel) &&
