@@ -153,7 +153,7 @@ type FoldValueArgs<F extends AudioStateConnectedURIS, A, B> = {
 }
 
 const foldValue =
-  <F extends AudioStateConnectedURIS>() =>
+  <F extends AudioStateConnectedURIS = AudioStateConnectedURIS>() =>
   <A, B = A>({ onMusic, onElevator }: FoldValueArgs<F, A, B>) =>
   (state: Kind<F, AudioStateValue>) => {
     switch (state.value.type) {
@@ -164,20 +164,17 @@ const foldValue =
     }
   }
 
-const modifyValue = <
-  A extends AudioStateValue,
-  B extends AudioStateValue,
-  T extends AudioStateConnect<A>,
-  U extends AudioStateConnect<B>,
->(
-  f: (value: A) => B,
-): ((state: T) => U) => {
-  const res: (s: AudioStateConnect<A>) => AudioStateConnect<A> = pipe(
-    connectValueLens<A>(),
-    lens.modify(f as unknown as (a: A) => A),
-  )
-  return res as unknown as (state: T) => U
-}
+const modifyValue =
+  <F extends AudioStateConnectedURIS = AudioStateConnectedURIS>() =>
+  <A extends AudioStateValue, B extends AudioStateValue>(
+    f: (value: A) => B,
+  ): ((state: Kind<F, A>) => Kind<F, B>) => {
+    const res: (s: Kind<F, A>) => Kind<F, A> = pipe(
+      connectValueLens<F, A>(),
+      lens.modify(f as unknown as (a: A) => A),
+    )
+    return res as unknown as (state: Kind<F, A>) => Kind<F, B>
+  }
 
 const AudioStateConnect = {
   foldValue,
@@ -192,5 +189,7 @@ export {
   AudioStateConnect,
 }
 
-const connectValueLens = <A extends AudioStateValue>(): Lens<AudioStateConnect<A>, A> =>
-  pipe(lens.id<AudioStateConnect<A>>(), lens.prop('value'))
+const connectValueLens = <F extends AudioStateConnectedURIS, A extends AudioStateValue>(): Lens<
+  Kind<F, A>,
+  A
+> => pipe(lens.id<Kind<F, A>>(), lens.prop('value'))

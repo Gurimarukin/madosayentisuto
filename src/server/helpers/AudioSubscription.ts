@@ -134,7 +134,7 @@ export const AudioSubscription = (
             audioChannel,
             pipe(AudioStateValueMusic.empty(messageChannel), queueTracksValueMusic),
           )
-        : pipe(state, AudioStateConnect.modifyValue(queueTracksValue), Future.right),
+        : pipe(state, AudioStateConnect.modifyValue()(queueTracksValue), Future.right),
     )
   }
 
@@ -157,7 +157,7 @@ export const AudioSubscription = (
                     )
                   : pipe(
                       musicState,
-                      AudioStateConnect.modifyValue(
+                      AudioStateConnect.modifyValue<'AudioStateConnected'>()(
                         AudioStateValueMusic.appendPendingEvent(
                           MusicEventMessage.trackSkipped(author, musicState.value),
                         ),
@@ -476,7 +476,7 @@ export const AudioSubscription = (
             Future.map(() =>
               pipe(
                 state,
-                AudioStateConnect.modifyValue(
+                AudioStateConnect.modifyValue<'AudioStateConnected'>()(
                   flow(
                     AudioStateValueMusic.setIsPaused(false),
                     AudioStateValueMusic.setCurrentTrack(Maybe.some(head)),
@@ -508,7 +508,9 @@ export const AudioSubscription = (
       Future.map(file =>
         pipe(
           state,
-          AudioStateConnect.modifyValue(AudioStateValueElevator.setCurrentFile(Maybe.some(file))),
+          AudioStateConnect.modifyValue<'AudioStateConnected'>()(
+            AudioStateValueElevator.setCurrentFile(Maybe.some(file)),
+          ),
         ),
       ),
     )
@@ -524,7 +526,12 @@ export const AudioSubscription = (
       pipe(
         updateAudioPlayer(state.audioPlayer),
         IO.map(() =>
-          pipe(state, AudioStateConnect.modifyValue(AudioStateValueMusic.setIsPaused(newIsPaused))),
+          pipe(
+            state,
+            AudioStateConnect.modifyValue<'AudioStateConnected'>()(
+              AudioStateValueMusic.setIsPaused(newIsPaused),
+            ),
+          ),
         ),
       )
   }
@@ -692,7 +699,7 @@ const sendPendingEventsAndUpdateState = (
             DiscordConnector.sendPrettyMessage(thread, event),
           ),
           Future.map(() =>
-            pipe(state, AudioStateConnect.modifyValue(AudioStateValueMusic.emptyPendingEvents)),
+            pipe(state, AudioStateConnect.modifyValue()(AudioStateValueMusic.emptyPendingEvents)),
           ),
         ),
     ),
