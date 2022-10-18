@@ -1,7 +1,8 @@
 import type { AudioPlayer, PlayerSubscription, VoiceConnection } from '@discordjs/voice'
 import { refinement } from 'fp-ts'
-import type { Refinement } from 'fp-ts/Refinement'
 import { pipe } from 'fp-ts/function'
+import type { Kind } from 'fp-ts/HKT'
+import type { Refinement } from 'fp-ts/Refinement'
 import { lens } from 'monocle-ts'
 import type { Lens } from 'monocle-ts/Lens'
 
@@ -10,6 +11,17 @@ import type { Maybe } from '../../../shared/utils/fp'
 import type { GuildAudioChannel } from '../../utils/ChannelUtils'
 import type { NewAudioStateValueElevator, NewAudioStateValueMusic } from './NewAudioStateValue'
 import { NewAudioStateValue } from './NewAudioStateValue'
+
+declare module 'fp-ts/HKT' {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+  interface URItoKind<A extends NewAudioStateValue> {
+    readonly [NewAudioStateConnectingURI]: NewAudioStateConnecting<A>
+  }
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+  interface URItoKind<A extends NewAudioStateValue> {
+    readonly [NewAudioStateConnectedURI]: NewAudioStateConnected<A>
+  }
+}
 
 type NewAudioState<A extends NewAudioStateValue> =
   | NewAudioStateDisconnected
@@ -28,6 +40,9 @@ type NewAudioStateDisconnected = {
 //   readonly value: A
 // }
 
+const NewAudioStateConnectingURI = 'NewAudioStateConnecting' as const
+type NewAudioStateConnectingURI = typeof NewAudioStateConnectingURI
+
 type NewAudioStateConnecting<A extends NewAudioStateValue> = {
   readonly type: 'Connecting'
   readonly channel: GuildAudioChannel
@@ -35,6 +50,9 @@ type NewAudioStateConnecting<A extends NewAudioStateValue> = {
   readonly voiceConnection: VoiceConnection
   readonly audioPlayer: AudioPlayer
 }
+
+const NewAudioStateConnectedURI = 'NewAudioStateConnected' as const
+type NewAudioStateConnectedURI = typeof NewAudioStateConnectedURI
 
 type NewAudioStateConnected<A extends NewAudioStateValue> = {
   readonly type: 'Connected'
@@ -45,9 +63,9 @@ type NewAudioStateConnected<A extends NewAudioStateValue> = {
   readonly subscription: Maybe<PlayerSubscription>
 }
 
-type NewAudioStateConnect<A extends NewAudioStateValue> =
-  // | NewAudioStatePreConnecting<A>
-  NewAudioStateConnecting<A> | NewAudioStateConnected<A>
+type NewAudioStateConnectedURIS = NewAudioStateConnectingURI | NewAudioStateConnectedURI
+
+type NewAudioStateConnect<A extends NewAudioStateValue> = Kind<NewAudioStateConnectedURIS, A>
 
 const disconnected: NewAudioState<never> = { type: 'Disconnected' }
 
@@ -161,35 +179,22 @@ const NewAudioState = {
   fold,
 }
 
-type FoldValueArgs<
-  T extends NewAudioStateConnect<NewAudioStateValueMusic>,
-  U extends NewAudioStateConnect<NewAudioStateValueElevator>,
-  A,
-  B,
-> = {
-  readonly onMusic: (state: T) => A
-  readonly onElevator: (state: U) => B
+type FoldValueArgs<F extends NewAudioStateConnectedURIS, A, B> = {
+  readonly onMusic: (state: Kind<F, NewAudioStateValueMusic>) => A
+  readonly onElevator: (state: Kind<F, NewAudioStateValueElevator>) => B
 }
 
-// TODO: we could probably generalize it to all Connect, but we only need Connecting for now.
-function foldValue<A, B = A>({
-  onMusic,
-  onElevator,
-}: FoldValueArgs<
-  NewAudioStateConnecting<NewAudioStateValueMusic>,
-  NewAudioStateConnecting<NewAudioStateValueElevator>,
-  A,
-  B
->): (state: NewAudioStateConnecting<NewAudioStateValue>) => A | B {
-  return state => {
+const foldValue =
+  <F extends NewAudioStateConnectedURIS>() =>
+  <A, B = A>({ onMusic, onElevator }: FoldValueArgs<F, A, B>) =>
+  (state: Kind<F, NewAudioStateValue>) => {
     switch (state.value.type) {
       case 'Music':
-        return onMusic(state as NewAudioStateConnecting<NewAudioStateValueMusic>)
+        return onMusic(state as Kind<F, NewAudioStateValueMusic>)
       case 'Elevator':
-        return onElevator(state as NewAudioStateConnecting<NewAudioStateValueElevator>)
+        return onElevator(state as Kind<F, NewAudioStateValueElevator>)
     }
   }
-}
 
 const modifyValue = <
   A extends NewAudioStateValue,

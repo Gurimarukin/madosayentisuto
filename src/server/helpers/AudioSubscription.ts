@@ -280,8 +280,7 @@ export const AudioSubscription = (
             // return onConnectionDisconnectedOrDestroyed()
 
             case 'PlayerIdle':
-              return Future.todo()
-            // return onPlayerIdle()
+              return onPlayerIdle(state)
           }
         }),
       )
@@ -303,7 +302,7 @@ export const AudioSubscription = (
       case 'Connecting':
         return pipe(
           state,
-          NewAudioStateConnect.foldValue({
+          NewAudioStateConnect.foldValue<'NewAudioStateConnecting'>()({
             onMusic: musicState =>
               List.isEmpty(musicState.value.queue)
                 ? pipe(
@@ -343,6 +342,39 @@ export const AudioSubscription = (
         return onConnected(newState)
       }),
     )
+  }
+
+  // function onConnectionDisconnectedOrDestroyed(): Future<void> {
+  //   return pipe(audioState.get, Future.fromIO, Future.chain(cleanMessageAndPlayer))
+  // }
+
+  function onPlayerIdle(
+    state: NewAudioState<NewAudioStateValue>,
+  ): Future<NewAudioState<NewAudioStateValue>> {
+    switch (state.type) {
+      case 'Disconnected':
+      case 'Connecting':
+        return pipe(
+          logger.warn(`Inconsistent state: onPlayerIdle while state was ${state.type}`),
+          Future.fromIOEither,
+          Future.map(() => state),
+        )
+
+      case 'Connected':
+        return pipe(
+          state,
+          NewAudioStateConnect.foldValue<'NewAudioStateConnected'>()({
+            onMusic: musicState =>
+              List.isEmpty(musicState.value.queue)
+                ? pipe(
+                    voiceConnectionDestroy(musicState.voiceConnection),
+                    Future.map(() => musicState),
+                  )
+                : playMusicFirstTrackFromQueue(musicState),
+            onElevator: elevatorState => playElevatorFile(elevatorState),
+          }),
+        )
+    }
   }
 
   /**
@@ -567,10 +599,6 @@ export const AudioSubscription = (
   //   )
   // }
 
-  // function onConnectionDisconnectedOrDestroyed(): Future<void> {
-  //   return pipe(audioState.get, Future.fromIO, Future.chain(cleanMessageAndPlayer))
-  // }
-
   // function cleanMessageAndPlayer(currentState: AudioState): Future<void> {
   //   const log = (chan?: NamedChannel): LoggerType => LogUtils.pretty(logger, guild, null, chan)
 
@@ -623,33 +651,6 @@ export const AudioSubscription = (
   //     apply.sequenceT(Future.ApplyPar)(threadDelete, messageDelete, audioPlayerStop),
   //     Future.chainIOK(() => audioState.set(AudioState.empty)),
   //     Future.map(toUnit),
-  //   )
-  // }
-
-  // function onPlayerIdle(): Future<void> {
-  //   return pipe(
-  //     audioState.get,
-  //     Future.fromIO,
-  //     Future.chain(state => {
-  //       switch (state.type) {
-  //         case 'Disconnected':
-  //         case 'Connecting':
-  //           return Future.fromIOEither(
-  //             logger.warn(`Inconsistent state: onPlayerIdle while state was ${state.type}`),
-  //           )
-
-  //         case 'Connected':
-  //           switch (state.value.type) {
-  //             case 'Music':
-  //               if (List.isEmpty(state.value.queue)) return voiceConnectionDestroy(state)
-
-  //               return playMusicFirstTrackFromQueue(state)
-
-  //             case 'Elevator':
-  //               return playElevatorFile(state)
-  //           }
-  //       }
-  //     }),
   //   )
   // }
 
