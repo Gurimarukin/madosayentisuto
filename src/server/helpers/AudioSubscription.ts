@@ -92,12 +92,15 @@ export const AudioSubscription = (
 
   const getAudioState: io.IO<NewAudioState<NewAudioStateValue>> = audioState.get
 
-  const disconnect: Future<NotUsed> = Future.todo()
-  // pipe(
-  //   audioState.get,
-  //   Future.fromIO,
-  //   Future.chain(voiceConnectionDestroy),
-  // )
+  const disconnect: Future<NotUsed> = pipe(
+    audioState.get,
+    Future.fromIO,
+    Future.chain(state =>
+      NewAudioState.isDisconnected(state)
+        ? Future.notUsed
+        : voiceConnectionDestroy(state.voiceConnection),
+    ),
+  )
 
   return {
     getAudioState,
