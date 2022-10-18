@@ -192,53 +192,23 @@ export const AudioSubscription = (
           )
       }
     })
-    // return pipe(
-    //   audioState.get,
-    //   Future.fromIO,
-    //   Future.chain(state => {
-    //     switch (state.type) {
-    //       case 'Disconnected':
-    //       case 'Connecting':
-    //         return Future.right(false)
-
-    //       case 'Connected':
-    //         if (AudioStateType.is('Music')(state.value)) {
-    //           const audioPlayer = state.audioPlayer
-    //           if (state.value.isPaused) {
-    //             return updateAudioPlayerState(
-    //               DiscordConnector.audioPlayerUnpause(audioPlayer),
-    //               AudioState.value.Music.isPaused.set(false),
-    //             )
-    //           }
-    //           return updateAudioPlayerState(
-    //             DiscordConnector.audioPlayerPause(audioPlayer),
-    //             AudioState.value.Music.isPaused.set(true),
-    //           )
-    //         }
-    //         return Future.right(false)
-    //     }
-    //   }),
-    // )
   }
 
   function startElevator(audioChannel: GuildAudioChannel): IO<NotUsed> {
-    return queueStateReducer(Future.todo)
-    // return pipe(
-    //   audioState.modify(AudioState.value.set(AudioStateType.Elevator.empty)),
-    //   Future.fromIO,
-    //   Future.chain(newState => {
-    //     switch (newState.type) {
-    //       case 'Disconnected':
-    //         return connect(audioChannel)
+    return queueStateReducer(state => {
+      switch (state.type) {
+        case 'Disconnected':
+          return getConnecting(audioChannel, NewAudioStateValueElevator.empty)
 
-    //       case 'Connecting':
-    //       case 'Connected':
-    //         return Future.fromIOEither(
-    //           logger.warn(`startElevator was called while state was ${newState.type}. Weird.`),
-    //         )
-    //     }
-    //   }),
-    // )
+        case 'Connecting':
+        case 'Connected':
+          return pipe(
+            logger.warn(`startElevator was called while state was ${state.type}. Weird.`),
+            Future.fromIOEither,
+            Future.map(() => state),
+          )
+      }
+    })
   }
 
   /**
@@ -253,10 +223,8 @@ export const AudioSubscription = (
       'ConnectionDisconnected',
       'ConnectionDestroyed',
       'PlayerIdle',
-    )(event => {
-      console.log('>>>>> lifecycleObserver - event:', event.type)
-
-      return Future.fromIOEither(
+    )(event =>
+      Future.fromIOEither(
         queueStateReducer(state => {
           switch (event.type) {
             case 'ConnectionReady':
@@ -270,8 +238,8 @@ export const AudioSubscription = (
               return onPlayerIdle(state)
           }
         }),
-      )
-    })
+      ),
+    )
   }
 
   function onConnectionReady(
@@ -279,12 +247,14 @@ export const AudioSubscription = (
   ): Future<NewAudioState<NewAudioStateValue>> {
     switch (state.type) {
       case 'Disconnected':
-      case 'Connected':
         return pipe(
           logger.warn(`Inconsistent state: onConnectionReady while state was ${state.type}`),
           Future.fromIOEither,
           Future.map(() => state),
         )
+
+      case 'Connected':
+        return Future.right(state)
 
       case 'Connecting':
         return pipe(
@@ -397,6 +367,8 @@ export const AudioSubscription = (
   ): Future<NewAudioState<NewAudioStateValue>> {
     switch (state.type) {
       case 'Disconnected':
+        return Future.right(state)
+
       case 'Connecting':
         return pipe(
           logger.warn(`Inconsistent state: onPlayerIdle while state was ${state.type}`),
