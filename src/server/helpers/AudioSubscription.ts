@@ -169,7 +169,29 @@ export const AudioSubscription = (
   }
 
   function playPauseTrack(): IO<NotUsed> {
-    return queueStateReducer(Future.todo)
+    return queueStateReducer(state => {
+      switch (state.type) {
+        case 'Disconnected':
+        case 'Connecting':
+          return Future.right(state)
+
+        case 'Connected':
+          return pipe(
+            state,
+            NewAudioStateConnect.foldValue<'NewAudioStateConnected'>()({
+              onMusic: musicState =>
+                pipe(
+                  musicState,
+                  musicState.value.isPaused
+                    ? playPauseTrackCommon(DiscordConnector.audioPlayerUnpause, false)
+                    : playPauseTrackCommon(DiscordConnector.audioPlayerPause, true),
+                  Future.fromIOEither,
+                ),
+              onElevator: Future.right,
+            }),
+          )
+      }
+    })
     // return pipe(
     //   audioState.get,
     //   Future.fromIO,
@@ -199,8 +221,8 @@ export const AudioSubscription = (
     // )
   }
 
-  function startElevator(audioChannel: GuildAudioChannel): Future<NotUsed> {
-    return Future.todo()
+  function startElevator(audioChannel: GuildAudioChannel): IO<NotUsed> {
+    return queueStateReducer(Future.todo)
     // return pipe(
     //   audioState.modify(AudioState.value.set(AudioStateType.Elevator.empty)),
     //   Future.fromIO,
@@ -519,6 +541,24 @@ export const AudioSubscription = (
         ),
       ),
     )
+  }
+
+  function playPauseTrackCommon(
+    updateAudioPlayer: (audioPlayer: AudioPlayer) => IO<unknown>,
+    newIsPaused: boolean,
+  ): (
+    state: NewAudioStateConnected<NewAudioStateValueMusic>,
+  ) => IO<NewAudioStateConnected<NewAudioStateValueMusic>> {
+    return state =>
+      pipe(
+        updateAudioPlayer(state.audioPlayer),
+        IO.map(() =>
+          pipe(
+            state,
+            NewAudioStateConnect.modifyValue(NewAudioStateValueMusic.setIsPaused(newIsPaused)),
+          ),
+        ),
+      )
   }
 
   function voiceConnectionDestroy(voiceConnection: VoiceConnection): Future<NotUsed> {

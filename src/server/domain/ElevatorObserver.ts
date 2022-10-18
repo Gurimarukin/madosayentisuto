@@ -70,7 +70,7 @@ export const ElevatorObserver = (Logger: LoggerGetter, guildStateService: GuildS
   function playElevator(channel: GuildAudioChannel): io.IO<NotUsed> {
     return pipe(
       guildStateService.getSubscription(channel.guild),
-      Future.chain(subscription => subscription.startElevator(channel)),
+      Future.chainIOEitherK(subscription => subscription.startElevator(channel)),
       IO.runFuture(LogUtils.onError(logger)),
     )
   }
