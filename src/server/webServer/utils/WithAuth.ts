@@ -50,7 +50,7 @@ export const WithAuth = (userService: UserService): WithAuth => ({
       futureMaybe.chainTaskEitherK(cookie =>
         Future.fromEither(Try.tryCatch(() => parseCookie(cookie))),
       ),
-      futureMaybe.chainOption(Dict.lookup(constants.account.cookie.name)),
+      futureMaybe.chainOptionK(Dict.lookup(constants.account.cookie.name)),
       Future.chain(
         Maybe.fold(
           () => Future.right(Either.left(SimpleHttpResponse.of(Status.Unauthorized, ''))),

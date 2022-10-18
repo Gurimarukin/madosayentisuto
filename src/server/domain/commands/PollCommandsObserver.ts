@@ -532,7 +532,7 @@ export const PollCommandsObserver = (
           removeThread(guild, thread),
         ),
       ),
-      futureMaybe.chainOption(Tuple.fst),
+      futureMaybe.chainOptionK(Tuple.fst),
     )
   }
 
@@ -540,7 +540,7 @@ export const PollCommandsObserver = (
     return pipe(
       DiscordConnector.fetchMessage(guild, pollMessage),
       futureMaybe.chainTaskEitherK(message => DiscordConnector.messageDelete(message)),
-      futureMaybe.chainOption(success => (success ? Maybe.some('Sondage supprimé') : Maybe.none)),
+      futureMaybe.chainOptionK(success => (success ? Maybe.some('Sondage supprimé') : Maybe.none)),
     )
   }
 

@@ -55,7 +55,7 @@ export const MusicThreadCleanObserver = (
       Future.chainIOK(subscription => subscription.getAudioState),
       futureMaybe.fromTaskEither,
       futureMaybe.filter(NewAudioState.isMusicValue),
-      futureMaybe.chainOption(state => state.value.message),
+      futureMaybe.chainOptionK(state => state.value.message),
       futureMaybe.chain(message => futureMaybe.fromNullable(message.thread)),
     )
   }

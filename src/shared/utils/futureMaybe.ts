@@ -52,7 +52,11 @@ const ap = optionT.ap(Future.ApplyPar)
 
 const chain = optionT.chain(Future.Monad)
 
-const chainOption: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
+const chainNullableK: <A, B>(
+  f: (a: A) => B | null | undefined,
+) => (ma: Future<Maybe<A>>) => Future<Maybe<NonNullable<B>>> = optionT.chainNullableK(Future.Monad)
+
+const chainOptionK: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
   optionT.chainOptionK(Future.Monad)
 
 const chainTaskEitherK = <A, B>(
@@ -114,7 +118,8 @@ export const futureMaybe = {
   bind: fpTsChain.bind(Chain),
   bindTo: functor.bindTo(Functor),
   chain,
-  chainOption,
+  chainNullableK,
+  chainOptionK,
   chainTaskEitherK,
   chainIOK,
   chainFirst,
