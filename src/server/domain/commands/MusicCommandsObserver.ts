@@ -2,7 +2,7 @@ import type { ButtonInteraction, ChatInputCommandInteraction, Interaction } from
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
-import { NotUsed } from '../../../shared/models/NotUsed'
+import type { NotUsed } from '../../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
 
@@ -172,7 +172,7 @@ export const MusicCommandsObserver = (
 
   function buttonCommon(
     interaction: ButtonInteraction,
-    f: (suscription: AudioSubscription) => Future<boolean>,
+    f: (suscription: AudioSubscription) => IO<NotUsed>,
   ): Future<NotUsed> {
     const guild = interaction.guild
     if (guild === null) return Future.notUsed
@@ -185,14 +185,11 @@ export const MusicCommandsObserver = (
       Future.chain(({ subscription, subscriptionState }) =>
         pipe(
           validateAudioChannel(interaction, subscriptionState),
-          Either.fold(flow(Either.left, Future.right), () =>
-            pipe(
-              f(subscription),
-              Future.map(success =>
-                success ? Either.right(NotUsed) : Either.left('Haha ! Tu ne peux pas faire ça !'),
-              ),
-            ),
+          Either.fold<string, GuildAudioChannel, IO<Either<string, NotUsed>>>(
+            flow(Either.left, IO.right),
+            () => pipe(f(subscription), IO.map(Either.right)),
           ),
+          Future.fromIOEither,
           Future.chain(
             Either.fold(
               content =>

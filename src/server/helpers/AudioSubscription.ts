@@ -135,37 +135,41 @@ export const AudioSubscription = (
     )
   }
 
-  function playNextTrack(author: User): Future<boolean> {
-    return Future.todo()
-    // return pipe(
-    //   audioState.get,
-    //   Future.fromIO,
-    //   Future.chain(state => {
-    //     switch (state.type) {
-    //       case 'Disconnected':
-    //       case 'Connecting':
-    //         return Future.right(false)
+  function playNextTrack(author: User): IO<NotUsed> {
+    return queueStateReducer(state => {
+      switch (state.type) {
+        case 'Disconnected':
+        case 'Connecting':
+          return Future.right(state)
 
-    //       case 'Connected':
-    //         if (AudioStateType.is('Music')(state.value)) {
-    //           return pipe(
-    //             List.isEmpty(state.value.queue)
-    //               ? voiceConnectionDestroy(state)
-    //               : apply.sequenceT(Future.ApplyPar)(
-    //                   logEventToThread(state)(MusicEventMessage.trackSkipped(author, state)),
-    //                   playMusicFirstTrackFromQueue(state),
-    //                 ),
-    //             Future.map<unknown, boolean>(() => true),
-    //           )
-    //         }
-    //         return Future.right(false)
-    //     }
-    //   }),
-    // )
+        case 'Connected':
+          return pipe(
+            state,
+            NewAudioStateConnect.foldValue<'NewAudioStateConnected'>()({
+              onMusic: musicState =>
+                List.isEmpty(musicState.value.queue)
+                  ? pipe(
+                      voiceConnectionDestroy(musicState.voiceConnection),
+                      Future.map(() => musicState),
+                    )
+                  : pipe(
+                      musicState,
+                      NewAudioStateConnect.modifyValue(
+                        NewAudioStateValueMusic.appendPendingEvent(
+                          MusicEventMessage.trackSkipped(author, musicState.value),
+                        ),
+                      ),
+                      playMusicFirstTrackFromQueue,
+                    ),
+              onElevator: Future.right,
+            }),
+          )
+      }
+    })
   }
 
-  function playPauseTrack(): Future<boolean> {
-    return Future.todo()
+  function playPauseTrack(): IO<NotUsed> {
+    return queueStateReducer(Future.todo)
     // return pipe(
     //   audioState.get,
     //   Future.fromIO,

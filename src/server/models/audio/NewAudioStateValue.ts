@@ -61,6 +61,11 @@ const musicMessageChannelLens = pipe(
 const musicMessageLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('message'))
 const musicPendingEventsLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('pendingEvents'))
 
+const appendPendingEvent = (
+  event: string,
+): ((s: NewAudioStateValueMusic) => NewAudioStateValueMusic) =>
+  pipe(musicPendingEventsLens, lens.modify(List.append(event)))
+
 const NewAudioStateValueMusic = {
   empty: (messageChannel: GuildSendableChannel): NewAudioStateValueMusic =>
     u.Music({
@@ -78,10 +83,11 @@ const NewAudioStateValueMusic = {
   ): ((value: NewAudioStateValueMusic) => NewAudioStateValueMusic) =>
     flow(
       pipe(musicQueueLens, lens.modify(NonEmptyArray.concat(tracks))),
-      pipe(musicPendingEventsLens, lens.modify(List.append(event))),
+      appendPendingEvent(event),
     ),
 
   emptyPendingEvents: musicPendingEventsLens.set(List.empty),
+  appendPendingEvent,
 
   setIsPaused: musicIsPausedLens.set,
   setCurrentTrack: musicCurrentTrackLens.set,

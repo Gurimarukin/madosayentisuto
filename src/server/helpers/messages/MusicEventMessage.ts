@@ -3,7 +3,7 @@ import { pipe } from 'fp-ts/function'
 
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
-import { AudioState } from '../../models/audio/AudioState'
+import type { NewAudioStateValueMusic } from '../../models/audio/NewAudioStateValue'
 import type { Track } from '../../models/audio/music/Track'
 
 const tracksAdded = (author: User, tracks: NonEmptyArray<Track>): string => {
@@ -21,10 +21,9 @@ const tracksAdded = (author: User, tracks: NonEmptyArray<Track>): string => {
   return `**${author}** a ajouté${tracksStr}`
 }
 
-const trackSkipped = (author: User, state: AudioState): string => {
+const trackSkipped = (author: User, value: NewAudioStateValueMusic): string => {
   const additional = pipe(
-    state,
-    AudioState.value.Music.currentTrack.get,
+    value.currentTrack,
     Maybe.fold(
       () => '',
       t => `...\n*...et a interrompu [${t.title}](${t.url})*`,
