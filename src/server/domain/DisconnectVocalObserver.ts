@@ -4,9 +4,9 @@ import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { Future, List } from '../../shared/utils/fp'
 
-import type { NewAudioStateConnect } from '../models/audio/NewAudioState'
-import { NewAudioState } from '../models/audio/NewAudioState'
-import type { NewAudioStateValue } from '../models/audio/NewAudioStateValue'
+import type { AudioStateConnect } from '../models/audio/AudioState'
+import { AudioState } from '../models/audio/AudioState'
+import type { AudioStateValue } from '../models/audio/AudioStateValue'
 import { MadEvent } from '../models/event/MadEvent'
 import type { GuildStateService } from '../services/GuildStateService'
 import type { GuildAudioChannel } from '../utils/ChannelUtils'
@@ -29,14 +29,14 @@ export const DisconnectVocalObserver = (
       Future.apS('subscription', guildStateService.getSubscription(event.member.guild)),
       Future.bind('state', ({ subscription }) => Future.fromIO(subscription.getAudioState)),
       Future.chain(({ subscription, state }) =>
-        NewAudioState.isConnect(state) && shouldDisconnect(state)
+        AudioState.isConnect(state) && shouldDisconnect(state)
           ? subscription.disconnect
           : Future.notUsed,
       ),
     )
   })
 
-  function shouldDisconnect(state: NewAudioStateConnect<NewAudioStateValue>): boolean {
+  function shouldDisconnect(state: AudioStateConnect<AudioStateValue>): boolean {
     const { channel } = state
     return (
       botIsConnectedToChannel(channel) &&

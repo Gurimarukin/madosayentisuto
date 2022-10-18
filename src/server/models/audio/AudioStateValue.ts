@@ -9,10 +9,10 @@ import type { GuildSendableChannel } from '../../utils/ChannelUtils'
 import type { MyFile } from '../FileOrDir'
 import type { Track } from './music/Track'
 
-type NewAudioStateValue = typeof u.T
+type AudioStateValue = typeof u.T
 
-type NewAudioStateValueMusic = typeof u.Music.T
-type NewAudioStateValueElevator = typeof u.Elevator.T
+type AudioStateValueMusic = typeof u.Music.T
+type AudioStateValueElevator = typeof u.Elevator.T
 
 type MusicArgs = {
   readonly isPaused: boolean
@@ -33,15 +33,15 @@ const u = createUnion({
 })
 
 type FoldArgs<A> = {
-  readonly onMusic: (value: NewAudioStateValueMusic) => A
-  readonly onElevator: (value: NewAudioStateValueElevator) => A
+  readonly onMusic: (value: AudioStateValueMusic) => A
+  readonly onElevator: (value: AudioStateValueElevator) => A
 }
 
-const NewAudioStateValue = {
+const AudioStateValue = {
   is: u.is,
   fold:
     <A>({ onMusic, onElevator }: FoldArgs<A>) =>
-    (value: NewAudioStateValue): A => {
+    (value: AudioStateValue): A => {
       switch (value.type) {
         case 'Music':
           return onMusic(value)
@@ -51,19 +51,17 @@ const NewAudioStateValue = {
     },
 }
 
-const musicIsPausedLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('isPaused'))
-const musicCurrentTrackLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('currentTrack'))
-const musicQueueLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('queue'))
-const musicMessageLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('message'))
-const musicPendingEventsLens = pipe(lens.id<NewAudioStateValueMusic>(), lens.prop('pendingEvents'))
+const musicIsPausedLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('isPaused'))
+const musicCurrentTrackLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('currentTrack'))
+const musicQueueLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('queue'))
+const musicMessageLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('message'))
+const musicPendingEventsLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('pendingEvents'))
 
-const appendPendingEvent = (
-  event: string,
-): ((s: NewAudioStateValueMusic) => NewAudioStateValueMusic) =>
+const appendPendingEvent = (event: string): ((s: AudioStateValueMusic) => AudioStateValueMusic) =>
   pipe(musicPendingEventsLens, lens.modify(List.append(event)))
 
-const NewAudioStateValueMusic = {
-  empty: (messageChannel: GuildSendableChannel): NewAudioStateValueMusic =>
+const AudioStateValueMusic = {
+  empty: (messageChannel: GuildSendableChannel): AudioStateValueMusic =>
     u.Music({
       isPaused: false,
       currentTrack: Maybe.none,
@@ -76,7 +74,7 @@ const NewAudioStateValueMusic = {
   queueTracks: (
     tracks: NonEmptyArray<Track>,
     event: string,
-  ): ((value: NewAudioStateValueMusic) => NewAudioStateValueMusic) =>
+  ): ((value: AudioStateValueMusic) => AudioStateValueMusic) =>
     flow(
       pipe(musicQueueLens, lens.modify(NonEmptyArray.concat(tracks))),
       appendPendingEvent(event),
@@ -91,14 +89,11 @@ const NewAudioStateValueMusic = {
   setMessage: musicMessageLens.set,
 }
 
-const elevatorCurrentFileLens = pipe(
-  lens.id<NewAudioStateValueElevator>(),
-  lens.prop('currentFile'),
-)
+const elevatorCurrentFileLens = pipe(lens.id<AudioStateValueElevator>(), lens.prop('currentFile'))
 
-const NewAudioStateValueElevator = {
+const AudioStateValueElevator = {
   empty: u.Elevator({ currentFile: Maybe.none }),
   setCurrentFile: elevatorCurrentFileLens.set,
 }
 
-export { NewAudioStateValue, NewAudioStateValueMusic, NewAudioStateValueElevator }
+export { AudioStateValue, AudioStateValueMusic, AudioStateValueElevator }

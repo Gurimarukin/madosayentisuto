@@ -22,13 +22,13 @@ import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed, toUnit } from '../..
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { Store } from '../models/Store'
-import type { NewAudioStateConnected, NewAudioStateConnecting } from '../models/audio/NewAudioState'
-import { NewAudioState, NewAudioStateConnect } from '../models/audio/NewAudioState'
+import type { AudioStateConnected, AudioStateConnecting } from '../models/audio/AudioState'
+import { AudioState, AudioStateConnect } from '../models/audio/AudioState'
 import {
-  NewAudioStateValue,
-  NewAudioStateValueElevator,
-  NewAudioStateValueMusic,
-} from '../models/audio/NewAudioStateValue'
+  AudioStateValue,
+  AudioStateValueElevator,
+  AudioStateValueMusic,
+} from '../models/audio/AudioStateValue'
 import { Track } from '../models/audio/music/Track'
 import { AudioEvent } from '../models/event/AudioEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
@@ -86,17 +86,17 @@ export const AudioSubscription = (
 ) => {
   const logger = Logger(`AudioSubscription-${guild.name}#${guild.id}`)
 
-  const audioState = Store<NewAudioState<NewAudioStateValue>>(NewAudioState.disconnected)
+  const audioState = Store<AudioState<AudioStateValue>>(AudioState.disconnected)
 
   const stateReducers = AsyncQueue<NotUsed>(LogUtils.onError(logger))
 
-  const getAudioState: io.IO<NewAudioState<NewAudioStateValue>> = audioState.get
+  const getAudioState: io.IO<AudioState<AudioStateValue>> = audioState.get
 
   const disconnect: Future<NotUsed> = pipe(
     audioState.get,
     Future.fromIO,
     Future.chain(state =>
-      NewAudioState.isDisconnected(state)
+      AudioState.isDisconnected(state)
         ? Future.notUsed
         : voiceConnectionDestroy(state.voiceConnection),
     ),
@@ -122,19 +122,19 @@ export const AudioSubscription = (
   ): IO<NotUsed> {
     const event = MusicEventMessage.tracksAdded(author, tracks)
 
-    const queueTracksValueMusic = NewAudioStateValueMusic.queueTracks(tracks, event)
-    const queueTracksValue = NewAudioStateValue.fold({
+    const queueTracksValueMusic = AudioStateValueMusic.queueTracks(tracks, event)
+    const queueTracksValue = AudioStateValue.fold({
       onMusic: queueTracksValueMusic,
-      onElevator: () => pipe(NewAudioStateValueMusic.empty(messageChannel), queueTracksValueMusic),
+      onElevator: () => pipe(AudioStateValueMusic.empty(messageChannel), queueTracksValueMusic),
     })
 
     return queueStateReducer(state =>
-      NewAudioState.isDisconnected(state)
+      AudioState.isDisconnected(state)
         ? getConnecting(
             audioChannel,
-            pipe(NewAudioStateValueMusic.empty(messageChannel), queueTracksValueMusic),
+            pipe(AudioStateValueMusic.empty(messageChannel), queueTracksValueMusic),
           )
-        : pipe(state, NewAudioStateConnect.modifyValue(queueTracksValue), Future.right),
+        : pipe(state, AudioStateConnect.modifyValue(queueTracksValue), Future.right),
     )
   }
 
@@ -148,7 +148,7 @@ export const AudioSubscription = (
         case 'Connected':
           return pipe(
             state,
-            NewAudioStateConnect.foldValue<'NewAudioStateConnected'>()({
+            AudioStateConnect.foldValue<'AudioStateConnected'>()({
               onMusic: musicState =>
                 List.isEmpty(musicState.value.queue)
                   ? pipe(
@@ -157,8 +157,8 @@ export const AudioSubscription = (
                     )
                   : pipe(
                       musicState,
-                      NewAudioStateConnect.modifyValue(
-                        NewAudioStateValueMusic.appendPendingEvent(
+                      AudioStateConnect.modifyValue(
+                        AudioStateValueMusic.appendPendingEvent(
                           MusicEventMessage.trackSkipped(author, musicState.value),
                         ),
                       ),
@@ -181,7 +181,7 @@ export const AudioSubscription = (
         case 'Connected':
           return pipe(
             state,
-            NewAudioStateConnect.foldValue<'NewAudioStateConnected'>()({
+            AudioStateConnect.foldValue<'AudioStateConnected'>()({
               onMusic: musicState =>
                 pipe(
                   musicState,
@@ -201,7 +201,7 @@ export const AudioSubscription = (
     return queueStateReducer(state => {
       switch (state.type) {
         case 'Disconnected':
-          return getConnecting(audioChannel, NewAudioStateValueElevator.empty)
+          return getConnecting(audioChannel, AudioStateValueElevator.empty)
 
         case 'Connecting':
         case 'Connected':
@@ -246,8 +246,8 @@ export const AudioSubscription = (
   }
 
   function onConnectionReady(
-    state: NewAudioState<NewAudioStateValue>,
-  ): Future<NewAudioState<NewAudioStateValue>> {
+    state: AudioState<AudioStateValue>,
+  ): Future<AudioState<AudioStateValue>> {
     switch (state.type) {
       case 'Disconnected':
         return pipe(
@@ -262,7 +262,7 @@ export const AudioSubscription = (
       case 'Connecting':
         return pipe(
           state,
-          NewAudioStateConnect.foldValue<'NewAudioStateConnecting'>()({
+          AudioStateConnect.foldValue<'AudioStateConnecting'>()({
             onMusic: musicState =>
               List.isEmpty(musicState.value.queue)
                 ? pipe(
@@ -277,15 +277,15 @@ export const AudioSubscription = (
     }
   }
 
-  function onConnectionReadyConnecting<A extends NewAudioStateValue>(
-    state: NewAudioStateConnecting<A>,
-    onConnected: (connected: NewAudioStateConnected<A>) => Future<NewAudioStateConnected<A>>,
-  ): Future<NewAudioStateConnected<A>> {
+  function onConnectionReadyConnecting<A extends AudioStateValue>(
+    state: AudioStateConnecting<A>,
+    onConnected: (connected: AudioStateConnected<A>) => Future<AudioStateConnected<A>>,
+  ): Future<AudioStateConnected<A>> {
     return pipe(
       DiscordConnector.voiceConnectionSubscribe(state.voiceConnection, state.audioPlayer),
       Future.fromIOEither,
       Future.chain(subscription => {
-        const newState = NewAudioState.connected(
+        const newState = AudioState.connected(
           state.channel,
           state.value,
           state.voiceConnection,
@@ -305,16 +305,16 @@ export const AudioSubscription = (
   }
 
   function onConnectionDisconnectedOrDestroyed(
-    state: NewAudioState<NewAudioStateValue>,
-  ): Future<NewAudioState<NewAudioStateValue>> {
-    if (NewAudioState.isDisconnected(state)) return Future.right(state)
+    state: AudioState<AudioStateValue>,
+  ): Future<AudioState<AudioStateValue>> {
+    if (AudioState.isDisconnected(state)) return Future.right(state)
 
     const log = (chan?: NamedChannel): LoggerType => LogUtils.pretty(logger, guild, null, chan)
     const orElse = Future.orElseIOEitherK(e => logger.warn(e.stack))
 
     const maybeMessage = pipe(
       state,
-      NewAudioStateConnect.foldValue()({
+      AudioStateConnect.foldValue()({
         onMusic: musicState => musicState.value.message,
         onElevator: () => Maybe.none,
       }),
@@ -361,13 +361,11 @@ export const AudioSubscription = (
 
     return pipe(
       apply.sequenceT(Future.ApplySeq)(audioPlayerStop, threadDelete, messageDelete),
-      Future.map(() => NewAudioState.disconnected),
+      Future.map(() => AudioState.disconnected),
     )
   }
 
-  function onPlayerIdle(
-    state: NewAudioState<NewAudioStateValue>,
-  ): Future<NewAudioState<NewAudioStateValue>> {
+  function onPlayerIdle(state: AudioState<AudioStateValue>): Future<AudioState<AudioStateValue>> {
     switch (state.type) {
       case 'Disconnected':
         return Future.right(state)
@@ -382,7 +380,7 @@ export const AudioSubscription = (
       case 'Connected':
         return pipe(
           state,
-          NewAudioStateConnect.foldValue<'NewAudioStateConnected'>()({
+          AudioStateConnect.foldValue<'AudioStateConnected'>()({
             onMusic: musicState =>
               List.isEmpty(musicState.value.queue)
                 ? pipe(
@@ -401,7 +399,7 @@ export const AudioSubscription = (
    */
 
   function queueStateReducer(
-    f: (oldState: NewAudioState<NewAudioStateValue>) => Future<NewAudioState<NewAudioStateValue>>,
+    f: (oldState: AudioState<AudioStateValue>) => Future<AudioState<AudioStateValue>>,
   ): IO<NotUsed> {
     return stateReducers.queue(
       pipe(
@@ -421,10 +419,10 @@ export const AudioSubscription = (
     )
   }
 
-  function getConnecting<A extends NewAudioStateValue>(
+  function getConnecting<A extends AudioStateValue>(
     channel: GuildAudioChannel,
     value: A,
-  ): Future<NewAudioStateConnecting<A>> {
+  ): Future<AudioStateConnecting<A>> {
     return pipe(
       getVoiceConnectionAndAudioPlayer(channel),
       Future.fromIOEither,
@@ -433,14 +431,14 @@ export const AudioSubscription = (
           case 'Music':
             return pipe(
               sendMusicMessageAndStartThread(value.messageChannel),
-              Future.map(message => pipe(value, NewAudioStateValueMusic.setMessage(message))),
+              Future.map(message => pipe(value, AudioStateValueMusic.setMessage(message))),
             ) as Future<A>
           case 'Elevator':
             return Future.right(value)
         }
       }),
       Future.map(({ voiceConnection, audioPlayer, newValue }) =>
-        NewAudioState.connecting(channel, newValue, voiceConnection, audioPlayer),
+        AudioState.connecting(channel, newValue, voiceConnection, audioPlayer),
       ),
     )
   }
@@ -463,8 +461,8 @@ export const AudioSubscription = (
   }
 
   function playMusicFirstTrackFromQueue(
-    state: NewAudioStateConnected<NewAudioStateValueMusic>,
-  ): Future<NewAudioStateConnected<NewAudioStateValueMusic>> {
+    state: AudioStateConnected<AudioStateValueMusic>,
+  ): Future<AudioStateConnected<AudioStateValueMusic>> {
     return pipe(
       state.value.queue,
       List.match(
@@ -478,11 +476,11 @@ export const AudioSubscription = (
             Future.map(() =>
               pipe(
                 state,
-                NewAudioStateConnect.modifyValue(
+                AudioStateConnect.modifyValue(
                   flow(
-                    NewAudioStateValueMusic.setIsPaused(false),
-                    NewAudioStateValueMusic.setCurrentTrack(Maybe.some(head)),
-                    NewAudioStateValueMusic.setQueue(tail),
+                    AudioStateValueMusic.setIsPaused(false),
+                    AudioStateValueMusic.setCurrentTrack(Maybe.some(head)),
+                    AudioStateValueMusic.setQueue(tail),
                   ),
                 ),
               ),
@@ -494,8 +492,8 @@ export const AudioSubscription = (
   }
 
   function playElevatorFile(
-    state: NewAudioStateConnected<NewAudioStateValueElevator>,
-  ): Future<NewAudioStateConnected<NewAudioStateValueElevator>> {
+    state: AudioStateConnected<AudioStateValueElevator>,
+  ): Future<AudioStateConnected<AudioStateValueElevator>> {
     return pipe(
       resourcesHelper.randomElevatorMusic(state.value.currentFile),
       Future.fromIO,
@@ -510,9 +508,7 @@ export const AudioSubscription = (
       Future.map(file =>
         pipe(
           state,
-          NewAudioStateConnect.modifyValue(
-            NewAudioStateValueElevator.setCurrentFile(Maybe.some(file)),
-          ),
+          AudioStateConnect.modifyValue(AudioStateValueElevator.setCurrentFile(Maybe.some(file))),
         ),
       ),
     )
@@ -522,16 +518,13 @@ export const AudioSubscription = (
     updateAudioPlayer: (audioPlayer: AudioPlayer) => IO<unknown>,
     newIsPaused: boolean,
   ): (
-    state: NewAudioStateConnected<NewAudioStateValueMusic>,
-  ) => IO<NewAudioStateConnected<NewAudioStateValueMusic>> {
+    state: AudioStateConnected<AudioStateValueMusic>,
+  ) => IO<AudioStateConnected<AudioStateValueMusic>> {
     return state =>
       pipe(
         updateAudioPlayer(state.audioPlayer),
         IO.map(() =>
-          pipe(
-            state,
-            NewAudioStateConnect.modifyValue(NewAudioStateValueMusic.setIsPaused(newIsPaused)),
-          ),
+          pipe(state, AudioStateConnect.modifyValue(AudioStateValueMusic.setIsPaused(newIsPaused))),
         ),
       )
   }
@@ -629,11 +622,11 @@ const sendMusicMessageAndStartThread = (
   )
 
 const refreshMusicMessageAndSendPendingEvents = (
-  oldAndNewState: OldAndNewState<NewAudioState<NewAudioStateValue>>,
-): Future<NewAudioState<NewAudioStateValue>> => {
+  oldAndNewState: OldAndNewState<AudioState<AudioStateValue>>,
+): Future<AudioState<AudioStateValue>> => {
   const { oldState, newState } = oldAndNewState
 
-  if (!NewAudioState.isMusicValue(newState)) return Future.right(newState)
+  if (!AudioState.isMusicValue(newState)) return Future.right(newState)
 
   return pipe(
     newState.value.message,
@@ -652,15 +645,12 @@ const refreshMusicMessage =
   ({
     oldState,
     newState,
-  }: OldAndNewState<
-    NewAudioState<NewAudioStateValue>,
-    NewAudioStateConnect<NewAudioStateValueMusic>
-  >) =>
+  }: OldAndNewState<AudioState<AudioStateValue>, AudioStateConnect<AudioStateValueMusic>>) =>
   (message: Message<true>): Future<void> => {
     const newDeps = MusicMessageDeps.fromState(newState)
 
     const shouldUpdate =
-      !NewAudioState.isMusicValue(oldState) ||
+      !AudioState.isMusicValue(oldState) ||
       !MusicMessageDeps.Eq.equals(MusicMessageDeps.fromState(oldState), newDeps)
 
     if (!shouldUpdate) return Future.unit
@@ -684,8 +674,8 @@ const getMusicMessage = ({
     : MusicStateMessage.connecting
 
 const sendPendingEventsAndUpdateState = (
-  state: NewAudioStateConnect<NewAudioStateValueMusic>,
-): Future<NewAudioStateConnect<NewAudioStateValueMusic>> => {
+  state: AudioStateConnect<AudioStateValueMusic>,
+): Future<AudioStateConnect<AudioStateValueMusic>> => {
   const { pendingEvents } = state.value
 
   if (!List.isNonEmpty(pendingEvents)) return Future.right(state)
@@ -702,10 +692,7 @@ const sendPendingEventsAndUpdateState = (
             DiscordConnector.sendPrettyMessage(thread, event),
           ),
           Future.map(() =>
-            pipe(
-              state,
-              NewAudioStateConnect.modifyValue(NewAudioStateValueMusic.emptyPendingEvents),
-            ),
+            pipe(state, AudioStateConnect.modifyValue(AudioStateValueMusic.emptyPendingEvents)),
           ),
         ),
     ),
@@ -715,17 +702,15 @@ const sendPendingEventsAndUpdateState = (
 const isAlreadyDestroyedError = (e: Error): boolean =>
   e.message === 'Cannot destroy VoiceConnection - it has already been destroyed'
 
-// TODO: own file?
-
 type MusicMessageDeps = {
-  readonly type: NewAudioState<NewAudioStateValue>['type']
+  readonly type: AudioState<AudioStateValue>['type']
   readonly currentTrack: Maybe<Track>
   readonly queue: List<Track>
   readonly isPaused: boolean
 }
 
 const MusicMessageDeps = {
-  fromState: (state: NewAudioStateConnect<NewAudioStateValueMusic>): MusicMessageDeps => ({
+  fromState: (state: AudioStateConnect<AudioStateValueMusic>): MusicMessageDeps => ({
     type: state.type,
     currentTrack: state.value.currentTrack,
     queue: state.value.queue,

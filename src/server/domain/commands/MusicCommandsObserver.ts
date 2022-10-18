@@ -10,8 +10,8 @@ import type { AudioSubscription } from '../../helpers/AudioSubscription'
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
 import type { YtDlp } from '../../helpers/YtDlp'
 import { MusicStateMessage, musicStateButtons } from '../../helpers/messages/MusicStateMessage'
-import { NewAudioState } from '../../models/audio/NewAudioState'
-import type { NewAudioStateValue } from '../../models/audio/NewAudioStateValue'
+import { AudioState } from '../../models/audio/AudioState'
+import type { AudioStateValue } from '../../models/audio/AudioStateValue'
 import { Track } from '../../models/audio/music/Track'
 import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
@@ -218,7 +218,7 @@ export const MusicCommandsObserver = (
 
 const validateAudioAndStateChannel = (
   interaction: Interaction,
-  state: NewAudioState<NewAudioStateValue>,
+  state: AudioState<AudioStateValue>,
 ): Either<string, Pick<PlayCommand, 'musicChannel' | 'stateChannel'>> =>
   pipe(
     validateAudioChannel(interaction, state),
@@ -236,7 +236,7 @@ const validateAudioAndStateChannel = (
 
 const validateAudioChannel = (
   interaction: Interaction,
-  state: NewAudioState<NewAudioStateValue>,
+  state: AudioState<AudioStateValue>,
 ): Either<string, GuildAudioChannel> =>
   pipe(
     interaction.member instanceof GuildMember
@@ -244,7 +244,7 @@ const validateAudioChannel = (
       : Maybe.none,
     Either.fromOption(() => 'Haha ! Il faut être dans un salon vocal pour faire ça !'),
     Either.filterOrElse(
-      audioChannel => NewAudioState.isDisconnected(state) || state.channel.id === audioChannel.id,
+      audioChannel => AudioState.isDisconnected(state) || state.channel.id === audioChannel.id,
       () => 'Haha ! Il faut être dans mon salon pour faire ça !',
     ),
   )

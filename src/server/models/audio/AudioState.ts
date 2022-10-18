@@ -1,145 +1,196 @@
 import type { AudioPlayer, PlayerSubscription, VoiceConnection } from '@discordjs/voice'
-import type { Endomorphism } from 'fp-ts/Endomorphism'
-import { flow, pipe } from 'fp-ts/function'
+import { refinement } from 'fp-ts'
+import type { Kind } from 'fp-ts/HKT'
+import type { Refinement } from 'fp-ts/Refinement'
+import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 import type { Lens } from 'monocle-ts/Lens'
 
-import { createUnion } from '../../../shared/utils/createUnion'
-import { Maybe } from '../../../shared/utils/fp'
+import type { Maybe } from '../../../shared/utils/fp'
 
 import type { GuildAudioChannel } from '../../utils/ChannelUtils'
-import { AudioStateType } from './AudioStateType'
+import type { AudioStateValueElevator, AudioStateValueMusic } from './AudioStateValue'
+import { AudioStateValue } from './AudioStateValue'
 
-export type AudioState = typeof u.T
-
-export type AudioStateDisconnected = typeof u.Disconnected.T
-export type AudioStateConnecting = typeof u.Connecting.T
-export type AudioStateConnected = typeof u.Connected.T
-
-type AudioStateConnect = AudioStateConnecting | AudioStateConnected
-
-type CommonArgs = {
-  readonly value: AudioStateType
+declare module 'fp-ts/HKT' {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+  interface URItoKind<A extends AudioStateValue> {
+    readonly [AudioStateConnectingURI]: AudioStateConnecting<A>
+  }
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+  interface URItoKind<A extends AudioStateValue> {
+    readonly [AudioStateConnectedURI]: AudioStateConnected<A>
+  }
 }
 
-type ConnectArgs = {
+type AudioState<A extends AudioStateValue> =
+  | AudioStateDisconnected
+  | AudioStateConnecting<A>
+  | AudioStateConnected<A>
+
+type AudioStateDisconnected = {
+  readonly type: 'Disconnected'
+}
+
+const AudioStateConnectingURI = 'AudioStateConnecting' as const
+type AudioStateConnectingURI = typeof AudioStateConnectingURI
+
+type AudioStateConnecting<A extends AudioStateValue> = {
+  readonly type: 'Connecting'
   readonly channel: GuildAudioChannel
+  readonly value: A
   readonly voiceConnection: VoiceConnection
   readonly audioPlayer: AudioPlayer
 }
 
-//
+const AudioStateConnectedURI = 'AudioStateConnected' as const
+type AudioStateConnectedURI = typeof AudioStateConnectedURI
 
-type DisconnectedArgs = CommonArgs
-
-type ConnectingArgs = CommonArgs & ConnectArgs
-
-type ConnectedArgs = CommonArgs &
-  ConnectArgs & {
-    readonly subscription: Maybe<PlayerSubscription>
-  }
-
-const u = createUnion({
-  Disconnected: (args: DisconnectedArgs) => args,
-  Connecting: (args: ConnectingArgs) => args,
-  Connected: (args: ConnectedArgs) => args,
-})
-
-const empty: AudioStateDisconnected = u.Disconnected({ value: AudioStateType.Music.empty })
-
-const connecting =
-  (channel: GuildAudioChannel, voiceConnection: VoiceConnection, audioPlayer: AudioPlayer) =>
-  ({ value }: AudioState): AudioStateConnecting =>
-    u.Connecting({ channel, voiceConnection, audioPlayer, value })
-
-const connected =
-  (
-    audioPlayer: AudioPlayer,
-    channel: GuildAudioChannel,
-    voiceConnection: VoiceConnection,
-    subscription: Maybe<PlayerSubscription>,
-  ) =>
-  ({ value }: AudioState): AudioStateConnected =>
-    u.Connected({ channel, voiceConnection, audioPlayer, value, subscription })
-
-const getAudioStateConnect = (state: AudioState): Maybe<AudioStateConnect> => {
-  switch (state.type) {
-    case 'Disconnected':
-      return Maybe.none
-    case 'Connecting':
-    case 'Connected':
-      return Maybe.some(state)
-  }
+type AudioStateConnected<A extends AudioStateValue> = {
+  readonly type: 'Connected'
+  readonly channel: GuildAudioChannel
+  readonly value: A
+  readonly voiceConnection: VoiceConnection
+  readonly audioPlayer: AudioPlayer
+  readonly subscription: Maybe<PlayerSubscription>
 }
 
-const valueLens: Lens<AudioState, AudioStateType> = pipe(lens.id<AudioState>(), lens.prop('value'))
+type AudioStateConnectedURIS = AudioStateConnectingURI | AudioStateConnectedURI
 
-const modifyValue = (f: Endomorphism<AudioStateType>): Endomorphism<AudioState> =>
-  pipe(valueLens, lens.modify(f))
+type AudioStateConnect<A extends AudioStateValue> = Kind<AudioStateConnectedURIS, A>
 
-// const setMusicPlaying = modifyValue(AudioStateType.setMusicPlaying)
-// const setMusicPaused = modifyValue(AudioStateType.setMusicPaused)
+const disconnected: AudioState<never> = { type: 'Disconnected' }
 
-export const AudioState = {
-  is: u.is,
+const connecting = <A extends AudioStateValue>(
+  channel: GuildAudioChannel,
+  value: A,
+  voiceConnection: VoiceConnection,
+  audioPlayer: AudioPlayer,
+): AudioStateConnecting<A> => ({
+  type: 'Connecting',
+  channel,
+  value,
+  voiceConnection,
+  audioPlayer,
+})
 
-  empty,
+const connected = <A extends AudioStateValue>(
+  channel: GuildAudioChannel,
+  value: A,
+  voiceConnection: VoiceConnection,
+  audioPlayer: AudioPlayer,
+  subscription: Maybe<PlayerSubscription>,
+): AudioStateConnected<A> => ({
+  type: 'Connected',
+  channel,
+  value,
+  voiceConnection,
+  audioPlayer,
+  subscription,
+})
+
+const isDisconnected = <A extends AudioStateValue>(
+  state: AudioState<A>,
+): state is AudioStateDisconnected => state.type === 'Disconnected'
+
+const isConnecting = <A extends AudioStateValue>(
+  state: AudioState<A>,
+): state is AudioStateConnecting<A> => state.type === 'Connecting'
+
+const isConnected = <A extends AudioStateValue>(
+  state: AudioState<A>,
+): state is AudioStateConnected<A> => state.type === 'Connected'
+
+const isConnect: Refinement<
+  AudioState<AudioStateValue>,
+  AudioStateConnect<AudioStateValue>
+> = refinement.not(isDisconnected)
+
+const isMusicValue = pipe(
+  isConnect,
+  refinement.compose((s): s is AudioStateConnect<AudioStateValueMusic> =>
+    AudioStateValue.is('Music')(s.value),
+  ),
+)
+
+type FoldArgs<A, B, C> = {
+  readonly onDisconnected: () => A
+  readonly onConnecting: <S extends AudioStateValue>(s: AudioStateConnecting<S>) => B
+  readonly onConnected: <S extends AudioStateValue>(s: AudioStateConnected<S>) => C
+}
+
+const fold =
+  <A, B = A, C = A>({ onDisconnected, onConnecting, onConnected }: FoldArgs<A, B, C>) =>
+  <S extends AudioStateValue>(state: AudioState<S>): A | B | C => {
+    switch (state.type) {
+      case 'Disconnected':
+        return onDisconnected()
+      case 'Connecting':
+        return onConnecting(state)
+      case 'Connected':
+        return onConnected(state)
+    }
+  }
+
+const AudioState = {
+  disconnected,
   connecting,
   connected,
 
-  value: {
-    set: valueLens.set,
+  isDisconnected,
+  isConnecting,
+  isConnected,
 
-    Music: {
-      isPaused: {
-        set: flow(AudioStateType.Music.isPaused.set, modifyValue),
-      },
-      currentTrack: {
-        get: flow(valueLens.get, AudioStateType.Music.currentTrack.get),
-        set: flow(AudioStateType.Music.currentTrack.set, modifyValue),
-      },
-      queue: {
-        get: flow(valueLens.get, AudioStateType.Music.queue.get),
-        set: flow(AudioStateType.Music.queue.set, modifyValue),
-        concat: flow(AudioStateType.Music.queue.concat, modifyValue),
-      },
-      messageChannel: {
-        set: flow(AudioStateType.Music.messageChannel.set, modifyValue),
-      },
-      message: {
-        get: flow(valueLens.get, AudioStateType.Music.message.get),
-        set: flow(AudioStateType.Music.message.set, modifyValue),
-      },
-      pendingEvent: {
-        get: flow(valueLens.get, AudioStateType.Music.pendingEvent.get),
-        set: flow(AudioStateType.Music.pendingEvent.set, modifyValue),
-      },
-    },
+  isConnect,
+  isMusicValue,
 
-    Elevator: {
-      currentFile: {
-        get: flow(valueLens.get, AudioStateType.Elevator.currentFile.get),
-        set: flow(AudioStateType.Elevator.currentFile.set, modifyValue),
-      },
-    },
-  },
-
-  channel: {
-    get: flow(
-      getAudioStateConnect,
-      Maybe.map(connect => connect.channel),
-    ),
-  },
-  voiceConnection: {
-    get: flow(
-      getAudioStateConnect,
-      Maybe.map(connect => connect.voiceConnection),
-    ),
-  },
-  audioPlayer: {
-    get: flow(
-      getAudioStateConnect,
-      Maybe.map(connect => connect.audioPlayer),
-    ),
-  },
+  fold,
 }
+
+type FoldValueArgs<F extends AudioStateConnectedURIS, A, B> = {
+  readonly onMusic: (state: Kind<F, AudioStateValueMusic>) => A
+  readonly onElevator: (state: Kind<F, AudioStateValueElevator>) => B
+}
+
+const foldValue =
+  <F extends AudioStateConnectedURIS>() =>
+  <A, B = A>({ onMusic, onElevator }: FoldValueArgs<F, A, B>) =>
+  (state: Kind<F, AudioStateValue>) => {
+    switch (state.value.type) {
+      case 'Music':
+        return onMusic(state as Kind<F, AudioStateValueMusic>)
+      case 'Elevator':
+        return onElevator(state as Kind<F, AudioStateValueElevator>)
+    }
+  }
+
+const modifyValue = <
+  A extends AudioStateValue,
+  B extends AudioStateValue,
+  T extends AudioStateConnect<A>,
+  U extends AudioStateConnect<B>,
+>(
+  f: (value: A) => B,
+): ((state: T) => U) => {
+  const res: (s: AudioStateConnect<A>) => AudioStateConnect<A> = pipe(
+    connectValueLens<A>(),
+    lens.modify(f as unknown as (a: A) => A),
+  )
+  return res as unknown as (state: T) => U
+}
+
+const AudioStateConnect = {
+  foldValue,
+  modifyValue,
+}
+
+export {
+  AudioState,
+  AudioStateDisconnected,
+  AudioStateConnecting,
+  AudioStateConnected,
+  AudioStateConnect,
+}
+
+const connectValueLens = <A extends AudioStateValue>(): Lens<AudioStateConnect<A>, A> =>
+  pipe(lens.id<AudioStateConnect<A>>(), lens.prop('value'))

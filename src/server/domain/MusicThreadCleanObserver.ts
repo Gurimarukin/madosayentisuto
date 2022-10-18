@@ -8,7 +8,7 @@ import { Future, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import { NewAudioState } from '../models/audio/NewAudioState'
+import { AudioState } from '../models/audio/AudioState'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStateService } from '../services/GuildStateService'
@@ -54,7 +54,7 @@ export const MusicThreadCleanObserver = (
       guildStateService.getSubscription(guild),
       Future.chainIOK(subscription => subscription.getAudioState),
       futureMaybe.fromTaskEither,
-      futureMaybe.filter(NewAudioState.isMusicValue),
+      futureMaybe.filter(AudioState.isMusicValue),
       futureMaybe.chainOptionK(state => state.value.message),
       futureMaybe.chain(message => futureMaybe.fromNullable(message.thread)),
     )
