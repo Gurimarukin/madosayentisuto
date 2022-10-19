@@ -21,13 +21,13 @@ import type {
 } from 'mongodb'
 
 import type { LoggerType } from '../../shared/models/LoggerType'
+import { Store } from '../../shared/models/Store'
 import { TObservable } from '../../shared/models/rx/TObservable'
 import type { Dict, NotUsed, Tuple } from '../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
-import { Store } from '../models/Store'
 import type { MongoCollection } from '../models/mongo/MongoCollection'
 import type { IndexDescription, WithoutProjection } from '../models/mongo/MongoTypings'
 

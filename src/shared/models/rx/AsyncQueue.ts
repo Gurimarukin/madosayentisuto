@@ -1,9 +1,8 @@
 import { io } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
-import { Store } from '../../../server/models/Store'
-
 import { Future, IO, List, Maybe, NonEmptyArray, NotUsed } from '../../utils/fp'
+import { Store } from '../Store'
 import { PubSub } from './PubSub'
 import type { TObservable } from './TObservable'
 

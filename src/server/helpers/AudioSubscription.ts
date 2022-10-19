@@ -12,6 +12,7 @@ import { apply, boolean, eq, string } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import type { LoggerType } from '../../shared/models/LoggerType'
+import { Store } from '../../shared/models/Store'
 import { AsyncQueue } from '../../shared/models/rx/AsyncQueue'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../../shared/models/rx/PubSub'
@@ -21,7 +22,6 @@ import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import { Store } from '../models/Store'
 import type { AudioStateConnected, AudioStateConnecting } from '../models/audio/AudioState'
 import { AudioState, AudioStateConnect } from '../models/audio/AudioState'
 import {

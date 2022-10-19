@@ -1,6 +1,7 @@
 import { apply, io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
+import { Store } from '../../shared/models/Store'
 import type { Log } from '../../shared/models/log/Log'
 import type { LogsWithTotalCount } from '../../shared/models/log/LogsWithTotalCount'
 import { Sink } from '../../shared/models/rx/Sink'
@@ -8,7 +9,6 @@ import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, toNotUsed } from '../../shared/utils/fp'
 
 import { constants } from '../config/constants'
-import { Store } from '../models/Store'
 import type { LogPersistence } from '../persistence/LogPersistence'
 
 export type LogService = ReturnType<typeof LogService>

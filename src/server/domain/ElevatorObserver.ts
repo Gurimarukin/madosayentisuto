@@ -1,13 +1,13 @@
 import { io } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
+import { Store } from '../../shared/models/Store'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 
 import { constants } from '../config/constants'
 import { GuildHelper } from '../helpers/GuildHelper'
-import { Store } from '../models/Store'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStateService } from '../services/GuildStateService'
