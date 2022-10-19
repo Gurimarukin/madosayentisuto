@@ -3,9 +3,9 @@ import type { Guild } from 'discord.js'
 import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
 
-import type { NotUsed } from '../../../shared/models/NotUsed'
 import { GuildId } from '../../../shared/models/guild/GuildId'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
+import type { NotUsed } from '../../../shared/utils/fp'
 import { Future, IO, List, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
 
 import type { ClientConfig } from '../../config/Config'

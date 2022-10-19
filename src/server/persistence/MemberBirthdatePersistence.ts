@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/function'
 import type { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { Sink } from '../../shared/models/rx/Sink'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
@@ -23,7 +24,9 @@ export const MemberBirthdatePersistence = (
     mongoCollection('memberBirthdate'),
   )
 
-  const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { id: -1 }, unique: true }])
+  const ensureIndexes: Future<NotUsed> = collection.ensureIndexes([
+    { key: { id: -1 }, unique: true },
+  ])
 
   const Keys = {
     month: collection.path(['birthdate', 'month']),

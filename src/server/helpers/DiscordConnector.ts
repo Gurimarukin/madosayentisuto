@@ -8,12 +8,13 @@ import type {
   VoiceConnection,
   VoiceConnectionStatus,
 } from '@discordjs/voice'
-import { createAudioPlayer, joinVoiceChannel } from '@discordjs/voice'
-import { entersState as discordEntersState } from '@discordjs/voice'
+import {
+  createAudioPlayer,
+  entersState as discordEntersState,
+  joinVoiceChannel,
+} from '@discordjs/voice'
 import type {
   APIMessage,
-  AllowedThreadTypeForNewsChannel,
-  AllowedThreadTypeForTextChannel,
   ApplicationCommand,
   ButtonInteraction,
   Channel,
@@ -43,10 +44,7 @@ import type {
   ThreadChannel,
   User,
 } from 'discord.js'
-import { Routes } from 'discord.js'
-import { Partials } from 'discord.js'
-import { GatewayIntentBits } from 'discord.js'
-import { Client, DiscordAPIError } from 'discord.js'
+import { Client, DiscordAPIError, GatewayIntentBits, Partials, Routes } from 'discord.js'
 import { refinement } from 'fp-ts'
 import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
@@ -57,8 +55,8 @@ import { ChannelId } from '../../shared/models/ChannelId'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { GuildId } from '../../shared/models/guild/GuildId'
-import type { NonEmptyArray, Tuple } from '../../shared/utils/fp'
-import { Either, Future, IO, List, Maybe, toUnit } from '../../shared/utils/fp'
+import type { NonEmptyArray, NotUsed, Tuple } from '../../shared/utils/fp'
+import { Either, Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
@@ -245,10 +243,10 @@ function entersState(
 const interactionDeferReply = (
   interaction: MyInteraction,
   options?: InteractionDeferReplyOptions,
-): Future<void> =>
+): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.deferReply(options)),
-    Future.map(toUnit), // TODO: maybe do something with result?
+    Future.map(toNotUsed), // TODO: maybe do something with result?
     debugLeft('interactionDeferReply'),
   )
 
@@ -281,12 +279,12 @@ const interactionFollowUp = (
 const interactionReply = (
   interaction: MyInteraction,
   options: string | MessagePayload | InteractionReplyOptions,
-): Future<void> =>
+): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.reply(options)),
-    Future.map(toUnit), // TODO: maybe do something with result?
+    Future.map(toNotUsed), // TODO: maybe do something with result?
     Future.orElse(e =>
-      isDiscordAPIError('Cannot send an empty message')(e) ? Future.unit : Future.left(e),
+      isDiscordAPIError('Cannot send an empty message')(e) ? Future.notUsed : Future.left(e),
     ),
     debugLeft('interactionReply'),
   )
@@ -300,12 +298,12 @@ const interactionShowModal = (interaction: CommandInteraction, modal: MyModal): 
 const interactionUpdate = (
   interaction: ButtonInteraction,
   options: string | MessagePayload | InteractionUpdateOptions = {},
-): Future<void> =>
+): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.update(options)),
-    Future.map(toUnit), // TODO: maybe do something with result?
+    Future.map(toNotUsed), // TODO: maybe do something with result?
     Future.orElse(e =>
-      isDiscordAPIError('Unknown interaction')(e) ? Future.unit : Future.left(e),
+      isDiscordAPIError('Unknown interaction')(e) ? Future.notUsed : Future.left(e),
     ),
     debugLeft('interactionUpdate'),
   )

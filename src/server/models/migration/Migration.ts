@@ -2,11 +2,11 @@ import { ord } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../../shared/models/DayJs'
-import type { Future } from '../../../shared/utils/fp'
+import type { Future, NotUsed } from '../../../shared/utils/fp'
 
 export type Migration = {
   readonly createdAt: DayJs
-  readonly migrate: Future<void>
+  readonly migrate: Future<NotUsed>
 }
 
 const OrdCreatedAt: ord.Ord<Migration> = pipe(

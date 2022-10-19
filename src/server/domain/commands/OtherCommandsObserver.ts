@@ -2,10 +2,10 @@ import type { ChatInputCommandInteraction } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
-import type { NotUsed } from '../../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import { Either, Future, toNotUsed } from '../../../shared/utils/fp'
+import type { NotUsed } from '../../../shared/utils/fp'
+import { Either, Future } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { Command } from '../../models/discord/Command'
@@ -58,10 +58,7 @@ export const OtherCommandsObserver = () => {
   }
 
   function onPing(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return pipe(
-      DiscordConnector.interactionReply(interaction, { content: 'pong', ephemeral: true }),
-      Future.map(toNotUsed),
-    )
+    return DiscordConnector.interactionReply(interaction, { content: 'pong', ephemeral: true })
   }
 
   function onRandomCase(interaction: ChatInputCommandInteraction): Future<NotUsed> {
@@ -76,7 +73,6 @@ export const OtherCommandsObserver = () => {
       Future.chain(content =>
         DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
       ),
-      Future.map(toNotUsed),
     )
   }
 }

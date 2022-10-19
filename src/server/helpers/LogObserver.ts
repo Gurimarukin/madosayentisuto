@@ -2,12 +2,12 @@ import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
 import { DayJs } from '../../shared/models/DayJs'
-import type { NotUsed } from '../../shared/models/NotUsed'
 import type { LogEvent } from '../../shared/models/event/LogEvent'
 import { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import type { TObserver } from '../../shared/models/rx/TObserver'
 import type { TSubject } from '../../shared/models/rx/TSubject'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, toNotUsed } from '../../shared/utils/fp'
 
 import type { MadEventCronJob } from '../models/event/MadEvent'

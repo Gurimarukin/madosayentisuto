@@ -1,7 +1,8 @@
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { Future, IO, Maybe, toUnit } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Future, IO, Maybe, toNotUsed } from '../../shared/utils/fp'
 
 import type { DiscordConnector } from '../helpers/DiscordConnector'
 import type { Activity } from '../models/botState/Activity'
@@ -37,7 +38,7 @@ export const BotStateService = (
     setActivity: (activity: Activity): Future<BotState> => setActivity(Maybe.some(activity)),
   }
 
-  function discordSetActivity(maybeActivity: Maybe<Activity>): Future<void> {
+  function discordSetActivity(maybeActivity: Maybe<Activity>): Future<NotUsed> {
     return pipe(
       maybeActivity,
       Maybe.fold(
@@ -45,7 +46,7 @@ export const BotStateService = (
         activity => logger.info(`Setting activity: ${activity.type} ${activity.name}`),
       ),
       IO.chain(() => discord.setActivity(maybeActivity)),
-      IO.map(toUnit),
+      IO.map(toNotUsed),
       Future.fromIOEither,
     )
   }

@@ -5,7 +5,7 @@ import util from 'util'
 
 import { DayJs } from '../../shared/models/DayJs'
 import type { LoggerType } from '../../shared/models/LoggerType'
-import type { NotUsed } from '../../shared/models/NotUsed'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Either, toNotUsed } from '../../shared/utils/fp'
 
 import { consoleLogFormat } from '../models/logger/observers/ConsoleLogObserver'

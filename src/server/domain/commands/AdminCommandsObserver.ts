@@ -16,10 +16,10 @@ import * as D from 'io-ts/Decoder'
 
 import { ChannelId } from '../../../shared/models/ChannelId'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
-import type { NotUsed } from '../../../shared/models/NotUsed'
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../../shared/utils/StringUtils'
+import type { NotUsed } from '../../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
@@ -237,11 +237,7 @@ export const AdminCommandsObserver = (
     return pipe(
       validateAdminCommand(interaction),
       Either.fold(
-        content =>
-          pipe(
-            DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
-            Future.map(toNotUsed),
-          ),
+        content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
         onValidatedAdminCommand(interaction),
       ),
     )

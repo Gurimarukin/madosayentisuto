@@ -2,8 +2,8 @@ import type { ButtonInteraction, ChatInputCommandInteraction, Interaction } from
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
-import type { NotUsed } from '../../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
+import type { NotUsed } from '../../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
 
 import type { AudioSubscription } from '../../helpers/AudioSubscription'
@@ -192,10 +192,7 @@ export const MusicCommandsObserver = (
           Future.chain(
             Either.fold(
               content =>
-                pipe(
-                  DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
-                  Future.map(toNotUsed),
-                ),
+                DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
               () =>
                 pipe(
                   DiscordConnector.interactionUpdate(interaction),
@@ -204,7 +201,7 @@ export const MusicCommandsObserver = (
                       isUnknownMessageError(e)
                         ? Future.notUsed // maybe it was deleted before we can update the interaction)
                         : Future.left(e),
-                    flow(toNotUsed, Future.right),
+                    Future.right,
                   ),
                 ),
             ),

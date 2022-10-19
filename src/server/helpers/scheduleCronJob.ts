@@ -2,9 +2,9 @@ import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
-import type { NotUsed } from '../../shared/models/NotUsed'
 import type { TSubject } from '../../shared/models/rx/TSubject'
 import { StringUtils } from '../../shared/utils/StringUtils'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, toNotUsed } from '../../shared/utils/fp'
 
 import type { MadEventCronJob } from '../models/event/MadEvent'

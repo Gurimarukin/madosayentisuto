@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/function'
 
 import type { DayJs } from '../../shared/models/DayJs'
 import type { TObservable } from '../../shared/models/rx/TObservable'
-import type { NonEmptyArray } from '../../shared/utils/fp'
+import type { NonEmptyArray, NotUsed } from '../../shared/utils/fp'
 import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
@@ -25,7 +25,7 @@ export function ScheduledEventPersistence(
     mongoCollection('scheduledEvent'),
   )
 
-  const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { scheduledAt: -1 } }])
+  const ensureIndexes: Future<NotUsed> = collection.ensureIndexes([{ key: { scheduledAt: -1 } }])
 
   const list: TObservable<ScheduledEventWithId> = collection.findAll([
     ScheduledEventWithId.decoder,

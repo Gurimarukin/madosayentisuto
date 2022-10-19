@@ -1,11 +1,11 @@
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import type { NotUsed } from '../shared/models/NotUsed'
 import type { ServerToClientEvent } from '../shared/models/event/ServerToClientEvent'
 import { ObserverWithRefinement } from '../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../shared/models/rx/PubSub'
 import { PubSubUtils } from '../shared/utils/PubSubUtils'
+import type { NotUsed } from '../shared/utils/fp'
 import { IO } from '../shared/utils/fp'
 
 import type { Context } from './Context'

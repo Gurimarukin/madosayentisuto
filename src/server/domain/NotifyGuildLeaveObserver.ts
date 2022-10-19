@@ -6,8 +6,8 @@ import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
-import type { NotUsed } from '../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 

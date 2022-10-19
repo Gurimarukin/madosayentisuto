@@ -19,9 +19,10 @@ import * as C_ from 'io-ts/Codec'
 import type { Decoder } from 'io-ts/Decoder'
 import * as D from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
+import type { Newtype } from 'newtype-ts'
+import { iso } from 'newtype-ts'
 
 import { MsDuration } from '../models/MsDuration'
-import { NotUsed } from '../models/NotUsed'
 
 export const todo = (...[]: List<unknown>): never => {
   // eslint-disable-next-line functional/no-throw-statement
@@ -35,14 +36,13 @@ export const inspect =
     return a
   }
 
+export type NotUsed = Newtype<{ readonly NotUsed: unique symbol }, void>
+export const NotUsed = iso<NotUsed>().wrap(undefined)
+
 // a Future is an IO
 export type NonIO<A> = A extends io.IO<unknown> ? never : A
 
-type NonIONonVoid<A> = A extends void ? never : NonIO<A>
 type NonIONonNotUsed<A> = A extends NotUsed ? never : NonIO<A>
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, functional/no-return-void
-export const toUnit = <A>(_: NonIONonVoid<A>): void => undefined
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const toNotUsed = <A>(_: NonIONonNotUsed<A>): NotUsed => NotUsed

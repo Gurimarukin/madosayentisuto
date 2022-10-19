@@ -12,8 +12,8 @@ import type {
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import type { NotUsed } from '../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, toNotUsed } from '../../shared/utils/fp'
 
 import type { CaptainConfig } from '../config/Config'

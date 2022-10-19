@@ -3,12 +3,12 @@ import type * as rxjs from 'rxjs'
 import util from 'util'
 
 import type { LoggerType } from '../../../shared/models/LoggerType'
-import type { NotUsed } from '../../../shared/models/NotUsed'
 import { LogEvent } from '../../../shared/models/event/LogEvent'
 import type { LogLevel, LogLevelOrOff } from '../../../shared/models/log/LogLevel'
 import { PubSub } from '../../../shared/models/rx/PubSub'
 import { TObservable } from '../../../shared/models/rx/TObservable'
 import type { TObserver } from '../../../shared/models/rx/TObserver'
+import type { NotUsed } from '../../../shared/utils/fp'
 import { IO, NonEmptyArray } from '../../../shared/utils/fp'
 
 export type LoggerObservable = {

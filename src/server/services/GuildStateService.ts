@@ -4,8 +4,8 @@ import { flow, pipe } from 'fp-ts/function'
 import type { Lens } from 'monocle-ts/Lens'
 
 import type { ChannelId } from '../../shared/models/ChannelId'
-import type { NotUsed } from '../../shared/models/NotUsed'
 import { GuildId } from '../../shared/models/guild/GuildId'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 

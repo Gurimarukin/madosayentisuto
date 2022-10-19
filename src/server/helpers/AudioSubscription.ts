@@ -12,13 +12,13 @@ import { apply, boolean, eq, string } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import type { LoggerType } from '../../shared/models/LoggerType'
-import type { NotUsed } from '../../shared/models/NotUsed'
 import { AsyncQueue } from '../../shared/models/rx/AsyncQueue'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../../shared/models/rx/PubSub'
 import type { TSubject } from '../../shared/models/rx/TSubject'
 import { PubSubUtils } from '../../shared/utils/PubSubUtils'
-import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed, toUnit } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { Store } from '../models/Store'
@@ -644,20 +644,20 @@ const refreshMusicMessageAndSendPendingEvents = (
 
 const refreshMusicMessage =
   ({ oldState, newState }: OldAndNewState<AudioState, AudioStateConnect<AudioStateValueMusic>>) =>
-  (message: Message<true>): Future<void> => {
+  (message: Message<true>): Future<NotUsed> => {
     const newDeps = MusicMessageDeps.fromState(newState)
 
     const shouldUpdate =
       !AudioState.isMusicValue(oldState) ||
       !MusicMessageDeps.Eq.equals(MusicMessageDeps.fromState(oldState), newDeps)
 
-    if (!shouldUpdate) return Future.unit
+    if (!shouldUpdate) return Future.notUsed
 
     return pipe(
       getMusicMessage(newDeps),
       Future.fromIO,
       Future.chain(options => DiscordConnector.messageEdit(message, options)),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 

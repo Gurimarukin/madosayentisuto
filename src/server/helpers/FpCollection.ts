@@ -22,11 +22,8 @@ import type {
 
 import type { LoggerType } from '../../shared/models/LoggerType'
 import { TObservable } from '../../shared/models/rx/TObservable'
-import type { Dict, Tuple } from '../../shared/utils/fp'
-import { List } from '../../shared/utils/fp'
-import { IO } from '../../shared/utils/fp'
-import { toUnit } from '../../shared/utils/fp'
-import { Either, Future, Maybe } from '../../shared/utils/fp'
+import type { Dict, NotUsed, Tuple } from '../../shared/utils/fp'
+import { Either, Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
@@ -52,7 +49,7 @@ export const FpCollection =
       ensureIndexes: (
         indexSpecs: List<IndexDescription<A>>,
         options: { readonly session?: ClientSession } = {},
-      ): Future<void> =>
+      ): Future<NotUsed> =>
         pipe(
           logger.info('Ensuring indexes'),
           Future.fromIOEither,
@@ -61,7 +58,7 @@ export const FpCollection =
               c.createIndexes(List.toMutable(indexSpecs as List<MongoIndexDescription>), options),
             ),
           ),
-          Future.map(toUnit),
+          Future.map(toNotUsed),
         ),
 
       insertOne: (doc: A, options: InsertOneOptions = {}): Future<InsertOneResult<O>> => {

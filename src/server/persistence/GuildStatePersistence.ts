@@ -4,7 +4,7 @@ import type { ChannelId } from '../../shared/models/ChannelId'
 import { GuildId } from '../../shared/models/guild/GuildId'
 import { Sink } from '../../shared/models/rx/Sink'
 import { TObservable } from '../../shared/models/rx/TObservable'
-import type { Dict, List, Maybe } from '../../shared/utils/fp'
+import type { Dict, List, Maybe, NotUsed } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
@@ -30,7 +30,9 @@ export const GuildStatePersistence = (
     mongoCollection('guildState'),
   )
 
-  const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { id: -1 }, unique: true }])
+  const ensureIndexes: Future<NotUsed> = collection.ensureIndexes([
+    { key: { id: -1 }, unique: true },
+  ])
 
   return {
     ensureIndexes,

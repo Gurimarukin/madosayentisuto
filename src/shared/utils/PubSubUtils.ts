@@ -2,11 +2,10 @@ import { flow, pipe } from 'fp-ts/function'
 import type * as rxjs from 'rxjs'
 
 import type { LoggerType } from '../models/LoggerType'
-import type { NotUsed } from '../models/NotUsed'
 import type { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import { TObservable } from '../models/rx/TObservable'
 import type { TObserver } from '../models/rx/TObserver'
-import type { Dict, List } from './fp'
+import type { Dict, List, NotUsed } from './fp'
 import { Future, IO, toNotUsed } from './fp'
 
 type TinyListenerSignature<L> = {

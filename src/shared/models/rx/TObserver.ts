@@ -1,5 +1,4 @@
-import type { Future } from '../../utils/fp'
-import type { NotUsed } from '../NotUsed'
+import type { Future, NotUsed } from '../../utils/fp'
 
 export type TObserver<A> = {
   readonly next: (value: A) => Future<NotUsed>

@@ -3,9 +3,9 @@ import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
-import type { NotUsed } from '../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../shared/utils/StringUtils'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO } from '../../shared/utils/fp'
 
 import { constants } from '../config/constants'

@@ -1,10 +1,10 @@
 import { apply, io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import type { NotUsed } from '../../shared/models/NotUsed'
 import type { Log } from '../../shared/models/log/Log'
 import type { LogsWithTotalCount } from '../../shared/models/log/LogsWithTotalCount'
 import { Sink } from '../../shared/models/rx/Sink'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, toNotUsed } from '../../shared/utils/fp'
 
 import { constants } from '../config/constants'

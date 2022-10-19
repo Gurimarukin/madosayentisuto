@@ -1,8 +1,8 @@
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
-import type { NotUsed } from '../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, toNotUsed } from '../../shared/utils/fp'
 
 import { MadEvent } from '../models/event/MadEvent'

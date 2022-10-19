@@ -9,7 +9,7 @@ import { Status } from 'hyper-ts'
 import type { ExpressConnection } from 'hyper-ts/lib/express'
 
 import { Method } from '../../shared/models/Method'
-import type { NotUsed } from '../../shared/models/NotUsed'
+import type { NotUsed } from '../../shared/utils/fp'
 import {
   Dict,
   Either,
@@ -19,7 +19,7 @@ import {
   Maybe,
   NonEmptyArray,
   Try,
-  toUnit,
+  toNotUsed,
 } from '../../shared/utils/fp'
 
 import type { HttpConfig } from '../config/Config'
@@ -45,7 +45,7 @@ export const startWebServer = (
   Logger: LoggerGetter,
   config: HttpConfig,
   routes: List<Route>,
-): IO<void> => {
+): IO<NotUsed> => {
   const logger = Logger('WebServer')
 
   const filterOrigin: (fa: Maybe<Header>) => Maybe<Header> = pipe(
@@ -129,7 +129,7 @@ export const startWebServer = (
       ),
     ),
     IO.chain(bindUpgrades),
-    IO.map(toUnit),
+    IO.map(toNotUsed),
   )
 
   function bindMiddlewares(ioApp: IO<express.Express>, method: Method): IO<express.Express> {

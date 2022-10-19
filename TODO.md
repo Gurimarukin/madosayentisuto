@@ -1,3 +1,9 @@
+- `NotUsed`? (remove `toUnit`, remove `.unit`, check for `<void>` in `fp.ts`)
+- Fixed elevator playlist
+- TObservable.subscribe
+
+- rename Les Quais Abatoirs UwU
+
 - upgrade react
 - decouple autorole and call mention
 - select leave message chan
@@ -10,15 +16,11 @@
 - webapp
   - tier-list
 - commands register: unsubscribe when done?
-- `NotUsed`? (remove `toUnit`, remove `.unit`, check for `<void>` in `fp.ts`)
 - `Either.toError`?
-- TObservable.subscribe
 - try to override declaration types to use GuildId, TSnowflake, ...
 - logs id
 - autocomplete for /remind date
 - remove disables
-
-- Fixed elevator playlist
 
 ---
 

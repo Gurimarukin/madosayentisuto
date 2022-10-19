@@ -1,8 +1,8 @@
 import { io } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
-import type { NotUsed } from '../../shared/models/NotUsed'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 
 import { constants } from '../config/constants'

@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/function'
 
-import type { NotUsed } from '../shared/models/NotUsed'
+import type { NotUsed } from '../shared/utils/fp'
 import { Future } from '../shared/utils/fp'
 
 import { Application } from './Application'
