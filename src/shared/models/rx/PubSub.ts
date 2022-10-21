@@ -25,7 +25,10 @@ export const PubSub = <A>(): PubSub<A> => {
           IO.tryCatch(() => subject.next(a)),
           IO.map(toNotUsed),
         ),
-      complete: IO.tryCatch(() => subject.complete()),
+      complete: pipe(
+        IO.tryCatch(() => subject.complete()),
+        IO.map(toNotUsed),
+      ),
     },
     observable: subject.asObservable(),
   }

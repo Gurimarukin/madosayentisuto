@@ -1,4 +1,3 @@
-- `NotUsed`? (check for `<void>` in `fp.ts`)
 - Fixed elevator playlist
 - TObservable.subscribe
 

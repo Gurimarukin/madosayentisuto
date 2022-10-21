@@ -208,7 +208,11 @@ const audioPlayerPause = (audioPlayer: AudioPlayer): IO<boolean> =>
 const audioPlayerPlayAudioResource = (
   audioPlayer: AudioPlayer,
   audioResource: AudioResource,
-): IO<void> => IO.tryCatch(() => audioPlayer.play(audioResource))
+): IO<NotUsed> =>
+  pipe(
+    IO.tryCatch(() => audioPlayer.play(audioResource)),
+    IO.map(toNotUsed),
+  )
 
 const audioPlayerStop = (audioPlayer: AudioPlayer): IO<boolean> =>
   IO.tryCatch(() => audioPlayer.stop(true))
@@ -250,9 +254,10 @@ const interactionDeferReply = (
     debugLeft('interactionDeferReply'),
   )
 
-const interactionDeleteReply = (interaction: MyInteraction): Future<void> =>
+const interactionDeleteReply = (interaction: MyInteraction): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.deleteReply()),
+    Future.map(toNotUsed),
     debugLeft('interactionDeleteReply'),
   )
 
@@ -289,9 +294,10 @@ const interactionReply = (
     debugLeft('interactionReply'),
   )
 
-const interactionShowModal = (interaction: CommandInteraction, modal: MyModal): Future<void> =>
+const interactionShowModal = (interaction: CommandInteraction, modal: MyModal): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.showModal(modal)),
+    Future.map(toNotUsed),
     debugLeft('interactionShowModal'),
   )
 
@@ -465,8 +471,11 @@ const threadSetArchived = (
     debugLeft('threadSetArchived'),
   )
 
-const voiceConnectionDestroy = (connection: VoiceConnection): IO<void> =>
-  IO.tryCatch(() => connection.destroy())
+const voiceConnectionDestroy = (connection: VoiceConnection): IO<NotUsed> =>
+  pipe(
+    IO.tryCatch(() => connection.destroy()),
+    IO.map(toNotUsed),
+  )
 
 const voiceConnectionJoin = (channel: GuildAudioChannel): IO<VoiceConnection> =>
   IO.tryCatch(() =>

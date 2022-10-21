@@ -3,8 +3,7 @@ import { flow, pipe } from 'fp-ts/function'
 
 import { Store } from '../../shared/models/Store'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import type { NotUsed } from '../../shared/utils/fp'
-import { Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, NotUsed, toNotUsed } from '../../shared/utils/fp'
 
 import { constants } from '../config/constants'
 import { GuildHelper } from '../helpers/GuildHelper'
@@ -20,9 +19,9 @@ export const ElevatorObserver = (Logger: LoggerGetter, guildStateService: GuildS
 
   const timeoutId = Store<Maybe<NodeJS.Timeout>>(Maybe.none)
 
-  const clearScheduledElevator: io.IO<void> = pipe(
+  const clearScheduledElevator: io.IO<NotUsed> = pipe(
     timeoutId.get,
-    io.map(Maybe.fold(() => undefined, clearTimeout)),
+    io.map(Maybe.fold(() => NotUsed, flow(clearTimeout, toNotUsed))),
   )
 
   return ObserverWithRefinement.fromNext(

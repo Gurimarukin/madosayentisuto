@@ -1,7 +1,8 @@
 import { pipe } from 'fp-ts/function'
 import fs from 'fs'
 
-import { Future, IO, List, Maybe } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 
 import type { MyFile } from '../models/FileOrDir'
 import { Dir, FileOrDir } from '../models/FileOrDir'
@@ -13,10 +14,17 @@ const stat = (f: FileOrDir): Future<Maybe<fs.Stats>> =>
     Future.orElse(() => Future.right<Maybe<fs.Stats>>(Maybe.none)),
   )
 
-const chdir = (dir: Dir): IO<void> => IO.tryCatch(() => process.chdir(dir.path))
+const chdir = (dir: Dir): IO<NotUsed> =>
+  pipe(
+    IO.tryCatch(() => process.chdir(dir.path)),
+    IO.map(toNotUsed),
+  )
 
-const copyFile = (src: FileOrDir, dest: FileOrDir, flags?: number): Future<void> =>
-  Future.tryCatch(() => fs.promises.copyFile(src.path, dest.path, flags))
+const copyFile = (src: FileOrDir, dest: FileOrDir, flags?: number): Future<NotUsed> =>
+  pipe(
+    Future.tryCatch(() => fs.promises.copyFile(src.path, dest.path, flags)),
+    Future.map(toNotUsed),
+  )
 
 const cwd = (): IO<Dir> =>
   pipe(
@@ -26,10 +34,10 @@ const cwd = (): IO<Dir> =>
 
 const exists = (f: FileOrDir): Future<boolean> => pipe(stat(f), Future.map(Maybe.isSome))
 
-const mkdir = (dir: Dir, options?: fs.MakeDirectoryOptions): Future<void> =>
+const mkdir = (dir: Dir, options?: fs.MakeDirectoryOptions): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => fs.promises.mkdir(dir.path, options)),
-    Future.map(() => undefined),
+    Future.map(toNotUsed),
   )
 
 const readdir = (dir: Dir): Future<List<FileOrDir>> =>
@@ -43,14 +51,20 @@ const readFile = (file: MyFile): Future<string> =>
 
 const readFileSync = (path: string): IO<string> => IO.tryCatch(() => fs.readFileSync(path, 'utf8'))
 
-function rename(oldF: MyFile, newF: MyFile): Future<void>
-function rename(oldF: Dir, newF: Dir): Future<void>
-function rename(oldF: FileOrDir, newF: FileOrDir): Future<void> {
-  return Future.tryCatch(() => fs.promises.rename(oldF.path, newF.path))
+function rename(oldF: MyFile, newF: MyFile): Future<NotUsed>
+function rename(oldF: Dir, newF: Dir): Future<NotUsed>
+function rename(oldF: FileOrDir, newF: FileOrDir): Future<NotUsed> {
+  return pipe(
+    Future.tryCatch(() => fs.promises.rename(oldF.path, newF.path)),
+    Future.map(toNotUsed),
+  )
 }
 
-const rmdir = (dir: Dir, options?: fs.RmDirOptions): Future<void> =>
-  Future.tryCatch(() => fs.promises.rmdir(dir.path, options))
+const rmdir = (dir: Dir, options?: fs.RmDirOptions): Future<NotUsed> =>
+  pipe(
+    Future.tryCatch(() => fs.promises.rmdir(dir.path, options)),
+    Future.map(toNotUsed),
+  )
 
 export const FsUtils = {
   stat,

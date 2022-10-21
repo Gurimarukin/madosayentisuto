@@ -534,7 +534,6 @@ export const AudioSubscription = (
     return pipe(
       DiscordConnector.voiceConnectionDestroy(voiceConnection),
       Future.fromIOEither,
-      Future.map(toNotUsed),
       Future.orElseIOEitherK(e => (isAlreadyDestroyedError(e) ? IO.notUsed : logger.warn(e.stack))),
     )
   }
