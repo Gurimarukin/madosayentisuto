@@ -145,7 +145,6 @@ export const Try = {
     ),
 }
 
-const futureUnit: Future<void> = taskEither.right(undefined)
 const futureNotUsed: Future<NotUsed> = taskEither.right(NotUsed)
 export type Future<A> = task.Task<Try<A>>
 export const Future = {
@@ -162,7 +161,6 @@ export const Future = {
       pipe(fa, taskEither.orElse(flow(f, Future.fromIOEither))),
   fromIO: taskEither.fromIO as <A>(fa: io.IO<A>) => Future<A>,
   tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, Either.toError),
-  unit: futureUnit,
   notUsed: futureNotUsed,
   todo: (...args: List<unknown>): Future<never> =>
     taskEither.fromEither(Try.tryCatch(() => todo(args))),
@@ -178,7 +176,6 @@ export const Future = {
       pipe(future, task.delay(MsDuration.unwrap(ms))),
 }
 
-const ioUnit: IO<void> = ioEither.right(undefined)
 const ioNotUsed: IO<NotUsed> = ioEither.right(NotUsed)
 const ioFromIO: <A>(fa: io.IO<A>) => IO<A> = ioEither.fromIO
 /**
@@ -191,7 +188,6 @@ export const IO = {
   right: ioEither.right as <A>(a: A) => IO<A>,
   tryCatch: <A>(a: Lazy<A>): IO<A> => ioEither.tryCatch(a, Either.toError),
   fromIO: ioFromIO,
-  unit: ioUnit,
   notUsed: ioNotUsed,
   runFuture:
     (onError: (e: Error) => io.IO<NotUsed>) =>
