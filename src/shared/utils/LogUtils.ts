@@ -3,13 +3,13 @@ import { io } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import util from 'util'
 
-import { DayJs } from '../../shared/models/DayJs'
-import type { LoggerType } from '../../shared/models/LoggerType'
-import type { NotUsed } from '../../shared/utils/fp'
-import { Either, toNotUsed } from '../../shared/utils/fp'
+import { consoleLogFormat } from '../../server/models/logger/observers/ConsoleLogObserver'
+import { ChannelUtils } from '../../server/utils/ChannelUtils'
 
-import { consoleLogFormat } from '../models/logger/observers/ConsoleLogObserver'
-import { ChannelUtils } from './ChannelUtils'
+import { DayJs } from '../models/DayJs'
+import type { LoggerType } from '../models/LoggerType'
+import type { NotUsed } from './fp'
+import { Either, toNotUsed } from './fp'
 
 /**
  * @deprecated
@@ -39,24 +39,12 @@ const pretty = (logger: LoggerType, ...args: Parameters<typeof format>): LoggerT
 const onError =
   (logger: LoggerType) =>
   (e: Error): io.IO<NotUsed> =>
-    pipe(
-      logger.error(e),
-      io.chain(
-        Either.fold(
-          () =>
-            pipe(
-              DayJs.now,
-              io.map(
-                flow(
-                  consoleLogFormat('LogUtils', 'error', util.format(e)),
-                  console.error,
-                  toNotUsed,
-                ),
-              ),
-            ),
-          io.of,
-        ),
-      ),
-    )
+    pipe(logger.error(e), io.chain(Either.fold(() => onErrorConsole(e), io.of)))
 
-export const LogUtils = { __testableFormat, format, pretty, onError }
+const onErrorConsole = (e: Error): io.IO<NotUsed> =>
+  pipe(
+    DayJs.now,
+    io.map(flow(consoleLogFormat('LogUtils', 'error', util.format(e)), console.error, toNotUsed)),
+  )
+
+export const LogUtils = { __testableFormat, format, pretty, onError, onErrorConsole }

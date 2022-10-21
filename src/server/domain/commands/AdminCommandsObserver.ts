@@ -18,6 +18,7 @@ import { ChannelId } from '../../../shared/models/ChannelId'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
+import { LogUtils } from '../../../shared/utils/LogUtils'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { NotUsed } from '../../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
@@ -37,7 +38,6 @@ import type { BotStateService } from '../../services/BotStateService'
 import type { GuildStateService } from '../../services/GuildStateService'
 import type { GuildSendableChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
-import { LogUtils } from '../../utils/LogUtils'
 
 const Keys = {
   admin: 'admin',

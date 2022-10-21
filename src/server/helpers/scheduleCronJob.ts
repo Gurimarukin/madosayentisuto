@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/function'
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
 import type { TSubject } from '../../shared/models/rx/TSubject'
+import { LogUtils } from '../../shared/utils/LogUtils'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, toNotUsed } from '../../shared/utils/fp'
@@ -38,7 +39,7 @@ export const scheduleCronJob = (
         setCronJobInterval(),
         Future.fromIOEither,
         Future.delay(untilNextMinute),
-        IO.runFutureUnsafe,
+        IO.runFuture(LogUtils.onError(logger)),
       ),
     ),
   )
@@ -48,7 +49,10 @@ export const scheduleCronJob = (
       publishEvent(),
       IO.chain(() =>
         IO.tryCatch(() =>
-          setInterval(() => pipe(publishEvent(), IO.runUnsafe), MsDuration.unwrap(cronJobInterval)),
+          setInterval(
+            () => pipe(publishEvent(), IO.run(LogUtils.onError(logger))),
+            MsDuration.unwrap(cronJobInterval),
+          ),
         ),
       ),
       IO.map(toNotUsed),

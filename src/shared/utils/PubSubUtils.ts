@@ -1,12 +1,13 @@
-import { flow, pipe } from 'fp-ts/function'
+import type { io } from 'fp-ts'
+import { pipe } from 'fp-ts/function'
 import type * as rxjs from 'rxjs'
 
 import type { LoggerType } from '../models/LoggerType'
 import type { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import { TObservable } from '../models/rx/TObservable'
-import type { TObserver } from '../models/rx/TObserver'
+import { LogUtils } from './LogUtils'
 import type { Dict, List, NotUsed } from './fp'
-import { Future, IO, toNotUsed } from './fp'
+import { IO, toNotUsed } from './fp'
 
 type TinyListenerSignature<L> = {
   readonly // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,6 +30,7 @@ type EventListenable<On extends string, L extends TinyListenerSignature<L>> = Di
 >
 
 const publish_ =
+  (onError: (e: Error) => io.IO<NotUsed>) =>
   <A>(publish: (a: A) => IO<NotUsed>) =>
   <On extends string>(on: On) =>
   <L extends TinyListenerSignature<L>>(listenable: EventListenable<On, L>) =>
@@ -36,25 +38,16 @@ const publish_ =
     pipe(
       IO.tryCatch(() =>
         listenable[on](event, ((...args: Parameters<L[K]>) =>
-          pipe(publish(transformer(...args)), IO.runUnsafe)) as L[K]),
+          pipe(publish(transformer(...args)), IO.run(onError))) as L[K]),
       ),
       IO.map(toNotUsed),
     )
 
-const subscribe = <A>(
-  logger: LoggerType,
-  observer: TObserver<A>,
-): ((observable: TObservable<A>) => IO<rxjs.Subscription>) =>
-  TObservable.subscribe({
-    next: flow(
-      observer.next,
-      Future.orElseIOEitherK(e => logger.error(e.stack)),
-    ),
-  })
-
 const subscribeWithRefinement =
   <A>(logger: LoggerType, observable: TObservable<A>) =>
   <B extends A>({ observer, refinement }: ObserverWithRefinement<A, B>): IO<rxjs.Subscription> =>
-    subscribe(logger, observer)(pipe(observable, TObservable.filter(refinement)))
+    TObservable.subscribe(LogUtils.onError(logger))(observer)(
+      pipe(observable, TObservable.filter(refinement)),
+    )
 
-export const PubSubUtils = { publish: publish_, subscribe, subscribeWithRefinement }
+export const PubSubUtils = { publish: publish_, subscribeWithRefinement }

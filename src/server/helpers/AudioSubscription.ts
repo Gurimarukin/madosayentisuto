@@ -17,6 +17,7 @@ import { AsyncQueue } from '../../shared/models/rx/AsyncQueue'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../../shared/models/rx/PubSub'
 import type { TSubject } from '../../shared/models/rx/TSubject'
+import { LogUtils } from '../../shared/utils/LogUtils'
 import { PubSubUtils } from '../../shared/utils/PubSubUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
@@ -33,7 +34,6 @@ import { Track } from '../models/audio/music/Track'
 import { AudioEvent } from '../models/event/AudioEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildAudioChannel, GuildSendableChannel, NamedChannel } from '../utils/ChannelUtils'
-import { LogUtils } from '../utils/LogUtils'
 import { DiscordConnector } from './DiscordConnector'
 import { ResourcesHelper } from './ResourcesHelper'
 import type { YtDlp } from './YtDlp'
@@ -454,6 +454,47 @@ export const AudioSubscription = (
     )
   }
 
+  function joinVoiceChannel(
+    subject: TSubject<AudioEvent>,
+    channel: GuildAudioChannel,
+  ): IO<VoiceConnection> {
+    return pipe(
+      DiscordConnector.voiceConnectionJoin(channel),
+      IO.chainFirst(voiceConnection => {
+        const connectionPub = PubSubUtils.publish(LogUtils.onError(logger))(subject.next)(
+          'on',
+        )<VoiceConnectionEvents>(voiceConnection)
+        return apply.sequenceT(IO.ApplyPar)(
+          connectionPub('error', AudioEvent.ConnectionError),
+          connectionPub(VoiceConnectionStatus.Signalling, AudioEvent.ConnectionSignalling),
+          connectionPub(VoiceConnectionStatus.Connecting, AudioEvent.ConnectionConnecting),
+          connectionPub(VoiceConnectionStatus.Ready, AudioEvent.ConnectionReady),
+          connectionPub(VoiceConnectionStatus.Disconnected, AudioEvent.ConnectionDisconnected),
+          connectionPub(VoiceConnectionStatus.Destroyed, AudioEvent.ConnectionDestroyed),
+        )
+      }),
+    )
+  }
+
+  function createAudioPlayer(subject: TSubject<AudioEvent>): IO<AudioPlayer> {
+    return pipe(
+      DiscordConnector.audioPlayerCreate,
+      IO.chainFirst(audioPlayer => {
+        const playerPub = PubSubUtils.publish(LogUtils.onError(logger))(subject.next)(
+          'on',
+        )<AudioPlayerEvents>(audioPlayer)
+        return apply.sequenceT(IO.ApplyPar)(
+          playerPub('error', AudioEvent.PlayerError),
+          playerPub(AudioPlayerStatus.Idle, AudioEvent.PlayerIdle),
+          playerPub(AudioPlayerStatus.Buffering, AudioEvent.PlayerBuffering),
+          playerPub(AudioPlayerStatus.Paused, AudioEvent.PlayerPaused),
+          playerPub(AudioPlayerStatus.Playing, AudioEvent.PlayerPlaying),
+          playerPub(AudioPlayerStatus.AutoPaused, AudioEvent.PlayerAutoPaused),
+        )
+      }),
+    )
+  }
+
   function playMusicFirstTrackFromQueue(
     state: AudioStateConnected<AudioStateValueMusic>,
   ): Future<AudioStateConnected<AudioStateValueMusic>> {
@@ -568,43 +609,6 @@ export const AudioSubscription = (
     return `<AudioSubscription[${guild.name}]>`
   }
 }
-
-const joinVoiceChannel = (
-  subject: TSubject<AudioEvent>,
-  channel: GuildAudioChannel,
-): IO<VoiceConnection> =>
-  pipe(
-    DiscordConnector.voiceConnectionJoin(channel),
-    IO.chainFirst(voiceConnection => {
-      const connectionPub = PubSubUtils.publish(subject.next)('on')<VoiceConnectionEvents>(
-        voiceConnection,
-      )
-      return apply.sequenceT(IO.ApplyPar)(
-        connectionPub('error', AudioEvent.ConnectionError),
-        connectionPub(VoiceConnectionStatus.Signalling, AudioEvent.ConnectionSignalling),
-        connectionPub(VoiceConnectionStatus.Connecting, AudioEvent.ConnectionConnecting),
-        connectionPub(VoiceConnectionStatus.Ready, AudioEvent.ConnectionReady),
-        connectionPub(VoiceConnectionStatus.Disconnected, AudioEvent.ConnectionDisconnected),
-        connectionPub(VoiceConnectionStatus.Destroyed, AudioEvent.ConnectionDestroyed),
-      )
-    }),
-  )
-
-const createAudioPlayer = (subject: TSubject<AudioEvent>): IO<AudioPlayer> =>
-  pipe(
-    DiscordConnector.audioPlayerCreate,
-    IO.chainFirst(audioPlayer => {
-      const playerPub = PubSubUtils.publish(subject.next)('on')<AudioPlayerEvents>(audioPlayer)
-      return apply.sequenceT(IO.ApplyPar)(
-        playerPub('error', AudioEvent.PlayerError),
-        playerPub(AudioPlayerStatus.Idle, AudioEvent.PlayerIdle),
-        playerPub(AudioPlayerStatus.Buffering, AudioEvent.PlayerBuffering),
-        playerPub(AudioPlayerStatus.Paused, AudioEvent.PlayerPaused),
-        playerPub(AudioPlayerStatus.Playing, AudioEvent.PlayerPlaying),
-        playerPub(AudioPlayerStatus.AutoPaused, AudioEvent.PlayerAutoPaused),
-      )
-    }),
-  )
 
 const sendMusicMessageAndStartThread = (
   channel: GuildSendableChannel,

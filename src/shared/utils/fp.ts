@@ -1,6 +1,7 @@
-import type { io, nonEmptyArray } from 'fp-ts'
+import type { nonEmptyArray } from 'fp-ts'
 import {
   either,
+  io,
   ioEither,
   option,
   readonlyArray,
@@ -164,11 +165,10 @@ export const Future = {
   notUsed: futureNotUsed,
   todo: (...args: List<unknown>): Future<never> =>
     taskEither.fromEither(Try.tryCatch(() => todo(args))),
-  run: (f: Future<NotUsed>, onError: (e: Error) => io.IO<NotUsed>): Promise<NotUsed> =>
-    pipe(f, task.chain(either.fold(flow(onError, task.fromIO), task.of)))(),
-  /**
-   * @deprecated
-   */
+  run:
+    (onError: (e: Error) => io.IO<NotUsed>) =>
+    (f: Future<NotUsed>): Promise<NotUsed> =>
+      pipe(f, task.chain(either.fold(flow(onError, task.fromIO), task.of)))(),
   runUnsafe: <A>(fa: Future<A>): Promise<A> => pipe(fa, task.map(Try.getUnsafe))(),
   delay:
     <A>(ms: MsDuration) =>
@@ -178,10 +178,10 @@ export const Future = {
 
 const ioNotUsed: IO<NotUsed> = ioEither.right(NotUsed)
 const ioFromIO: <A>(fa: io.IO<A>) => IO<A> = ioEither.fromIO
-/**
- * @deprecated
- */
-const ioRunUnsafe = <A>(ioA: IO<A>): A => Try.getUnsafe(ioA())
+const ioRun =
+  (onError: (e: Error) => io.IO<NotUsed>) =>
+  (ioA: IO<NotUsed>): NotUsed =>
+    pipe(ioA, io.chain(either.fold(onError, io.of)))()
 export type IO<A> = io.IO<Try<A>>
 export const IO = {
   ...ioEither,
@@ -194,30 +194,16 @@ export const IO = {
     (f: Future<NotUsed>): io.IO<NotUsed> =>
     () => {
       // eslint-disable-next-line functional/no-expression-statement
-      Future.run(f, onError)
+      pipe(f, Future.run(onError))
       return NotUsed
     },
-  /**
-   * @deprecated
-   */
-  runFutureUnsafe:
-    (f: Future<NotUsed>): io.IO<NotUsed> =>
-    () => {
-      // eslint-disable-next-line functional/no-expression-statement
-      Future.runUnsafe(f)
-      return NotUsed
-    },
-  /**
-   * @deprecated
-   */
-  runUnsafe: ioRunUnsafe,
-  /**
-   * @deprecated
-   */
-  setTimeoutUnsafe:
+  run: ioRun,
+  runUnsafe: <A>(ioA: IO<A>): A => Try.getUnsafe(ioA()),
+  setTimeout:
+    (onError: (e: Error) => io.IO<NotUsed>) =>
     (delay: MsDuration) =>
     (io_: IO<NotUsed>): IO<NodeJS.Timeout> =>
-      IO.tryCatch(() => setTimeout(() => pipe(io_, ioRunUnsafe), MsDuration.unwrap(delay))),
+      IO.tryCatch(() => setTimeout(() => pipe(io_, ioRun(onError)), MsDuration.unwrap(delay))),
 }
 
 export const refinementFromPredicate = identity as <A>(pred: Predicate<A>) => Refinement<A, A>

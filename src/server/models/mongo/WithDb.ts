@@ -1,3 +1,4 @@
+import type { io } from 'fp-ts'
 import { task } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import type { Db } from 'mongodb'
@@ -5,7 +6,8 @@ import { MongoClient } from 'mongodb'
 import type { Readable } from 'stream'
 
 import { TObservable } from '../../../shared/models/rx/TObservable'
-import { Future, Try } from '../../../shared/utils/fp'
+import type { NotUsed } from '../../../shared/utils/fp'
+import { Future, Try, toNotUsed } from '../../../shared/utils/fp'
 
 import { TObservableUtils } from '../../utils/TObservableUtils'
 
@@ -19,7 +21,7 @@ type Of = {
   readonly dbName: string
 }
 
-const of = ({ url, dbName }: Of): WithDb => ({
+const of = (onError: (e: Error) => io.IO<NotUsed>, { url, dbName }: Of): WithDb => ({
   future: f =>
     pipe(
       Future.tryCatch(() => MongoClient.connect(url)),
@@ -51,14 +53,16 @@ const of = ({ url, dbName }: Of): WithDb => ({
                 Future.tryCatch(() => client.close()),
                 Future.map(() => subscriber.error(e)),
                 Future.orElse(err => Future.right(subscriber.error(err))), // clientClose failed (very unlikely)
-                Future.runUnsafe,
+                Future.map<void, NotUsed>(toNotUsed),
+                Future.run(onError),
               ),
             complete: () =>
               pipe(
                 Future.tryCatch(() => client.close()),
                 Future.map(() => subscriber.complete()),
                 Future.orElse(err => Future.right(subscriber.error(err))), // clientClose failed (very unlikely)
-                Future.runUnsafe,
+                Future.map<void, NotUsed>(toNotUsed),
+                Future.run(onError),
               ),
           }),
         )

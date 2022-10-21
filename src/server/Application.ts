@@ -164,7 +164,7 @@ export const Application = (
       sub(ObserverWithRefinement.of(LogMadEventObserver(logger))),
       loggerObservable.subscribe('debug', logsObserver.logEventObserver),
       sub(logsObserver.madEventObserver),
-      publishDiscordEvents(discord, madEventsPubSub.subject),
+      publishDiscordEvents(logger, discord, madEventsPubSub.subject),
       scheduleCronJob(Logger, madEventsPubSub.subject),
       sub(VoiceStateUpdateTransformer(clientId, madEventsPubSub.subject)),
     ),

@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import { LogUtils } from '../../shared/utils/LogUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
@@ -14,7 +15,6 @@ import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStateService } from '../services/GuildStateService'
 import type { GuildAudioChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
-import { LogUtils } from '../utils/LogUtils'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const NotifyVoiceCallObserver = (

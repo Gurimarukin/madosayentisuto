@@ -1,10 +1,9 @@
 - Fixed elevator playlist
-- TObservable.subscribe
+- decouple autorole and call mention
 
-- rename Les Quais Abatoirs UwU
+- Les Quais Abatoirs UwU renamer
 
 - upgrade react
-- decouple autorole and call mention
 - select leave message chan
 - deploy: on guild join
 - admin : move some things to webapp

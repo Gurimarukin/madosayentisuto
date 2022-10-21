@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import { LogUtils } from '../../shared/utils/LogUtils'
 import type { Maybe } from '../../shared/utils/fp'
 import { Future, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
@@ -12,7 +13,6 @@ import { AudioState } from '../models/audio/AudioState'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStateService } from '../services/GuildStateService'
-import { LogUtils } from '../utils/LogUtils'
 
 // We don't want any message (except bot) in the music logs thread
 

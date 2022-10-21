@@ -9,6 +9,7 @@ import { Status } from 'hyper-ts'
 import type { ExpressConnection } from 'hyper-ts/lib/express'
 
 import { Method } from '../../shared/models/Method'
+import { LogUtils } from '../../shared/utils/LogUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import {
   Dict,
@@ -174,7 +175,8 @@ export const startWebServer = (
           }),
           Future.orElse<Error, Either<SimpleHttpResponse, void>, Error>(handleErrorUpgrade),
           Future.map(Either.getOrElse(res => socket.end(SimpleHttpResponse.toRawHttp(res)))),
-          Future.runUnsafe,
+          Future.map<void, NotUsed>(toNotUsed),
+          Future.run(LogUtils.onError(logger)),
         ),
       ),
     )

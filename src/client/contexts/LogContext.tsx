@@ -19,6 +19,7 @@ import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefin
 import { PubSub } from '../../shared/models/rx/PubSub'
 import { TObservable } from '../../shared/models/rx/TObservable'
 import type { TSubject } from '../../shared/models/rx/TSubject'
+import { LogUtils } from '../../shared/utils/LogUtils'
 import { PubSubUtils } from '../../shared/utils/PubSubUtils'
 import { Either, Future, IO, List, NotUsed, toNotUsed } from '../../shared/utils/fp'
 
@@ -65,9 +66,12 @@ export const LogContextProvider: React.FC = ({ children }) => {
     const { closeWebSocket } = pipe(
       initWs,
       IO.chainFirst(({ wsClientEventObservable }) =>
-        pipe(wsClientEventObservable, TObservable.subscribe({ next: onWSClientEvent })),
+        pipe(
+          wsClientEventObservable,
+          TObservable.subscribe(LogUtils.onError(logger))({ next: onWSClientEvent }),
+        ),
       ),
-      IO.chainFirstIOK(() => IO.runFutureUnsafe(fetchInitialLogs())),
+      IO.chainFirstIOK(() => pipe(fetchInitialLogs(), IO.runFuture(LogUtils.onError(logger)))),
       IO.runUnsafe,
     )
     return () => pipe(closeWebSocket, IO.runUnsafe)
@@ -103,7 +107,7 @@ export const LogContextProvider: React.FC = ({ children }) => {
   }, [fetchInitialLogs])
 
   const tryRefetchInitialLogs = useCallback(
-    (): Promise<NotUsed> => Future.runUnsafe(fetchInitialLogs()),
+    (): Promise<NotUsed> => Future.run(LogUtils.onError(logger))(fetchInitialLogs()),
     [fetchInitialLogs],
   )
 
@@ -142,7 +146,9 @@ const initWs: IO<InitWSResult> = pipe(
   reconnectingWebSocket,
   IO.chain(ws => {
     const wsClientEventPubSub = PubSub<WSClientEvent>()
-    const pub = PubSubUtils.publish(wsClientEventPubSub.subject.next)('addEventListener')<{
+    const pub = PubSubUtils.publish(LogUtils.onError(logger))(wsClientEventPubSub.subject.next)(
+      'addEventListener',
+    )<{
       /* eslint-disable functional/no-return-void */
       readonly open: (event: ReconnectingEvent) => void
       readonly close: (event: ReconnectingCloseEvent) => void

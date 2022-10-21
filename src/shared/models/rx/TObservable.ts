@@ -6,7 +6,7 @@ import { flow } from 'fp-ts/function'
 import * as rxjs from 'rxjs'
 import * as rxjsOperators from 'rxjs/operators'
 
-import type { List, Maybe, NonEmptyArray } from '../../utils/fp'
+import type { List, Maybe, NonEmptyArray, NotUsed } from '../../utils/fp'
 import { Future, IO, Try } from '../../utils/fp'
 import type { TObserver } from './TObserver'
 
@@ -126,11 +126,12 @@ export const TObservable = {
       return res as TObservable<NonEmptyArray<A>>
     },
   subscribe:
+    (onError: (e: Error) => io.IO<NotUsed>) =>
     <A>(observer: TObserver<A>) =>
     (fa: TObservable<A>): IO<rxjs.Subscription> =>
       IO.tryCatch(() =>
         fa.subscribe({
-          next: flow(observer.next, Future.runUnsafe),
+          next: flow(observer.next, Future.run(onError)),
         }),
       ),
 }

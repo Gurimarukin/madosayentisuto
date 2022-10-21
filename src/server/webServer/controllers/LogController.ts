@@ -1,6 +1,7 @@
 import { json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
+import type { Subscription } from 'rxjs'
 import { WebSocketServer } from 'ws'
 
 import { ServerToClientEvent } from '../../../shared/models/event/ServerToClientEvent'
@@ -8,7 +9,9 @@ import { LogsWithTotalCount } from '../../../shared/models/log/LogsWithTotalCoun
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import type { TObservable } from '../../../shared/models/rx/TObservable'
 import type { TSubject } from '../../../shared/models/rx/TSubject'
+import { LogUtils } from '../../../shared/utils/LogUtils'
 import { PubSubUtils } from '../../../shared/utils/PubSubUtils'
+import type { NotUsed } from '../../../shared/utils/fp'
 import { Either, Future, IO, toNotUsed } from '../../../shared/utils/fp'
 
 import { WSServerEvent } from '../../models/event/WSServerEvent'
@@ -37,7 +40,11 @@ export const LogController = (
         IO.tryCatch(() =>
           ws.on(
             'message',
-            flow(WSServerEvent.messageFromRawData, wsServerEventSubject.next, IO.runUnsafe),
+            flow(
+              WSServerEvent.messageFromRawData,
+              wsServerEventSubject.next,
+              IO.run(LogUtils.onError(logger)),
+            ),
           ),
         ),
         IO.chain(() =>
@@ -57,10 +64,13 @@ export const LogController = (
             }),
           ),
         ),
-        IO.runUnsafe,
+        IO.map<Subscription, NotUsed>(toNotUsed), // TODO: do something with Subcription?
+        IO.run(LogUtils.onError(logger)),
       ),
     )
-    .on('close', () => IO.runUnsafe(wsServerEventSubject.next(WSServerEvent.Closed())))
+    .on('close', () =>
+      pipe(wsServerEventSubject.next(WSServerEvent.Closed()), IO.run(LogUtils.onError(logger))),
+    )
 
   return {
     listLogs: (/* user: User */): EndedMiddleware =>

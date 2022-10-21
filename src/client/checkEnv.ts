@@ -1,5 +1,6 @@
 import { flow, pipe } from 'fp-ts/function'
 
+import { LogUtils } from '../shared/utils/LogUtils'
 import { loadDotEnv } from '../shared/utils/config/loadDotEnv'
 import type { NotUsed } from '../shared/utils/fp'
 import { Future, IO, toNotUsed } from '../shared/utils/fp'
@@ -14,4 +15,4 @@ const main: Future<NotUsed> = pipe(
 )
 
 // eslint-disable-next-line functional/no-expression-statement
-Future.runUnsafe(main)
+Future.run(LogUtils.onErrorConsole)(main)
