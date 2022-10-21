@@ -1,7 +1,7 @@
 import { flow, identity, pipe } from 'fp-ts/function'
 
 import type { List, NonIO } from '../../utils/fp'
-import { Future } from '../../utils/fp'
+import { Future, NotUsed } from '../../utils/fp'
 import type { TObservable } from './TObservable'
 
 export type Sink<A, B> = (observable: TObservable<A>) => Future<B>
@@ -60,10 +60,10 @@ const readonlyArray = <A>(obs: TObservable<A>): Future<List<A>> =>
       }),
   )
 
-const toUnit = <A>(obs: TObservable<NonIO<A>>): Future<void> =>
+const toNotUsed = <A>(obs: TObservable<NonIO<A>>): Future<NotUsed> =>
   Future.tryCatch(
     () =>
-      new Promise<void>((resolve, reject) => {
+      new Promise<NotUsed>((resolve, reject) => {
         const subscription = obs.subscribe({
           next: () => undefined,
           /* eslint-disable functional/no-expression-statement */
@@ -72,9 +72,9 @@ const toUnit = <A>(obs: TObservable<NonIO<A>>): Future<void> =>
             reject(e)
           },
           /* eslint-enable functional/no-expression-statement */
-          complete: () => resolve(),
+          complete: () => resolve(NotUsed),
         })
       }),
   )
 
-export const Sink = { reduce, reduceTaskEither, readonlyArray, toUnit }
+export const Sink = { reduce, reduceTaskEither, readonlyArray, toNotUsed }
