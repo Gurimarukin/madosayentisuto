@@ -1,4 +1,3 @@
-- Fixed elevator playlist
 - decouple autorole and call mention
 
 - Les Quais Abatoirs UwU renamer

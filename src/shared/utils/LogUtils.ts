@@ -11,9 +11,6 @@ import type { LoggerType } from '../models/LoggerType'
 import type { NotUsed } from './fp'
 import { Either, toNotUsed } from './fp'
 
-/**
- * @deprecated
- */
 const __testableFormat =
   (refinement: typeof ChannelUtils.isNamed) =>
   (
@@ -47,4 +44,13 @@ const onErrorConsole = (e: Error): io.IO<NotUsed> =>
     io.map(flow(consoleLogFormat('LogUtils', 'error', util.format(e)), console.error, toNotUsed)),
   )
 
-export const LogUtils = { __testableFormat, format, pretty, onError, onErrorConsole }
+export const LogUtils = {
+  format,
+  pretty,
+  onError,
+  onErrorConsole,
+  /**
+   * @deprecated
+   */
+  __testableFormat,
+}

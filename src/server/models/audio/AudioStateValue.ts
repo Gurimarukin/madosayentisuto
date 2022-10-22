@@ -24,7 +24,7 @@ type MusicArgs = {
 }
 
 type ElevatorArgs = {
-  readonly currentFile: Maybe<MyFile>
+  readonly playlist: NonEmptyArray<MyFile>
 }
 
 const u = createUnion({
@@ -89,11 +89,11 @@ const AudioStateValueMusic = {
   setMessage: musicMessageLens.set,
 }
 
-const elevatorCurrentFileLens = pipe(lens.id<AudioStateValueElevator>(), lens.prop('currentFile'))
+const elevatorPlaylistLens = pipe(lens.id<AudioStateValueElevator>(), lens.prop('playlist'))
 
 const AudioStateValueElevator = {
-  empty: u.Elevator({ currentFile: Maybe.none }),
-  setCurrentFile: elevatorCurrentFileLens.set,
+  of: (playlist: NonEmptyArray<MyFile>): AudioStateValueElevator => u.Elevator({ playlist }),
+  rotatePlaylist: pipe(elevatorPlaylistLens, lens.modify(NonEmptyArray.rotate(-1))),
 }
 
 export { AudioStateValue, AudioStateValueMusic, AudioStateValueElevator }

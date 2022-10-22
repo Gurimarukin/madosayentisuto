@@ -201,7 +201,13 @@ export const AudioSubscription = (
     return queueStateReducer(state => {
       switch (state.type) {
         case 'Disconnected':
-          return getConnecting(audioChannel, AudioStateValueElevator.empty)
+          return pipe(
+            resourcesHelper.randomElevatorPlaylist,
+            Future.fromIO,
+            Future.chain(playlist =>
+              getConnecting(audioChannel, AudioStateValueElevator.of(playlist)),
+            ),
+          )
 
         case 'Connecting':
         case 'Connected':
@@ -384,7 +390,7 @@ export const AudioSubscription = (
                     Future.map(() => musicState),
                   )
                 : playMusicFirstTrackFromQueue(musicState),
-            onElevator: elevatorState => playElevatorFile(elevatorState),
+            onElevator: playElevatorFile,
           }),
         )
     }
@@ -427,6 +433,7 @@ export const AudioSubscription = (
               sendMusicMessageAndStartThread(value.messageChannel),
               Future.map(message => pipe(value, AudioStateValueMusic.setMessage(message))),
             ) as Future<A>
+
           case 'Elevator':
             return Future.right(value)
         }
@@ -530,21 +537,17 @@ export const AudioSubscription = (
     state: AudioStateConnected<AudioStateValueElevator>,
   ): Future<AudioStateConnected<AudioStateValueElevator>> {
     return pipe(
-      resourcesHelper.randomElevatorMusic(state.value.currentFile),
-      Future.fromIO,
-      Future.chainFirst(
-        flow(
-          ResourcesHelper.audioResourceFromFile,
-          Future.chainIOEitherK(audioResource =>
-            DiscordConnector.audioPlayerPlayAudioResource(state.audioPlayer, audioResource),
-          ),
-        ),
+      state.value.playlist,
+      NonEmptyArray.head,
+      ResourcesHelper.audioResourceFromFile,
+      Future.chainIOEitherK(audioResource =>
+        DiscordConnector.audioPlayerPlayAudioResource(state.audioPlayer, audioResource),
       ),
-      Future.map(file =>
+      Future.map(() =>
         pipe(
           state,
           AudioStateConnect.modifyValue<'AudioStateConnected'>()(
-            AudioStateValueElevator.setCurrentFile(Maybe.some(file)),
+            AudioStateValueElevator.rotatePlaylist,
           ),
         ),
       ),
