@@ -176,9 +176,17 @@ const modifyValue =
     return res as unknown as (state: Kind<F, A>) => Kind<F, B>
   }
 
+const setValue =
+  <F extends AudioStateConnectedURIS = AudioStateConnectedURIS>() =>
+  <B extends AudioStateValue>(value: B): (<A>(state: Kind<F, A>) => Kind<F, B>) => {
+    const res: (s: Kind<F, B>) => Kind<F, B> = connectValueLens<F, B>().set(value)
+    return res as <A>(state: Kind<F, A>) => Kind<F, B>
+  }
+
 const AudioStateConnect = {
   foldValue,
   modifyValue,
+  setValue,
 }
 
 export {
