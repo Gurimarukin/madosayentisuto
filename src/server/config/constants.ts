@@ -29,7 +29,7 @@ export const constants = {
   logsLimit: 5000,
 
   elevator: {
-    delay: MsDuration.minutes(2),
+    delay: MsDuration.minutes(1),
     musicExtension: /\.(ogg|webm)$/,
   },
 
