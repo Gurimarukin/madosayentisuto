@@ -32,16 +32,16 @@ const u = createUnion({
   Elevator: (args: ElevatorArgs) => args,
 })
 
-type FoldArgs<A> = {
+type FoldArgs<A, B> = {
   readonly onMusic: (value: AudioStateValueMusic) => A
-  readonly onElevator: (value: AudioStateValueElevator) => A
+  readonly onElevator: (value: AudioStateValueElevator) => B
 }
 
 const AudioStateValue = {
   is: u.is,
   fold:
-    <A>({ onMusic, onElevator }: FoldArgs<A>) =>
-    (value: AudioStateValue): A => {
+    <A, B = A>({ onMusic, onElevator }: FoldArgs<A, B>) =>
+    (value: AudioStateValue): A | B => {
       switch (value.type) {
         case 'Music':
           return onMusic(value)

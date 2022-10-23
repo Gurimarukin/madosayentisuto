@@ -77,11 +77,9 @@ export const GuildStateService = (
       pipe(
         get(guild, 'subscription'),
         Future.fromIOEither,
-        Future.map(
-          flow(
-            Maybe.flatten,
-            Maybe.getOrElse(() => AudioSubscription(Logger, resourcesHelper, ytDlp, guild)),
-          ),
+        Future.map(Maybe.flatten),
+        futureMaybe.getOrElse(() =>
+          Future.fromIOEither(AudioSubscription.of(Logger, resourcesHelper, ytDlp, guild)),
         ),
         Future.chainFirst(subscription => setLens(guild, 'subscription', Maybe.some(subscription))),
       ),

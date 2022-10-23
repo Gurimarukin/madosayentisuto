@@ -32,26 +32,18 @@ export const ElevatorObserver = (Logger: LoggerGetter, guildStateService: GuildS
   )(event =>
     pipe(
       Future.fromIO(clearScheduledElevator),
-      Future.chain(() => {
-        const channel = ((): GuildAudioChannel => {
-          switch (event.type) {
-            case 'AudioChannelConnected':
-            case 'AudioChannelDisconnected':
-              return event.channel
-            case 'AudioChannelMoved':
-              return event.to
-          }
-        })()
-
-        const shouldScheduleElevator = pipe(
+      Future.chain(() =>
+        pipe(
           GuildHelper.membersInPublicAudioChans(event.member.guild),
-          List.exists(([chan, members]) => chan.id === channel.id && members.length === 1),
-        )
-
-        if (shouldScheduleElevator) return scheduleElevator(channel)
-
-        return Future.notUsed
-      }),
+          List.findFirstMap(([channel, members]) =>
+            members.length === 1 ? Maybe.some(channel) : Maybe.none,
+          ),
+          Maybe.fold(
+            () => Future.notUsed,
+            channel => scheduleElevator(channel),
+          ),
+        ),
+      ),
     ),
   )
 

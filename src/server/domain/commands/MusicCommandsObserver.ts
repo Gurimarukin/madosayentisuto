@@ -11,6 +11,7 @@ import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordCo
 import type { YtDlp } from '../../helpers/YtDlp'
 import { MusicStateMessage, musicStateButtons } from '../../helpers/messages/MusicStateMessage'
 import { AudioState } from '../../models/audio/AudioState'
+import { AudioStateValue } from '../../models/audio/AudioStateValue'
 import { Track } from '../../models/audio/music/Track'
 import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
@@ -106,7 +107,7 @@ export const MusicCommandsObserver = (
   }
 
   function onPlayPauseButton(interaction: ButtonInteraction): Future<NotUsed> {
-    return buttonCommon(interaction, subscription => subscription.playPauseTrack())
+    return buttonCommon(interaction, subscription => subscription.playPauseTrack)
   }
 
   function onNextButton(interaction: ButtonInteraction): Future<NotUsed> {
@@ -240,7 +241,10 @@ const validateAudioChannel = (
       : Maybe.none,
     Either.fromOption(() => 'Haha ! Il faut être dans un salon vocal pour faire ça !'),
     Either.filterOrElse(
-      audioChannel => AudioState.isDisconnected(state) || state.channel.id === audioChannel.id,
+      audioChannel =>
+        AudioState.isDisconnected(state) ||
+        !AudioStateValue.is('Music')(state.value) ||
+        state.channel.id === audioChannel.id,
       () => 'Haha ! Il faut être dans mon salon pour faire ça !',
     ),
   )
