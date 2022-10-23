@@ -59,21 +59,21 @@ const Guilds = ({ guilds }: GuildsProps): JSX.Element => (
             to={appRoutes.guild.index(guild.id)}
             className="flex flex-col items-center gap-2 rounded-xl border-4 border-gray1 bg-gray2 p-5 pb-3 shadow-lg"
           >
-            {pipe(
-              guild.icon,
-              Maybe.fold(
-                () => null,
-                icon => (
-                  <div className="h-32 w-32 overflow-hidden rounded-lg">
+            <div className="h-32 w-32 overflow-hidden rounded-lg bg-discordBlurple">
+              {pipe(
+                guild.icon,
+                Maybe.fold(
+                  () => null,
+                  icon => (
                     <img
                       src={icon}
                       alt={`Icone du serveur ${guild.name}`}
                       className="h-full w-full object-cover"
                     />
-                  </div>
+                  ),
                 ),
-              ),
-            )}
+              )}
+            </div>
             <span>{guild.name}</span>
           </Link>
         </li>

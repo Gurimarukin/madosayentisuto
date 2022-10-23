@@ -2,6 +2,8 @@
 
 - Les Quais Abatoirs UwU renamer
 
+- Delete Ephemeral Messages
+
 - upgrade react
 - select leave message chan
 - deploy: on guild join
