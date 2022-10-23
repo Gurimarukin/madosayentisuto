@@ -1,3 +1,4 @@
+import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import React from 'react'
 
@@ -59,11 +60,11 @@ const Guilds = ({ guilds }: GuildsProps): JSX.Element => (
             to={appRoutes.guild.index(guild.id)}
             className="flex flex-col items-center gap-2 rounded-xl border-4 border-gray1 bg-gray2 p-5 pb-3 shadow-lg"
           >
-            <div className="h-32 w-32 overflow-hidden rounded-lg bg-discordBlurple">
+            <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-lg bg-discordBlurple">
               {pipe(
                 guild.icon,
                 Maybe.fold(
-                  () => null,
+                  () => <p className="text-5xl">{firstLetters(guild.name)}</p>,
                   icon => (
                     <img
                       src={icon}
@@ -81,3 +82,11 @@ const Guilds = ({ guilds }: GuildsProps): JSX.Element => (
     </ul>
   </div>
 )
+
+const firstLetters = (str: string): string =>
+  pipe(
+    str,
+    string.split(/\s+/),
+    List.filterMap(word => Maybe.fromNullable(word[0])),
+    List.mkString(''),
+  )
