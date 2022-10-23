@@ -8,7 +8,7 @@ import type { GuildSendableChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 
 export type Calls = {
-  readonly message: Message
+  readonly message: Message<true>
   readonly channel: GuildSendableChannel
   readonly role: Role
 }

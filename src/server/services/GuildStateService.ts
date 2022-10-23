@@ -6,15 +6,17 @@ import type { Lens } from 'monocle-ts/Lens'
 import type { ChannelId } from '../../shared/models/ChannelId'
 import { GuildId } from '../../shared/models/guild/GuildId'
 import type { NotUsed } from '../../shared/utils/fp'
-import { Future, IO, List, Maybe } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { AudioSubscription } from '../helpers/AudioSubscription'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import type { ResourcesHelper } from '../helpers/ResourcesHelper'
 import type { YtDlp } from '../helpers/YtDlp'
+import type { AutoroleMessage } from '../models/guildState/AutoRoleMessage'
 import type { Calls } from '../models/guildState/Calls'
 import { GuildState } from '../models/guildState/GuildState'
+import type { AutoroleMessageDb } from '../models/guildState/db/AutoroleMessageDb'
 import type { CallsDb } from '../models/guildState/db/CallsDb'
 import { GuildStateDb } from '../models/guildState/db/GuildStateDb'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
@@ -189,9 +191,16 @@ export const GuildStateService = (
         flow(
           fetchDbProperties(guild),
           Future.map(
-            ({ calls, defaultRole, itsFridayChannel, birthdayChannel }): GuildState => ({
+            ({
+              calls,
+              autoroleMessages,
+              defaultRole,
+              itsFridayChannel,
+              birthdayChannel,
+            }): GuildState => ({
               id: guildId,
               calls,
+              autoroleMessages,
               defaultRole,
               itsFridayChannel,
               birthdayChannel,
@@ -207,9 +216,10 @@ export const GuildStateService = (
   function fetchDbProperties(
     guild: Guild,
   ): (state: GuildStateDb) => Future<Pick<GuildState, Exclude<keyof GuildStateDb, 'id'>>> {
-    return ({ calls, defaultRole, itsFridayChannel, birthdayChannel }) =>
+    return ({ calls, autoroleMessages, defaultRole, itsFridayChannel, birthdayChannel }) =>
       apply.sequenceS(Future.ApplyPar)({
         calls: chainFutureT(calls, fetchCalls(guild)),
+        autoroleMessages: chainFutureT(autoroleMessages, fetchAutoroleMessages(guild)),
         defaultRole: chainFutureT(defaultRole, id => DiscordConnector.fetchRole(guild, id)),
         itsFridayChannel: chainFutureT(itsFridayChannel, fetchGuildSendableChannel),
         birthdayChannel: chainFutureT(birthdayChannel, fetchGuildSendableChannel),
@@ -223,6 +233,22 @@ export const GuildStateService = (
         channel: fetchGuildSendableChannel(channel),
         role: DiscordConnector.fetchRole(guild, role),
       })
+  }
+
+  function fetchAutoroleMessages(
+    guild: Guild,
+  ): (
+    autoroleMessages: NonEmptyArray<AutoroleMessageDb>,
+  ) => Future<Maybe<NonEmptyArray<AutoroleMessage>>> {
+    return flow(
+      NonEmptyArray.traverse(Future.ApplicativePar)(({ message, role }) =>
+        apply.sequenceS(futureMaybe.ApplyPar)({
+          message: DiscordConnector.fetchMessage(guild, message),
+          role: DiscordConnector.fetchRole(guild, role),
+        }),
+      ),
+      Future.map(flow(List.compact, NonEmptyArray.fromReadonlyArray)),
+    )
   }
 
   function fetchGuildSendableChannel(channelId: ChannelId): Future<Maybe<GuildSendableChannel>> {

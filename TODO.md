@@ -1,5 +1,3 @@
-- decouple autorole and call mention
-
 - Les Quais Abatoirs UwU renamer
 
 - Delete Ephemeral Messages

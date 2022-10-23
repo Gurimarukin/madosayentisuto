@@ -6,7 +6,6 @@ import type {
   Guild,
   GuildMember,
   Message,
-  TextBasedChannel,
 } from 'discord.js'
 import { ChannelType, Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
@@ -352,7 +351,11 @@ export const AdminCommandsObserver = (
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: Future.right(maybeGuild),
           author: fetchUser(Maybe.fromNullable(interaction.member)),
-          commandChannel: futureMaybe.fromNullable(interaction.channel),
+          commandChannel: pipe(
+            interaction.channel,
+            futureMaybe.fromNullable,
+            futureMaybe.filter(ChannelUtils.isGuildText),
+          ),
           callsChannel: fetchChannel(
             Maybe.fromNullable(interaction.options.getChannel(Keys.channel)),
           ),
@@ -369,7 +372,7 @@ export const AdminCommandsObserver = (
   function sendInitMessageAndUpdateState(
     guild: Guild,
     author: User,
-    commandChannel: TextBasedChannel,
+    commandChannel: TextChannel,
     channel: TextChannel,
     role: Role,
   ): Future<NotUsed> {
@@ -392,18 +395,18 @@ export const AdminCommandsObserver = (
   }
 
   function sendInitMessage(
-    commandChannel: TextBasedChannel,
+    commandChannel: TextChannel,
     callsChannel: GuildSendableChannel,
     role: Role | APIRole,
-  ): Future<Maybe<Message>> {
-    return DiscordConnector.sendMessage(commandChannel, initCallsMessage(callsChannel, role))
+  ): Future<Maybe<Message<true>>> {
+    return DiscordConnector.sendMessage<true>(commandChannel, initCallsMessage(callsChannel, role))
   }
 
   function tryDeletePreviousMessageAndSetCalls(
     guild: Guild,
     channel: TextChannel,
     role: Role,
-  ): (message: Message) => Future<NotUsed> {
+  ): (message: Message<true>) => Future<NotUsed> {
     return message =>
       pipe(
         guildStateService.getCalls(guild),
