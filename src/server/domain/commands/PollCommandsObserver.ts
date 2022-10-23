@@ -18,7 +18,16 @@ import { ChannelId } from '../../../shared/models/ChannelId'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import type { NotUsed } from '../../../shared/utils/fp'
-import { Future, IO, List, Maybe, NonEmptyArray, Tuple, toNotUsed } from '../../../shared/utils/fp'
+import {
+  Either,
+  Future,
+  IO,
+  List,
+  Maybe,
+  NonEmptyArray,
+  Tuple,
+  toNotUsed,
+} from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import type { Config } from '../../config/Config'
@@ -455,21 +464,29 @@ export const PollCommandsObserver = (
   }
 
   function editDetailMessage(message: Message, poll: Poll, threadId: ChannelId): Future<NotUsed> {
-    const messageEdit = DiscordConnector.messageEdit(message, PollMessage.detail(poll.choices))
+    const threadMessageEdit = DiscordConnector.threadMessageEdit(
+      message,
+      PollMessage.detail(poll.choices),
+    )
     return pipe(
-      messageEdit,
-      Future.map(toNotUsed),
-      Future.orElse(e =>
-        e.message.split('\n')[1] === 'DiscordAPIError: Thread is archived'
-          ? pipe(
-              getThread(threadId),
-              futureMaybe.chainTaskEitherK(thread =>
-                DiscordConnector.threadSetArchived(thread, false),
-              ),
-              futureMaybe.chainTaskEitherK(() => messageEdit),
-              Future.map(toNotUsed),
-            )
-          : Future.left(e),
+      threadMessageEdit,
+      Future.chain(
+        Either.fold(
+          e => {
+            switch (e) {
+              case 'threadIsArchived':
+                return pipe(
+                  getThread(threadId),
+                  futureMaybe.chainTaskEitherK(thread =>
+                    DiscordConnector.threadSetArchived(thread, false),
+                  ),
+                  futureMaybe.chainTaskEitherK(() => threadMessageEdit),
+                  Future.map(toNotUsed),
+                )
+            }
+          },
+          () => Future.notUsed,
+        ),
       ),
     )
   }

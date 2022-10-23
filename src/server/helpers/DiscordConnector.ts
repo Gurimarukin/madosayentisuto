@@ -335,6 +335,23 @@ const messageEdit = (
     debugLeft('messageEdit'),
   )
 
+type ThreadMessageEditError = 'threadIsArchived'
+
+const threadMessageEdit = (
+  message: Message,
+  options: string | MessagePayload | MessageEditOptions,
+): Future<Either<ThreadMessageEditError, Message>> =>
+  pipe(
+    Future.tryCatch(() => message.edit(options)),
+    Future.map(Either.right),
+    Future.orElse(e =>
+      isThreadIsArchivedError(e)
+        ? Future.right(Either.left<ThreadMessageEditError, Message>('threadIsArchived'))
+        : Future.left(e),
+    ),
+    debugLeft('threadMessageEdit'),
+  )
+
 const messageReact = (
   message: Message,
   emoji: EmojiIdentifierResolvable,
@@ -563,6 +580,7 @@ export const DiscordConnector = {
   sendMessage,
   sendPrettyMessage,
   threadDelete,
+  threadMessageEdit,
   threadSetArchived,
   voiceConnectionDestroy,
   voiceConnectionJoin,
@@ -584,6 +602,7 @@ const isMissingAccessError = isDiscordAPIError('Missing Access')
 const isUnknownChannelError = isDiscordAPIError('Unknown Channel')
 export const isMissingPermissionsError = isDiscordAPIError('Missing Permissions')
 export const isUnknownMessageError = isDiscordAPIError('Unknown Message')
+const isThreadIsArchivedError = isDiscordAPIError('Thread is archived')
 
 const isMissingAccessOrMissingPermissionError = pipe(
   isMissingAccessError,
