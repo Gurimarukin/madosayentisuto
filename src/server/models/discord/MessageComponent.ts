@@ -6,12 +6,12 @@ import type {
   APIEmbedVideo,
   APIMessageActionRowComponent,
   APIMessageComponentEmoji,
+  BaseMessageOptions,
   ColorResolvable,
   EmbedAuthorData,
   EmbedField,
   EmbedFooterData,
   EmbedImageData,
-  MessageOptions,
 } from 'discord.js'
 import { EmbedBuilder } from 'discord.js'
 import { ButtonStyle, ComponentType, resolvePartialEmoji } from 'discord.js'
@@ -20,7 +20,7 @@ import { flow, pipe } from 'fp-ts/function'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import { List, NonEmptyArray } from '../../../shared/utils/fp'
 
-import { constants } from '../../constants'
+import { constants } from '../../config/constants'
 
 type UrlHeightWidthProxy = {
   readonly url?: string
@@ -131,7 +131,9 @@ const video = urlHeightWidthProxy<MyVideo>()
 const footer = (text: string, iconURL?: string, proxyIconURL?: string): MyFooter =>
   ({ text, iconURL, proxyIconURL } as MyFooter)
 
-const singleSafeEmbed = (args: MessageEmbedArgs): MessageOptions => ({ embeds: [safeEmbed(args)] })
+const singleSafeEmbed = (args: MessageEmbedArgs): BaseMessageOptions => ({
+  embeds: [safeEmbed(args)],
+})
 
 //
 

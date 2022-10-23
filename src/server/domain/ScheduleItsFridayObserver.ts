@@ -1,13 +1,14 @@
-import { random } from 'fp-ts'
+import { io, random } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../shared/utils/StringUtils'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO } from '../../shared/utils/fp'
 
-import { constants } from '../constants'
+import { constants } from '../config/constants'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { ScheduledEvent } from '../models/scheduledEvent/ScheduledEvent'
@@ -28,13 +29,14 @@ export const ScheduleItsFridayObserver = (
     'CronJob',
   )(({ date }) => {
     const isFriday = DayJs.day.get(date) === constants.itsFriday.day
-    return isFriday && pipe(date, DayJs.isHourSharp(8)) ? scheduleItsFriday(date) : Future.unit
+    return isFriday && pipe(date, DayJs.isHourSharp(8)) ? scheduleItsFriday(date) : Future.notUsed
   })
 
-  function scheduleItsFriday(now: DayJs): Future<void> {
+  function scheduleItsFriday(now: DayJs): Future<NotUsed> {
     return pipe(
       randomTime(now),
-      IO.chainFirst(scheduledAt =>
+      Future.fromIO,
+      Future.chainFirstIOEitherK(scheduledAt =>
         logger.info(
           `Scheduling "It's friday" at ${pipe(scheduledAt, DayJs.format('HH:mm:ss'))} (in ${pipe(
             scheduledAt,
@@ -43,22 +45,20 @@ export const ScheduleItsFridayObserver = (
           )})`,
         ),
       ),
-      Future.fromIOEither,
       Future.chain(scheduledAt =>
         scheduledEventService.create(ScheduledEvent.ItsFriday({ createdAt: now, scheduledAt })),
       ),
       Future.chainIOEitherK(success =>
-        success ? IO.unit : logger.warn(`Failed to schedule "It's friday"`),
+        success ? IO.notUsed : logger.warn(`Failed to schedule "It's friday"`),
       ),
     )
   }
 }
 
-function randomTime(now: DayJs): IO<DayJs> {
+function randomTime(now: DayJs): io.IO<DayJs> {
   const todayRangeStart = pipe(now, DayJs.startOf('hour'), DayJs.hour.set(rangeStart))
   return pipe(
     random.randomRange(0, MsDuration.unwrap(MsDuration.hours(rangeEnd - rangeStart))),
-    IO.fromIO,
-    IO.map(n => pipe(todayRangeStart, DayJs.add(MsDuration.wrap(n)))),
+    io.map(n => pipe(todayRangeStart, DayJs.add(MsDuration.wrap(n)))),
   )
 }

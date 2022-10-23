@@ -5,7 +5,7 @@ import * as D from 'io-ts/Decoder'
 
 import { Maybe, Tuple } from '../../../shared/utils/fp'
 
-import type { Config } from '../../Config'
+import type { Config } from '../../config/Config'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import { MyMiddleware as M } from '../models/MyMiddleware'
 import type { EndedMiddleware } from '../models/MyMiddleware'

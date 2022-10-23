@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/function'
-import type { Decoder } from 'io-ts/lib/Decoder'
-import type { Encoder } from 'io-ts/lib/Encoder'
+import type { Decoder } from 'io-ts/Decoder'
+import type { Encoder } from 'io-ts/Encoder'
 import jwt from 'jsonwebtoken'
 
 import { MsDuration } from '../../shared/models/MsDuration'

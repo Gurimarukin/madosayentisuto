@@ -5,7 +5,7 @@ import { LoginPayload } from '../../../shared/models/webUser/LoginPayload'
 import { Token } from '../../../shared/models/webUser/Token'
 import { Maybe } from '../../../shared/utils/fp'
 
-import { constants } from '../../constants'
+import { constants } from '../../config/constants'
 import type { UserService } from '../../services/UserService'
 import type { EndedMiddleware } from '../models/MyMiddleware'
 import { MyMiddleware as M } from '../models/MyMiddleware'

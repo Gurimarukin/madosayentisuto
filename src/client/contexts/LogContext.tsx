@@ -2,12 +2,12 @@
 import { apply, json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import ReconnectingWebSocket from 'reconnecting-websocket'
 import type {
   CloseEvent as ReconnectingCloseEvent,
   ErrorEvent as ReconnectingErrorEvent,
   Event as ReconnectingEvent,
 } from 'reconnecting-websocket'
+import ReconnectingWebSocket from 'reconnecting-websocket'
 
 import { apiRoutes } from '../../shared/ApiRouter'
 import { DayJs } from '../../shared/models/DayJs'
@@ -20,11 +20,11 @@ import { PubSub } from '../../shared/models/rx/PubSub'
 import { TObservable } from '../../shared/models/rx/TObservable'
 import type { TSubject } from '../../shared/models/rx/TSubject'
 import { PubSubUtils } from '../../shared/utils/PubSubUtils'
-import { Either, Future, IO, List } from '../../shared/utils/fp'
+import { Either, Future, IO, List, NotUsed, toNotUsed } from '../../shared/utils/fp'
 
 import { config } from '../config/unsafe'
 import { WSClientEvent } from '../model/event/WSClientEvent'
-import { logger } from '../utils/logger'
+import { getOnError } from '../utils/getOnError'
 import { useHttp } from './HttpContext'
 
 type LogContext = {
@@ -43,9 +43,9 @@ export const LogContextProvider: React.FC = ({ children }) => {
 
   const initialLogsFetched = useRef(false)
   const fetchInitialLogs = useCallback(
-    (): Future<void> =>
+    (): Future<NotUsed> =>
       initialLogsFetched.current
-        ? Future.unit
+        ? Future.notUsed
         : pipe(
             Future.tryCatch(() =>
               http(apiRoutes.logs.get, {}, [LogsWithTotalCount.codec, 'LogsWithTotalCount']),
@@ -55,6 +55,7 @@ export const LogContextProvider: React.FC = ({ children }) => {
               setTotalCount(init.totalCount)
               // eslint-disable-next-line functional/immutable-data
               initialLogsFetched.current = true
+              return NotUsed
             }),
           ),
     [http],
@@ -64,14 +65,14 @@ export const LogContextProvider: React.FC = ({ children }) => {
     const { closeWebSocket } = pipe(
       initWs,
       IO.chainFirst(({ wsClientEventObservable }) =>
-        pipe(wsClientEventObservable, TObservable.subscribe({ next: onWSClientEvent })),
+        pipe(wsClientEventObservable, TObservable.subscribe(getOnError)({ next: onWSClientEvent })),
       ),
-      IO.chainFirst(() => IO.runFutureUnsafe(fetchInitialLogs())),
+      IO.chainFirstIOK(() => pipe(fetchInitialLogs(), IO.runFuture(getOnError))),
       IO.runUnsafe,
     )
     return () => pipe(closeWebSocket, IO.runUnsafe)
 
-    function onWSClientEvent(e: WSClientEvent): Future<void> {
+    function onWSClientEvent(e: WSClientEvent): Future<NotUsed> {
       switch (e.type) {
         case 'Message':
           return onServerToClientEvent(e.event)
@@ -80,11 +81,11 @@ export const LogContextProvider: React.FC = ({ children }) => {
         case 'WSError':
         case 'InvalidMessageError':
           // return Future.fromIOEither(logger.info(e)) // TODO: do something?
-          return Future.unit
+          return Future.notUsed
       }
     }
 
-    function onServerToClientEvent(e: ServerToClientEvent): Future<void> {
+    function onServerToClientEvent(e: ServerToClientEvent): Future<NotUsed> {
       switch (e.type) {
         case 'Log':
           const { name, level, message } = e
@@ -94,6 +95,7 @@ export const LogContextProvider: React.FC = ({ children }) => {
             Future.map(date => {
               setLogs(List.append({ date, name, level, message }))
               setTotalCount(n => n + 1)
+              return NotUsed
             }),
           )
       }
@@ -101,7 +103,7 @@ export const LogContextProvider: React.FC = ({ children }) => {
   }, [fetchInitialLogs])
 
   const tryRefetchInitialLogs = useCallback(
-    (): Promise<void> => Future.runUnsafe(fetchInitialLogs()),
+    (): Promise<NotUsed> => Future.run(getOnError)(fetchInitialLogs()),
     [fetchInitialLogs],
   )
 
@@ -140,7 +142,9 @@ const initWs: IO<InitWSResult> = pipe(
   reconnectingWebSocket,
   IO.chain(ws => {
     const wsClientEventPubSub = PubSub<WSClientEvent>()
-    const pub = PubSubUtils.publish(wsClientEventPubSub.subject.next)('addEventListener')<{
+    const pub = PubSubUtils.publish(getOnError)(wsClientEventPubSub.subject.next)(
+      'addEventListener',
+    )<{
       /* eslint-disable functional/no-return-void */
       readonly open: (event: ReconnectingEvent) => void
       readonly close: (event: ReconnectingCloseEvent) => void
@@ -161,7 +165,7 @@ const initWs: IO<InitWSResult> = pipe(
 
         // clientToServerEventPubSub
         PubSubUtils.subscribeWithRefinement(
-          logger,
+          getOnError,
           clientToServerEventPubSub.observable,
         )(
           ObserverWithRefinement.of({
@@ -171,6 +175,7 @@ const initWs: IO<InitWSResult> = pipe(
               Either.mapLeft(Either.toError),
               Future.fromEither,
               Future.chainIOEitherK(encodedJson => IO.tryCatch(() => ws.send(encodedJson))),
+              Future.map(toNotUsed),
             ),
           }),
         ),

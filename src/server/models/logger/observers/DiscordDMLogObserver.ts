@@ -1,4 +1,4 @@
-import type { MessageOptions } from 'discord.js'
+import type { BaseMessageOptions } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
 import type { DiscordUserId } from '../../../../shared/models/DiscordUserId'
@@ -6,7 +6,7 @@ import type { LogEvent } from '../../../../shared/models/event/LogEvent'
 import { LogLevel } from '../../../../shared/models/log/LogLevel'
 import type { TObserver } from '../../../../shared/models/rx/TObserver'
 import { StringUtils } from '../../../../shared/utils/StringUtils'
-import { Future, NonEmptyArray, toUnit } from '../../../../shared/utils/fp'
+import { Future, NonEmptyArray, toNotUsed } from '../../../../shared/utils/fp'
 import { futureMaybe } from '../../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../../helpers/DiscordConnector'
@@ -22,7 +22,7 @@ export const DiscordDMLogObserver = (
   discord: DiscordConnector,
 ): TObserver<LogEvent> => ({
   next: ({ name, level, message }) => {
-    const options: string | MessageOptions = discordDMIsCompact
+    const options: string | BaseMessageOptions = discordDMIsCompact
       ? formatDMCompact(name, level, message)
       : formatDMEmbed(name, level, message)
     return pipe(
@@ -33,7 +33,7 @@ export const DiscordDMLogObserver = (
           futureMaybe.chain(user => DiscordConnector.sendMessage(user, options)),
         ),
       ),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   },
 })
@@ -47,7 +47,7 @@ const formatDMCompact = (name: string, level: LogLevel, msg: string): string => 
   return pipe(res, StringUtils.ellipse(2000))
 }
 
-const formatDMEmbed = (name: string, level: LogLevel, msg: string): MessageOptions =>
+const formatDMEmbed = (name: string, level: LogLevel, msg: string): BaseMessageOptions =>
   MessageComponent.singleSafeEmbed({
     color: LogLevel.hexColor[level],
     description: `${name} - ${msg}`,

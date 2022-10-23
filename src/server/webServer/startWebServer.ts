@@ -2,14 +2,14 @@ import type { ErrorRequestHandler } from 'express'
 import express from 'express'
 import { list } from 'fp-ts-contrib'
 import type { Parser } from 'fp-ts-routing'
-import { parse } from 'fp-ts-routing'
-import { Route as FpTsRoute, zero } from 'fp-ts-routing'
+import { Route as FpTsRoute, parse, zero } from 'fp-ts-routing'
 import { flow, identity, pipe } from 'fp-ts/function'
 import type * as http from 'http'
 import { Status } from 'hyper-ts'
 import type { ExpressConnection } from 'hyper-ts/lib/express'
 
 import { Method } from '../../shared/models/Method'
+import type { NotUsed } from '../../shared/utils/fp'
 import {
   Dict,
   Either,
@@ -19,15 +19,16 @@ import {
   Maybe,
   NonEmptyArray,
   Try,
-  toUnit,
+  toNotUsed,
 } from '../../shared/utils/fp'
 
-import type { HttpConfig } from '../Config'
+import type { HttpConfig } from '../config/Config'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
+import { getOnError } from '../utils/getOnError'
 import type { EndedMiddleware, MyMiddleware } from './models/MyMiddleware'
 import { MyMiddleware as M } from './models/MyMiddleware'
-import { Route } from './models/Route'
 import type { RouteMiddleware, RouteUpgrade } from './models/Route'
+import { Route } from './models/Route'
 import { SimpleHttpResponse } from './models/SimpleHttpResponse'
 import { UpgradeHandler } from './models/UpgradeHandler'
 
@@ -45,7 +46,7 @@ export const startWebServer = (
   Logger: LoggerGetter,
   config: HttpConfig,
   routes: List<Route>,
-): IO<void> => {
+): IO<NotUsed> => {
   const logger = Logger('WebServer')
 
   const filterOrigin: (fa: Maybe<Header>) => Maybe<Header> = pipe(
@@ -129,7 +130,7 @@ export const startWebServer = (
       ),
     ),
     IO.chain(bindUpgrades),
-    IO.map(toUnit),
+    IO.map(toNotUsed),
   )
 
   function bindMiddlewares(ioApp: IO<express.Express>, method: Method): IO<express.Express> {
@@ -174,7 +175,8 @@ export const startWebServer = (
           }),
           Future.orElse<Error, Either<SimpleHttpResponse, void>, Error>(handleErrorUpgrade),
           Future.map(Either.getOrElse(res => socket.end(SimpleHttpResponse.toRawHttp(res)))),
-          Future.runUnsafe,
+          Future.map<void, NotUsed>(toNotUsed),
+          Future.run(getOnError(logger)),
         ),
       ),
     )
@@ -204,7 +206,7 @@ export const startWebServer = (
       )
   }
 
-  function logConnection<A>(conn: ExpressConnection<A>): IO<void> {
+  function logConnection<A>(conn: ExpressConnection<A>): IO<NotUsed> {
     const method = conn.getMethod()
     const uri = conn.getOriginalUrl()
     const status = pipe(
@@ -217,8 +219,8 @@ export const startWebServer = (
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function onError(error: any): IO<void> {
-    return error.stack === undefined ? logger.error(error) : logger.error(error.stack)
+  function onError(error: any): IO<NotUsed> {
+    return logger.error(error.stack === undefined ? error : error.stack)
   }
 }
 

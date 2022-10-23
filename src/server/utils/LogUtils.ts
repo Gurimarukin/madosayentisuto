@@ -4,9 +4,6 @@ import type { LoggerType } from '../../shared/models/LoggerType'
 
 import { ChannelUtils } from './ChannelUtils'
 
-/**
- * @deprecated
- */
 const __testableFormat =
   (refinement: typeof ChannelUtils.isNamed) =>
   (
@@ -29,4 +26,11 @@ const pretty = (logger: LoggerType, ...args: Parameters<typeof format>): LoggerT
   error: (...us) => logger.error(format(...args), ...us),
 })
 
-export const LogUtils = { __testableFormat, format, pretty }
+export const LogUtils = {
+  format,
+  pretty,
+  /**
+   * @deprecated
+   */
+  __testableFormat,
+}

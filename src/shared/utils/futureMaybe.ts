@@ -52,11 +52,21 @@ const ap = optionT.ap(Future.ApplyPar)
 
 const chain = optionT.chain(Future.Monad)
 
-const chainFirst = fpTsChain.chainFirst(Chain)
+const chainNullableK: <A, B>(
+  f: (a: A) => B | null | undefined,
+) => (ma: Future<Maybe<A>>) => Future<Maybe<NonNullable<B>>> = optionT.chainNullableK(Future.Monad)
+
+const chainOptionK: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
+  optionT.chainOptionK(Future.Monad)
 
 const chainTaskEitherK = <A, B>(
   f: (a: A) => Future<B>,
 ): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) => chain(flow(f, Future.map(Maybe.some)))
+
+const chainIOK = <A, B>(f: (a: A) => io.IO<B>): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) =>
+  chainTaskEitherK(flow(f, Future.fromIO))
+
+const chainFirst = fpTsChain.chainFirst(Chain)
 
 const chainFirstTaskEitherK = <A, B>(
   f: (a: A) => Future<B>,
@@ -66,9 +76,6 @@ const chainFirstIOEitherK = <A, B>(
   f: (a: A) => IO<B>,
 ): ((fa: Future<Maybe<A>>) => Future<Maybe<A>>) =>
   chainFirstTaskEitherK(flow(f, Future.fromIOEither))
-
-const chainOption: <A, B>(f: (a: A) => Maybe<B>) => (fa: Future<Maybe<A>>) => Future<Maybe<B>> =
-  optionT.chainOptionK(Future.Monad)
 
 type Filter = {
   <A, B extends A>(refinement: Refinement<A, B>): (fa: Future<Maybe<A>>) => Future<Maybe<B>>
@@ -111,11 +118,13 @@ export const futureMaybe = {
   bind: fpTsChain.bind(Chain),
   bindTo: functor.bindTo(Functor),
   chain,
-  chainFirst,
+  chainNullableK,
+  chainOptionK,
   chainTaskEitherK,
+  chainIOK,
+  chainFirst,
   chainFirstTaskEitherK,
   chainFirstIOEitherK,
-  chainOption,
   filter,
   fromTaskEither,
   fromIO,

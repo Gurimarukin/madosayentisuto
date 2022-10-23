@@ -59,6 +59,7 @@ const upperOrLower: NonEmptyArray<(c: string) => string> = [
 ]
 const randomCaseChar = (c: string): string => random.randomElem(upperOrLower)()(c)
 
+// TODO: io.IO<string>
 const randomCase = (str: string): string =>
   pipe(
     str.split(''),

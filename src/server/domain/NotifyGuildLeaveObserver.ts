@@ -1,17 +1,17 @@
+import type { Collection, Guild, GuildAuditLogsEntry, User } from 'discord.js'
 import { AuditLogEvent } from 'discord.js'
-import type { Collection, Guild, GuildAuditLogsEntry } from 'discord.js'
-import type { User } from 'discord.js'
-import { apply, date, number, ord, random, semigroup } from 'fp-ts'
+import { apply, date, io, number, ord, random, semigroup } from 'fp-ts'
 import type { Ord } from 'fp-ts/Ord'
 import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { Future, IO, List, Maybe, NonEmptyArray, toUnit } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import { constants } from '../constants'
+import { constants } from '../config/constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
@@ -53,12 +53,12 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
         () =>
           pipe(
             log.info(`${user.tag} left the guild`),
-            IO.chain(() => randomMessage(leaveMessages)(boldMember)),
+            IO.chainIOK(() => randomMessage(leaveMessages)(boldMember)),
           ),
         ({ action, executor, reason }) =>
           pipe(
             log.info(logMessage(user.tag, executor.tag, action, reason)),
-            IO.chain(() =>
+            IO.chainIOK(() =>
               randomMessage(kickOrBanMessages(action))(boldMember, `<@${executor.id}>`),
             ),
           ),
@@ -68,7 +68,7 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
     )
   })
 
-  function sendMessage(guild: Guild): (futureMessage: Future<string>) => Future<void> {
+  function sendMessage(guild: Guild): (futureMessage: Future<string>) => Future<NotUsed> {
     return futureMessage =>
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
@@ -78,7 +78,7 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
         futureMaybe.chain(({ channel, message }) =>
           DiscordConnector.sendPrettyMessage(channel, message),
         ),
-        Future.map(toUnit),
+        Future.map(toNotUsed),
       )
   }
 }
@@ -91,11 +91,11 @@ const getLastLog =
       apply.sequenceS(Future.ApplyPar)({
         lastMemberKick: pipe(
           DiscordConnector.fetchAuditLogs(guild, { type: AuditLogEvent.MemberKick }),
-          futureMaybe.chainOption(validateLogs(nowMinusNetworkTolerance, userId)),
+          futureMaybe.chainOptionK(validateLogs(nowMinusNetworkTolerance, userId)),
         ),
         lastMemberBan: pipe(
           DiscordConnector.fetchAuditLogs(guild, { type: AuditLogEvent.MemberBanAdd }),
-          futureMaybe.chainOption(validateLogs(nowMinusNetworkTolerance, userId)),
+          futureMaybe.chainOptionK(validateLogs(nowMinusNetworkTolerance, userId)),
         ),
       }),
       Future.map(({ lastMemberKick, lastMemberBan }) =>
@@ -194,11 +194,10 @@ type MessageGetter<A extends readonly [...args: ReadonlyArray<unknown>]> = (...a
 
 const randomMessage =
   <A extends readonly [...args: ReadonlyArray<unknown>]>(nea: NonEmptyArray<MessageGetter<A>>) =>
-  (...args: A): IO<string> =>
+  (...args: A): io.IO<string> =>
     pipe(
       random.randomElem(nea),
-      IO.fromIO,
-      IO.map(msg => msg(...args)),
+      io.map(msg => msg(...args)),
     )
 
 const leaveMessages: NonEmptyArray<MessageGetter<readonly [member: string]>> = [

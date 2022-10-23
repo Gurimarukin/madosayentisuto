@@ -2,7 +2,8 @@ import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { Future, toUnit } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Future, toNotUsed } from '../../shared/utils/fp'
 
 import { MadEvent } from '../models/event/MadEvent'
 import type { BotStateService } from '../services/BotStateService'
@@ -20,11 +21,11 @@ export const ActivityStatusObserver = (botStateService: BotStateService) => {
 
       case 'CronJob':
         if (pipe(event.date, DayJs.isHourSharp(8))) return discordSetActivityFromDb()
-        return Future.unit
+        return Future.notUsed
     }
   })
 
-  function discordSetActivityFromDb(): Future<void> {
-    return pipe(botStateService.discordSetActivityFromDb(), Future.map(toUnit))
+  function discordSetActivityFromDb(): Future<NotUsed> {
+    return pipe(botStateService.discordSetActivityFromDb(), Future.map(toNotUsed))
   }
 }

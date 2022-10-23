@@ -1,6 +1,7 @@
-import type { io } from 'fp-ts'
+import type { nonEmptyArray } from 'fp-ts'
 import {
   either,
+  io,
   ioEither,
   option,
   readonlyArray,
@@ -10,17 +11,17 @@ import {
   task,
   taskEither,
 } from 'fp-ts'
-import type { nonEmptyArray } from 'fp-ts'
 import type { Predicate } from 'fp-ts/Predicate'
 import type { Refinement } from 'fp-ts/Refinement'
 import type { Lazy } from 'fp-ts/function'
-import { identity } from 'fp-ts/function'
-import { flow, pipe } from 'fp-ts/function'
-import * as C_ from 'io-ts/Codec'
+import { flow, identity, pipe } from 'fp-ts/function'
 import type { Codec } from 'io-ts/Codec'
-import * as D from 'io-ts/Decoder'
+import * as C_ from 'io-ts/Codec'
 import type { Decoder } from 'io-ts/Decoder'
+import * as D from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
+import type { Newtype } from 'newtype-ts'
+import { iso } from 'newtype-ts'
 
 import { MsDuration } from '../models/MsDuration'
 
@@ -36,16 +37,16 @@ export const inspect =
     return a
   }
 
-// eslint-disable-next-line functional/no-return-void
-export const noop = (): void => undefined
+export type NotUsed = Newtype<{ readonly NotUsed: unique symbol }, void>
+export const NotUsed = iso<NotUsed>().wrap(undefined)
 
 // a Future is an IO
 export type NonIO<A> = A extends io.IO<unknown> ? never : A
 
-type NonIONonUnit<A> = A extends void ? never : NonIO<A>
+type NonIONonNotUsed<A> = A extends NotUsed ? never : NonIO<A>
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, functional/no-return-void
-export const toUnit = <A>(_: NonIONonUnit<A>): void => undefined
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const toNotUsed = <A>(_: NonIONonNotUsed<A>): NotUsed => NotUsed
 
 export type Dict<K extends string, A> = readonlyRecord.ReadonlyRecord<K, A>
 export const Dict = readonlyRecord
@@ -145,6 +146,7 @@ export const Try = {
     ),
 }
 
+const futureNotUsed: Future<NotUsed> = taskEither.right(NotUsed)
 export type Future<A> = task.Task<Try<A>>
 export const Future = {
   ...taskEither,
@@ -160,7 +162,13 @@ export const Future = {
       pipe(fa, taskEither.orElse(flow(f, Future.fromIOEither))),
   fromIO: taskEither.fromIO as <A>(fa: io.IO<A>) => Future<A>,
   tryCatch: <A>(f: Lazy<Promise<A>>): Future<A> => taskEither.tryCatch(f, Either.toError),
-  unit: taskEither.right(undefined) as Future<void>,
+  notUsed: futureNotUsed,
+  todo: (...args: List<unknown>): Future<never> =>
+    taskEither.fromEither(Try.tryCatch(() => todo(args))),
+  run:
+    (onError: (e: Error) => io.IO<NotUsed>) =>
+    (f: Future<NotUsed>): Promise<NotUsed> =>
+      pipe(f, task.chain(either.fold(flow(onError, task.fromIO), task.of)))(),
   runUnsafe: <A>(fa: Future<A>): Promise<A> => pipe(fa, task.map(Try.getUnsafe))(),
   delay:
     <A>(ms: MsDuration) =>
@@ -168,25 +176,34 @@ export const Future = {
       pipe(future, task.delay(MsDuration.unwrap(ms))),
 }
 
+const ioNotUsed: IO<NotUsed> = ioEither.right(NotUsed)
 const ioFromIO: <A>(fa: io.IO<A>) => IO<A> = ioEither.fromIO
-const ioRunUnsafe = <A>(ioA: IO<A>): A => Try.getUnsafe(ioA())
+const ioRun =
+  (onError: (e: Error) => io.IO<NotUsed>) =>
+  (ioA: IO<NotUsed>): NotUsed =>
+    pipe(ioA, io.chain(either.fold(onError, io.of)))()
 export type IO<A> = io.IO<Try<A>>
 export const IO = {
   ...ioEither,
   right: ioEither.right as <A>(a: A) => IO<A>,
   tryCatch: <A>(a: Lazy<A>): IO<A> => ioEither.tryCatch(a, Either.toError),
   fromIO: ioFromIO,
-  unit: ioEither.right(undefined) as IO<void>,
-  runFutureUnsafe: (f: Future<void>): IO<void> =>
-    ioFromIO(() => {
+  notUsed: ioNotUsed,
+  runFuture:
+    (onError: (e: Error) => io.IO<NotUsed>) =>
+    (f: Future<NotUsed>): io.IO<NotUsed> =>
+    () => {
       // eslint-disable-next-line functional/no-expression-statement
-      Future.runUnsafe(f)
-    }),
-  runUnsafe: ioRunUnsafe,
-  delay:
+      pipe(f, Future.run(onError))
+      return NotUsed
+    },
+  run: ioRun,
+  runUnsafe: <A>(ioA: IO<A>): A => Try.getUnsafe(ioA()),
+  setTimeout:
+    (onError: (e: Error) => io.IO<NotUsed>) =>
     (delay: MsDuration) =>
-    (io_: IO<void>): IO<NodeJS.Timeout> =>
-      IO.tryCatch(() => setTimeout(() => pipe(io_, ioRunUnsafe), MsDuration.unwrap(delay))),
+    (io_: IO<NotUsed>): IO<NodeJS.Timeout> =>
+      IO.tryCatch(() => setTimeout(() => pipe(io_, ioRun(onError)), MsDuration.unwrap(delay))),
 }
 
 export const refinementFromPredicate = identity as <A>(pred: Predicate<A>) => Refinement<A, A>

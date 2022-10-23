@@ -2,9 +2,8 @@ import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { Sink } from '../../shared/models/rx/Sink'
-import type { NonEmptyArray } from '../../shared/utils/fp'
-import { Future } from '../../shared/utils/fp'
-import { List } from '../../shared/utils/fp'
+import type { NonEmptyArray, NotUsed } from '../../shared/utils/fp'
+import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import { MessageId } from '../models/MessageId'
@@ -24,7 +23,7 @@ export const PollResponsePersistence = (
     mongoCollection('pollResponse'),
   )
 
-  const ensureIndexes: Future<void> = collection.ensureIndexes([
+  const ensureIndexes: Future<NotUsed> = collection.ensureIndexes([
     { key: { message: -1, user: -1, choiceIndex: -1 }, unique: true },
   ])
 

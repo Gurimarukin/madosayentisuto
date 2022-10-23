@@ -1,7 +1,7 @@
 /* eslint-disable functional/no-expression-statement */
 import { flow, pipe } from 'fp-ts/function'
-import type { Decoder } from 'io-ts/lib/Decoder'
-import type { Encoder } from 'io-ts/lib/Encoder'
+import type { Decoder } from 'io-ts/Decoder'
+import type { Encoder } from 'io-ts/Encoder'
 import ky, { HTTPError } from 'ky'
 import type { HttpMethod, Options } from 'ky/distribution/types/options'
 import React, { createContext, useCallback, useContext } from 'react'

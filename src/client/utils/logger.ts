@@ -1,9 +1,19 @@
+import { pipe } from 'fp-ts/function'
+
 import type { LoggerType } from '../../shared/models/LoggerType'
-import { IO } from '../../shared/utils/fp'
+import { IO, toNotUsed } from '../../shared/utils/fp'
 
 export const logger: LoggerType = {
-  debug: (...params) => IO.fromIO(() => console.debug(...params)),
-  info: (...params) => IO.fromIO(() => console.info(...params)),
-  warn: (...params) => IO.fromIO(() => console.warn(...params)),
-  error: (...params) => IO.fromIO(() => console.error(...params)),
+  debug: log(console.debug),
+  info: log(console.info),
+  warn: log(console.warn),
+  error: log(console.error),
+}
+
+function log(f: typeof console.log): LoggerType['info'] {
+  return (...args) =>
+    pipe(
+      IO.fromIO(() => f(...args)),
+      IO.map(toNotUsed),
+    )
 }

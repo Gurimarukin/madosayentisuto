@@ -5,11 +5,13 @@ import type { Lens } from 'monocle-ts/Lens'
 
 import type { ChannelId } from '../../shared/models/ChannelId'
 import { GuildId } from '../../shared/models/guild/GuildId'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
+import { AudioSubscription } from '../helpers/AudioSubscription'
 import { DiscordConnector } from '../helpers/DiscordConnector'
-import { MusicSubscription } from '../helpers/MusicSubscription'
+import type { ResourcesHelper } from '../helpers/ResourcesHelper'
 import type { YtDlp } from '../helpers/YtDlp'
 import type { Calls } from '../models/guildState/Calls'
 import { GuildState } from '../models/guildState/GuildState'
@@ -20,6 +22,7 @@ import type { GuildStatePersistence } from '../persistence/GuildStatePersistence
 import type { GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
+import { getOnError } from '../utils/getOnError'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type LensInner<A extends Lens<any, any>> = A extends Lens<any, infer B> ? B : never
@@ -32,6 +35,7 @@ export type GuildStateService = ReturnType<typeof GuildStateService>
 export const GuildStateService = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
+  resourcesHelper: ResourcesHelper,
   ytDlp: YtDlp,
   guildStatePersistence: GuildStatePersistence,
 ) => {
@@ -69,14 +73,14 @@ export const GuildStateService = (
     setBirthdayChannel: (guild: Guild, channel: TextChannel): Future<GuildState> =>
       setLens(guild, 'birthdayChannel', Maybe.some(channel)),
 
-    getSubscription: (guild: Guild): Future<MusicSubscription> =>
+    getSubscription: (guild: Guild): Future<AudioSubscription> =>
       pipe(
         get(guild, 'subscription'),
         Future.fromIOEither,
         Future.map(
           flow(
             Maybe.flatten,
-            Maybe.getOrElse(() => MusicSubscription(Logger, ytDlp, guild)),
+            Maybe.getOrElse(() => AudioSubscription(Logger, resourcesHelper, ytDlp, guild)),
           ),
         ),
         Future.chainFirst(subscription => setLens(guild, 'subscription', Maybe.some(subscription))),
@@ -107,18 +111,18 @@ export const GuildStateService = (
   ): Future<GuildState> {
     return pipe(
       cacheUpdateAt(guild, update),
-      Future.chainFirstIOEitherK(newState => {
+      Future.chainFirstIOK(newState => {
         const log = LogUtils.pretty(logger, guild)
 
         // upsert new state, but don't wait until it's done; immediatly return state from cache
         return pipe(
           guildStatePersistence.upsert(GuildStateDb.fromGuildState(newState)),
-          Future.chainIOEitherK(success => (success ? IO.unit : logError())),
+          Future.chainIOEitherK(success => (success ? IO.notUsed : logError())),
           Future.orElseIOEitherK(e => logError('-', e)),
-          IO.runFutureUnsafe,
+          IO.runFuture(getOnError(logger)),
         )
 
-        function logError(...u: List<unknown>): IO<void> {
+        function logError(...u: List<unknown>): IO<NotUsed> {
           return log.error('Failed to upsert state', ...u)
         }
       }),

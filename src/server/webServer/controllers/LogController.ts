@@ -1,6 +1,7 @@
 import { json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
+import type { Subscription } from 'rxjs'
 import { WebSocketServer } from 'ws'
 
 import { ServerToClientEvent } from '../../../shared/models/event/ServerToClientEvent'
@@ -9,11 +10,13 @@ import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRe
 import type { TObservable } from '../../../shared/models/rx/TObservable'
 import type { TSubject } from '../../../shared/models/rx/TSubject'
 import { PubSubUtils } from '../../../shared/utils/PubSubUtils'
-import { Either, Future, IO } from '../../../shared/utils/fp'
+import type { NotUsed } from '../../../shared/utils/fp'
+import { Either, Future, IO, toNotUsed } from '../../../shared/utils/fp'
 
 import { WSServerEvent } from '../../models/event/WSServerEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { LogService } from '../../services/LogService'
+import { getOnError } from '../../utils/getOnError'
 import { unknownToError } from '../../utils/unknownToError'
 import type { EndedMiddleware } from '../models/MyMiddleware'
 import { MyMiddleware as M } from '../models/MyMiddleware'
@@ -37,12 +40,16 @@ export const LogController = (
         IO.tryCatch(() =>
           ws.on(
             'message',
-            flow(WSServerEvent.messageFromRawData, wsServerEventSubject.next, IO.runUnsafe),
+            flow(
+              WSServerEvent.messageFromRawData,
+              wsServerEventSubject.next,
+              IO.run(getOnError(logger)),
+            ),
           ),
         ),
         IO.chain(() =>
           PubSubUtils.subscribeWithRefinement(
-            logger,
+            getOnError(logger),
             serverToClientEventObservable,
           )(
             ObserverWithRefinement.of({
@@ -52,14 +59,18 @@ export const LogController = (
                 Either.mapLeft(unknownToError),
                 Future.fromEither,
                 Future.chainIOEitherK(encodedJson => IO.tryCatch(() => ws.send(encodedJson))),
+                Future.map(toNotUsed),
               ),
             }),
           ),
         ),
-        IO.runUnsafe,
+        IO.map<Subscription, NotUsed>(toNotUsed), // TODO: do something with Subcription?
+        IO.run(getOnError(logger)),
       ),
     )
-    .on('close', () => IO.runUnsafe(wsServerEventSubject.next(WSServerEvent.Closed())))
+    .on('close', () =>
+      pipe(wsServerEventSubject.next(WSServerEvent.Closed()), IO.run(getOnError(logger))),
+    )
 
   return {
     listLogs: (/* user: User */): EndedMiddleware =>

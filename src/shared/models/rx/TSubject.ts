@@ -1,6 +1,6 @@
-import type { IO } from '../../utils/fp'
+import type { IO, NotUsed } from '../../utils/fp'
 
 export type TSubject<A> = {
-  readonly next: (value: A) => IO<void>
-  readonly complete: IO<void>
+  readonly next: (value: A) => IO<NotUsed>
+  readonly complete: IO<NotUsed>
 }

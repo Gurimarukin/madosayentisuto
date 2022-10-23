@@ -4,6 +4,7 @@ import * as D from 'io-ts/Decoder'
 
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../../shared/utils/StringUtils'
+import type { NotUsed } from '../../../shared/utils/fp'
 import { Either, Future } from '../../../shared/utils/fp'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
@@ -43,24 +44,24 @@ export const OtherCommandsObserver = () => {
     'InteractionCreate',
   )(({ interaction }) => {
     if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
-    return Future.unit
+    return Future.notUsed
   })
 
-  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<void> {
+  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     switch (interaction.commandName) {
       case Keys.ping:
         return onPing(interaction)
       case Keys.randomcase:
         return onRandomCase(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
-  function onPing(interaction: ChatInputCommandInteraction): Future<void> {
+  function onPing(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return DiscordConnector.interactionReply(interaction, { content: 'pong', ephemeral: true })
   }
 
-  function onRandomCase(interaction: ChatInputCommandInteraction): Future<void> {
+  function onRandomCase(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return pipe(
       D.string.decode(interaction.options.getString(Keys.message)),
       Either.bimap(

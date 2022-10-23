@@ -1,10 +1,11 @@
 import { pipe } from 'fp-ts/function'
 
-import { IO, toUnit } from '../shared/utils/fp'
+import type { NotUsed } from '../shared/utils/fp'
+import { IO, toNotUsed } from '../shared/utils/fp'
 
-import { Config } from './Config'
+import { Config } from './config/Config'
 
-const main: IO<void> = pipe(Config.load, IO.map(toUnit))
+const main: IO<NotUsed> = pipe(Config.load, IO.map(toNotUsed))
 
 // eslint-disable-next-line functional/no-expression-statement
 IO.runUnsafe(main)

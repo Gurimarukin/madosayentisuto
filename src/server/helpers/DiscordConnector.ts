@@ -8,12 +8,13 @@ import type {
   VoiceConnection,
   VoiceConnectionStatus,
 } from '@discordjs/voice'
-import { createAudioPlayer, joinVoiceChannel } from '@discordjs/voice'
-import { entersState as discordEntersState } from '@discordjs/voice'
+import {
+  createAudioPlayer,
+  entersState as discordEntersState,
+  joinVoiceChannel,
+} from '@discordjs/voice'
 import type {
   APIMessage,
-  AllowedThreadTypeForNewsChannel,
-  AllowedThreadTypeForTextChannel,
   ApplicationCommand,
   ButtonInteraction,
   Channel,
@@ -31,8 +32,8 @@ import type {
   InteractionUpdateOptions,
   Message,
   MessageComponentInteraction,
+  MessageCreateOptions,
   MessageEditOptions,
-  MessageOptions,
   MessagePayload,
   MessageReaction,
   PartialTextBasedChannelFields,
@@ -41,14 +42,9 @@ import type {
   RoleResolvable,
   StartThreadOptions,
   ThreadChannel,
-  ThreadCreateOptions,
-  ThreadManager,
   User,
 } from 'discord.js'
-import { Routes } from 'discord.js'
-import { Partials } from 'discord.js'
-import { GatewayIntentBits } from 'discord.js'
-import { Client, DiscordAPIError } from 'discord.js'
+import { Client, DiscordAPIError, GatewayIntentBits, Partials, Routes } from 'discord.js'
 import { refinement } from 'fp-ts'
 import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
@@ -59,13 +55,13 @@ import { ChannelId } from '../../shared/models/ChannelId'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { GuildId } from '../../shared/models/guild/GuildId'
-import type { NonEmptyArray, Tuple } from '../../shared/utils/fp'
-import { Either, Future, IO, List, Maybe, toUnit } from '../../shared/utils/fp'
+import type { NonEmptyArray, NotUsed, Tuple } from '../../shared/utils/fp'
+import { Either, Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
-import type { ClientConfig } from '../Config'
-import { constants } from '../constants'
+import type { ClientConfig } from '../config/Config'
+import { constants } from '../config/constants'
 import { MessageId } from '../models/MessageId'
 import { RoleId } from '../models/RoleId'
 import type { Activity } from '../models/botState/Activity'
@@ -84,16 +80,6 @@ type MyPartial<A> = {
 }
 
 type MyInteraction = CommandInteraction | MessageComponentInteraction
-
-type MyThreadChannelTypes = AllowedThreadTypeForNewsChannel | AllowedThreadTypeForTextChannel
-type MyThreadCreateOptions<A extends MyThreadChannelTypes> = Omit<
-  ThreadCreateOptions<A>,
-  'type'
-> & {
-  readonly type?: A
-}
-
-export type BaseMessageOptions = Pick<MessageOptions, 'components' | 'content' | 'embeds'>
 
 export type DiscordConnector = ReturnType<typeof of>
 
@@ -222,7 +208,11 @@ const audioPlayerPause = (audioPlayer: AudioPlayer): IO<boolean> =>
 const audioPlayerPlayAudioResource = (
   audioPlayer: AudioPlayer,
   audioResource: AudioResource,
-): IO<void> => IO.tryCatch(() => audioPlayer.play(audioResource))
+): IO<NotUsed> =>
+  pipe(
+    IO.tryCatch(() => audioPlayer.play(audioResource)),
+    IO.map(toNotUsed),
+  )
 
 const audioPlayerStop = (audioPlayer: AudioPlayer): IO<boolean> =>
   IO.tryCatch(() => audioPlayer.stop(true))
@@ -257,16 +247,17 @@ function entersState(
 const interactionDeferReply = (
   interaction: MyInteraction,
   options?: InteractionDeferReplyOptions,
-): Future<void> =>
+): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.deferReply(options)),
-    Future.map(toUnit), // TODO: maybe do something with result?
+    Future.map(toNotUsed), // TODO: maybe do something with result?
     debugLeft('interactionDeferReply'),
   )
 
-const interactionDeleteReply = (interaction: MyInteraction): Future<void> =>
+const interactionDeleteReply = (interaction: MyInteraction): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.deleteReply()),
+    Future.map(toNotUsed),
     debugLeft('interactionDeleteReply'),
   )
 
@@ -293,31 +284,32 @@ const interactionFollowUp = (
 const interactionReply = (
   interaction: MyInteraction,
   options: string | MessagePayload | InteractionReplyOptions,
-): Future<void> =>
+): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.reply(options)),
-    Future.map(toUnit), // TODO: maybe do something with result?
+    Future.map(toNotUsed), // TODO: maybe do something with result?
     Future.orElse(e =>
-      isDiscordAPIError('Cannot send an empty message')(e) ? Future.unit : Future.left(e),
+      isDiscordAPIError('Cannot send an empty message')(e) ? Future.notUsed : Future.left(e),
     ),
     debugLeft('interactionReply'),
   )
 
-const interactionShowModal = (interaction: CommandInteraction, modal: MyModal): Future<void> =>
+const interactionShowModal = (interaction: CommandInteraction, modal: MyModal): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.showModal(modal)),
+    Future.map(toNotUsed),
     debugLeft('interactionShowModal'),
   )
 
 const interactionUpdate = (
   interaction: ButtonInteraction,
   options: string | MessagePayload | InteractionUpdateOptions = {},
-): Future<void> =>
+): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.update(options)),
-    Future.map(toUnit), // TODO: maybe do something with result?
+    Future.map(toNotUsed), // TODO: maybe do something with result?
     Future.orElse(e =>
-      isDiscordAPIError('Unknown interaction')(e) ? Future.unit : Future.left(e),
+      isDiscordAPIError('Unknown interaction')(e) ? Future.notUsed : Future.left(e),
     ),
     debugLeft('interactionUpdate'),
   )
@@ -387,22 +379,27 @@ const roleRemove = (
   )
 
 const restPutApplicationCommands =
-  (rest: REST, clientId: string) =>
+  (rest: REST, clientId: DiscordUserId) =>
   (
     body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
   ): Future<Separated<ReadonlyArray<Error>, List<GlobalPutCommandResult>>> =>
     decodeFutureArrayResult(
-      Future.tryCatch(() => rest.put(Routes.applicationCommands(clientId), { body })),
+      Future.tryCatch(() =>
+        rest.put(Routes.applicationCommands(DiscordUserId.unwrap(clientId)), { body }),
+      ),
     )([GlobalPutCommandResult.decoder, 'GlobalPutCommandResult'])('restPutApplicationCommands')
 
 const restPutApplicationGuildCommands =
-  (rest: REST, clientId: string, guildId: GuildId) =>
+  (rest: REST, clientId: DiscordUserId, guildId: GuildId) =>
   (
     body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
   ): Future<Separated<ReadonlyArray<Error>, List<GuildPutCommandResult>>> =>
     decodeFutureArrayResult(
       Future.tryCatch(() =>
-        rest.put(Routes.applicationGuildCommands(clientId, GuildId.unwrap(guildId)), { body }),
+        rest.put(
+          Routes.applicationGuildCommands(DiscordUserId.unwrap(clientId), GuildId.unwrap(guildId)),
+          { body },
+        ),
       ),
     )([GuildPutCommandResult.decoder, 'GuildPutCommandResult'])('restPutApplicationGuildCommands')
 
@@ -429,7 +426,7 @@ const decodeFutureArrayResult =
 
 const sendMessage = <InGuild extends boolean = boolean>(
   channel: PartialTextBasedChannelFields<InGuild>,
-  options: string | MessagePayload | MessageOptions,
+  options: string | MessagePayload | MessageCreateOptions,
 ): Future<Maybe<Message<InGuild>>> =>
   pipe(
     Future.tryCatch(() => channel.send(options)),
@@ -445,7 +442,7 @@ const sendMessage = <InGuild extends boolean = boolean>(
 const sendPrettyMessage = (
   channel: PartialTextBasedChannelFields,
   message: string,
-  options: MessageOptions = {},
+  options: Omit<MessageCreateOptions, 'embeds'> = {},
 ): Future<Maybe<Message>> =>
   sendMessage(channel, {
     ...options,
@@ -464,16 +461,6 @@ const threadDelete = (thread: ThreadChannel): Future<boolean> =>
     debugLeft('threadDelete'),
   )
 
-const threadsCreate = <A extends MyThreadChannelTypes>(
-  threads: ThreadManager<A>,
-  options: MyThreadCreateOptions<A>,
-): Future<Maybe<ThreadChannel>> =>
-  pipe(
-    Future.tryCatch(() => threads.create(options)),
-    Future.map(Maybe.some),
-    debugLeft('threadsCreate'),
-  )
-
 const threadSetArchived = (
   thread: ThreadChannel,
   archived: boolean,
@@ -484,8 +471,11 @@ const threadSetArchived = (
     debugLeft('threadSetArchived'),
   )
 
-const voiceConnectionDestroy = (connection: VoiceConnection): IO<void> =>
-  IO.tryCatch(() => connection.destroy())
+const voiceConnectionDestroy = (connection: VoiceConnection): IO<NotUsed> =>
+  pipe(
+    IO.tryCatch(() => connection.destroy()),
+    IO.map(toNotUsed),
+  )
 
 const voiceConnectionJoin = (channel: GuildAudioChannel): IO<VoiceConnection> =>
   IO.tryCatch(() =>
@@ -506,8 +496,38 @@ const voiceConnectionSubscribe = (
   )
 
 /**
- * DiscordConnector
+ * constructor
  */
+
+const fromConfig = (config: ClientConfig): Future<DiscordConnector> =>
+  Future.tryCatch(
+    () =>
+      new Promise<DiscordConnector>(resolve => {
+        const client = new Client({
+          intents: [
+            GatewayIntentBits.DirectMessages,
+            GatewayIntentBits.GuildBans,
+            GatewayIntentBits.GuildMembers,
+            GatewayIntentBits.GuildMessageReactions,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.GuildVoiceStates,
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.MessageContent,
+          ],
+          partials: [
+            Partials.User,
+            Partials.Channel,
+            Partials.GuildMember,
+            Partials.Message,
+            Partials.Reaction,
+          ],
+        })
+        /* eslint-disable functional/no-expression-statement */
+        client.once('ready', () => resolve(of(client)))
+        client.login(config.secret)
+        /* eslint-enable functional/no-expression-statement */
+      }),
+  )
 
 export const DiscordConnector = {
   fetchAuditLogs,
@@ -543,41 +563,12 @@ export const DiscordConnector = {
   sendMessage,
   sendPrettyMessage,
   threadDelete,
-  threadsCreate,
   threadSetArchived,
   voiceConnectionDestroy,
   voiceConnectionJoin,
   voiceConnectionSubscribe,
 
-  fromConfig: (config: ClientConfig): Future<DiscordConnector> =>
-    Future.tryCatch(
-      () =>
-        new Promise<DiscordConnector>(resolve => {
-          const client = new Client({
-            intents: [
-              GatewayIntentBits.DirectMessages,
-              GatewayIntentBits.GuildBans,
-              GatewayIntentBits.GuildMembers,
-              GatewayIntentBits.GuildMessageReactions,
-              GatewayIntentBits.GuildMessages,
-              GatewayIntentBits.GuildVoiceStates,
-              GatewayIntentBits.Guilds,
-              GatewayIntentBits.MessageContent,
-            ],
-            partials: [
-              Partials.User,
-              Partials.Channel,
-              Partials.GuildMember,
-              Partials.Message,
-              Partials.Reaction,
-            ],
-          })
-          /* eslint-disable functional/no-expression-statement */
-          client.once('ready', () => resolve(of(client)))
-          client.login(config.secret)
-          /* eslint-enable functional/no-expression-statement */
-        }),
-    ),
+  fromConfig,
 }
 
 /**

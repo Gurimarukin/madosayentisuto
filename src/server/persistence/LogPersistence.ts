@@ -5,7 +5,7 @@ import type { DayJs } from '../../shared/models/DayJs'
 import type { Log } from '../../shared/models/log/Log'
 import { LogLevel } from '../../shared/models/log/LogLevel'
 import type { TObservable } from '../../shared/models/rx/TObservable'
-import type { List } from '../../shared/utils/fp'
+import type { List, NotUsed } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
@@ -32,7 +32,7 @@ export function LogPersistence(Logger: LoggerGetter, mongoCollection: MongoColle
   const logger = Logger('LogPersistence')
   const collection = FpCollection(logger)([logMongoCodec, 'ConsoleLog'])(mongoCollection('log'))
 
-  const ensureIndexes: Future<void> = collection.ensureIndexes([{ key: { date: -1 } }])
+  const ensureIndexes: Future<NotUsed> = collection.ensureIndexes([{ key: { date: -1 } }])
 
   const countAll: Future<number> = collection.count({})
   const countNonDebug: Future<number> = collection.count({ level: { $ne: 'debug' } })

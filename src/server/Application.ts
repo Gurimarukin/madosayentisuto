@@ -5,13 +5,15 @@ import type { ServerToClientEvent } from '../shared/models/event/ServerToClientE
 import { ObserverWithRefinement } from '../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../shared/models/rx/PubSub'
 import { PubSubUtils } from '../shared/utils/PubSubUtils'
+import type { NotUsed } from '../shared/utils/fp'
 import { IO } from '../shared/utils/fp'
 
 import type { Context } from './Context'
-import { constants } from './constants'
+import { constants } from './config/constants'
 import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
 import { CallsAutoroleObserver } from './domain/CallsAutoroleObserver'
 import { DisconnectVocalObserver } from './domain/DisconnectVocalObserver'
+import { ElevatorObserver } from './domain/ElevatorObserver'
 import { MusicThreadCleanObserver } from './domain/MusicThreadCleanObserver'
 import { NotifyBirthdayObserver } from './domain/NotifyBirthdayObserver'
 import { NotifyGuildLeaveObserver } from './domain/NotifyGuildLeaveObserver'
@@ -42,6 +44,7 @@ import { MemberBirthdateService } from './services/MemberBirthdateService'
 import { PollService } from './services/PollService'
 import { ScheduledEventService } from './services/ScheduledEventService'
 import { UserService } from './services/UserService'
+import { getOnError } from './utils/getOnError'
 import { Routes } from './webServer/Routes'
 import { DiscordClientController } from './webServer/controllers/DiscordClientController'
 import { HealthCheckController } from './webServer/controllers/HealthCheckController'
@@ -68,10 +71,11 @@ export const Application = (
     scheduledEventPersistence,
     userPersistence,
     healthCheckService,
-    ytDlp,
     jwtHelper,
+    resourcesHelper,
+    ytDlp,
   }: Context,
-): IO<void> => {
+): IO<NotUsed> => {
   const { Logger } = loggerObservable
   const logger = Logger('Application')
 
@@ -79,7 +83,13 @@ export const Application = (
 
   const botStateService = BotStateService(Logger, discord, botStatePersistence)
   const logService = LogService(logPersistence)
-  const guildStateService = GuildStateService(Logger, discord, ytDlp, guildStatePersistence)
+  const guildStateService = GuildStateService(
+    Logger,
+    discord,
+    resourcesHelper,
+    ytDlp,
+    guildStatePersistence,
+  )
   const memberBirthdateService = MemberBirthdateService(memberBirthdatePersistence)
   const pollService = PollService(pollQuestionPersistence, pollResponsePersistence)
   const scheduledEventService = ScheduledEventService(scheduledEventPersistence)
@@ -120,7 +130,10 @@ export const Application = (
   )
 
   const madEventsPubSub = PubSub<MadEvent>()
-  const sub = PubSubUtils.subscribeWithRefinement<MadEvent>(logger, madEventsPubSub.observable)
+  const sub = PubSubUtils.subscribeWithRefinement<MadEvent>(
+    getOnError(logger),
+    madEventsPubSub.observable,
+  )
 
   const logsObserver = LogObserver(logService, serverToClientEventPubSub.subject)
 
@@ -141,10 +154,11 @@ export const Application = (
       sub(ActivityStatusObserver(botStateService)),
       sub(CallsAutoroleObserver(Logger, guildStateService)),
       sub(DisconnectVocalObserver(clientId, guildStateService)),
+      sub(ElevatorObserver(Logger, guildStateService)),
       sub(MusicThreadCleanObserver(Logger, clientId, guildStateService)),
       sub(NotifyBirthdayObserver(discord, guildStateService, memberBirthdateService)),
       sub(NotifyGuildLeaveObserver(Logger)),
-      sub(NotifyVoiceCallObserver(Logger, guildStateService)),
+      sub(NotifyVoiceCallObserver(Logger, clientId, guildStateService)),
       sub(ScheduledEventObserver(Logger, discord, scheduledEventService, guildStateService)),
       sub(ScheduleItsFridayObserver(Logger, scheduledEventService)),
       sub(SendWelcomeDMObserver(Logger)),
@@ -154,9 +168,9 @@ export const Application = (
       sub(ObserverWithRefinement.of(LogMadEventObserver(logger))),
       loggerObservable.subscribe('debug', logsObserver.logEventObserver),
       sub(logsObserver.madEventObserver),
-      publishDiscordEvents(discord, madEventsPubSub.subject),
+      publishDiscordEvents(logger, discord, madEventsPubSub.subject),
       scheduleCronJob(Logger, madEventsPubSub.subject),
-      sub(VoiceStateUpdateTransformer(Logger, clientId, madEventsPubSub.subject)),
+      sub(VoiceStateUpdateTransformer(clientId, madEventsPubSub.subject)),
     ),
     IO.chain(() => startWebServer(Logger, config.http, routes)),
     IO.chain(() => madEventsPubSub.subject.next(MadEvent.AppStarted())),

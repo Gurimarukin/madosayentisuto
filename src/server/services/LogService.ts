@@ -1,21 +1,21 @@
-import { apply } from 'fp-ts'
+import { apply, io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
+import { Store } from '../../shared/models/Store'
 import type { Log } from '../../shared/models/log/Log'
 import type { LogsWithTotalCount } from '../../shared/models/log/LogsWithTotalCount'
 import { Sink } from '../../shared/models/rx/Sink'
-import { IO, List } from '../../shared/utils/fp'
-import { Future, toUnit } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Future, List, toNotUsed } from '../../shared/utils/fp'
 
-import { constants } from '../constants'
-import { Store } from '../models/Store'
+import { constants } from '../config/constants'
 import type { LogPersistence } from '../persistence/LogPersistence'
 
 export type LogService = ReturnType<typeof LogService>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const LogService = (logPersistence: LogPersistence) => {
-  const buffer = Store<List<Log>>([])
+  const buffer = Store<List<Log>>(List.empty)
 
   const list: Future<LogsWithTotalCount> = pipe(
     apply.sequenceS(Future.ApplyPar)({
@@ -35,7 +35,8 @@ export const LogService = (logPersistence: LogPersistence) => {
     }),
     Future.chain(({ logs, totalCount }) =>
       pipe(
-        Future.fromIOEither(buffer.get),
+        buffer.get,
+        Future.fromIO,
         Future.map(
           (bufferLogs): LogsWithTotalCount => ({
             logs: pipe(logs, List.concat(bufferLogs)),
@@ -46,21 +47,22 @@ export const LogService = (logPersistence: LogPersistence) => {
     ),
   )
 
-  const addLog = (log: Log): IO<void> => pipe(buffer.modify(List.append(log)), IO.map(toUnit))
+  const addLog = (log: Log): io.IO<NotUsed> =>
+    pipe(buffer.modify(List.append(log)), io.map(toNotUsed))
 
-  const saveLogs: Future<void> = pipe(
+  const saveLogs: Future<NotUsed> = pipe(
     buffer.get,
-    IO.chainFirst(() => buffer.set([])),
-    Future.fromIOEither,
+    io.chainFirst(() => buffer.set([])),
+    Future.fromIO,
     Future.chain(logs =>
       pipe(
         logPersistence.insertMany(logs),
-        Future.map(toUnit),
+        Future.map(toNotUsed),
         Future.orElse(() =>
           pipe(
             buffer.modify(newLogs => pipe(logs, List.concat(newLogs))),
-            Future.fromIOEither,
-            Future.map(toUnit),
+            Future.fromIO,
+            Future.map(toNotUsed),
           ),
         ),
       ),

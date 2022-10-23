@@ -5,7 +5,8 @@ import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { Future, IO, Maybe, toUnit } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Future, IO, Maybe, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
@@ -34,7 +35,7 @@ export const CallsAutoroleObserver = (
   )(event => {
     const interaction = event.interaction
 
-    if (!interaction.isButton()) return Future.unit
+    if (!interaction.isButton()) return Future.notUsed
 
     switch (interaction.customId) {
       case initCallsButton.subscribeId:
@@ -43,10 +44,10 @@ export const CallsAutoroleObserver = (
         return onUnsubscribe(interaction)
     }
 
-    return Future.unit
+    return Future.notUsed
   })
 
-  function onSubscribe(interaction: ButtonInteraction): Future<void> {
+  function onSubscribe(interaction: ButtonInteraction): Future<NotUsed> {
     return withCallsAndMember(interaction, (guild, { calls, member }) =>
       DiscordConnector.hasRole(member, calls.role)
         ? Future.right(true)
@@ -63,7 +64,7 @@ export const CallsAutoroleObserver = (
     )
   }
 
-  function onUnsubscribe(interaction: ButtonInteraction): Future<void> {
+  function onUnsubscribe(interaction: ButtonInteraction): Future<NotUsed> {
     return withCallsAndMember(interaction, (guild, { calls, member }) =>
       !DiscordConnector.hasRole(member, calls.role)
         ? Future.right(true)
@@ -83,7 +84,7 @@ export const CallsAutoroleObserver = (
   function withCallsAndMember(
     interaction: ButtonInteraction,
     f: (guild: Guild, callsAndMember: CallsAndMember) => Future<boolean>,
-  ): Future<void> {
+  ): Future<NotUsed> {
     return pipe(
       futureMaybe.Do,
       Future.chainFirst(() => DiscordConnector.interactionUpdate(interaction)),
@@ -97,7 +98,7 @@ export const CallsAutoroleObserver = (
       futureMaybe.chainTaskEitherK(({ callsAndMember: { calls } }) =>
         refreshCallsInitMessage(calls),
       ),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 
@@ -110,16 +111,16 @@ export const CallsAutoroleObserver = (
       Future.chainFirstIOEitherK(
         Maybe.fold(
           () => LogUtils.pretty(logger, guild).warn('interaction.member was null'),
-          () => IO.unit,
+          () => IO.notUsed,
         ),
       ),
     )
   }
 
-  function refreshCallsInitMessage(calls: Calls): Future<void> {
+  function refreshCallsInitMessage(calls: Calls): Future<NotUsed> {
     return pipe(
       DiscordConnector.messageEdit(calls.message, initCallsMessage(calls.channel, calls.role)),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 

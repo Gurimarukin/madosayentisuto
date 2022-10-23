@@ -5,11 +5,11 @@ import readline from 'readline'
 import { ClearPassword } from '../../shared/models/webUser/ClearPassword'
 import type { Token } from '../../shared/models/webUser/Token'
 import { UserName } from '../../shared/models/webUser/UserName'
-import type { Maybe } from '../../shared/utils/fp'
-import { Future, toUnit } from '../../shared/utils/fp'
+import type { Maybe, NotUsed } from '../../shared/utils/fp'
+import { Future, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import { constants } from '../constants'
+import { constants } from '../config/constants'
 import type { JwtHelper } from '../helpers/JwtHelper'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { TokenContent } from '../models/webUser/TokenContent'
@@ -28,7 +28,7 @@ export function UserService(
 ) {
   const logger = Logger('UserService')
 
-  const createUser: Future<void> = pipe(
+  const createUser: Future<NotUsed> = pipe(
     Future.fromIOEither(logger.info('Creating user')),
     Future.chain(() =>
       apply.sequenceT(Future.taskEitherSeq)(
@@ -52,7 +52,7 @@ export function UserService(
               success => success,
               () => Error('Failed to create user'),
             ),
-            Future.map(toUnit),
+            Future.map(toNotUsed),
           ),
     ),
   )

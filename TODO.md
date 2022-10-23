@@ -1,5 +1,8 @@
-- upgrade react
 - decouple autorole and call mention
+
+- Les Quais Abatoirs UwU renamer
+
+- upgrade react
 - select leave message chan
 - deploy: on guild join
 - admin : move some things to webapp
@@ -10,11 +13,7 @@
 - webapp
   - tier-list
 - commands register: unsubscribe when done?
-- elevator
-- `NotUsed`?
 - `Either.toError`?
-- Store: IO > io.IO?
-- TObservable.subscribe
 - try to override declaration types to use GuildId, TSnowflake, ...
 - logs id
 - autocomplete for /remind date

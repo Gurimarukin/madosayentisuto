@@ -1,6 +1,7 @@
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
@@ -26,7 +27,7 @@ export const MigrationService = (
     Migration202204011827(mongoCollection),
   ]
 
-  const applyMigrations: Future<void> = pipe(
+  const applyMigrations: Future<NotUsed> = pipe(
     getUnappliedMigrations(),
     Future.map(NonEmptyArray.fromReadonlyArray),
     futureMaybe.chainFirstIOEitherK(m =>
@@ -45,7 +46,7 @@ export const MigrationService = (
     Future.chainIOEitherK(
       Maybe.fold(
         () => logger.info('No migration to apply'),
-        () => IO.unit,
+        () => IO.notUsed,
       ),
     ),
   )

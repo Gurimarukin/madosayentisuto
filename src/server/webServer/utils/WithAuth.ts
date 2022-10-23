@@ -5,7 +5,7 @@ import { Status } from 'hyper-ts'
 import { Dict, Either, Future, Maybe, Try } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
-import { constants } from '../../constants'
+import { constants } from '../../config/constants'
 import type { TokenContent } from '../../models/webUser/TokenContent'
 import type { UserService } from '../../services/UserService'
 import type { EndedMiddleware } from '../models/MyMiddleware'
@@ -50,7 +50,7 @@ export const WithAuth = (userService: UserService): WithAuth => ({
       futureMaybe.chainTaskEitherK(cookie =>
         Future.fromEither(Try.tryCatch(() => parseCookie(cookie))),
       ),
-      futureMaybe.chainOption(Dict.lookup(constants.account.cookie.name)),
+      futureMaybe.chainOptionK(Dict.lookup(constants.account.cookie.name)),
       Future.chain(
         Maybe.fold(
           () => Future.right(Either.left(SimpleHttpResponse.of(Status.Unauthorized, ''))),

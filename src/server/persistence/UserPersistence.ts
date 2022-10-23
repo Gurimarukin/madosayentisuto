@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/function'
 
 import { UserName } from '../../shared/models/webUser/UserName'
-import type { Maybe } from '../../shared/utils/fp'
+import type { Maybe, NotUsed } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
@@ -16,7 +16,7 @@ export function UserPersistence(Logger: LoggerGetter, mongoCollection: MongoColl
   const logger = Logger('UserPersistence')
   const collection = FpCollection(logger)([WebUser.codec, 'WebUser'])(mongoCollection('user'))
 
-  const ensureIndexes: Future<void> = collection.ensureIndexes([
+  const ensureIndexes: Future<NotUsed> = collection.ensureIndexes([
     { key: { id: -1 }, unique: true },
     { key: { userName: -1 }, unique: true },
   ])

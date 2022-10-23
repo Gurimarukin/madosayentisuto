@@ -1,7 +1,7 @@
 import type {
   DMChannel,
   Message,
-  MessageOptions,
+  MessageCreateOptions,
   MessagePayload,
   NewsChannel,
   PartialDMChannel,
@@ -13,11 +13,11 @@ import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { List, toUnit } from '../../shared/utils/fp'
-import { Future } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Future, List, toNotUsed } from '../../shared/utils/fp'
 
-import type { CaptainConfig } from '../Config'
-import { constants } from '../constants'
+import type { CaptainConfig } from '../config/Config'
+import { constants } from '../config/constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MessageComponent } from '../models/discord/MessageComponent'
 import { MadEvent } from '../models/event/MadEvent'
@@ -41,7 +41,7 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
   )(event => {
     const message = event.message
 
-    if (message.author.id === discord.client.user.id) return Future.unit
+    if (message.author.id === discord.client.user.id) return Future.notUsed
 
     const cleanedWords = cleanMessage(message.content)
 
@@ -49,7 +49,7 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
 
     if (isMentioned(message, cleanedWords)) return reactToMention(message, cleanedWords)
 
-    return Future.unit
+    return Future.notUsed
   })
 
   function containsVolAndPlagiat(message: List<string>): boolean {
@@ -72,10 +72,10 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
     )
   }
 
-  function reactToMention(message: Message, cleanedWords: List<string>): Future<void> {
+  function reactToMention(message: Message, cleanedWords: List<string>): Future<NotUsed> {
     if (containsThanks(cleanedWords)) return sendNoNeedToThankMe(message.channel)
 
-    return Future.unit
+    return Future.notUsed
   }
 
   function containsThanks(message: List<string>): boolean {
@@ -86,19 +86,19 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
   }
 }
 
-const send =
-  (message: string | MessagePayload | MessageOptions) =>
-  (channel: MyChannel): Future<void> =>
-    pipe(DiscordConnector.sendMessage(channel, message), Future.map(toUnit))
+const sendMessage =
+  (message: string | MessagePayload | MessageCreateOptions) =>
+  (channel: MyChannel): Future<NotUsed> =>
+    pipe(DiscordConnector.sendMessage(channel, message), Future.map(toNotUsed))
 
-const sendIDontLikeThieves = send(
+const sendIDontLikeThieves = sendMessage(
   MessageComponent.singleSafeEmbed({
     title: "J'aime pas trop les voleurs et les fils de pute.",
     url: 'http://george-abitbol.fr/v/374a915e',
     color: constants.messagesColor,
   }),
 )
-const sendNoNeedToThankMe = send('Haha ! Inutile de me remercier...')
+const sendNoNeedToThankMe = sendMessage('Haha ! Inutile de me remercier...')
 
 const cleanMessage = (message: string): List<string> =>
   message

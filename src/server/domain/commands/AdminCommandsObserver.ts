@@ -11,18 +11,16 @@ import type {
 import { ChannelType, Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
-import * as D from 'io-ts/Decoder'
 import type { Decoder } from 'io-ts/Decoder'
+import * as D from 'io-ts/Decoder'
 
 import { ChannelId } from '../../../shared/models/ChannelId'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import { toUnit } from '../../../shared/utils/fp'
-import { IO } from '../../../shared/utils/fp'
-import { Either, NonEmptyArray } from '../../../shared/utils/fp'
-import { Future, List, Maybe } from '../../../shared/utils/fp'
+import type { NotUsed } from '../../../shared/utils/fp'
+import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
@@ -224,18 +222,18 @@ export const AdminCommandsObserver = (
     'InteractionCreate',
   )(({ interaction }) => {
     if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
-    return Future.unit
+    return Future.notUsed
   })
 
-  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<void> {
+  function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     switch (interaction.commandName) {
       case Keys.admin:
         return onAdminCommand(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
-  function onAdminCommand(interaction: ChatInputCommandInteraction): Future<void> {
+  function onAdminCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return pipe(
       validateAdminCommand(interaction),
       Either.fold(
@@ -263,7 +261,7 @@ export const AdminCommandsObserver = (
 
   function onValidatedAdminCommand(
     interaction: ChatInputCommandInteraction,
-  ): (groupWithSubcommand: GroupWithSubcommand) => Future<void> {
+  ): (groupWithSubcommand: GroupWithSubcommand) => Future<NotUsed> {
     return ({ subcommandGroup, subcommand }) =>
       pipe(
         subcommandGroup,
@@ -277,7 +275,7 @@ export const AdminCommandsObserver = (
   function onAdminSubcommand(
     interaction: ChatInputCommandInteraction,
     subcommand: string,
-  ): (subcommandGroup: string) => Future<void> {
+  ): (subcommandGroup: string) => Future<NotUsed> {
     return subcommandGroup => {
       switch (subcommandGroup) {
         case Keys.state:
@@ -293,34 +291,34 @@ export const AdminCommandsObserver = (
         case Keys.activity:
           return onActivity(interaction, subcommand)
       }
-      return Future.unit
+      return Future.notUsed
     }
   }
 
   function onAdminSubcommandOnly(
     interaction: ChatInputCommandInteraction,
     subcommand: string,
-  ): Future<void> {
+  ): Future<NotUsed> {
     switch (subcommand) {
       case Keys.say:
         return onSay(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
   /**
    * state
    */
 
-  function onState(interaction: ChatInputCommandInteraction, subcommand: string): Future<void> {
+  function onState(interaction: ChatInputCommandInteraction, subcommand: string): Future<NotUsed> {
     switch (subcommand) {
       case Keys.get:
         return onStateGet(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
-  function onStateGet(interaction: ChatInputCommandInteraction): Future<void> {
+  function onStateGet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return pipe(
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
       Future.map(() => Maybe.fromNullable(interaction.guild)),
@@ -329,7 +327,7 @@ export const AdminCommandsObserver = (
       Future.chain(content =>
         DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
       ),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 
@@ -337,15 +335,15 @@ export const AdminCommandsObserver = (
    * calls
    */
 
-  function onCalls(interaction: ChatInputCommandInteraction, subcommand: string): Future<void> {
+  function onCalls(interaction: ChatInputCommandInteraction, subcommand: string): Future<NotUsed> {
     switch (subcommand) {
       case Keys.init:
         return onCallsInit(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
-  function onCallsInit(interaction: ChatInputCommandInteraction): Future<void> {
+  function onCallsInit(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     const maybeGuild = Maybe.fromNullable(interaction.guild)
     return pipe(
       DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
@@ -364,7 +362,7 @@ export const AdminCommandsObserver = (
       futureMaybe.chainTaskEitherK(({ guild, author, commandChannel, callsChannel, role }) =>
         sendInitMessageAndUpdateState(guild, author, commandChannel, callsChannel, role),
       ),
-      Future.map(toUnit),
+      Future.map(toNotUsed),
     )
   }
 
@@ -374,7 +372,7 @@ export const AdminCommandsObserver = (
     commandChannel: TextBasedChannel,
     channel: TextChannel,
     role: Role,
-  ): Future<void> {
+  ): Future<NotUsed> {
     return pipe(
       sendInitMessage(commandChannel, channel, role),
       futureMaybe.matchE(
@@ -385,9 +383,9 @@ export const AdminCommandsObserver = (
                   author,
                   `Impossible d'envoyer le message d'abonnement dans le salon **#${commandChannel.name}**.`,
                 ),
-                Future.map(toUnit),
+                Future.map(toNotUsed),
               )
-            : Future.unit,
+            : Future.notUsed,
         tryDeletePreviousMessageAndSetCalls(guild, channel, role),
       ),
     )
@@ -405,13 +403,13 @@ export const AdminCommandsObserver = (
     guild: Guild,
     channel: TextChannel,
     role: Role,
-  ): (message: Message) => Future<void> {
+  ): (message: Message) => Future<NotUsed> {
     return message =>
       pipe(
         guildStateService.getCalls(guild),
         futureMaybe.chainTaskEitherK(previous => deleteMessage(previous.message)),
         Future.chain(() => guildStateService.setCalls(guild, { message, channel, role })),
-        Future.map(toUnit),
+        Future.map(toNotUsed),
       )
   }
 
@@ -422,15 +420,15 @@ export const AdminCommandsObserver = (
   function onDefaultRole(
     interaction: ChatInputCommandInteraction,
     subcommand: string,
-  ): Future<void> {
+  ): Future<NotUsed> {
     switch (subcommand) {
       case Keys.set:
         return onDefaultRoleSet(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
-  function onDefaultRoleSet(interaction: ChatInputCommandInteraction): Future<void> {
+  function onDefaultRoleSet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
@@ -455,15 +453,18 @@ export const AdminCommandsObserver = (
    * itsfriday
    */
 
-  function onItsFriday(interaction: ChatInputCommandInteraction, subcommand: string): Future<void> {
+  function onItsFriday(
+    interaction: ChatInputCommandInteraction,
+    subcommand: string,
+  ): Future<NotUsed> {
     switch (subcommand) {
       case Keys.set:
         return onItsFridaySet(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
-  function onItsFridaySet(interaction: ChatInputCommandInteraction): Future<void> {
+  function onItsFridaySet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
@@ -486,15 +487,18 @@ export const AdminCommandsObserver = (
    * birthday
    */
 
-  function onBirthday(interaction: ChatInputCommandInteraction, subcommand: string): Future<void> {
+  function onBirthday(
+    interaction: ChatInputCommandInteraction,
+    subcommand: string,
+  ): Future<NotUsed> {
     switch (subcommand) {
       case Keys.set:
         return onBirthdaySet(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
-  function onBirthdaySet(interaction: ChatInputCommandInteraction): Future<void> {
+  function onBirthdaySet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
@@ -517,7 +521,10 @@ export const AdminCommandsObserver = (
    * activity
    */
 
-  function onActivity(interaction: ChatInputCommandInteraction, subcommand: string): Future<void> {
+  function onActivity(
+    interaction: ChatInputCommandInteraction,
+    subcommand: string,
+  ): Future<NotUsed> {
     switch (subcommand) {
       case Keys.get:
         return onActivityGet(interaction)
@@ -528,10 +535,10 @@ export const AdminCommandsObserver = (
       case Keys.refresh:
         return onActivityRefresh(interaction)
     }
-    return Future.unit
+    return Future.notUsed
   }
 
-  function onActivityGet(interaction: ChatInputCommandInteraction): Future<void> {
+  function onActivityGet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return withFollowUp(interaction)(
       pipe(
         botStateService.find(),
@@ -541,7 +548,7 @@ export const AdminCommandsObserver = (
     )
   }
 
-  function onActivityUnset(interaction: ChatInputCommandInteraction): Future<void> {
+  function onActivityUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return withFollowUp(interaction)(
       pipe(
         botStateService.unsetActivity(),
@@ -550,7 +557,7 @@ export const AdminCommandsObserver = (
     )
   }
 
-  function onActivitySet(interaction: ChatInputCommandInteraction): Future<void> {
+  function onActivitySet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return withFollowUp(interaction)(
       pipe(
         ValidatedNea.sequenceS({
@@ -567,7 +574,7 @@ export const AdminCommandsObserver = (
     )
   }
 
-  function onActivityRefresh(interaction: ChatInputCommandInteraction): Future<void> {
+  function onActivityRefresh(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return withFollowUp(interaction)(
       pipe(
         botStateService.discordSetActivityFromDb(),
@@ -580,7 +587,7 @@ export const AdminCommandsObserver = (
    * say
    */
 
-  function onSay(interaction: ChatInputCommandInteraction): Future<void> {
+  function onSay(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(Either.Apply)({
@@ -623,7 +630,7 @@ export const AdminCommandsObserver = (
 
   function withFollowUp(
     interaction: ChatInputCommandInteraction,
-  ): (f: Future<string>) => Future<void> {
+  ): (f: Future<string>) => Future<NotUsed> {
     return f =>
       pipe(
         DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
@@ -631,7 +638,7 @@ export const AdminCommandsObserver = (
         Future.chain(content =>
           DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
         ),
-        Future.map(toUnit),
+        Future.map(toNotUsed),
       )
   }
 
@@ -677,12 +684,12 @@ export const AdminCommandsObserver = (
     )
   }
 
-  function deleteMessage(message: Message): Future<void> {
+  function deleteMessage(message: Message): Future<NotUsed> {
     return pipe(
       DiscordConnector.messageDelete(message),
       Future.chainIOEitherK(deleted =>
         deleted
-          ? IO.unit
+          ? IO.notUsed
           : LogUtils.pretty(logger, message.guild, message.author, message.channel).info(
               'Not enough permissions to delete message',
             ),
