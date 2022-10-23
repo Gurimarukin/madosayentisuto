@@ -17,7 +17,6 @@ import { AsyncQueue } from '../../shared/models/rx/AsyncQueue'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../../shared/models/rx/PubSub'
 import type { TSubject } from '../../shared/models/rx/TSubject'
-import { LogUtils } from '../../shared/utils/LogUtils'
 import { PubSubUtils } from '../../shared/utils/PubSubUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
@@ -34,6 +33,8 @@ import { Track } from '../models/audio/music/Track'
 import { AudioEvent } from '../models/event/AudioEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildAudioChannel, GuildSendableChannel, NamedChannel } from '../utils/ChannelUtils'
+import { LogUtils } from '../utils/LogUtils'
+import { getOnError } from '../utils/getOnError'
 import { DiscordConnector } from './DiscordConnector'
 import { ResourcesHelper } from './ResourcesHelper'
 import type { YtDlp } from './YtDlp'
@@ -88,7 +89,7 @@ export const AudioSubscription = (
 
   const audioState = Store<AudioState>(AudioState.disconnected)
 
-  const stateReducers = AsyncQueue<NotUsed>(LogUtils.onError(logger))
+  const stateReducers = AsyncQueue<NotUsed>(getOnError(logger))
 
   const getAudioState: io.IO<AudioState> = audioState.get
 
@@ -449,7 +450,7 @@ export const AudioSubscription = (
   ): IO<VoiceConnectionAndAudioPlayer> {
     const { observable, subject } = PubSub<AudioEvent>()
 
-    const sub = PubSubUtils.subscribeWithRefinement(logger, observable)
+    const sub = PubSubUtils.subscribeWithRefinement(getOnError(logger), observable)
     const subscribe = apply.sequenceT(IO.ApplyPar)(sub(lifecycleObserver()))
 
     return pipe(
@@ -468,7 +469,7 @@ export const AudioSubscription = (
     return pipe(
       DiscordConnector.voiceConnectionJoin(channel),
       IO.chainFirst(voiceConnection => {
-        const connectionPub = PubSubUtils.publish(LogUtils.onError(logger))(subject.next)(
+        const connectionPub = PubSubUtils.publish(getOnError(logger))(subject.next)(
           'on',
         )<VoiceConnectionEvents>(voiceConnection)
         return apply.sequenceT(IO.ApplyPar)(
@@ -487,7 +488,7 @@ export const AudioSubscription = (
     return pipe(
       DiscordConnector.audioPlayerCreate,
       IO.chainFirst(audioPlayer => {
-        const playerPub = PubSubUtils.publish(LogUtils.onError(logger))(subject.next)(
+        const playerPub = PubSubUtils.publish(getOnError(logger))(subject.next)(
           'on',
         )<AudioPlayerEvents>(audioPlayer)
         return apply.sequenceT(IO.ApplyPar)(

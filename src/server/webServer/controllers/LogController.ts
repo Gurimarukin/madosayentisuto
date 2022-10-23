@@ -9,7 +9,6 @@ import { LogsWithTotalCount } from '../../../shared/models/log/LogsWithTotalCoun
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import type { TObservable } from '../../../shared/models/rx/TObservable'
 import type { TSubject } from '../../../shared/models/rx/TSubject'
-import { LogUtils } from '../../../shared/utils/LogUtils'
 import { PubSubUtils } from '../../../shared/utils/PubSubUtils'
 import type { NotUsed } from '../../../shared/utils/fp'
 import { Either, Future, IO, toNotUsed } from '../../../shared/utils/fp'
@@ -17,6 +16,7 @@ import { Either, Future, IO, toNotUsed } from '../../../shared/utils/fp'
 import { WSServerEvent } from '../../models/event/WSServerEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { LogService } from '../../services/LogService'
+import { getOnError } from '../../utils/getOnError'
 import { unknownToError } from '../../utils/unknownToError'
 import type { EndedMiddleware } from '../models/MyMiddleware'
 import { MyMiddleware as M } from '../models/MyMiddleware'
@@ -43,13 +43,13 @@ export const LogController = (
             flow(
               WSServerEvent.messageFromRawData,
               wsServerEventSubject.next,
-              IO.run(LogUtils.onError(logger)),
+              IO.run(getOnError(logger)),
             ),
           ),
         ),
         IO.chain(() =>
           PubSubUtils.subscribeWithRefinement(
-            logger,
+            getOnError(logger),
             serverToClientEventObservable,
           )(
             ObserverWithRefinement.of({
@@ -65,11 +65,11 @@ export const LogController = (
           ),
         ),
         IO.map<Subscription, NotUsed>(toNotUsed), // TODO: do something with Subcription?
-        IO.run(LogUtils.onError(logger)),
+        IO.run(getOnError(logger)),
       ),
     )
     .on('close', () =>
-      pipe(wsServerEventSubject.next(WSServerEvent.Closed()), IO.run(LogUtils.onError(logger))),
+      pipe(wsServerEventSubject.next(WSServerEvent.Closed()), IO.run(getOnError(logger))),
     )
 
   return {

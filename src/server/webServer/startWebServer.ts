@@ -9,7 +9,6 @@ import { Status } from 'hyper-ts'
 import type { ExpressConnection } from 'hyper-ts/lib/express'
 
 import { Method } from '../../shared/models/Method'
-import { LogUtils } from '../../shared/utils/LogUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import {
   Dict,
@@ -25,6 +24,7 @@ import {
 
 import type { HttpConfig } from '../config/Config'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
+import { getOnError } from '../utils/getOnError'
 import type { EndedMiddleware, MyMiddleware } from './models/MyMiddleware'
 import { MyMiddleware as M } from './models/MyMiddleware'
 import type { RouteMiddleware, RouteUpgrade } from './models/Route'
@@ -176,7 +176,7 @@ export const startWebServer = (
           Future.orElse<Error, Either<SimpleHttpResponse, void>, Error>(handleErrorUpgrade),
           Future.map(Either.getOrElse(res => socket.end(SimpleHttpResponse.toRawHttp(res)))),
           Future.map<void, NotUsed>(toNotUsed),
-          Future.run(LogUtils.onError(logger)),
+          Future.run(getOnError(logger)),
         ),
       ),
     )

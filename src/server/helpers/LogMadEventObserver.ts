@@ -2,11 +2,11 @@ import util from 'util'
 
 import type { LoggerType } from '../../shared/models/LoggerType'
 import type { TObserver } from '../../shared/models/rx/TObserver'
-import { LogUtils } from '../../shared/utils/LogUtils'
 import { Future } from '../../shared/utils/fp'
 
 import type { MadEvent } from '../models/event/MadEvent'
 import type { GuildAudioChannel } from '../utils/ChannelUtils'
+import { LogUtils } from '../utils/LogUtils'
 
 const { format } = LogUtils
 

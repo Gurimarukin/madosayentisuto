@@ -2,10 +2,8 @@ import type { io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import type * as rxjs from 'rxjs'
 
-import type { LoggerType } from '../models/LoggerType'
 import type { ObserverWithRefinement } from '../models/rx/ObserverWithRefinement'
 import { TObservable } from '../models/rx/TObservable'
-import { LogUtils } from './LogUtils'
 import type { Dict, List, NotUsed } from './fp'
 import { IO, toNotUsed } from './fp'
 
@@ -44,10 +42,8 @@ const publish_ =
     )
 
 const subscribeWithRefinement =
-  <A>(logger: LoggerType, observable: TObservable<A>) =>
+  <A>(onError: (e: Error) => io.IO<NotUsed>, observable: TObservable<A>) =>
   <B extends A>({ observer, refinement }: ObserverWithRefinement<A, B>): IO<rxjs.Subscription> =>
-    TObservable.subscribe(LogUtils.onError(logger))(observer)(
-      pipe(observable, TObservable.filter(refinement)),
-    )
+    TObservable.subscribe(onError)(observer)(pipe(observable, TObservable.filter(refinement)))
 
 export const PubSubUtils = { publish: publish_, subscribeWithRefinement }

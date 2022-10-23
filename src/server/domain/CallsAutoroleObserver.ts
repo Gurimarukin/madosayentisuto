@@ -5,7 +5,6 @@ import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { LogUtils } from '../../shared/utils/LogUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, Maybe, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
@@ -16,6 +15,7 @@ import { MadEvent } from '../models/event/MadEvent'
 import type { Calls } from '../models/guildState/Calls'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStateService } from '../services/GuildStateService'
+import { LogUtils } from '../utils/LogUtils'
 
 type CallsAndMember = {
   readonly calls: Calls

@@ -1,7 +1,6 @@
 import { pipe } from 'fp-ts/function'
 
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { LogUtils } from '../../shared/utils/LogUtils'
 import { Future } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
@@ -9,6 +8,7 @@ import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStateService } from '../services/GuildStateService'
+import { LogUtils } from '../utils/LogUtils'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const SetDefaultRoleObserver = (

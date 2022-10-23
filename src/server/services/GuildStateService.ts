@@ -5,7 +5,6 @@ import type { Lens } from 'monocle-ts/Lens'
 
 import type { ChannelId } from '../../shared/models/ChannelId'
 import { GuildId } from '../../shared/models/guild/GuildId'
-import { LogUtils } from '../../shared/utils/LogUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
@@ -22,6 +21,8 @@ import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStatePersistence } from '../persistence/GuildStatePersistence'
 import type { GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
+import { LogUtils } from '../utils/LogUtils'
+import { getOnError } from '../utils/getOnError'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type LensInner<A extends Lens<any, any>> = A extends Lens<any, infer B> ? B : never
@@ -118,7 +119,7 @@ export const GuildStateService = (
           guildStatePersistence.upsert(GuildStateDb.fromGuildState(newState)),
           Future.chainIOEitherK(success => (success ? IO.notUsed : logError())),
           Future.orElseIOEitherK(e => logError('-', e)),
-          IO.runFuture(LogUtils.onError(logger)),
+          IO.runFuture(getOnError(logger)),
         )
 
         function logError(...u: List<unknown>): IO<NotUsed> {

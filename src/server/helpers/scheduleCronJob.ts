@@ -3,7 +3,6 @@ import { pipe } from 'fp-ts/function'
 import { DayJs } from '../../shared/models/DayJs'
 import { MsDuration } from '../../shared/models/MsDuration'
 import type { TSubject } from '../../shared/models/rx/TSubject'
-import { LogUtils } from '../../shared/utils/LogUtils'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, toNotUsed } from '../../shared/utils/fp'
@@ -11,6 +10,7 @@ import { Future, IO, toNotUsed } from '../../shared/utils/fp'
 import type { MadEventCronJob } from '../models/event/MadEvent'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
+import { getOnError } from '../utils/getOnError'
 
 const cronJobInterval = MsDuration.minute(1)
 
@@ -39,7 +39,7 @@ export const scheduleCronJob = (
         setCronJobInterval(),
         Future.fromIOEither,
         Future.delay(untilNextMinute),
-        IO.runFuture(LogUtils.onError(logger)),
+        IO.runFuture(getOnError(logger)),
       ),
     ),
   )
@@ -50,7 +50,7 @@ export const scheduleCronJob = (
       IO.chain(() =>
         IO.tryCatch(() =>
           setInterval(
-            () => pipe(publishEvent(), IO.run(LogUtils.onError(logger))),
+            () => pipe(publishEvent(), IO.run(getOnError(logger))),
             MsDuration.unwrap(cronJobInterval),
           ),
         ),

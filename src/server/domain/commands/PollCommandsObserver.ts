@@ -17,7 +17,6 @@ import { lens } from 'monocle-ts'
 import { ChannelId } from '../../../shared/models/ChannelId'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
-import { LogUtils } from '../../../shared/utils/LogUtils'
 import type { NotUsed } from '../../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, Tuple, toNotUsed } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
@@ -37,6 +36,7 @@ import { PollResponse } from '../../models/poll/PollResponse'
 import type { ThreadWithMessage } from '../../models/poll/ThreadWithMessage'
 import type { PollService } from '../../services/PollService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
+import { LogUtils } from '../../utils/LogUtils'
 
 const keysChoices = pipe(
   NonEmptyArray.range(1, 5),

@@ -8,9 +8,10 @@ import type { LogLevel, LogLevelOrOff } from '../../../shared/models/log/LogLeve
 import { PubSub } from '../../../shared/models/rx/PubSub'
 import { TObservable } from '../../../shared/models/rx/TObservable'
 import type { TObserver } from '../../../shared/models/rx/TObserver'
-import { LogUtils } from '../../../shared/utils/LogUtils'
 import type { NotUsed } from '../../../shared/utils/fp'
 import { IO, NonEmptyArray } from '../../../shared/utils/fp'
+
+import { getOnError } from '../../utils/getOnError'
 
 export type LoggerObservable = {
   readonly Logger: LoggerGetter
@@ -42,7 +43,7 @@ const init = (): LoggerObservable => {
       pipe(
         logEventPubSub.observable,
         TObservable.filter(LogEvent.filter(configLevel)),
-        TObservable.subscribe(LogUtils.onError(logger))(observer),
+        TObservable.subscribe(getOnError(logger))(observer),
       ),
   }
 

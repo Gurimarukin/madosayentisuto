@@ -19,13 +19,12 @@ import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefin
 import { PubSub } from '../../shared/models/rx/PubSub'
 import { TObservable } from '../../shared/models/rx/TObservable'
 import type { TSubject } from '../../shared/models/rx/TSubject'
-import { LogUtils } from '../../shared/utils/LogUtils'
 import { PubSubUtils } from '../../shared/utils/PubSubUtils'
 import { Either, Future, IO, List, NotUsed, toNotUsed } from '../../shared/utils/fp'
 
 import { config } from '../config/unsafe'
 import { WSClientEvent } from '../model/event/WSClientEvent'
-import { logger } from '../utils/logger'
+import { getOnError } from '../utils/getOnError'
 import { useHttp } from './HttpContext'
 
 type LogContext = {
@@ -66,12 +65,9 @@ export const LogContextProvider: React.FC = ({ children }) => {
     const { closeWebSocket } = pipe(
       initWs,
       IO.chainFirst(({ wsClientEventObservable }) =>
-        pipe(
-          wsClientEventObservable,
-          TObservable.subscribe(LogUtils.onError(logger))({ next: onWSClientEvent }),
-        ),
+        pipe(wsClientEventObservable, TObservable.subscribe(getOnError)({ next: onWSClientEvent })),
       ),
-      IO.chainFirstIOK(() => pipe(fetchInitialLogs(), IO.runFuture(LogUtils.onError(logger)))),
+      IO.chainFirstIOK(() => pipe(fetchInitialLogs(), IO.runFuture(getOnError))),
       IO.runUnsafe,
     )
     return () => pipe(closeWebSocket, IO.runUnsafe)
@@ -107,7 +103,7 @@ export const LogContextProvider: React.FC = ({ children }) => {
   }, [fetchInitialLogs])
 
   const tryRefetchInitialLogs = useCallback(
-    (): Promise<NotUsed> => Future.run(LogUtils.onError(logger))(fetchInitialLogs()),
+    (): Promise<NotUsed> => Future.run(getOnError)(fetchInitialLogs()),
     [fetchInitialLogs],
   )
 
@@ -146,7 +142,7 @@ const initWs: IO<InitWSResult> = pipe(
   reconnectingWebSocket,
   IO.chain(ws => {
     const wsClientEventPubSub = PubSub<WSClientEvent>()
-    const pub = PubSubUtils.publish(LogUtils.onError(logger))(wsClientEventPubSub.subject.next)(
+    const pub = PubSubUtils.publish(getOnError)(wsClientEventPubSub.subject.next)(
       'addEventListener',
     )<{
       /* eslint-disable functional/no-return-void */
@@ -169,7 +165,7 @@ const initWs: IO<InitWSResult> = pipe(
 
         // clientToServerEventPubSub
         PubSubUtils.subscribeWithRefinement(
-          logger,
+          getOnError,
           clientToServerEventPubSub.observable,
         )(
           ObserverWithRefinement.of({

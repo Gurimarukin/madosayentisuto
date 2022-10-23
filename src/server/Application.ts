@@ -44,6 +44,7 @@ import { MemberBirthdateService } from './services/MemberBirthdateService'
 import { PollService } from './services/PollService'
 import { ScheduledEventService } from './services/ScheduledEventService'
 import { UserService } from './services/UserService'
+import { getOnError } from './utils/getOnError'
 import { Routes } from './webServer/Routes'
 import { DiscordClientController } from './webServer/controllers/DiscordClientController'
 import { HealthCheckController } from './webServer/controllers/HealthCheckController'
@@ -129,7 +130,10 @@ export const Application = (
   )
 
   const madEventsPubSub = PubSub<MadEvent>()
-  const sub = PubSubUtils.subscribeWithRefinement<MadEvent>(logger, madEventsPubSub.observable)
+  const sub = PubSubUtils.subscribeWithRefinement<MadEvent>(
+    getOnError(logger),
+    madEventsPubSub.observable,
+  )
 
   const logsObserver = LogObserver(logService, serverToClientEventPubSub.subject)
 

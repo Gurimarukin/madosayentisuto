@@ -1,6 +1,5 @@
 import { identity, pipe } from 'fp-ts/function'
 
-import { LogUtils } from '../shared/utils/LogUtils'
 import { StringUtils } from '../shared/utils/StringUtils'
 import { Future } from '../shared/utils/fp'
 
@@ -25,6 +24,7 @@ import { ScheduledEventPersistence } from './persistence/ScheduledEventPersisten
 import { UserPersistence } from './persistence/UserPersistence'
 import { HealthCheckService } from './services/HealthCheckService'
 import { MigrationService } from './services/MigrationService'
+import { getOnError } from './utils/getOnError'
 
 export type Context = ReturnType<typeof of>
 
@@ -79,7 +79,7 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
   return pipe(Resources.load, Future.chain(loadContext))
 
   function loadContext(resources: Resources): Future<Context> {
-    const withDb = WithDb.of(LogUtils.onError(logger), {
+    const withDb = WithDb.of(getOnError(logger), {
       url: `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`,
       dbName: config.db.dbName,
     })
