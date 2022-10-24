@@ -52,26 +52,26 @@ export const GuildStateService = (
   return {
     getState: (guild: Guild): Future<GuildState> => getShouldLoadFromDb(guild),
 
-    setCalls: (guild: Guild, calls: Calls): Future<GuildState> =>
-      setLens(guild, 'calls', Maybe.some(calls)),
+    setCalls: (guild: Guild, calls: Maybe<Calls>): Future<GuildState> =>
+      setLens(guild, 'calls', calls),
 
     getCalls: (guild: Guild): Future<Maybe<Calls>> => get(guild, 'calls'),
 
-    setDefaultRole: (guild: Guild, role: Role): Future<GuildState> =>
-      setLens(guild, 'defaultRole', Maybe.some(role)),
+    setDefaultRole: (guild: Guild, role: Maybe<Role>): Future<GuildState> =>
+      setLens(guild, 'defaultRole', role),
 
     getDefaultRole: (guild: Guild): Future<Maybe<Role>> => get(guild, 'defaultRole'),
 
     listAllItsFridayChannels,
 
-    setItsFridayChannel: (guild: Guild, channel: TextChannel): Future<GuildState> =>
-      setLens(guild, 'itsFridayChannel', Maybe.some(channel)),
+    setItsFridayChannel: (guild: Guild, channel: Maybe<TextChannel>): Future<GuildState> =>
+      setLens(guild, 'itsFridayChannel', channel),
 
     getBirthdayChannel: (guild: Guild): Future<Maybe<GuildSendableChannel>> =>
       get(guild, 'birthdayChannel'),
 
-    setBirthdayChannel: (guild: Guild, channel: TextChannel): Future<GuildState> =>
-      setLens(guild, 'birthdayChannel', Maybe.some(channel)),
+    setBirthdayChannel: (guild: Guild, channel: Maybe<TextChannel>): Future<GuildState> =>
+      setLens(guild, 'birthdayChannel', channel),
 
     getSubscription: (guild: Guild): Future<AudioSubscription> =>
       pipe(

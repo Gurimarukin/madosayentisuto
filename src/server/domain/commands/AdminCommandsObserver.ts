@@ -100,6 +100,10 @@ const adminCommand = Command.chatInput({
         required: true,
       }),
     ),
+    Command.option.subcommand({
+      name: Keys.unset,
+      description: "Plus de notifications d'appel",
+    })(),
   ),
 
   Command.option.subcommandGroup({
@@ -155,6 +159,10 @@ const adminCommand = Command.chatInput({
         required: true,
       }),
     ),
+    Command.option.subcommand({
+      name: Keys.unset,
+      description: 'Plus de rôle par défaut',
+    })(),
   ),
 
   Command.option.subcommandGroup({
@@ -172,6 +180,10 @@ const adminCommand = Command.chatInput({
         required: true,
       }),
     ),
+    Command.option.subcommand({
+      name: Keys.unset,
+      description: 'Plus de notifications de vendredi',
+    })(),
   ),
 
   Command.option.subcommandGroup({
@@ -189,6 +201,10 @@ const adminCommand = Command.chatInput({
         required: true,
       }),
     ),
+    Command.option.subcommand({
+      name: Keys.unset,
+      description: "Plus de notifications d'anniversaires",
+    })(),
   ),
 
   Command.option.subcommandGroup({
@@ -381,6 +397,8 @@ export const AdminCommandsObserver = (
     switch (subcommand) {
       case Keys.set:
         return onCallsSet(interaction)
+      case Keys.unset:
+        return onCallsUnset(interaction)
     }
     return Future.notUsed
   }
@@ -396,20 +414,26 @@ export const AdminCommandsObserver = (
           ),
           role: fetchRole(interaction.guild, interaction.options.getRole(Keys.role)),
         }),
-        futureMaybe.chainTaskEitherK(({ channel, role }) =>
-          guildStateService.setCalls(channel.guild, { channel, role }),
+        futureMaybe.chainFirstTaskEitherK(({ channel, role }) =>
+          guildStateService.setCalls(channel.guild, Maybe.some({ channel, role })),
         ),
         futureMaybe.match(
           () => 'Erreur',
-          ({ calls }) =>
-            `Nouveau paramètres d'appels : ${pipe(
-              calls,
-              // TODO: remove disable
-              // eslint-disable-next-line @typescript-eslint/no-base-to-string
-              Maybe.map(({ channel, role }) => `${role} - ${channel}`),
-              Maybe.toNullable,
-            )}`,
+          ({ channel, role }) =>
+            // TODO: remove disable
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
+            `Nouveau paramètres d'appels : ${role} - ${channel}`,
         ),
+      ),
+    )
+  }
+
+  function onCallsUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    if (interaction.guild === null) return Future.notUsed
+    return withFollowUp(interaction)(
+      pipe(
+        guildStateService.setCalls(interaction.guild, Maybe.none),
+        Future.map(() => "Nouveau paramètres d'appels : null"),
       ),
     )
   }
@@ -507,6 +531,8 @@ export const AdminCommandsObserver = (
     switch (subcommand) {
       case Keys.set:
         return onDefaultRoleSet(interaction)
+      case Keys.unset:
+        return onDefaultRoleUnset(interaction)
     }
     return Future.notUsed
   }
@@ -516,15 +542,25 @@ export const AdminCommandsObserver = (
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: futureMaybe.fromNullable(interaction.guild),
-          role: fetchRole(interaction.guild, interaction.options.getRole(Keys.role)),
+          defaultRole: fetchRole(interaction.guild, interaction.options.getRole(Keys.role)),
         }),
-        futureMaybe.chainTaskEitherK(({ guild, role }) =>
-          guildStateService.setDefaultRole(guild, role),
+        futureMaybe.chainFirstTaskEitherK(({ guild, defaultRole }) =>
+          guildStateService.setDefaultRole(guild, Maybe.some(defaultRole)),
         ),
         futureMaybe.match(
           () => 'Erreur',
-          ({ defaultRole }) => `Nouveau rôle par défaut : ${Maybe.toNullable(defaultRole)}`,
+          ({ defaultRole }) => `Nouveau rôle par défaut : ${defaultRole}`,
         ),
+      ),
+    )
+  }
+
+  function onDefaultRoleUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    if (interaction.guild === null) return Future.notUsed
+    return withFollowUp(interaction)(
+      pipe(
+        guildStateService.setDefaultRole(interaction.guild, Maybe.none),
+        Future.map(() => 'Nouveau rôle par défaut : null'),
       ),
     )
   }
@@ -540,6 +576,8 @@ export const AdminCommandsObserver = (
     switch (subcommand) {
       case Keys.set:
         return onItsFridaySet(interaction)
+      case Keys.unset:
+        return onItsFridayUnset(interaction)
     }
     return Future.notUsed
   }
@@ -551,14 +589,23 @@ export const AdminCommandsObserver = (
           guild: futureMaybe.fromNullable(interaction.guild),
           channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
         }),
-        futureMaybe.chainTaskEitherK(({ guild, channel }) =>
-          guildStateService.setItsFridayChannel(guild, channel),
+        futureMaybe.chainFirstTaskEitherK(({ guild, channel }) =>
+          guildStateService.setItsFridayChannel(guild, Maybe.some(channel)),
         ),
         futureMaybe.match(
           () => 'Erreur',
-          ({ itsFridayChannel }) =>
-            `Nouveau salon pour "C'est vendredi" : ${Maybe.toNullable(itsFridayChannel)}`,
+          ({ channel }) => `Nouveau salon pour "C'est vendredi" : ${channel}`,
         ),
+      ),
+    )
+  }
+
+  function onItsFridayUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    if (interaction.guild === null) return Future.notUsed
+    return withFollowUp(interaction)(
+      pipe(
+        guildStateService.setItsFridayChannel(interaction.guild, Maybe.none),
+        Future.map(() => `Nouveau salon pour "C'est vendredi" : null`),
       ),
     )
   }
@@ -574,6 +621,8 @@ export const AdminCommandsObserver = (
     switch (subcommand) {
       case Keys.set:
         return onBirthdaySet(interaction)
+      case Keys.unset:
+        return onBirthdayUnset(interaction)
     }
     return Future.notUsed
   }
@@ -583,16 +632,27 @@ export const AdminCommandsObserver = (
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: futureMaybe.fromNullable(interaction.guild),
-          channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
+          birthdayChannel: fetchChannel(
+            Maybe.fromNullable(interaction.options.getChannel(Keys.channel)),
+          ),
         }),
-        futureMaybe.chainTaskEitherK(({ guild, channel }) =>
-          guildStateService.setBirthdayChannel(guild, channel),
+        futureMaybe.chainFirstTaskEitherK(({ guild, birthdayChannel }) =>
+          guildStateService.setBirthdayChannel(guild, Maybe.some(birthdayChannel)),
         ),
         futureMaybe.match(
           () => 'Erreur',
-          ({ birthdayChannel }) =>
-            `Nouveau salon pour les anniversaires : ${Maybe.toNullable(birthdayChannel)}`,
+          ({ birthdayChannel }) => `Nouveau salon pour les anniversaires : ${birthdayChannel}`,
         ),
+      ),
+    )
+  }
+
+  function onBirthdayUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    if (interaction.guild === null) return Future.notUsed
+    return withFollowUp(interaction)(
+      pipe(
+        guildStateService.setBirthdayChannel(interaction.guild, Maybe.none),
+        Future.map(() => 'Nouveau salon pour les anniversaires : null'),
       ),
     )
   }
