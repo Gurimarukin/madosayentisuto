@@ -3,17 +3,15 @@ import * as C from 'io-ts/Codec'
 
 import { ChannelId } from '../../../../shared/models/ChannelId'
 import { GuildId } from '../../../../shared/models/guild/GuildId'
-import { Dict, Maybe, NonEmptyArray } from '../../../../shared/utils/fp'
+import { Dict, Maybe } from '../../../../shared/utils/fp'
 
 import { RoleId } from '../../RoleId'
 import type { GuildState } from '../GuildState'
-import { AutoroleMessageDb } from './AutoroleMessageDb'
 import { CallsDb } from './CallsDb'
 
 const properties = {
   id: GuildId.codec,
   calls: Maybe.codec(CallsDb.codec),
-  autoroleMessages: Maybe.codec(NonEmptyArray.codec(AutoroleMessageDb.codec)),
   defaultRole: Maybe.codec(RoleId.codec),
   itsFridayChannel: Maybe.codec(ChannelId.codec),
   birthdayChannel: Maybe.codec(ChannelId.codec),
@@ -26,7 +24,6 @@ const codec = C.struct(properties)
 const empty = (id: GuildId): GuildStateDb => ({
   id,
   calls: Maybe.none,
-  autoroleMessages: Maybe.none,
   defaultRole: Maybe.none,
   itsFridayChannel: Maybe.none,
   birthdayChannel: Maybe.none,
@@ -35,17 +32,12 @@ const empty = (id: GuildId): GuildStateDb => ({
 const fromGuildState = ({
   id,
   calls,
-  autoroleMessages,
   defaultRole,
   itsFridayChannel,
   birthdayChannel,
 }: GuildState): GuildStateDb => ({
   id,
   calls: pipe(calls, Maybe.map(CallsDb.fromCalls)),
-  autoroleMessages: pipe(
-    autoroleMessages,
-    Maybe.map(NonEmptyArray.map(AutoroleMessageDb.fromAutoroleMessage)),
-  ),
   defaultRole: pipe(
     defaultRole,
     Maybe.map(r => RoleId.fromRole(r)),

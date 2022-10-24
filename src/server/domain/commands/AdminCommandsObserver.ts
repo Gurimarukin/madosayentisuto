@@ -31,7 +31,6 @@ import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
 import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
-import type { AutoroleMessage as __AutoroleMessage } from '../../models/guildState/AutoRoleMessage'
 import type { Calls } from '../../models/guildState/Calls'
 import type { GuildState } from '../../models/guildState/GuildState'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
@@ -834,7 +833,6 @@ const maybeStr = <A>(fa: Maybe<A>, str: (a: A) => string = String): string =>
 
 const formatState = ({
   calls,
-  autoroleMessages,
   defaultRole,
   itsFridayChannel,
   birthdayChannel,
@@ -842,7 +840,6 @@ const formatState = ({
 }: GuildState): string =>
   StringUtils.stripMargins(
     `- **calls**: ${maybeStr(calls, formatCalls)}
-    |- **autoroleMessages**: ${maybeStr(autoroleMessages, formatAutoroleMessages)}
     |- **defaultRole**: ${maybeStr(defaultRole)}
     |- **itsFridayChannel**: ${maybeStr(itsFridayChannel)}
     |- **birthdayChannel**: ${maybeStr(birthdayChannel)}
@@ -853,13 +850,6 @@ const formatCalls = ({ message, channel, role }: Calls): string =>
   // TODO: remove disable
   // eslint-disable-next-line @typescript-eslint/no-base-to-string
   `${role} - ${channel} - <${message.url}>`
-
-const formatAutoroleMessages = (autoroleMessages: NonEmptyArray<__AutoroleMessage>): string =>
-  pipe(
-    autoroleMessages,
-    NonEmptyArray.map(({ message, role }) => `  - ${role} - ${message.url}`),
-    List.mkString('\n', '\n', ''),
-  )
 
 const formatActivity = ({ type, name }: Activity): string => `\`${type} ${name}\``
 
