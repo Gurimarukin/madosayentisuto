@@ -66,7 +66,7 @@ export const startWebServer = (
   const withCors: IO<express.Express> = pipe(
     IO.tryCatch(() => express()),
     IO.chainFirst(() =>
-      logger.debug(
+      logger.trace(
         `HTTP_ALLOWED_ORIGINS: ${pipe(
           config.allowedOrigins,
           Maybe.map(
@@ -215,7 +215,7 @@ export const startWebServer = (
       Maybe.map(s => s.toString()),
       Maybe.toUndefined,
     )
-    return logger.debug(method, uri, '-', status)
+    return logger.trace(method, uri, '-', status)
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
