@@ -80,7 +80,7 @@ const poll = (
         answers,
         NonEmptyArray.mapWithIndex(index =>
           MessageComponent.buttonWithCustomId({
-            custom_id: PollButton.format(PollButton.of(index)),
+            custom_id: PollButton.codec.encode(PollButton.of(index)),
             style: ButtonStyle.Secondary,
             ...pipe(
               getEmoji(index),

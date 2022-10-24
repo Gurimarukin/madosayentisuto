@@ -2,6 +2,7 @@
 
 - Delete Ephemeral Messages
 
+- elevator: don't clearTimeout if same chan
 - upgrade react
 - select leave message chan
 - deploy: on guild join

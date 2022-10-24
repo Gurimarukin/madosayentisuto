@@ -9,9 +9,9 @@ import { constants } from '../../config/constants'
 import type { Track } from '../../models/audio/music/Track'
 import { MessageComponent } from '../../models/discord/MessageComponent'
 
-export const musicStateButtons = {
-  playPauseId: 'musicPlayPause',
-  nextId: 'musicNext',
+const ButtonIds = {
+  playPause: 'musicPlayPause',
+  next: 'musicNext',
 }
 
 const queueDisplay = 5
@@ -23,17 +23,17 @@ const images = {
 }
 
 const pauseButton = MessageComponent.buttonWithCustomId({
-  custom_id: musicStateButtons.playPauseId,
+  custom_id: ButtonIds.playPause,
   label: 'Pause',
   emoji: constants.emojis.pause,
 })
 const playButton = MessageComponent.buttonWithCustomId({
-  custom_id: musicStateButtons.playPauseId,
+  custom_id: ButtonIds.playPause,
   label: 'Lecture',
   emoji: constants.emojis.play,
 })
 const nextButton = MessageComponent.buttonWithCustomId({
-  custom_id: musicStateButtons.nextId,
+  custom_id: ButtonIds.next,
   label: 'Suivant',
   emoji: constants.emojis.next,
 })
@@ -138,6 +138,6 @@ const Keys = {
   track: 'morceau',
 }
 
-export const MusicStateMessage = { connecting, playing, Keys }
+export const MusicStateMessage = { ButtonId: ButtonIds, connecting, playing, Keys }
 
 const maskedLink = (text: string, url: string): string => `[${text}](${url})`

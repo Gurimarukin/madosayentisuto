@@ -5,20 +5,20 @@ import { Future, Maybe, Try } from '../../../src/shared/utils/fp'
 import { futureMaybe } from '../../../src/shared/utils/futureMaybe'
 
 describe('futureMaybe.chainFirst', () => {
-  const futureToto = Future.right(Maybe.some('toto'))
+  const futureToto = futureMaybe.some('toto')
 
-  it('should Future.right(Maybe.some(123))', () =>
+  it('should futureMaybe.some(123)', () =>
     pipe(
-      Future.right(Maybe.some(123)),
+      futureMaybe.some(123),
       futureMaybe.chainFirst(() => futureToto),
       task.map(res => {
         expect(res).toStrictEqual(Try.right(Maybe.some(123)))
       }),
     )())
 
-  it('should Future.right(Maybe.none)', () =>
+  it('should futureMaybe.none', () =>
     pipe(
-      Future.right(Maybe.none),
+      futureMaybe.none,
       futureMaybe.chainFirst(() => futureToto),
       task.map(res => {
         expect(res).toStrictEqual(Try.right(Maybe.none))

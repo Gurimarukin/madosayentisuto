@@ -186,7 +186,7 @@ const parseWho = (
       futureMaybe.fromOption,
       futureMaybe.chain(({ guild, role }) =>
         role instanceof Role
-          ? Future.right(Maybe.some(role))
+          ? futureMaybe.some(role)
           : DiscordConnector.fetchRole(guild, RoleId.fromRole(role)),
       ),
     ),

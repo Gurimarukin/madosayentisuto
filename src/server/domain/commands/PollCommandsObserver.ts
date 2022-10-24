@@ -209,8 +209,8 @@ export const PollCommandsObserver = (
   // onButton
   function onButton(interaction: ButtonInteraction): Future<NotUsed> {
     return pipe(
-      PollButton.parse(interaction.customId),
-      Maybe.fold(
+      PollButton.codec.decode(interaction.customId),
+      Either.fold(
         () => Future.notUsed,
         button =>
           pipe(
