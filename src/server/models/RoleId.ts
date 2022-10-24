@@ -13,4 +13,4 @@ const fromRole = (role: Role | APIRole): RoleId => wrap(role.id)
 
 const codec = fromNewtype<RoleId>(C.string)
 
-export const RoleId = { codec, fromRole, unwrap }
+export const RoleId = { codec, fromRole, wrap, unwrap }

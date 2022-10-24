@@ -11,7 +11,7 @@ import { IO } from '../shared/utils/fp'
 import type { Context } from './Context'
 import { constants } from './config/constants'
 import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
-import { CallsAutoroleObserver } from './domain/CallsAutoroleObserver'
+import { AutoroleObserver } from './domain/AutoroleObserver'
 import { DisconnectVocalObserver } from './domain/DisconnectVocalObserver'
 import { ElevatorObserver } from './domain/ElevatorObserver'
 import { MusicThreadCleanObserver } from './domain/MusicThreadCleanObserver'
@@ -152,7 +152,7 @@ export const Application = (
       sub(DeployCommandsObserver(Logger, config.client, discord)),
       // │
       sub(ActivityStatusObserver(botStateService)),
-      sub(CallsAutoroleObserver(Logger, guildStateService)),
+      sub(AutoroleObserver(Logger)),
       sub(DisconnectVocalObserver(clientId, guildStateService)),
       sub(ElevatorObserver(Logger, guildStateService)),
       sub(MusicThreadCleanObserver(Logger, clientId, guildStateService)),

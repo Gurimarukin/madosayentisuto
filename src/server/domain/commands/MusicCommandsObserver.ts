@@ -9,7 +9,7 @@ import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../..
 import type { AudioSubscription } from '../../helpers/AudioSubscription'
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
 import type { YtDlp } from '../../helpers/YtDlp'
-import { MusicStateMessage, musicStateButtons } from '../../helpers/messages/MusicStateMessage'
+import { MusicStateMessage } from '../../helpers/messages/MusicStateMessage'
 import { AudioState } from '../../models/audio/AudioState'
 import { AudioStateValue } from '../../models/audio/AudioStateValue'
 import { Track } from '../../models/audio/music/Track'
@@ -98,9 +98,9 @@ export const MusicCommandsObserver = (
 
   function onButton(interaction: ButtonInteraction): Future<NotUsed> {
     switch (interaction.customId) {
-      case musicStateButtons.playPauseId:
+      case MusicStateMessage.ButtonId.playPause:
         return onPlayPauseButton(interaction)
-      case musicStateButtons.nextId:
+      case MusicStateMessage.ButtonId.next:
         return onNextButton(interaction)
     }
     return Future.notUsed

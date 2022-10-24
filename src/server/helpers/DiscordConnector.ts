@@ -170,7 +170,7 @@ const fetchMembers = (guild: Guild): Future<Collection<string, GuildMember>> =>
     debugLeft('fetchMembers'),
   )
 
-const fetchMessage = (guild: Guild, messageId: MessageId): Future<Maybe<Message>> =>
+const fetchMessage = (guild: Guild, messageId: MessageId): Future<Maybe<Message<true>>> =>
   pipe(
     IO.tryCatch(() => guild.channels.cache.toJSON()),
     IO.map(List.filter(ChannelUtils.isGuildSendable)),
@@ -624,7 +624,7 @@ const nl = (str: string | undefined): string => (str !== undefined ? `${str}\n` 
 
 const fetchMessageRec =
   (message: string) =>
-  (channels: List<GuildSendableChannel>): Future<Maybe<Message>> => {
+  (channels: List<GuildSendableChannel>): Future<Maybe<Message<true>>> => {
     if (List.isNonEmpty(channels)) {
       const [head, ...tail] = channels
       return pipe(

@@ -1,41 +1,25 @@
-import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
+import type { Codec } from 'io-ts/Codec'
+import * as C from 'io-ts/Codec'
+import * as D from 'io-ts/Decoder'
+import * as E from 'io-ts/Encoder'
 
-import { List, Maybe } from '../../../shared/utils/fp'
+import { NumberFromString, customIdCodec } from '../../utils/ioTsUtils'
 
 export type PollButton = {
   readonly choiceIndex: number
 }
 
-const pollButtonPrefix = 'poll'
-
 const of = (choiceIndex: number): PollButton => ({ choiceIndex })
 
-const format = ({ choiceIndex }: PollButton): string => `${pollButtonPrefix}-${choiceIndex}`
+const rawCodec = customIdCodec('poll')
 
-const parse = (raw: string): Maybe<PollButton> => {
-  const [rawPoll, rawIndex, ...rest] = pipe(raw, string.split('-'))
+const codec: Codec<string, string, PollButton> = C.make(
+  pipe(rawCodec, D.parse(NumberFromString.decoder.decode), D.map(of)),
+  pipe(
+    rawCodec,
+    E.contramap(b => NumberFromString.encoder.encode(b.choiceIndex)),
+  ),
+)
 
-  return pipe(
-    Maybe.Do,
-    Maybe.filter(() => rawPoll === pollButtonPrefix && List.isEmpty(rest)),
-    Maybe.chain(() => nonEmptyString(rawIndex)),
-    Maybe.chain(numberFromString),
-    Maybe.map(of),
-  )
-}
-
-export const PollButton = { of, format, parse }
-
-// raw should not be empty and not have additional triming spaces
-const nonEmptyString = (raw: string | undefined): Maybe<string> => {
-  if (raw === undefined || raw === '') return Maybe.none
-
-  const trimed = raw.trim()
-  return trimed === raw ? Maybe.some(raw) : Maybe.none
-}
-
-const numberFromString = (str: string): Maybe<number> => {
-  const n = Number(str)
-  return isNaN(n) ? Maybe.none : Maybe.some(n)
-}
+export const PollButton = { of, codec }

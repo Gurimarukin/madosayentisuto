@@ -5,8 +5,6 @@ import type {
   ChatInputCommandInteraction,
   Guild,
   GuildMember,
-  Message,
-  TextBasedChannel,
 } from 'discord.js'
 import { ChannelType, Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
@@ -24,7 +22,8 @@ import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../..
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import { initCallsMessage } from '../../helpers/messages/initCallsMessage'
+import type { AutoroleMessageArgs } from '../../helpers/messages/AutoroleMessage'
+import { AutoroleMessage } from '../../helpers/messages/AutoroleMessage'
 import { RoleId } from '../../models/RoleId'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
@@ -35,19 +34,23 @@ import type { GuildState } from '../../models/guildState/GuildState'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { BotStateService } from '../../services/BotStateService'
 import type { GuildStateService } from '../../services/GuildStateService'
-import type { GuildSendableChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
-import { LogUtils } from '../../utils/LogUtils'
 
 const Keys = {
   admin: 'admin',
   state: 'state',
   calls: 'calls',
-  init: 'init',
   channel: 'channel',
   role: 'role',
-  defaultrole: 'defaultrole',
-  itsfriday: 'itsfriday',
+  autorole: 'autorole',
+  add: 'add',
+  descriptionMessage: 'description-message',
+  addButton: 'add-button',
+  removeButton: 'remove-button',
+  addButtonEmoji: 'add-button-emoji',
+  removeButtonEmoji: 'remove-button-emoji',
+  defaultRole: 'default-role',
+  itsFriday: 'its-friday',
   birthday: 'birthday',
   activity: 'activity',
   type: 'type',
@@ -58,6 +61,10 @@ const Keys = {
   unset: 'unset',
   say: 'say',
   what: 'what',
+
+  // Ids: {
+  //   modal: 'autoroleModal',
+  // },
 }
 
 const adminCommand = Command.chatInput({
@@ -84,25 +91,62 @@ const adminCommand = Command.chatInput({
     description: "Jean Plank n'est pas votre secrétaire, mais il gère vos appels",
   })(
     Command.option.subcommand({
-      name: Keys.init,
-      description: 'Pour initier la gestion des appels',
+      name: Keys.set,
+      description: 'Pour définir la gestion des appels',
     })(
-      Command.option.channel({
-        name: Keys.channel,
-        description: 'Le salon dans lequel les appels seront notifiés',
-        channel_types: [ChannelType.GuildText],
-        required: true,
-      }),
       Command.option.role({
         name: Keys.role,
         description: 'Le rôle qui sera notifié des appels',
         required: true,
       }),
     ),
+    Command.option.subcommand({
+      name: Keys.unset,
+      description: "Plus de notifications d'appel",
+    })(),
   ),
 
   Command.option.subcommandGroup({
-    name: Keys.defaultrole,
+    name: Keys.autorole,
+    description: 'Jean Plank ajoute et enlève des rôles pour vous',
+  })(
+    Command.option.subcommand({
+      name: Keys.add,
+      description: 'Nouvel autorole',
+    })(
+      Command.option.role({
+        name: Keys.role,
+        description: 'Le rôle à ajouter et enlever',
+        required: true,
+      }),
+      Command.option.string({
+        name: Keys.descriptionMessage,
+        description: "Message d'autorole",
+        required: true,
+      }),
+      Command.option.string({
+        name: Keys.addButton,
+        description: 'Bouton ajouter',
+        required: true,
+      }),
+      Command.option.string({
+        name: Keys.removeButton,
+        description: 'Bouton enlever',
+        required: true,
+      }),
+      Command.option.string({
+        name: Keys.addButtonEmoji,
+        description: 'Émoji bouton ajouter',
+      }),
+      Command.option.string({
+        name: Keys.removeButtonEmoji,
+        description: 'Émoji bouton enlever',
+      }),
+    ),
+  ),
+
+  Command.option.subcommandGroup({
+    name: Keys.defaultRole,
     description: "Jean Plank donne un rôle au nouveau membres d'équipages",
   })(
     Command.option.subcommand({
@@ -115,10 +159,14 @@ const adminCommand = Command.chatInput({
         required: true,
       }),
     ),
+    Command.option.subcommand({
+      name: Keys.unset,
+      description: 'Plus de rôle par défaut',
+    })(),
   ),
 
   Command.option.subcommandGroup({
-    name: Keys.itsfriday,
+    name: Keys.itsFriday,
     description: "Jean Plank vous informe que nous sommes vendredi (c'est vrai)",
   })(
     Command.option.subcommand({
@@ -132,6 +180,10 @@ const adminCommand = Command.chatInput({
         required: true,
       }),
     ),
+    Command.option.subcommand({
+      name: Keys.unset,
+      description: 'Plus de notifications de vendredi',
+    })(),
   ),
 
   Command.option.subcommandGroup({
@@ -149,6 +201,10 @@ const adminCommand = Command.chatInput({
         required: true,
       }),
     ),
+    Command.option.subcommand({
+      name: Keys.unset,
+      description: "Plus de notifications d'anniversaires",
+    })(),
   ),
 
   Command.option.subcommandGroup({
@@ -282,9 +338,11 @@ export const AdminCommandsObserver = (
           return onState(interaction, subcommand)
         case Keys.calls:
           return onCalls(interaction, subcommand)
-        case Keys.defaultrole:
+        case Keys.autorole:
+          return onAutorole(interaction, subcommand)
+        case Keys.defaultRole:
           return onDefaultRole(interaction, subcommand)
-        case Keys.itsfriday:
+        case Keys.itsFriday:
           return onItsFriday(interaction, subcommand)
         case Keys.birthday:
           return onBirthday(interaction, subcommand)
@@ -337,80 +395,129 @@ export const AdminCommandsObserver = (
 
   function onCalls(interaction: ChatInputCommandInteraction, subcommand: string): Future<NotUsed> {
     switch (subcommand) {
-      case Keys.init:
-        return onCallsInit(interaction)
+      case Keys.set:
+        return onCallsSet(interaction)
+      case Keys.unset:
+        return onCallsUnset(interaction)
     }
     return Future.notUsed
   }
 
-  function onCallsInit(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    const maybeGuild = Maybe.fromNullable(interaction.guild)
+  function onCallsSet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    return withFollowUp(interaction)(
+      pipe(
+        apply.sequenceS(futureMaybe.ApplyPar)({
+          channel: pipe(
+            interaction.channel,
+            futureMaybe.fromNullable,
+            futureMaybe.filter(ChannelUtils.isGuildSendable),
+          ),
+          role: fetchRole(interaction.guild, interaction.options.getRole(Keys.role)),
+        }),
+        futureMaybe.chainFirstTaskEitherK(({ channel, role }) =>
+          guildStateService.setCalls(channel.guild, Maybe.some({ channel, role })),
+        ),
+        futureMaybe.match(
+          () => 'Erreur',
+          ({ channel, role }) =>
+            // TODO: remove disable
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
+            `Nouveau paramètres d'appels : ${role} - ${channel}`,
+        ),
+      ),
+    )
+  }
+
+  function onCallsUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    if (interaction.guild === null) return Future.notUsed
+    return withFollowUp(interaction)(
+      pipe(
+        guildStateService.setCalls(interaction.guild, Maybe.none),
+        Future.map(() => "Nouveau paramètres d'appels : null"),
+      ),
+    )
+  }
+
+  /**
+   * autorole
+   */
+
+  function onAutorole(
+    interaction: ChatInputCommandInteraction,
+    subcommand: string,
+  ): Future<NotUsed> {
+    switch (subcommand) {
+      case Keys.add:
+        return onAutoroleAdd(interaction)
+    }
+    return Future.notUsed
+  }
+
+  function onAutoroleAdd(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return pipe(
       DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
       Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
       Future.chain(() =>
         apply.sequenceS(futureMaybe.ApplyPar)({
-          guild: Future.right(maybeGuild),
           author: fetchUser(Maybe.fromNullable(interaction.member)),
-          commandChannel: futureMaybe.fromNullable(interaction.channel),
-          callsChannel: fetchChannel(
-            Maybe.fromNullable(interaction.options.getChannel(Keys.channel)),
+          commandChannel: pipe(
+            interaction.channel,
+            futureMaybe.fromNullable,
+            futureMaybe.filter(ChannelUtils.isGuildText),
           ),
-          role: fetchRole(maybeGuild, Maybe.fromNullable(interaction.options.getRole(Keys.role))),
+          role: fetchRole(interaction.guild, interaction.options.getRole(Keys.role)),
+          descriptionMessage: futureMaybe.fromNullable(
+            interaction.options.getString(Keys.descriptionMessage),
+          ),
+          addButton: futureMaybe.fromNullable(interaction.options.getString(Keys.addButton)),
+          removeButton: futureMaybe.fromNullable(interaction.options.getString(Keys.removeButton)),
         }),
       ),
-      futureMaybe.chainTaskEitherK(({ guild, author, commandChannel, callsChannel, role }) =>
-        sendInitMessageAndUpdateState(guild, author, commandChannel, callsChannel, role),
+      futureMaybe.chainTaskEitherK(a =>
+        sendAutoroleMessage(a.author, a.commandChannel, {
+          role: a.role,
+          descriptionMessage: a.descriptionMessage,
+          addButton: a.addButton,
+          removeButton: a.removeButton,
+          addButtonEmoji: Maybe.fromNullable(interaction.options.getString(Keys.addButtonEmoji)),
+          removeButtonEmoji: Maybe.fromNullable(
+            interaction.options.getString(Keys.removeButtonEmoji),
+          ),
+        }),
       ),
       Future.map(toNotUsed),
     )
   }
 
-  function sendInitMessageAndUpdateState(
-    guild: Guild,
+  function sendAutoroleMessage(
     author: User,
-    commandChannel: TextBasedChannel,
-    channel: TextChannel,
-    role: Role,
+    commandChannel: TextChannel,
+    args: AutoroleMessageArgs,
   ): Future<NotUsed> {
+    const options = AutoroleMessage.of({
+      ...args,
+      descriptionMessage: args.descriptionMessage.replaceAll('\\n', '\n'),
+    })
     return pipe(
-      sendInitMessage(commandChannel, channel, role),
+      DiscordConnector.sendMessage(commandChannel, options),
+      futureMaybe.chainFirstTaskEitherK(message =>
+        // we want the `(edited)` label on message so we won't have a layout shift
+        DiscordConnector.messageEdit(message, options),
+      ),
       futureMaybe.matchE(
         () =>
           ChannelUtils.isNamed(commandChannel)
             ? pipe(
                 DiscordConnector.sendPrettyMessage(
                   author,
-                  `Impossible d'envoyer le message d'abonnement dans le salon **#${commandChannel.name}**.`,
+                  `Impossible d'envoyer le message d'autorole **@${args.role.name}** dans le salon **#${commandChannel.name}**.`,
                 ),
                 Future.map(toNotUsed),
               )
             : Future.notUsed,
-        tryDeletePreviousMessageAndSetCalls(guild, channel, role),
+        () => Future.notUsed,
       ),
     )
-  }
-
-  function sendInitMessage(
-    commandChannel: TextBasedChannel,
-    callsChannel: GuildSendableChannel,
-    role: Role | APIRole,
-  ): Future<Maybe<Message>> {
-    return DiscordConnector.sendMessage(commandChannel, initCallsMessage(callsChannel, role))
-  }
-
-  function tryDeletePreviousMessageAndSetCalls(
-    guild: Guild,
-    channel: TextChannel,
-    role: Role,
-  ): (message: Message) => Future<NotUsed> {
-    return message =>
-      pipe(
-        guildStateService.getCalls(guild),
-        futureMaybe.chainTaskEitherK(previous => deleteMessage(previous.message)),
-        Future.chain(() => guildStateService.setCalls(guild, { message, channel, role })),
-        Future.map(toNotUsed),
-      )
   }
 
   /**
@@ -424,6 +531,8 @@ export const AdminCommandsObserver = (
     switch (subcommand) {
       case Keys.set:
         return onDefaultRoleSet(interaction)
+      case Keys.unset:
+        return onDefaultRoleUnset(interaction)
     }
     return Future.notUsed
   }
@@ -432,19 +541,26 @@ export const AdminCommandsObserver = (
     return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
-          guild: Future.right(Maybe.fromNullable(interaction.guild)),
-          role: fetchRole(
-            Maybe.fromNullable(interaction.guild),
-            Maybe.fromNullable(interaction.options.getRole(Keys.role)),
-          ),
+          guild: futureMaybe.fromNullable(interaction.guild),
+          defaultRole: fetchRole(interaction.guild, interaction.options.getRole(Keys.role)),
         }),
-        futureMaybe.chainTaskEitherK(({ guild, role }) =>
-          guildStateService.setDefaultRole(guild, role),
+        futureMaybe.chainFirstTaskEitherK(({ guild, defaultRole }) =>
+          guildStateService.setDefaultRole(guild, Maybe.some(defaultRole)),
         ),
         futureMaybe.match(
           () => 'Erreur',
-          ({ defaultRole }) => `Nouveau rôle par défaut : ${Maybe.toNullable(defaultRole)}`,
+          ({ defaultRole }) => `Nouveau rôle par défaut : ${defaultRole}`,
         ),
+      ),
+    )
+  }
+
+  function onDefaultRoleUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    if (interaction.guild === null) return Future.notUsed
+    return withFollowUp(interaction)(
+      pipe(
+        guildStateService.setDefaultRole(interaction.guild, Maybe.none),
+        Future.map(() => 'Nouveau rôle par défaut : null'),
       ),
     )
   }
@@ -460,6 +576,8 @@ export const AdminCommandsObserver = (
     switch (subcommand) {
       case Keys.set:
         return onItsFridaySet(interaction)
+      case Keys.unset:
+        return onItsFridayUnset(interaction)
     }
     return Future.notUsed
   }
@@ -468,17 +586,26 @@ export const AdminCommandsObserver = (
     return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
-          guild: Future.right(Maybe.fromNullable(interaction.guild)),
+          guild: futureMaybe.fromNullable(interaction.guild),
           channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
         }),
-        futureMaybe.chainTaskEitherK(({ guild, channel }) =>
-          guildStateService.setItsFridayChannel(guild, channel),
+        futureMaybe.chainFirstTaskEitherK(({ guild, channel }) =>
+          guildStateService.setItsFridayChannel(guild, Maybe.some(channel)),
         ),
         futureMaybe.match(
           () => 'Erreur',
-          ({ itsFridayChannel }) =>
-            `Nouveau salon pour "C'est vendredi" : ${Maybe.toNullable(itsFridayChannel)}`,
+          ({ channel }) => `Nouveau salon pour "C'est vendredi" : ${channel}`,
         ),
+      ),
+    )
+  }
+
+  function onItsFridayUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    if (interaction.guild === null) return Future.notUsed
+    return withFollowUp(interaction)(
+      pipe(
+        guildStateService.setItsFridayChannel(interaction.guild, Maybe.none),
+        Future.map(() => `Nouveau salon pour "C'est vendredi" : null`),
       ),
     )
   }
@@ -494,6 +621,8 @@ export const AdminCommandsObserver = (
     switch (subcommand) {
       case Keys.set:
         return onBirthdaySet(interaction)
+      case Keys.unset:
+        return onBirthdayUnset(interaction)
     }
     return Future.notUsed
   }
@@ -502,17 +631,28 @@ export const AdminCommandsObserver = (
     return withFollowUp(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
-          guild: Future.right(Maybe.fromNullable(interaction.guild)),
-          channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
+          guild: futureMaybe.fromNullable(interaction.guild),
+          birthdayChannel: fetchChannel(
+            Maybe.fromNullable(interaction.options.getChannel(Keys.channel)),
+          ),
         }),
-        futureMaybe.chainTaskEitherK(({ guild, channel }) =>
-          guildStateService.setBirthdayChannel(guild, channel),
+        futureMaybe.chainFirstTaskEitherK(({ guild, birthdayChannel }) =>
+          guildStateService.setBirthdayChannel(guild, Maybe.some(birthdayChannel)),
         ),
         futureMaybe.match(
           () => 'Erreur',
-          ({ birthdayChannel }) =>
-            `Nouveau salon pour les anniversaires : ${Maybe.toNullable(birthdayChannel)}`,
+          ({ birthdayChannel }) => `Nouveau salon pour les anniversaires : ${birthdayChannel}`,
         ),
+      ),
+    )
+  }
+
+  function onBirthdayUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    if (interaction.guild === null) return Future.notUsed
+    return withFollowUp(interaction)(
+      pipe(
+        guildStateService.setBirthdayChannel(interaction.guild, Maybe.none),
+        Future.map(() => 'Nouveau salon pour les anniversaires : null'),
       ),
     )
   }
@@ -649,7 +789,7 @@ export const AdminCommandsObserver = (
       futureMaybe.fromOption(maybeMember),
       futureMaybe.chain(({ user }) =>
         user instanceof User
-          ? Future.right(Maybe.some(user))
+          ? futureMaybe.some(user)
           : discord.fetchUser(DiscordUserId.fromUser(user)),
       ),
     )
@@ -660,7 +800,7 @@ export const AdminCommandsObserver = (
       futureMaybe.fromOption(maybeChannel),
       futureMaybe.chain(channel =>
         channel instanceof TextChannel
-          ? Future.right(Maybe.some(channel))
+          ? futureMaybe.some(channel)
           : pipe(
               discord.fetchChannel(ChannelId.fromChannel(channel)),
               Future.map(Maybe.filter(ChannelUtils.isGuildText)),
@@ -670,36 +810,30 @@ export const AdminCommandsObserver = (
   }
 
   function fetchRole(
-    maybeGuild: Maybe<Guild>,
-    maybeRole: Maybe<Role | APIRole>,
+    maybeGuild: Guild | null,
+    maybeRole: Role | APIRole | null,
   ): Future<Maybe<Role>> {
     return pipe(
-      apply.sequenceS(Maybe.Apply)({ guild: maybeGuild, role: maybeRole }),
+      apply.sequenceS(Maybe.Apply)({
+        guild: Maybe.fromNullable(maybeGuild),
+        role: Maybe.fromNullable(maybeRole),
+      }),
       futureMaybe.fromOption,
       futureMaybe.chain(({ guild, role }) =>
         role instanceof Role
-          ? Future.right(Maybe.some(role))
+          ? futureMaybe.some(role)
           : DiscordConnector.fetchRole(guild, RoleId.fromRole(role)),
-      ),
-    )
-  }
-
-  function deleteMessage(message: Message): Future<NotUsed> {
-    return pipe(
-      DiscordConnector.messageDelete(message),
-      Future.chainIOEitherK(deleted =>
-        deleted
-          ? IO.notUsed
-          : LogUtils.pretty(logger, message.guild, message.author, message.channel).info(
-              'Not enough permissions to delete message',
-            ),
       ),
     )
   }
 }
 
 const maybeStr = <A>(fa: Maybe<A>, str: (a: A) => string = String): string =>
-  pipe(fa, Maybe.map(str), Maybe.toNullable, String)
+  pipe(
+    fa,
+    Maybe.map(str),
+    Maybe.getOrElse(() => '`null`'),
+  )
 
 const formatState = ({
   calls,
@@ -716,10 +850,10 @@ const formatState = ({
     |- **subscription**: ${maybeStr(subscription, s => s.stringify())}`,
   )
 
-const formatCalls = ({ message, channel, role }: Calls): string =>
+const formatCalls = ({ channel, role }: Calls): string =>
   // TODO: remove disable
   // eslint-disable-next-line @typescript-eslint/no-base-to-string
-  `${role} - ${channel} - <${message.url}>`
+  `${role} - ${channel}`
 
 const formatActivity = ({ type, name }: Activity): string => `\`${type} ${name}\``
 

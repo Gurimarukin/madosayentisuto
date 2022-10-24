@@ -2,18 +2,15 @@ import * as C from 'io-ts/Codec'
 
 import { ChannelId } from '../../../../shared/models/ChannelId'
 
-import { MessageId } from '../../MessageId'
 import { RoleId } from '../../RoleId'
 import type { Calls } from '../Calls'
 
 const codec = C.struct({
-  message: MessageId.codec, // listen reactions to this message
   channel: ChannelId.codec, // notify in this channel
   role: RoleId.codec, // mention this role
 })
 
-const fromCalls = ({ message, channel, role }: Calls): CallsDb => ({
-  message: MessageId.fromMessage(message),
+const fromCalls = ({ channel, role }: Calls): CallsDb => ({
   channel: ChannelId.fromChannel(channel),
   role: RoleId.fromRole(role),
 })

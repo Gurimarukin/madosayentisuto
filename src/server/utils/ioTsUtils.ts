@@ -1,13 +1,13 @@
 import { predicate, string } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
-import * as C from 'io-ts/Codec'
 import type { Codec } from 'io-ts/Codec'
-import * as D from 'io-ts/Decoder'
+import * as C from 'io-ts/Codec'
 import type { Decoder } from 'io-ts/Decoder'
+import * as D from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
 
 import { DayJs } from '../../shared/models/DayJs'
-import { List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
+import { Either, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
 // DayJsFromDate
 
@@ -60,7 +60,12 @@ const numberFromStringDecoder: Decoder<unknown, number> = pipe(
   }),
 )
 
-export const NumberFromString = { decoder: numberFromStringDecoder }
+const numberFromStringEncoder: Encoder<string, number> = { encode: String }
+
+export const NumberFromString = {
+  decoder: numberFromStringDecoder,
+  encoder: numberFromStringEncoder,
+}
 
 //
 
@@ -85,3 +90,26 @@ const nonEmptyArrayFromStringDecoder = <A>(
   pipe(D.string, D.map(prepareArray), D.compose(NonEmptyArray.decoder(decoder)))
 
 export const NonEmptyArrayFromString = { decoder: nonEmptyArrayFromStringDecoder }
+
+// CustomId
+
+export const customIdCodec = (prefix: string): Codec<string, string, string> => ({
+  decode: raw => {
+    const [rawPrefix, rawN, ...rest] = pipe(raw, string.split('-'))
+    return pipe(
+      Maybe.Do,
+      Maybe.filter(() => rawPrefix === prefix && List.isEmpty(rest)),
+      Maybe.chain(() => nonEmptyString(rawN)),
+      Either.fromOption(() => D.error(raw, 'CustomId')),
+    )
+  },
+  encode: n => `${prefix}-${n}`,
+})
+
+// raw should not be empty and not have additional triming spaces
+const nonEmptyString = (raw: string | undefined): Maybe<string> => {
+  if (raw === undefined || raw === '') return Maybe.none
+
+  const trimed = raw.trim()
+  return trimed === raw ? Maybe.some(raw) : Maybe.none
+}

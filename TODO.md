@@ -1,9 +1,8 @@
-- decouple autorole and call mention
-
 - Les Quais Abatoirs UwU renamer
 
 - Delete Ephemeral Messages
 
+- elevator: don't clearTimeout if same chan
 - upgrade react
 - select leave message chan
 - deploy: on guild join
