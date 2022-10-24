@@ -4,6 +4,7 @@ import type { LoggerType } from '../../shared/models/LoggerType'
 import { IO, toNotUsed } from '../../shared/utils/fp'
 
 export const logger: LoggerType = {
+  trace: log(console.trace),
   debug: log(console.debug),
   info: log(console.info),
   warn: log(console.warn),

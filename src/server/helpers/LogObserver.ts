@@ -26,7 +26,7 @@ export const LogObserver = (
   return {
     logEventObserver: {
       next: ({ name, level, message }) =>
-        level === 'debug'
+        level === 'trace'
           ? Future.notUsed
           : pipe(
               serverToClientEventSubject.next(ServerToClientEvent.Log({ name, level, message })),

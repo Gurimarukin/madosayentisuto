@@ -3,7 +3,7 @@ import * as C from 'io-ts/Codec'
 
 import type { DayJs } from '../../shared/models/DayJs'
 import type { Log } from '../../shared/models/log/Log'
-import { LogLevel } from '../../shared/models/log/LogLevel'
+import { LogLevelWithoutTrace } from '../../shared/models/log/LogLevel'
 import type { TObservable } from '../../shared/models/rx/TObservable'
 import type { List, NotUsed } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
@@ -16,7 +16,7 @@ import { DayJsFromDate } from '../utils/ioTsUtils'
 const logMongoCodec = C.struct({
   date: DayJsFromDate.codec,
   name: C.string,
-  level: LogLevel.codec,
+  level: LogLevelWithoutTrace.codec,
   message: C.string,
 })
 
@@ -44,10 +44,7 @@ export function LogPersistence(Logger: LoggerGetter, mongoCollection: MongoColle
     countNonDebug,
 
     list: ({ skip, limit }: ListArgs = {}): TObservable<Log> =>
-      collection.findAll()(
-        { level: { $ne: 'debug' } },
-        { sort: [[collection.path(['date']), 1]], skip, limit },
-      ),
+      collection.findAll()({}, { sort: [[collection.path(['date']), 1]], skip, limit }),
 
     insertMany: (logs: List<Log>): Future<number> =>
       pipe(

@@ -27,6 +27,7 @@ type SubscribeLogEvent = (
 
 const init = (): LoggerObservable => {
   const Logger: LoggerGetter = name => ({
+    trace: (...params) => log(name, 'trace', util.format(...params)),
     debug: (...params) => log(name, 'debug', util.format(...params)),
     info: (...params) => log(name, 'info', util.format(...params)),
     warn: (...params) => log(name, 'warn', util.format(...params)),

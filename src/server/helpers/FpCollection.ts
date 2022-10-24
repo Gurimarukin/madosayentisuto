@@ -65,7 +65,7 @@ export const FpCollection =
         const encoded = codec.encode(doc)
         return pipe(
           collection.future(c => c.insertOne(encoded, options)),
-          Future.chainFirstIOEitherK(() => logger.debug('Inserted', JSON.stringify(encoded))),
+          Future.chainFirstIOEitherK(() => logger.trace('Inserted', JSON.stringify(encoded))),
         )
       },
 
@@ -74,7 +74,7 @@ export const FpCollection =
         return pipe(
           collection.future(c => c.insertMany(encoded, options)),
           Future.chainFirstIOEitherK(res =>
-            logger.debug(`Inserted ${res.insertedCount} documents`),
+            logger.trace(`Inserted ${res.insertedCount} documents`),
           ),
         )
       },
@@ -85,7 +85,7 @@ export const FpCollection =
           collection.future(c =>
             c.updateOne(filter, { $set: encoded as MatchKeysAndValues<O> }, options),
           ),
-          Future.chainFirstIOEitherK(() => logger.debug('Updated', JSON.stringify(encoded))),
+          Future.chainFirstIOEitherK(() => logger.trace('Updated', JSON.stringify(encoded))),
         )
       },
 
@@ -97,7 +97,7 @@ export const FpCollection =
         const encoded = codec.encode(doc)
         return pipe(
           collection.future(c => c.replaceOne(filter, encoded as O, options)),
-          Future.chainFirstIOEitherK(() => logger.debug('Replaced', JSON.stringify(encoded))),
+          Future.chainFirstIOEitherK(() => logger.trace('Replaced', JSON.stringify(encoded))),
         )
       },
 
@@ -110,7 +110,7 @@ export const FpCollection =
       ): Future<Maybe<A>> =>
         pipe(
           collection.future(c => c.findOne(filter, options)),
-          Future.chainFirstIOEitherK(res => logger.debug('Found one', JSON.stringify(res))),
+          Future.chainFirstIOEitherK(res => logger.trace('Found one', JSON.stringify(res))),
           Future.map(Maybe.fromNullable),
           futureMaybe.chain(u =>
             pipe(
@@ -126,19 +126,19 @@ export const FpCollection =
       deleteOne: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
         pipe(
           collection.future(c => c.deleteOne(filter, options)),
-          Future.chainFirstIOEitherK(res => logger.debug(`Deleted ${res.deletedCount} documents`)),
+          Future.chainFirstIOEitherK(res => logger.trace(`Deleted ${res.deletedCount} documents`)),
         ),
 
       deleteMany: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
         pipe(
           collection.future(c => c.deleteMany(filter, options)),
-          Future.chainFirstIOEitherK(res => logger.debug(`Deleted ${res.deletedCount} documents`)),
+          Future.chainFirstIOEitherK(res => logger.trace(`Deleted ${res.deletedCount} documents`)),
         ),
 
       drop: (): Future<boolean> =>
         pipe(
           collection.future(c => c.drop()),
-          Future.chainFirstIOEitherK(() => logger.debug('Dropped collection')),
+          Future.chainFirstIOEitherK(() => logger.trace('Dropped collection')),
         ),
     }
 
@@ -202,7 +202,7 @@ const fpCollectionHelpersFindAll =
             pipe(
               count.get,
               IO.fromIO,
-              IO.chain(n => logger.debug(`Found all ${n} documents`)),
+              IO.chain(n => logger.trace(`Found all ${n} documents`)),
             ),
           ),
           TObservable.fromTaskEither,

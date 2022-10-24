@@ -20,6 +20,7 @@ const __testableFormat =
 const format = __testableFormat(ChannelUtils.isNamed)
 
 const pretty = (logger: LoggerType, ...args: Parameters<typeof format>): LoggerType => ({
+  trace: (...us) => logger.trace(format(...args), ...us),
   debug: (...us) => logger.debug(format(...args), ...us),
   info: (...us) => logger.info(format(...args), ...us),
   warn: (...us) => logger.warn(format(...args), ...us),

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { LogEvent } from '../../shared/models/event/LogEvent'
-import { LogLevel } from '../../shared/models/log/LogLevel'
+import { LogLevel, LogLevelWithoutTrace } from '../../shared/models/log/LogLevel'
 import type { Color } from '../../shared/utils/Color'
 import { List } from '../../shared/utils/fp'
 
@@ -18,9 +18,10 @@ export const Logs = (): JSX.Element => {
     tryRefetchInitialLogs()
   }, [tryRefetchInitialLogs])
 
-  const [selectedLevel, setSelectedLevel] = useState<LogLevel>('info')
+  const [selectedLevel, setSelectedLevel] = useState<LogLevelWithoutTrace>('info')
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedLevel(e.target.value as LogLevel),
+    (e: React.ChangeEvent<HTMLSelectElement>) =>
+      setSelectedLevel(e.target.value as LogLevelWithoutTrace),
     [],
   )
 
@@ -64,8 +65,7 @@ export const Logs = (): JSX.Element => {
               className="rounded-sm border-none bg-gray4 py-1 font-mono text-sm text-gray1"
             >
               {pipe(
-                LogLevel.values,
-                List.filter(l => l !== 'debug'),
+                LogLevelWithoutTrace.values,
                 List.map(level => (
                   <option key={level} value={level} className="cursor-pointer font-mono text-xs">
                     {level.toUpperCase()}
@@ -79,7 +79,7 @@ export const Logs = (): JSX.Element => {
             onClick={scrollDown}
             className="cursor-pointer rounded-md border border-gray4 bg-gray1 py-1 px-2 text-sm"
           >
-            Scroll en bas
+            Défiler en bas
           </button>
         </div>
       </Header>
