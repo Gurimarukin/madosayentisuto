@@ -10,8 +10,8 @@ const apiCodec = C.struct({
   message: C.string,
 })
 
- type Log = C.TypeOf<typeof apiCodec>
+type Log = C.TypeOf<typeof apiCodec>
 
- const Log = { apiCodec }
+const Log = { apiCodec }
 
- export { Log }
+export { Log }
