@@ -5,7 +5,6 @@ import type {
   ChatInputCommandInteraction,
   Guild,
   GuildMember,
-  Message,
 } from 'discord.js'
 import { ChannelType, Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
@@ -25,7 +24,6 @@ import { futureMaybe } from '../../../shared/utils/futureMaybe'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { AutoroleMessageArgs } from '../../helpers/messages/AutoroleMessage'
 import { AutoroleMessage } from '../../helpers/messages/AutoroleMessage'
-import { initCallsMessage } from '../../helpers/messages/initCallsMessage'
 import { RoleId } from '../../models/RoleId'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
@@ -37,13 +35,11 @@ import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { BotStateService } from '../../services/BotStateService'
 import type { GuildStateService } from '../../services/GuildStateService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
-import { LogUtils } from '../../utils/LogUtils'
 
 const Keys = {
   admin: 'admin',
   state: 'state',
   calls: 'calls',
-  init: 'init',
   channel: 'channel',
   role: 'role',
   autorole: 'autorole',
@@ -95,15 +91,9 @@ const adminCommand = Command.chatInput({
     description: "Jean Plank n'est pas votre secrétaire, mais il gère vos appels",
   })(
     Command.option.subcommand({
-      name: Keys.init,
-      description: 'Pour initier la gestion des appels',
+      name: Keys.set,
+      description: 'Pour définir la gestion des appels',
     })(
-      Command.option.channel({
-        name: Keys.channel,
-        description: 'Le salon dans lequel les appels seront notifiés',
-        channel_types: [ChannelType.GuildText],
-        required: true,
-      }),
       Command.option.role({
         name: Keys.role,
         description: 'Le rôle qui sera notifié des appels',
@@ -389,72 +379,39 @@ export const AdminCommandsObserver = (
 
   function onCalls(interaction: ChatInputCommandInteraction, subcommand: string): Future<NotUsed> {
     switch (subcommand) {
-      case Keys.init:
-        return onCallsInit(interaction)
+      case Keys.set:
+        return onCallsSet(interaction)
     }
     return Future.notUsed
   }
 
-  function onCallsInit(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return pipe(
-      DiscordConnector.interactionReply(interaction, { content: '...', ephemeral: false }),
-      Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
-      Future.chain(() =>
+  function onCallsSet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    return withFollowUp(interaction)(
+      pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
-          author: fetchUser(Maybe.fromNullable(interaction.member)),
-          commandChannel: pipe(
+          channel: pipe(
             interaction.channel,
             futureMaybe.fromNullable,
-            futureMaybe.filter(ChannelUtils.isGuildText),
-          ),
-          callsChannel: fetchChannel(
-            Maybe.fromNullable(interaction.options.getChannel(Keys.channel)),
+            futureMaybe.filter(ChannelUtils.isGuildSendable),
           ),
           role: fetchRole(interaction.guild, interaction.options.getRole(Keys.role)),
         }),
-      ),
-      futureMaybe.chainTaskEitherK(({ author, commandChannel, callsChannel, role }) =>
-        sendInitMessageAndUpdateState(author, commandChannel, callsChannel, role),
-      ),
-      Future.map(toNotUsed),
-    )
-  }
-
-  function sendInitMessageAndUpdateState(
-    author: User,
-    commandChannel: TextChannel,
-    callsChannel: TextChannel,
-    role: Role,
-  ): Future<NotUsed> {
-    return pipe(
-      DiscordConnector.sendMessage<true>(commandChannel, initCallsMessage(callsChannel, role)),
-      futureMaybe.matchE(
-        () =>
-          ChannelUtils.isNamed(commandChannel)
-            ? pipe(
-                DiscordConnector.sendPrettyMessage(
-                  author,
-                  `Impossible d'envoyer le message d'abonnement dans le salon **#${commandChannel.name}**.`,
-                ),
-                Future.map(toNotUsed),
-              )
-            : Future.notUsed,
-        tryDeletePreviousMessageAndSetCalls(callsChannel, role),
+        futureMaybe.chainTaskEitherK(({ channel, role }) =>
+          guildStateService.setCalls(channel.guild, { channel, role }),
+        ),
+        futureMaybe.match(
+          () => 'Erreur',
+          ({ calls }) =>
+            `Nouveau paramètres d'appels : ${pipe(
+              calls,
+              // TODO: remove disable
+              // eslint-disable-next-line @typescript-eslint/no-base-to-string
+              Maybe.map(({ channel, role }) => `${role} - ${channel}`),
+              Maybe.toNullable,
+            )}`,
+        ),
       ),
     )
-  }
-
-  function tryDeletePreviousMessageAndSetCalls(
-    channel: TextChannel,
-    role: Role,
-  ): (message: Message<true>) => Future<NotUsed> {
-    return message =>
-      pipe(
-        guildStateService.getCalls(channel.guild),
-        futureMaybe.chainTaskEitherK(previous => deleteMessage(previous.message)),
-        Future.chain(() => guildStateService.setCalls(channel.guild, { message, channel, role })),
-        Future.map(toNotUsed),
-      )
   }
 
   /**
@@ -809,19 +766,6 @@ export const AdminCommandsObserver = (
       ),
     )
   }
-
-  function deleteMessage(message: Message): Future<NotUsed> {
-    return pipe(
-      DiscordConnector.messageDelete(message),
-      Future.chainIOEitherK(deleted =>
-        deleted
-          ? IO.notUsed
-          : LogUtils.pretty(logger, message.guild, message.author, message.channel).info(
-              'Not enough permissions to delete message',
-            ),
-      ),
-    )
-  }
 }
 
 const maybeStr = <A>(fa: Maybe<A>, str: (a: A) => string = String): string =>
@@ -846,10 +790,10 @@ const formatState = ({
     |- **subscription**: ${maybeStr(subscription, s => s.stringify())}`,
   )
 
-const formatCalls = ({ message, channel, role }: Calls): string =>
+const formatCalls = ({ channel, role }: Calls): string =>
   // TODO: remove disable
   // eslint-disable-next-line @typescript-eslint/no-base-to-string
-  `${role} - ${channel} - <${message.url}>`
+  `${role} - ${channel}`
 
 const formatActivity = ({ type, name }: Activity): string => `\`${type} ${name}\``
 

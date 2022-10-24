@@ -5,7 +5,6 @@ import type { GuildId } from '../../../shared/models/guild/GuildId'
 import { Maybe } from '../../../shared/utils/fp'
 
 import { ChannelViewComponent } from '../../components/ChannelViewComponent'
-import { MessageViewComponent } from '../../components/MessageViewComponent'
 import { RoleViewComponent } from '../../components/RoleViewComponent'
 import { cssClasses } from '../../utils/cssClasses'
 import { GuildLayout } from './GuildLayout'
@@ -21,12 +20,9 @@ export const Guild = ({ guildId }: Props): JSX.Element => (
           <Li label="calls" className="flex-col gap-0">
             {pipe(
               guild.state.calls,
-              Maybe.map(({ message, channel, role }) => (
+              Maybe.map(({ channel, role }) => (
                 // eslint-disable-next-line react/jsx-key
                 <ul className="flex list-disc flex-col gap-1 py-2 pl-8">
-                  <LiPre label="message:">
-                    <MessageViewComponent message={message} />
-                  </LiPre>
                   <LiPre label="channel:">
                     <ChannelViewComponent guild={guildId} channel={channel} />
                   </LiPre>

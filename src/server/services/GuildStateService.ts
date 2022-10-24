@@ -217,9 +217,8 @@ export const GuildStateService = (
   }
 
   function fetchCalls(guild: Guild): (calls: CallsDb) => Future<Maybe<Calls>> {
-    return ({ message, channel, role }) =>
+    return ({ channel, role }) =>
       apply.sequenceS(futureMaybe.ApplyPar)({
-        message: DiscordConnector.fetchMessage(guild, message),
         channel: fetchGuildSendableChannel(channel),
         role: DiscordConnector.fetchRole(guild, role),
       })
