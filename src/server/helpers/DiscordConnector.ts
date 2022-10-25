@@ -14,6 +14,7 @@ import {
   joinVoiceChannel,
 } from '@discordjs/voice'
 import type {
+  APIApplicationCommandPermission,
   APIMessage,
   ApplicationCommand,
   ButtonInteraction,
@@ -38,7 +39,6 @@ import type {
   MessageReaction,
   PartialTextBasedChannelFields,
   RESTPostAPIApplicationCommandsJSONBody,
-  RESTPutAPIGuildApplicationCommandsPermissionsJSONBody,
   RequestData,
   Role,
   RoleResolvable,
@@ -70,7 +70,6 @@ import { ActivityTypeBot } from '../models/botState/ActivityTypeBot'
 import { CommandId } from '../models/command/CommandId'
 import { GlobalPutCommandResult } from '../models/command/putCommandResult/GlobalPutCommandResult'
 import { GuildPutCommandResult } from '../models/command/putCommandResult/GuildPutCommandResult'
-import type { GlobalCommand, GuildCommand } from '../models/discord/Command'
 import { MessageComponent } from '../models/discord/MessageComponent'
 import type { MyModal } from '../models/discord/Modal'
 import type { GuildAudioChannel, GuildSendableChannel } from '../utils/ChannelUtils'
@@ -400,14 +399,11 @@ const roleRemove = (
 const restPutApplicationCommands =
   (rest: REST, clientId: DiscordUserId) =>
   (
-    commands: NonEmptyArray<GlobalCommand<RESTPostAPIApplicationCommandsJSONBody>>,
+    body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
   ): Future<List<GlobalPutCommandResult>> =>
     pipe(
       restPut(rest)(Routes.applicationCommands(DiscordUserId.unwrap(clientId)), {
-        body: pipe(
-          commands,
-          NonEmptyArray.map(c => c.value),
-        ),
+        body,
       })([GlobalPutCommandResult.decoder, 'GlobalPutCommandResult']),
       debugLeft('restPutApplicationCommands'),
     )
@@ -415,24 +411,23 @@ const restPutApplicationCommands =
 const restPutApplicationGuildCommands =
   (rest: REST, clientId: DiscordUserId, guildId: GuildId) =>
   (
-    commands: NonEmptyArray<GuildCommand<RESTPostAPIApplicationCommandsJSONBody>>,
+    body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
   ): Future<List<GuildPutCommandResult>> =>
     pipe(
       restPut(rest)(
         Routes.applicationGuildCommands(DiscordUserId.unwrap(clientId), GuildId.unwrap(guildId)),
-        {
-          body: pipe(
-            commands,
-            NonEmptyArray.map(c => c.value),
-          ),
-        },
+        { body },
       )([GuildPutCommandResult.decoder, 'GuildPutCommandResult']),
       debugLeft('restPutApplicationGuildCommands'),
     )
 
+type PermissionsJSONBody = {
+  readonly permissions: NonEmptyArray<APIApplicationCommandPermission>
+}
+
 const restPutApplicationCommandPermissions =
   (rest: REST, clientId: DiscordUserId, guildId: GuildId, commandId: CommandId) =>
-  (body: RESTPutAPIGuildApplicationCommandsPermissionsJSONBody) =>
+  (body: PermissionsJSONBody) =>
     pipe(
       restPut(rest)(
         Routes.applicationCommandPermissions(
@@ -644,12 +639,7 @@ const restPut =
   (fullRoute: `/${string}`, options?: RequestData | undefined) =>
   <A>([decoder, decoderName]: Tuple<Decoder<unknown, A>, string>): Future<NonEmptyArray<A>> =>
     pipe(
-      Future.tryCatch(() =>
-        rest.put(fullRoute, options).catch(e => {
-          console.log(e)
-          return Promise.reject(e)
-        }),
-      ),
+      Future.tryCatch(() => rest.put(fullRoute, options)),
       Future.chain(u =>
         pipe(
           NonEmptyArray.decoder(decoder).decode(u),

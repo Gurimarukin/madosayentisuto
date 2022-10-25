@@ -20,34 +20,18 @@ import { List, NonEmptyArray } from '../../../shared/utils/fp'
 
 type Command<
   A extends RESTPostAPIApplicationCommandsJSONBody = RESTPostAPIApplicationCommandsJSONBody,
-> = GlobalCommand<A> | GuildCommand<A>
-
-type GlobalCommand<
-  A extends RESTPostAPIApplicationCommandsJSONBody = RESTPostAPIApplicationCommandsJSONBody,
 > = {
-  readonly _tag: 'Global'
+  readonly isGlobal: boolean
   readonly value: A
-}
-
-type GuildCommand<
-  A extends RESTPostAPIApplicationCommandsJSONBody = RESTPostAPIApplicationCommandsJSONBody,
-> = {
-  readonly _tag: 'Guild'
-  readonly value: A
-  readonly isAdmin: boolean
 }
 
 type CommandCommon = {
   readonly name: string
   readonly description: string
+  readonly isGlobal?: boolean // default: false
 }
 
-type CommandCommonGuild = CommandCommon & {
-  readonly isAdmin?: boolean // default: false
-}
-
-type CommandCommandMessage = Omit<CommandCommon, 'description'>
-type CommandCommonGuildMessage = Omit<CommandCommonGuild, 'description'>
+type CommandCommonMessage = Omit<CommandCommon, 'description'>
 
 type OptionCommon = {
   readonly name: string
@@ -69,47 +53,31 @@ type OptionChannel = OptionCommon & {
   readonly channel_types?: List<Exclude<ChannelType, ChannelType.DM | ChannelType.GroupDM>>
 }
 
-const global = <
-  A extends RESTPostAPIApplicationCommandsJSONBody = RESTPostAPIApplicationCommandsJSONBody,
->(
+const of = <A extends RESTPostAPIApplicationCommandsJSONBody>(
+  isGlobal: boolean,
   value: A,
-): GlobalCommand<A> => ({ _tag: 'Global', value })
-
-const guild = <
-  A extends RESTPostAPIApplicationCommandsJSONBody = RESTPostAPIApplicationCommandsJSONBody,
->(
-  value: A,
-  isAdmin: boolean | undefined,
-): GuildCommand<A> => ({ _tag: 'Guild', value, isAdmin: isAdmin ?? false })
+): Command<A> => ({ isGlobal, value })
 
 const Command = {
-  isGlobal: <A extends RESTPostAPIApplicationCommandsJSONBody>(
-    cmd: Command<A>,
-  ): cmd is GlobalCommand<A> => cmd._tag === 'Global',
-
-  chatInputGlobal:
-    (common: CommandCommon) =>
+  chatInput:
+    ({ isGlobal = false, ...common }: CommandCommon) =>
     (
       ...options: List<APIApplicationCommandOption>
-    ): GlobalCommand<RESTPostAPIChatInputApplicationCommandsJSONBody> =>
-      global(chatInput(common, options)),
+    ): Command<RESTPostAPIChatInputApplicationCommandsJSONBody> =>
+      of(isGlobal, {
+        type: ApplicationCommandType.ChatInput,
+        ...common,
+        options: toMutable(options),
+      }),
 
-  chatInputGuild:
-    ({ isAdmin, ...common }: CommandCommonGuild) =>
-    (
-      ...options: List<APIApplicationCommandOption>
-    ): GuildCommand<RESTPostAPIChatInputApplicationCommandsJSONBody> =>
-      guild(chatInput(common, options), isAdmin),
-
-  messageGlobal: (
-    common: CommandCommandMessage,
-  ): GlobalCommand<RESTPostAPIContextMenuApplicationCommandsJSONBody> => global(message(common)),
-
-  messageGuild: ({
-    isAdmin,
+  message: ({
+    isGlobal = false,
     ...common
-  }: CommandCommonGuildMessage): GuildCommand<RESTPostAPIContextMenuApplicationCommandsJSONBody> =>
-    guild(message(common), isAdmin),
+  }: CommandCommonMessage): Command<RESTPostAPIContextMenuApplicationCommandsJSONBody> =>
+    of(isGlobal, {
+      type: ApplicationCommandType.Message,
+      ...common,
+    }),
 
   option: {
     subcommand:
@@ -157,23 +125,7 @@ const Command = {
   choice: <A extends ChoiceType>(name: string, value: A): Choice<A> => ({ name, value }),
 }
 
-export { Command, GlobalCommand, GuildCommand }
-
-const chatInput = (
-  common: CommandCommon,
-  options: List<APIApplicationCommandOption>,
-): RESTPostAPIChatInputApplicationCommandsJSONBody => ({
-  type: ApplicationCommandType.ChatInput,
-  ...common,
-  options: toMutable(options),
-})
-
-const message = (
-  common: CommandCommandMessage,
-): RESTPostAPIContextMenuApplicationCommandsJSONBody => ({
-  type: ApplicationCommandType.Message,
-  ...common,
-})
+export { Command }
 
 const toMutable = <A>(fa: List<A> | undefined): nonEmptyArray.NonEmptyArray<A> | undefined =>
   fa === undefined ? undefined : List.isNonEmpty(fa) ? NonEmptyArray.asMutable(fa) : undefined

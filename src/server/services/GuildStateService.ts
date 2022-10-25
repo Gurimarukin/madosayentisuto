@@ -45,11 +45,7 @@ export const GuildStateService = (
 
   const listAllItsFridayChannels: Future<List<GuildSendableChannel>> = pipe(
     guildStatePersistence.listAllItsFridayChannels(),
-    Future.chain(
-      List.traverse(Future.ApplicativePar)(itsFridayChannel =>
-        discord.fetchChannel(itsFridayChannel),
-      ),
-    ),
+    Future.chain(List.traverse(Future.ApplicativePar)(discord.fetchChannel)),
     Future.map(flow(List.compact, List.filter(ChannelUtils.isGuildSendable))),
   )
 

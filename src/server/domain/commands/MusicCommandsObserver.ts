@@ -26,7 +26,7 @@ type PlayCommand = {
   readonly tracks: NonEmptyArray<Track>
 }
 
-const playCommand = Command.chatInputGuild({
+const playCommand = Command.chatInput({
   name: MusicStateMessage.Keys.play,
   description: 'Jean Plank joue un petit air',
 })(
