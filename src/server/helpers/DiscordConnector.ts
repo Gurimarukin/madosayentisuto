@@ -39,30 +39,24 @@ import type {
   PartialTextBasedChannelFields,
   RESTPostAPIApplicationCommandsJSONBody,
   RESTPutAPIGuildApplicationCommandsPermissionsJSONBody,
+  RequestData,
   Role,
   RoleResolvable,
   StartThreadOptions,
   ThreadChannel,
   User,
 } from 'discord.js'
-import {
-  ApplicationCommandPermissionType,
-  Client,
-  DiscordAPIError,
-  GatewayIntentBits,
-  Partials,
-  Routes,
-} from 'discord.js'
-import { refinement, separated } from 'fp-ts'
-import type { Separated } from 'fp-ts/Separated'
-import { flow, pipe } from 'fp-ts/function'
+import { Client, DiscordAPIError, GatewayIntentBits, Partials, Routes } from 'discord.js'
+import { refinement } from 'fp-ts'
+import { pipe } from 'fp-ts/function'
+import type { Decoder } from 'io-ts/Decoder'
 import * as D from 'io-ts/Decoder'
 
 import { ChannelId } from '../../shared/models/ChannelId'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { GuildId } from '../../shared/models/guild/GuildId'
-import type { NotUsed } from '../../shared/utils/fp'
+import type { NotUsed, Tuple } from '../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
@@ -407,130 +401,48 @@ const restPutApplicationCommands =
   (rest: REST, clientId: DiscordUserId) =>
   (
     commands: NonEmptyArray<GlobalCommand<RESTPostAPIApplicationCommandsJSONBody>>,
-  ): Future<Separated<List<Error>, List<GlobalPutCommandResult>>> =>
+  ): Future<List<GlobalPutCommandResult>> =>
     pipe(
-      Future.tryCatch(() =>
-        rest.put(Routes.applicationCommands(DiscordUserId.unwrap(clientId)), {
+      restPut(rest)(Routes.applicationCommands(DiscordUserId.unwrap(clientId)), {
+        body: pipe(
+          commands,
+          NonEmptyArray.map(c => c.value),
+        ),
+      })([GlobalPutCommandResult.decoder, 'GlobalPutCommandResult']),
+      debugLeft('restPutApplicationCommands'),
+    )
+
+const restPutApplicationGuildCommands =
+  (rest: REST, clientId: DiscordUserId, guildId: GuildId) =>
+  (
+    commands: NonEmptyArray<GuildCommand<RESTPostAPIApplicationCommandsJSONBody>>,
+  ): Future<List<GuildPutCommandResult>> =>
+    pipe(
+      restPut(rest)(
+        Routes.applicationGuildCommands(DiscordUserId.unwrap(clientId), GuildId.unwrap(guildId)),
+        {
           body: pipe(
             commands,
             NonEmptyArray.map(c => c.value),
           ),
-        }),
-      ),
-      Future.map(u =>
-        pipe(
-          D.UnknownArray.decode(u),
-          Either.bimap(
-            decodeError('UnknownArray')(u),
-            List.partitionMap(i =>
-              pipe(
-                GlobalPutCommandResult.decoder.decode(i),
-                Either.mapLeft(decodeError('GlobalPutCommandResult')(i)),
-              ),
-            ),
-          ),
-        ),
-      ),
-      Future.chain(Future.fromEither),
-      debugLeft('restPutApplicationCommands'),
+        },
+      )([GuildPutCommandResult.decoder, 'GuildPutCommandResult']),
+      debugLeft('restPutApplicationGuildCommands'),
     )
-
-const restPutApplicationGuildCommandsAndPermissions =
-  (rest: REST, clientId: DiscordUserId, guildId: GuildId, admins: NonEmptyArray<DiscordUserId>) =>
-  (
-    commands: NonEmptyArray<GuildCommand<RESTPostAPIApplicationCommandsJSONBody>>,
-  ): Future<Separated<List<Error>, List<boolean>>> => {
-    const result = pipe(
-      Future.tryCatch(() =>
-        rest.put(
-          Routes.applicationGuildCommands(DiscordUserId.unwrap(clientId), GuildId.unwrap(guildId)),
-          {
-            body: pipe(
-              commands,
-              NonEmptyArray.map(c => c.value),
-            ),
-          },
-        ),
-      ),
-      Future.map(u =>
-        pipe(
-          D.UnknownArray.decode(u),
-          Either.bimap(decodeError('UnknownArray')(u), decodeArrayResultsAndPutPermissions),
-        ),
-      ),
-      Future.chain(Future.fromEither),
-      Future.chain(({ left: errors, right: futures }) =>
-        pipe(
-          List.sequence(Future.ApplicativePar)(futures),
-          Future.map(
-            flow(
-              List.separate,
-              separated.mapLeft(es => pipe(errors, List.concat(es))),
-            ),
-          ),
-        ),
-      ),
-      debugLeft('restPutApplicationGuildCommandsWithPermissions'),
-    )
-
-    const decodeArrayResultsAndPutPermissions: (
-      us: List<unknown>,
-    ) => Separated<List<Error>, List<Future<Either<Error, boolean>>>> = flow(
-      List.zip(commands),
-      List.partitionMap(([i, guildCommand]) =>
-        pipe(
-          GuildPutCommandResult.decoder.decode(i),
-          Either.bimap(
-            decodeError('GuildPutCommandResult')(i),
-            putPermissionsIfAdmin(guildCommand),
-          ),
-        ),
-      ),
-    )
-
-    const putPermissionsIfAdmin =
-      (guildCommand: GuildCommand<RESTPostAPIApplicationCommandsJSONBody>) =>
-      (commandResult: GuildPutCommandResult): Future<Either<Error, boolean>> =>
-        guildCommand.isAdmin
-          ? restPutApplicationCommandPermissions(
-              rest,
-              clientId,
-              guildId,
-              commandResult.id,
-            )([
-              {
-                id: CommandId.unwrap(commandResult.id),
-                permissions: pipe(
-                  admins,
-                  NonEmptyArray.map(adminId => ({
-                    id: DiscordUserId.unwrap(adminId),
-                    type: ApplicationCommandPermissionType.User,
-                    permission: true,
-                  })),
-                  NonEmptyArray.asMutable,
-                ),
-              },
-            ])
-          : Future.right(Either.right(true))
-
-    return result
-  }
 
 const restPutApplicationCommandPermissions =
   (rest: REST, clientId: DiscordUserId, guildId: GuildId, commandId: CommandId) =>
   (body: RESTPutAPIGuildApplicationCommandsPermissionsJSONBody) =>
     pipe(
-      Future.tryCatch(() =>
-        rest.put(
-          Routes.applicationCommandPermissions(
-            DiscordUserId.unwrap(clientId),
-            GuildId.unwrap(guildId),
-            CommandId.unwrap(commandId),
-          ),
-          { body },
+      restPut(rest)(
+        Routes.applicationCommandPermissions(
+          DiscordUserId.unwrap(clientId),
+          GuildId.unwrap(guildId),
+          CommandId.unwrap(commandId),
         ),
-      ),
-      Future.map(u => pipe(D.boolean.decode(u), Either.mapLeft(decodeError('boolean')(u)))),
+        { body },
+      )([D.struct({ adedigado: D.string }), '{ adedigado: string }']),
+      debugLeft('restPutApplicationCommandPermissions'),
     )
 
 const sendMessage = <InGuild extends boolean = boolean>(
@@ -660,8 +572,9 @@ export const DiscordConnector = {
   messageEdit,
   messageReact,
   messageStartThread,
+  restPutApplicationCommandPermissions,
   restPutApplicationCommands,
-  restPutApplicationGuildCommandsAndPermissions,
+  restPutApplicationGuildCommands,
   roleAdd,
   roleRemove,
   sendMessage,
@@ -725,3 +638,23 @@ const fetchMessageRec =
     }
     return futureMaybe.none
   }
+
+const restPut =
+  (rest: REST) =>
+  (fullRoute: `/${string}`, options?: RequestData | undefined) =>
+  <A>([decoder, decoderName]: Tuple<Decoder<unknown, A>, string>): Future<NonEmptyArray<A>> =>
+    pipe(
+      Future.tryCatch(() =>
+        rest.put(fullRoute, options).catch(e => {
+          console.log(e)
+          return Promise.reject(e)
+        }),
+      ),
+      Future.chain(u =>
+        pipe(
+          NonEmptyArray.decoder(decoder).decode(u),
+          Either.mapLeft(decodeError(`NonEmptyArray<${decoderName}>`)(u)),
+          Future.fromEither,
+        ),
+      ),
+    )

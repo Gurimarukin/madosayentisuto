@@ -68,6 +68,7 @@ const Keys = {
 const adminCommand = Command.chatInputGuild({
   name: Keys.admin,
   description: 'Administration de Jean Plank (réservé aux admins du bot)',
+  isAdmin: true,
 })(
   Command.option.subcommandGroup({
     name: Keys.state,
@@ -254,9 +255,9 @@ const adminCommand = Command.chatInputGuild({
   ),
 )
 
-const messageEditCommand = Command.messageGuild({ name: Keys.editMessage })
+const messageEditCommand = Command.messageGuild({ name: Keys.editMessage, isAdmin: true })
 
-const messageDeleteCommand = Command.messageGuild({ name: Keys.deleteMessage })
+const messageDeleteCommand = Command.messageGuild({ name: Keys.deleteMessage, isAdmin: true })
 
 export const adminCommands = [adminCommand, messageEditCommand, messageDeleteCommand]
 

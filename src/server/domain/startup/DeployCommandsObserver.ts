@@ -1,15 +1,17 @@
 import { REST } from '@discordjs/rest'
 import type { Guild } from 'discord.js'
-import type { Separated } from 'fp-ts/Separated'
-import { pipe } from 'fp-ts/function'
+import { ApplicationCommandPermissionType } from 'discord.js'
+import { flow, pipe } from 'fp-ts/function'
 
+import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { GuildId } from '../../../shared/models/guild/GuildId'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
-import type { NonEmptyArray, NotUsed } from '../../../shared/utils/fp'
-import { Either, Future, IO, List, toNotUsed } from '../../../shared/utils/fp'
+import type { NotUsed } from '../../../shared/utils/fp'
+import { Either, Future, List, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
 
 import type { Config } from '../../config/Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
+import { CommandId } from '../../models/command/CommandId'
 import type { Command, GuildCommand } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
@@ -65,7 +67,7 @@ export const DeployCommandsObserver = (
       return pipe(
         globalCommands,
         DiscordConnector.restPutApplicationCommands(rest, config.client.id),
-        Future.chain(logDecodeErrors),
+        Future.map(toNotUsed),
         Future.orElseIOEitherK(e => logger.warn(`Failed to deploy global commands\n${e.stack}`)),
         Future.chainIOEitherK(() => logger.debug('Deployed global commands')),
       )
@@ -90,14 +92,22 @@ export const DeployCommandsObserver = (
     return guild => {
       const guildId = GuildId.fromGuild(guild)
       return pipe(
-        guildCommands_,
-        DiscordConnector.restPutApplicationGuildCommandsAndPermissions(
+        DiscordConnector.restPutApplicationGuildCommands(
           rest,
           config.client.id,
           guildId,
-          config.admins,
+        )(guildCommands_),
+        Future.chain(
+          flow(
+            List.zip(guildCommands_),
+            List.traverse(Future.ApplicativePar)(([commandResult, guildCommand]) =>
+              guildCommand.isAdmin
+                ? restPutApplicationCommandPermissions(guildId, commandResult.id)
+                : Future.notUsed,
+            ),
+          ),
         ),
-        Future.chain(logDecodeErrors),
+        Future.map(toNotUsed),
         Future.orElseIOEitherK(e =>
           logger.warn(`Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${e.stack}`),
         ),
@@ -105,11 +115,30 @@ export const DeployCommandsObserver = (
     }
   }
 
-  function logDecodeErrors<A>({ left }: Separated<List<Error>, A>): Future<NotUsed> {
+  function restPutApplicationCommandPermissions(
+    guildId: GuildId,
+    commandId: CommandId,
+  ): Future<NotUsed> {
     return pipe(
-      left,
-      IO.traverseSeqArray(e => logger.warn(e.message)),
-      Future.fromIOEither,
+      DiscordConnector.restPutApplicationCommandPermissions(
+        rest,
+        config.client.id,
+        guildId,
+        commandId,
+      )([
+        {
+          id: CommandId.unwrap(commandId),
+          permissions: pipe(
+            config.admins,
+            NonEmptyArray.map(adminId => ({
+              id: DiscordUserId.unwrap(adminId),
+              type: ApplicationCommandPermissionType.User,
+              permission: true,
+            })),
+            NonEmptyArray.asMutable,
+          ),
+        },
+      ]),
       Future.map(toNotUsed),
     )
   }
