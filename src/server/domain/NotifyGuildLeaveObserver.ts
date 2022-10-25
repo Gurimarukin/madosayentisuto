@@ -201,7 +201,7 @@ const randomMessage =
     )
 
 const leaveMessages: NonEmptyArray<MessageGetter<readonly [member: string]>> = [
-  m => `${m} se barre, parce qu'al en avait marre (de vous).`,
+  m => `${m} se barre, parce qu'iel en avait marre (de vous).`,
   m => `Gibier de potence, ${m} quitte le navire...`,
   m => `La trahison de ${m} est comme le sel sur une plaie.`,
   m => `${m} me tourne le dos et invite mon poignard.`,
