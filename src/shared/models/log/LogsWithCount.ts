@@ -5,9 +5,10 @@ import { Log } from './Log'
 
 const codec = C.struct({
   logs: List.codec(Log.apiCodec),
-  totalCount: C.number,
+  count: C.number,
 })
 
-export type LogsWithTotalCount = C.TypeOf<typeof codec>
+type LogsWithCount = C.TypeOf<typeof codec>
+const LogsWithCount = { codec }
 
-export const LogsWithTotalCount = { codec }
+export { LogsWithCount }

@@ -5,7 +5,7 @@ import type { Subscription } from 'rxjs'
 import { WebSocketServer } from 'ws'
 
 import { ServerToClientEvent } from '../../../shared/models/event/ServerToClientEvent'
-import { LogsWithTotalCount } from '../../../shared/models/log/LogsWithTotalCount'
+import { LogsWithCount } from '../../../shared/models/log/LogsWithCount'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import type { TObservable } from '../../../shared/models/rx/TObservable'
 import type { TSubject } from '../../../shared/models/rx/TSubject'
@@ -76,7 +76,7 @@ export const LogController = (
     listLogs: (/* user: User */): EndedMiddleware =>
       pipe(
         M.fromTaskEither(logService.list),
-        M.ichain(M.jsonWithStatus(Status.OK, LogsWithTotalCount.codec)),
+        M.ichain(M.jsonWithStatus(Status.OK, LogsWithCount.codec)),
       ),
 
     webSocket: (/* user: User */): UpgradeHandler => (request, socket, head) =>

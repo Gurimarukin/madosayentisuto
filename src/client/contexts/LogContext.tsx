@@ -14,7 +14,7 @@ import { DayJs } from '../../shared/models/DayJs'
 import { ClientToServerEvent } from '../../shared/models/event/ClientToServerEvent'
 import type { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
 import type { Log } from '../../shared/models/log/Log'
-import { LogsWithTotalCount } from '../../shared/models/log/LogsWithTotalCount'
+import { LogsWithCount } from '../../shared/models/log/LogsWithCount'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../../shared/models/rx/PubSub'
 import { TObservable } from '../../shared/models/rx/TObservable'
@@ -29,7 +29,7 @@ import { useHttp } from './HttpContext'
 
 type LogContext = {
   readonly logs: List<Log>
-  readonly totalCount: number
+  readonly count: number
   readonly tryRefetchInitialLogs: () => void
 }
 
@@ -39,7 +39,7 @@ export const LogContextProvider: React.FC = ({ children }) => {
   const { http } = useHttp()
 
   const [logs, setLogs] = useState<List<Log>>([])
-  const [totalCount, setTotalCount] = useState(0)
+  const [count, setCount] = useState(0)
 
   const initialLogsFetched = useRef(false)
   const fetchInitialLogs = useCallback(
@@ -48,11 +48,11 @@ export const LogContextProvider: React.FC = ({ children }) => {
         ? Future.notUsed
         : pipe(
             Future.tryCatch(() =>
-              http(apiRoutes.logs.get, {}, [LogsWithTotalCount.codec, 'LogsWithTotalCount']),
+              http(apiRoutes.logs.get, {}, [LogsWithCount.codec, 'LogsWithCount']),
             ),
             Future.map(init => {
               setLogs(prev => pipe(init.logs, List.concat(prev)))
-              setTotalCount(init.totalCount)
+              setCount(init.count)
               // eslint-disable-next-line functional/immutable-data
               initialLogsFetched.current = true
               return NotUsed
@@ -94,7 +94,7 @@ export const LogContextProvider: React.FC = ({ children }) => {
             Future.fromIO,
             Future.map(date => {
               setLogs(List.append({ date, name, level, message }))
-              setTotalCount(n => n + 1)
+              setCount(n => n + 1)
               return NotUsed
             }),
           )
@@ -109,7 +109,7 @@ export const LogContextProvider: React.FC = ({ children }) => {
 
   const value: LogContext = {
     logs,
-    totalCount,
+    count,
     tryRefetchInitialLogs,
   }
 

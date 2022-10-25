@@ -3,7 +3,7 @@ import { pipe } from 'fp-ts/function'
 
 import { Store } from '../../shared/models/Store'
 import type { Log } from '../../shared/models/log/Log'
-import type { LogsWithTotalCount } from '../../shared/models/log/LogsWithTotalCount'
+import type { LogsWithCount } from '../../shared/models/log/LogsWithCount'
 import { Sink } from '../../shared/models/rx/Sink'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, toNotUsed } from '../../shared/utils/fp'
@@ -17,10 +17,10 @@ export type LogService = ReturnType<typeof LogService>
 export const LogService = (logPersistence: LogPersistence) => {
   const buffer = Store<List<Log>>(List.empty)
 
-  const list: Future<LogsWithTotalCount> = pipe(
+  const list: Future<LogsWithCount> = pipe(
     apply.sequenceS(Future.ApplyPar)({
       logs: pipe(
-        logPersistence.countNonDebug,
+        logPersistence.count,
         Future.chain(nonDebug =>
           pipe(
             logPersistence.list({
@@ -31,16 +31,16 @@ export const LogService = (logPersistence: LogPersistence) => {
           ),
         ),
       ),
-      totalCount: logPersistence.countAll,
+      count: logPersistence.count,
     }),
-    Future.chain(({ logs, totalCount }) =>
+    Future.chain(({ logs, count }) =>
       pipe(
         buffer.get,
         Future.fromIO,
         Future.map(
-          (bufferLogs): LogsWithTotalCount => ({
+          (bufferLogs): LogsWithCount => ({
             logs: pipe(logs, List.concat(bufferLogs)),
-            totalCount: totalCount + bufferLogs.length,
+            count: count + bufferLogs.length,
           }),
         ),
       ),
