@@ -1,7 +1,7 @@
-import { identity, pipe } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 
 import { StringUtils } from '../shared/utils/StringUtils'
-import { Future } from '../shared/utils/fp'
+import { Future, NonEmptyArray } from '../shared/utils/fp'
 
 import type { Config } from './config/Config'
 import { Resources } from './config/Resources'
@@ -108,7 +108,7 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
       Future.chain(() => waitDatabaseReady(healthCheckService)),
       Future.chain(() => migrationService.applyMigrations),
       Future.chain(() =>
-        Future.sequenceArray([
+        NonEmptyArray.sequence(Future.ApplicativeSeq)([
           guildStatePersistence.ensureIndexes,
           logPersistence.ensureIndexes,
           memberBirthdatePersistence.ensureIndexes,
@@ -139,7 +139,10 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
           ),
         ),
       ),
-      Future.filterOrElse(identity, () => Error("HealthCheck wasn't success")),
+      Future.filterOrElse(
+        success => success,
+        () => Error("HealthCheck wasn't success"),
+      ),
     )
   }
 }

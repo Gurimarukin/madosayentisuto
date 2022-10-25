@@ -149,7 +149,7 @@ export const Application = (
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
       sub(RemindCommandsObserver(scheduledEventService)),
       // │  └ startup/
-      sub(DeployCommandsObserver(Logger, config.client, discord)),
+      sub(DeployCommandsObserver(Logger, config, discord)),
       // │
       sub(ActivityStatusObserver(botStateService)),
       sub(AutoroleObserver(Logger)),

@@ -13,8 +13,7 @@ import type {
   EmbedFooterData,
   EmbedImageData,
 } from 'discord.js'
-import { EmbedBuilder } from 'discord.js'
-import { ButtonStyle, ComponentType, resolvePartialEmoji } from 'discord.js'
+import { ButtonStyle, ComponentType, EmbedBuilder, resolvePartialEmoji } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
 import { StringUtils } from '../../../shared/utils/StringUtils'
@@ -82,7 +81,7 @@ const safeEmbed = ({
       List.map(({ name, value, inline }) =>
         field(pipe(name, StringUtils.ellipse(256)), pipe(value, StringUtils.ellipse(1024)), inline),
       ),
-      List.toMutable,
+      List.asMutable,
     ),
   ),
   footer: mapUndefined(
@@ -141,7 +140,7 @@ const row = (
   components: NonEmptyArray<APIMessageActionRowComponent>,
 ): APIActionRowComponent<APIMessageActionRowComponent> => ({
   type: ComponentType.ActionRow,
-  components: NonEmptyArray.toMutable(components),
+  components: NonEmptyArray.asMutable(components),
 })
 
 export type ButtonWithCustomIdOptions = {

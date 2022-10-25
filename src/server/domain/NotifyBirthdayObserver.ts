@@ -42,7 +42,7 @@ export const NotifyBirthdayObserver = (
     return pipe(
       discord.listGuilds,
       Future.fromIOEither,
-      Future.chain(Future.traverseArray(maybeNotifyMembersForGuild(now, members))),
+      Future.chain(List.traverse(Future.ApplicativeSeq)(maybeNotifyMembersForGuild(now, members))),
       Future.map(toNotUsed),
     )
   }
@@ -86,7 +86,7 @@ export const NotifyBirthdayObserver = (
   ): Future<NotUsed> {
     return pipe(
       members,
-      Future.traverseArray(member =>
+      NonEmptyArray.traverse(Future.ApplicativeSeq)(member =>
         pipe(
           DiscordConnector.sendPrettyMessage(channel, birthdayMessage(now, member)),
           futureMaybe.chainFirstTaskEitherK(m =>

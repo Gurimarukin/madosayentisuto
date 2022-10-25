@@ -190,10 +190,10 @@ const logMessage = (
   }
 }
 
-type MessageGetter<A extends readonly [...args: ReadonlyArray<unknown>]> = (...args: A) => string
+type MessageGetter<A extends readonly [...args: List<unknown>]> = (...args: A) => string
 
 const randomMessage =
-  <A extends readonly [...args: ReadonlyArray<unknown>]>(nea: NonEmptyArray<MessageGetter<A>>) =>
+  <A extends readonly [...args: List<unknown>]>(nea: NonEmptyArray<MessageGetter<A>>) =>
   (...args: A): io.IO<string> =>
     pipe(
       random.randomElem(nea),

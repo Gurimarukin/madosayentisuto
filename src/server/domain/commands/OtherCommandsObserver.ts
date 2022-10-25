@@ -17,16 +17,14 @@ const Keys = {
   message: 'message',
 }
 
-const pingCommand = Command.chatInput({
+const pingCommand = Command.chatInputGlobal({
   name: Keys.ping,
   description: 'Jean Plank répond pong',
-  isGlobal: true,
 })()
 
-const randomCaseCommand = Command.chatInput({
+const randomCaseCommand = Command.chatInputGlobal({
   name: Keys.randomcase,
   description: 'Jean Plank vous prend pour un débile',
-  isGlobal: true,
 })(
   Command.option.string({
     name: Keys.message,

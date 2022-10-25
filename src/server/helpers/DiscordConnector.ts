@@ -38,25 +38,32 @@ import type {
   MessageReaction,
   PartialTextBasedChannelFields,
   RESTPostAPIApplicationCommandsJSONBody,
+  RESTPutAPIGuildApplicationCommandsPermissionsJSONBody,
   Role,
   RoleResolvable,
   StartThreadOptions,
   ThreadChannel,
   User,
 } from 'discord.js'
-import { Client, DiscordAPIError, GatewayIntentBits, Partials, Routes } from 'discord.js'
-import { refinement } from 'fp-ts'
+import {
+  ApplicationCommandPermissionType,
+  Client,
+  DiscordAPIError,
+  GatewayIntentBits,
+  Partials,
+  Routes,
+} from 'discord.js'
+import { refinement, separated } from 'fp-ts'
 import type { Separated } from 'fp-ts/Separated'
-import { pipe } from 'fp-ts/function'
-import type { Decoder } from 'io-ts/Decoder'
+import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { ChannelId } from '../../shared/models/ChannelId'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { GuildId } from '../../shared/models/guild/GuildId'
-import type { NonEmptyArray, NotUsed, Tuple } from '../../shared/utils/fp'
-import { Either, Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
@@ -69,6 +76,7 @@ import { ActivityTypeBot } from '../models/botState/ActivityTypeBot'
 import { CommandId } from '../models/command/CommandId'
 import { GlobalPutCommandResult } from '../models/command/putCommandResult/GlobalPutCommandResult'
 import { GuildPutCommandResult } from '../models/command/putCommandResult/GuildPutCommandResult'
+import type { GlobalCommand, GuildCommand } from '../models/discord/Command'
 import { MessageComponent } from '../models/discord/MessageComponent'
 import type { MyModal } from '../models/discord/Modal'
 import type { GuildAudioChannel, GuildSendableChannel } from '../utils/ChannelUtils'
@@ -398,47 +406,131 @@ const roleRemove = (
 const restPutApplicationCommands =
   (rest: REST, clientId: DiscordUserId) =>
   (
-    body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
-  ): Future<Separated<ReadonlyArray<Error>, List<GlobalPutCommandResult>>> =>
-    decodeFutureArrayResult(
+    commands: NonEmptyArray<GlobalCommand<RESTPostAPIApplicationCommandsJSONBody>>,
+  ): Future<Separated<List<Error>, List<GlobalPutCommandResult>>> =>
+    pipe(
       Future.tryCatch(() =>
-        rest.put(Routes.applicationCommands(DiscordUserId.unwrap(clientId)), { body }),
+        rest.put(Routes.applicationCommands(DiscordUserId.unwrap(clientId)), {
+          body: pipe(
+            commands,
+            NonEmptyArray.map(c => c.value),
+          ),
+        }),
       ),
-    )([GlobalPutCommandResult.decoder, 'GlobalPutCommandResult'])('restPutApplicationCommands')
+      Future.map(u =>
+        pipe(
+          D.UnknownArray.decode(u),
+          Either.bimap(
+            decodeError('UnknownArray')(u),
+            List.partitionMap(i =>
+              pipe(
+                GlobalPutCommandResult.decoder.decode(i),
+                Either.mapLeft(decodeError('GlobalPutCommandResult')(i)),
+              ),
+            ),
+          ),
+        ),
+      ),
+      Future.chain(Future.fromEither),
+      debugLeft('restPutApplicationCommands'),
+    )
 
-const restPutApplicationGuildCommands =
-  (rest: REST, clientId: DiscordUserId, guildId: GuildId) =>
+const restPutApplicationGuildCommandsAndPermissions =
+  (rest: REST, clientId: DiscordUserId, guildId: GuildId, admins: NonEmptyArray<DiscordUserId>) =>
   (
-    body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
-  ): Future<Separated<ReadonlyArray<Error>, List<GuildPutCommandResult>>> =>
-    decodeFutureArrayResult(
+    commands: NonEmptyArray<GuildCommand<RESTPostAPIApplicationCommandsJSONBody>>,
+  ): Future<Separated<List<Error>, List<boolean>>> => {
+    const result = pipe(
       Future.tryCatch(() =>
         rest.put(
           Routes.applicationGuildCommands(DiscordUserId.unwrap(clientId), GuildId.unwrap(guildId)),
+          {
+            body: pipe(
+              commands,
+              NonEmptyArray.map(c => c.value),
+            ),
+          },
+        ),
+      ),
+      Future.map(u =>
+        pipe(
+          D.UnknownArray.decode(u),
+          Either.bimap(decodeError('UnknownArray')(u), decodeArrayResultsAndPutPermissions),
+        ),
+      ),
+      Future.chain(Future.fromEither),
+      Future.chain(({ left: errors, right: futures }) =>
+        pipe(
+          List.sequence(Future.ApplicativePar)(futures),
+          Future.map(
+            flow(
+              List.separate,
+              separated.mapLeft(es => pipe(errors, List.concat(es))),
+            ),
+          ),
+        ),
+      ),
+      debugLeft('restPutApplicationGuildCommandsWithPermissions'),
+    )
+
+    const decodeArrayResultsAndPutPermissions: (
+      us: List<unknown>,
+    ) => Separated<List<Error>, List<Future<Either<Error, boolean>>>> = flow(
+      List.zip(commands),
+      List.partitionMap(([i, guildCommand]) =>
+        pipe(
+          GuildPutCommandResult.decoder.decode(i),
+          Either.bimap(
+            decodeError('GuildPutCommandResult')(i),
+            putPermissionsIfAdmin(guildCommand),
+          ),
+        ),
+      ),
+    )
+
+    const putPermissionsIfAdmin =
+      (guildCommand: GuildCommand<RESTPostAPIApplicationCommandsJSONBody>) =>
+      (commandResult: GuildPutCommandResult): Future<Either<Error, boolean>> =>
+        guildCommand.isAdmin
+          ? restPutApplicationCommandPermissions(
+              rest,
+              clientId,
+              guildId,
+              commandResult.id,
+            )([
+              {
+                id: CommandId.unwrap(commandResult.id),
+                permissions: pipe(
+                  admins,
+                  NonEmptyArray.map(adminId => ({
+                    id: DiscordUserId.unwrap(adminId),
+                    type: ApplicationCommandPermissionType.User,
+                    permission: true,
+                  })),
+                  NonEmptyArray.asMutable,
+                ),
+              },
+            ])
+          : Future.right(Either.right(true))
+
+    return result
+  }
+
+const restPutApplicationCommandPermissions =
+  (rest: REST, clientId: DiscordUserId, guildId: GuildId, commandId: CommandId) =>
+  (body: RESTPutAPIGuildApplicationCommandsPermissionsJSONBody) =>
+    pipe(
+      Future.tryCatch(() =>
+        rest.put(
+          Routes.applicationCommandPermissions(
+            DiscordUserId.unwrap(clientId),
+            GuildId.unwrap(guildId),
+            CommandId.unwrap(commandId),
+          ),
           { body },
         ),
       ),
-    )([GuildPutCommandResult.decoder, 'GuildPutCommandResult'])('restPutApplicationGuildCommands')
-
-const decodeFutureArrayResult =
-  (f: Future<unknown>) =>
-  <A>([decoder, decoderName]: Tuple<Decoder<unknown, A>, string>) =>
-  (debugLeftName: string): Future<Separated<ReadonlyArray<Error>, List<A>>> =>
-    pipe(
-      f,
-      Future.chain(u =>
-        pipe(
-          D.UnknownArray.decode(u),
-          Either.mapLeft(decodeError('UnknownArray')(u)),
-          Future.fromEither,
-        ),
-      ),
-      Future.map(
-        List.partitionMap(u =>
-          pipe(decoder.decode(u), Either.mapLeft(decodeError(decoderName)(u))),
-        ),
-      ),
-      debugLeft(debugLeftName),
+      Future.map(u => pipe(D.boolean.decode(u), Either.mapLeft(decodeError('boolean')(u)))),
     )
 
 const sendMessage = <InGuild extends boolean = boolean>(
@@ -449,11 +541,6 @@ const sendMessage = <InGuild extends boolean = boolean>(
     Future.tryCatch(() => channel.send(options)),
     Future.map(Maybe.some),
     debugLeft('sendMessage'),
-    // Future.orElse<Maybe<Message>>(e =>
-    //   e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user'
-    //     ? futureMaybe.none
-    //     : Future.left(e),
-    // ),
   )
 
 const sendPrettyMessage = (
@@ -574,7 +661,7 @@ export const DiscordConnector = {
   messageReact,
   messageStartThread,
   restPutApplicationCommands,
-  restPutApplicationGuildCommands,
+  restPutApplicationGuildCommandsAndPermissions,
   roleAdd,
   roleRemove,
   sendMessage,

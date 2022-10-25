@@ -90,7 +90,7 @@ const neaEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<NonEmptyArray<O>, Non
 
 export const NonEmptyArray = {
   ...readonlyNonEmptyArray,
-  toMutable: identity as <A>(fa: NonEmptyArray<A>) => nonEmptyArray.NonEmptyArray<A>,
+  asMutable: identity as <A>(fa: NonEmptyArray<A>) => nonEmptyArray.NonEmptyArray<A>,
   decoder: neaDecoder,
   encoder: neaEncoder,
   codec: <O, A>(codec: Codec<unknown, O, A>): Codec<unknown, NonEmptyArray<O>, NonEmptyArray<A>> =>
@@ -113,7 +113,7 @@ const listEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<List<O>, List<A>> =>
 export const List = {
   ...readonlyArray,
   // eslint-disable-next-line functional/prefer-readonly-type
-  toMutable: identity as <A>(fa: List<A>) => A[],
+  asMutable: identity as <A>(fa: List<A>) => A[],
   mkString,
   decoder: listDecoder,
   encoder: listEncoder,

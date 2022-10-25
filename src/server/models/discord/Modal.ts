@@ -31,7 +31,7 @@ const of =
     const res: APIModalInteractionResponseCallbackData = {
       custom_id,
       title,
-      components: pipe(components, List.takeLeft(5), List.map(rowComponent), List.toMutable),
+      components: pipe(components, List.takeLeft(5), List.map(rowComponent), List.asMutable),
     }
     return res as MyModal
   }

@@ -63,7 +63,7 @@ const Keys = {
 
 const threadName = 'Détail du sondage'
 
-const pollCommand = Command.chatInput({
+const pollCommand = Command.chatInputGuild({
   name: Keys.poll,
   description: 'Jean Plank fait des sondages',
 })(
@@ -86,7 +86,7 @@ const pollCommand = Command.chatInput({
   }),
 )
 
-const messageDeleteCommand = Command.message({ name: Keys.deletePoll })
+const messageDeleteCommand = Command.messageGuild({ name: Keys.deletePoll })
 
 export const pollCommands = [pollCommand, messageDeleteCommand]
 

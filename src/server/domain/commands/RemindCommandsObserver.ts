@@ -35,10 +35,9 @@ const Keys = {
   what: 'quoi',
 }
 
-const remindCommand = Command.chatInput({
+const remindCommand = Command.chatInputGlobal({
   name: Keys.remind,
   description: 'Jean Plank vous mettra un rappel',
-  isGlobal: true,
 })(
   Command.option.string({
     name: Keys.when,
