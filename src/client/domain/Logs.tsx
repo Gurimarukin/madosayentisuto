@@ -12,7 +12,7 @@ import { Header } from '../components/Header'
 import { useLog } from '../contexts/LogContext'
 
 export const Logs = (): JSX.Element => {
-  const { logs, totalCount, tryRefetchInitialLogs } = useLog()
+  const { logs, count, tryRefetchInitialLogs } = useLog()
 
   useEffect(() => {
     tryRefetchInitialLogs()
@@ -55,7 +55,7 @@ export const Logs = (): JSX.Element => {
           <h1 className="text-3xl">Console</h1>
           <div className="flex gap-2">
             <span>Total logs :</span>
-            <pre>{totalCount}</pre>
+            <pre>{count}</pre>
           </div>
           <div className="flex items-center gap-2">
             <span>Niveau de log :</span>
