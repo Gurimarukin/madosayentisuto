@@ -80,7 +80,7 @@ type MyPartial<A> = {
   readonly fetch: () => Promise<A>
 }
 
-type MyInteraction = CommandInteraction | MessageComponentInteraction
+export type MyInteraction = CommandInteraction | MessageComponentInteraction
 
 export type DiscordConnector = ReturnType<typeof of>
 

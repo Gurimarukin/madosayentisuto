@@ -5,6 +5,7 @@ import type {
   ChatInputCommandInteraction,
   Guild,
   GuildMember,
+  MessageContextMenuCommandInteraction,
 } from 'discord.js'
 import { ChannelType, Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
@@ -17,10 +18,19 @@ import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import type { NotUsed } from '../../../shared/utils/fp'
-import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
+import {
+  Either,
+  Future,
+  IO,
+  List,
+  Maybe,
+  NonEmptyArray,
+  NotUsed,
+  toNotUsed,
+} from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
+import type { MyInteraction } from '../../helpers/DiscordConnector'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { AutoroleMessageArgs } from '../../helpers/messages/AutoroleMessage'
 import { AutoroleMessage } from '../../helpers/messages/AutoroleMessage'
@@ -280,6 +290,7 @@ export const AdminCommandsObserver = (
     'InteractionCreate',
   )(({ interaction }) => {
     if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
+    if (interaction.isMessageContextMenuCommand()) return onMessageContextMenu(interaction)
     return Future.notUsed
   })
 
@@ -304,17 +315,16 @@ export const AdminCommandsObserver = (
   function validateAdminCommand(
     interaction: ChatInputCommandInteraction,
   ): Either<string, GroupWithSubcommand> {
-    const isAdmin = pipe(
-      admins,
-      List.elem(DiscordUserId.Eq)(DiscordUserId.fromUser(interaction.user)),
+    return pipe(
+      validateIsAdmin(interaction.user),
+      Either.chain(() => {
+        const subcommandGroup = Maybe.fromNullable(interaction.options.getSubcommandGroup(false))
+        const subcommand = interaction.options.getSubcommand(false)
+        if (subcommand === null) return Either.left('Erreur')
+
+        return Either.right({ subcommandGroup, subcommand })
+      }),
     )
-    if (!isAdmin) return Either.left('Haha ! Tu ne peux pas faire ça !')
-
-    const subcommandGroup = Maybe.fromNullable(interaction.options.getSubcommandGroup(false))
-    const subcommand = interaction.options.getSubcommand(false)
-    if (subcommand === null) return Either.left('Erreur')
-
-    return Either.right({ subcommandGroup, subcommand })
   }
 
   function onValidatedAdminCommand(
@@ -767,12 +777,49 @@ export const AdminCommandsObserver = (
   }
 
   /**
+   * onMessageContextMenu
+   */
+
+  function onMessageContextMenu(
+    interaction: MessageContextMenuCommandInteraction,
+  ): Future<NotUsed> {
+    switch (interaction.commandName) {
+      case Keys.editMessage:
+        return onMessageContextMenuEditMessage(interaction)
+      case Keys.deleteMessage:
+        return onMessageContextMenuDeleteMessage(interaction)
+    }
+    return Future.notUsed
+  }
+
+  function onMessageContextMenuEditMessage(
+    interaction: MessageContextMenuCommandInteraction,
+  ): Future<NotUsed> {
+    return withFollowUpIsAdminValidation(interaction)(Future.todo())
+  }
+
+  function onMessageContextMenuDeleteMessage(
+    interaction: MessageContextMenuCommandInteraction,
+  ): Future<NotUsed> {
+    return withFollowUpIsAdminValidation(interaction)(
+      pipe(
+        DiscordConnector.messageDelete(interaction.targetMessage),
+        Future.map(success => (success ? 'Message supprimé.' : 'Erreur')),
+      ),
+    )
+  }
+
+  /**
    * Helpers
    */
 
-  function withFollowUp(
-    interaction: ChatInputCommandInteraction,
-  ): (f: Future<string>) => Future<NotUsed> {
+  function validateIsAdmin(user: User): Either<string, NotUsed> {
+    const isAdmin = pipe(admins, List.elem(DiscordUserId.Eq)(DiscordUserId.fromUser(user)))
+    if (!isAdmin) return Either.left('Haha ! Tu ne peux pas faire ça !')
+    return Either.right(NotUsed)
+  }
+
+  function withFollowUp(interaction: MyInteraction): (f: Future<string>) => Future<NotUsed> {
     return f =>
       pipe(
         DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
@@ -781,6 +828,18 @@ export const AdminCommandsObserver = (
           DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
         ),
         Future.map(toNotUsed),
+      )
+  }
+
+  function withFollowUpIsAdminValidation(
+    interaction: MyInteraction,
+  ): (f: Future<string>) => Future<NotUsed> {
+    return f =>
+      withFollowUp(interaction)(
+        pipe(
+          validateIsAdmin(interaction.user),
+          Either.fold(Future.right, () => f),
+        ),
       )
   }
 
