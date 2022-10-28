@@ -9,7 +9,8 @@
     "sourceMap": true,
     "noEmit": true,
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "plugins": [{ "transform": "ts-macros" }]
   },
   "include": ["src", "test"],
   "exclude": ["node_modules"]
