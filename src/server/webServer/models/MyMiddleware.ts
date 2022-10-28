@@ -6,7 +6,6 @@ import type { FromIO2 } from 'fp-ts/FromIO'
 import type { Functor2 } from 'fp-ts/Functor'
 import { flow, identity, pipe } from 'fp-ts/function'
 import type * as http from 'http'
-import { MediaType } from 'hyper-ts'
 import type {
   Connection,
   CookieOptions,
@@ -15,6 +14,7 @@ import type {
   Status,
   StatusOpen,
 } from 'hyper-ts'
+import { MediaType } from 'hyper-ts'
 import * as M from 'hyper-ts/lib/Middleware'
 import { toRequestHandler as toRequestHandler_ } from 'hyper-ts/lib/express'
 import type { Decoder } from 'io-ts/Decoder'
@@ -22,11 +22,7 @@ import * as D from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
 
 import { MsDuration } from '../../../shared/models/MsDuration'
-import { List, Maybe } from '../../../shared/utils/fp'
-import { Try } from '../../../shared/utils/fp'
-import { Tuple } from '../../../shared/utils/fp'
-import { Future } from '../../../shared/utils/fp'
-import { Dict, Either } from '../../../shared/utils/fp'
+import { Dict, Either, Future, List, Maybe, Try, Tuple } from '../../../shared/utils/fp'
 import { decodeError } from '../../../shared/utils/ioTsUtils'
 
 import { unknownToError } from '../../utils/unknownToError'
@@ -118,7 +114,7 @@ const decodeBody = <I = StatusOpen, A = never>(
         : Either.left(Error(`Expected 'Content-Type' to be '${MediaType.applicationJSON}'`)),
     ),
     ichain(() => getBodyString()),
-    ichain(flow(json.parse, Either.mapLeft(unknownToError), e => fromEither(e))),
+    ichain(flow(json.parse, Either.mapLeft(unknownToError), e => fromEither<I, json.Json>(e))),
     ichain(flow(tryDecode(decoderWithName), e => fromEither(e))),
   )
 

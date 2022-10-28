@@ -182,7 +182,7 @@ type Path<S> = {
 const getPath = <A>(): Path<A> => List.mkString('.')
 
 const fpCollectionHelpersFindAll =
-  <O, B>(
+  <O extends MongoDocument, B>(
     logger: LoggerType,
     collection: MongoCollection<O>,
     [decoder, decoderName]: Tuple<Decoder<unknown, B>, string>,
