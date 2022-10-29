@@ -32,8 +32,8 @@ import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import type { MyInteraction } from '../../helpers/DiscordConnector'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import type { AutoroleMessageArgs } from '../../helpers/messages/AutoroleMessage'
 import { AutoroleMessage } from '../../helpers/messages/AutoroleMessage'
+import { EditMessageModal } from '../../helpers/modals/EditMessageModal'
 import { RoleId } from '../../models/RoleId'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
@@ -486,8 +486,7 @@ export const AdminCommandsObserver = (
         }),
       ),
       futureMaybe.chainTaskEitherK(a =>
-        sendAutoroleMessage(a.author, a.commandChannel, {
-          role: a.role,
+        sendAutoroleMessage(a.author, a.commandChannel, a.role, {
           descriptionMessage: a.descriptionMessage,
           addButton: a.addButton,
           removeButton: a.removeButton,
@@ -504,9 +503,11 @@ export const AdminCommandsObserver = (
   function sendAutoroleMessage(
     author: User,
     commandChannel: TextChannel,
-    args: AutoroleMessageArgs,
+    role: Role,
+    args: Omit<AutoroleMessage, 'roleId'>,
   ): Future<NotUsed> {
     const options = AutoroleMessage.of({
+      roleId: RoleId.fromRole(role),
       ...args,
       descriptionMessage: args.descriptionMessage.replaceAll('\\n', '\n'),
     })
@@ -522,7 +523,7 @@ export const AdminCommandsObserver = (
             ? pipe(
                 DiscordConnector.sendPrettyMessage(
                   author,
-                  `Impossible d'envoyer le message d'autorole **@${args.role.name}** dans le salon **#${commandChannel.name}**.`,
+                  `Impossible d'envoyer le message d'autorole **@${role.name}** dans le salon **#${commandChannel.name}**.`,
                 ),
                 Future.map(toNotUsed),
               )
@@ -712,7 +713,7 @@ export const AdminCommandsObserver = (
   function onActivitySet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return withFollowUp(interaction)(
       pipe(
-        ValidatedNea.sequenceS({
+        apply.sequenceS(ValidatedNea.getValidation<string>())({
           type: decode(ActivityTypeBot.decoder, interaction.options.getString(Keys.type)),
           name: decode(D.string, interaction.options.getString(Keys.name)),
         }),
@@ -795,7 +796,18 @@ export const AdminCommandsObserver = (
   function onMessageContextMenuEditMessage(
     interaction: MessageContextMenuCommandInteraction,
   ): Future<NotUsed> {
-    return withFollowUpIsAdminValidation(interaction)(Future.todo())
+    return pipe(
+      validateIsAdmin(interaction.user),
+      Either.fold(
+        content => DiscordConnector.interactionReply(interaction, { content }),
+        () =>
+          pipe(
+            EditMessageModal.fromMessage(logger)(interaction.targetMessage),
+            Future.fromIOEither,
+            Future.chain(modal => DiscordConnector.interactionShowModal(interaction, modal)),
+          ),
+      ),
+    )
   }
 
   function onMessageContextMenuDeleteMessage(

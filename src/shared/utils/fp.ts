@@ -61,8 +61,8 @@ const maybeToArray: <A>(fa: Maybe<A>) => List<A> = option.fold(
   () => [],
   a => [a],
 )
-const maybeDecoder = <I, A>(decoder: Decoder<I, A>): Decoder<I, Maybe<A>> => ({
-  decode: (u: I) =>
+const maybeDecoder = <I, A>(decoder: Decoder<I, A>): Decoder<I | null | undefined, Maybe<A>> => ({
+  decode: u =>
     u === null || u === undefined
       ? D.success(option.none)
       : pipe(decoder.decode(u), either.map(option.some)),

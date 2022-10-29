@@ -71,7 +71,7 @@ import { CommandId } from '../models/command/CommandId'
 import { GlobalPutCommandResult } from '../models/command/putCommandResult/GlobalPutCommandResult'
 import { GuildPutCommandResult } from '../models/command/putCommandResult/GuildPutCommandResult'
 import { MessageComponent } from '../models/discord/MessageComponent'
-import type { MyModal } from '../models/discord/Modal'
+import type { Modal } from '../models/discord/Modal'
 import type { GuildAudioChannel, GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 
@@ -295,7 +295,7 @@ const interactionReply = (
     debugLeft('interactionReply'),
   )
 
-const interactionShowModal = (interaction: CommandInteraction, modal: MyModal): Future<NotUsed> =>
+const interactionShowModal = (interaction: CommandInteraction, modal: Modal): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.showModal(modal)),
     Future.map(toNotUsed),

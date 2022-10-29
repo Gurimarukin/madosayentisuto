@@ -12,8 +12,8 @@ import { List } from '../../../shared/utils/fp'
 
 // _tag don't exist at runtime (see cast below)
 
-export type MyModal = APIModalInteractionResponseCallbackData & {
-  readonly _tag: 'MyModal'
+type Modal = APIModalInteractionResponseCallbackData & {
+  readonly _tag: 'Modal'
 }
 
 type MyTextInput = APITextInputComponent & {
@@ -27,13 +27,13 @@ type Of = {
 
 const of =
   ({ custom_id, title }: Of) =>
-  (components: NonEmptyArray<MyTextInput>): MyModal => {
+  (components: NonEmptyArray<MyTextInput>): Modal => {
     const res: APIModalInteractionResponseCallbackData = {
       custom_id,
       title,
       components: pipe(components, List.takeLeft(5), List.map(rowComponent), List.asMutable),
     }
-    return res as MyModal
+    return res as Modal
   }
 
 const rowComponent = (
@@ -48,4 +48,6 @@ const textInput = (args: Omit<APITextInputComponent, 'type'>): MyTextInput => {
   return res as MyTextInput
 }
 
-export const Modal = { of, textInput }
+const Modal = { of, textInput }
+
+export { Modal }

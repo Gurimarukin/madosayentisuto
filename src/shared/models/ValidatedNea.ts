@@ -1,8 +1,18 @@
 import { apply } from 'fp-ts'
+import type { Applicative2C } from 'fp-ts/Applicative'
 import { flow } from 'fp-ts/function'
 
 import type { Dict, List } from '../utils/fp'
 import { Either, Maybe, NonEmptyArray } from '../utils/fp'
+
+type ValidatedNea<E, A> = Either<NonEmptyArray<E>, A>
+
+const valid: <E = never, A = never>(a: A) => ValidatedNea<E, A> = Either.right
+
+const invalid: <E = never, A = never>(e: E) => ValidatedNea<E, A> = flow(
+  NonEmptyArray.of,
+  Either.left,
+)
 
 const fromEither: <E, A>(either: Either<E, A>) => ValidatedNea<E, A> = Either.mapLeft(
   NonEmptyArray.of,
@@ -23,27 +33,26 @@ const fromEmptyErrors: <A>(either: Either<List<string>, A>) => ValidatedNea<stri
   'Got empty Errors from codec',
 )
 
-// ValidatedNea<string, A>
-const stringValidation = Either.getApplicativeValidation(NonEmptyArray.getSemigroup<string>())
+const getValidation = <E = never>(): Applicative2C<'Either', NonEmptyArray<E>> =>
+  Either.getApplicativeValidation(NonEmptyArray.getSemigroup<E>())
 
-const sequenceS = apply.sequenceS(stringValidation)
-
-type ToValidatedDict<A extends Dict<string, unknown>> = {
-  readonly [K in keyof A]: ValidatedNea<string, A[K]>
+type ToValidatedDict<E, A extends Dict<string, unknown>> = {
+  readonly [K in keyof A]: ValidatedNea<E, A[K]>
 }
 
-const seqS = sequenceS as <A extends Dict<string, unknown>>(
-  a: ToValidatedDict<A>,
-) => ValidatedNea<string, A>
+type SeqS<E> = <A extends Dict<string, unknown>>(a: ToValidatedDict<E, A>) => ValidatedNea<E, A>
 
-export type ValidatedNea<E, A> = Either<NonEmptyArray<E>, A>
+const getSeqS = <E = never>(): SeqS<E> => apply.sequenceS(getValidation<E>()) as SeqS<E>
 
-export const ValidatedNea = {
+const ValidatedNea = {
+  valid,
+  invalid,
   fromEither,
   fromOption,
   fromEmptyE,
   fromEmptyErrors,
-  stringValidation,
-  sequenceS,
-  seqS,
+  getValidation,
+  getSeqS,
 }
+
+export { ValidatedNea }

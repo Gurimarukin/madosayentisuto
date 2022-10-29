@@ -9,7 +9,9 @@ import type { Encoder } from 'io-ts/Encoder'
 import { DayJs } from '../../shared/models/DayJs'
 import { Either, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
-// DayJsFromDate
+/**
+ * DayJsFromDate
+ */
 
 const dayJsFromDateDecoder: Decoder<unknown, DayJs> = {
   decode: i =>
@@ -35,7 +37,9 @@ export const DayJsFromDate = {
   codec: dayJsFromDateCodec,
 }
 
-// BooleanFromString
+/**
+ * BooleanFromString
+ */
 
 const booleanFromStringDecoder: Decoder<unknown, boolean> = pipe(
   D.string,
@@ -50,7 +54,9 @@ const booleanFromStringDecoder: Decoder<unknown, boolean> = pipe(
 
 export const BooleanFromString = { decoder: booleanFromStringDecoder }
 
-// NumberFromString
+/**
+ * NumberFromString
+ */
 
 const numberFromStringDecoder: Decoder<unknown, number> = pipe(
   D.string,
@@ -62,12 +68,20 @@ const numberFromStringDecoder: Decoder<unknown, number> = pipe(
 
 const numberFromStringEncoder: Encoder<string, number> = { encode: String }
 
+const numberFromStringCodec: Codec<unknown, string, number> = C.make(
+  numberFromStringDecoder,
+  numberFromStringEncoder,
+)
+
 export const NumberFromString = {
   decoder: numberFromStringDecoder,
   encoder: numberFromStringEncoder,
+  codec: numberFromStringCodec,
 }
 
-//
+/**
+ * ArrayFromString
+ */
 
 const prepareArray: (i: string) => List<string> = flow(
   string.split(','),
@@ -75,14 +89,14 @@ const prepareArray: (i: string) => List<string> = flow(
   List.filter(predicate.not(string.isEmpty)),
 )
 
-// ArrayFromString
-
 const arrayFromStringDecoder = <A>(decoder: Decoder<unknown, A>): Decoder<unknown, List<A>> =>
   pipe(D.string, D.map(prepareArray), D.compose(List.decoder(decoder)))
 
 export const ArrayFromString = { decoder: arrayFromStringDecoder }
 
-// NonEmptyArrayFromString
+/**
+ * NonEmptyArrayFromString
+ */
 
 const nonEmptyArrayFromStringDecoder = <A>(
   decoder: Decoder<unknown, A>,
@@ -91,20 +105,36 @@ const nonEmptyArrayFromStringDecoder = <A>(
 
 export const NonEmptyArrayFromString = { decoder: nonEmptyArrayFromStringDecoder }
 
-// CustomId
+/**
+ * CustomId
+ */
 
-export const customIdCodec = (prefix: string): Codec<string, string, string> => ({
-  decode: raw => {
-    const [rawPrefix, rawN, ...rest] = pipe(raw, string.split('-'))
-    return pipe(
-      Maybe.Do,
-      Maybe.filter(() => rawPrefix === prefix && List.isEmpty(rest)),
-      Maybe.chain(() => nonEmptyString(rawN)),
-      Either.fromOption(() => D.error(raw, 'CustomId')),
-    )
-  },
+const customIdDecoder = (prefix: string): Decoder<string, string> =>
+  pipe(
+    D.id<string>(),
+    D.parse(raw => {
+      const [rawPrefix, rawN, ...rest] = pipe(raw, string.split('-'))
+      return pipe(
+        Maybe.Do,
+        Maybe.filter(() => rawPrefix === prefix && List.isEmpty(rest)),
+        Maybe.chain(() => nonEmptyString(rawN)),
+        Either.fromOption(() => D.error(raw, `CustomId@${prefix}`)),
+      )
+    }),
+  )
+
+const customIdEncoder = (prefix: string): Encoder<string, string> => ({
   encode: n => `${prefix}-${n}`,
 })
+
+const customIdCodec = (prefix: string): Codec<string, string, string> =>
+  C.make(customIdDecoder(prefix), customIdEncoder(prefix))
+
+export const CustomId = {
+  decoder: customIdDecoder,
+  encoder: customIdEncoder,
+  codec: customIdCodec,
+}
 
 // raw should not be empty and not have additional triming spaces
 const nonEmptyString = (raw: string | undefined): Maybe<string> => {
@@ -113,3 +143,35 @@ const nonEmptyString = (raw: string | undefined): Maybe<string> => {
   const trimed = raw.trim()
   return trimed === raw ? Maybe.some(raw) : Maybe.none
 }
+
+/**
+ * TupleFromArrayStrict
+ */
+
+const listLengthDecoder = <A = never>(n: number): D.Decoder<List<A>, List<A>> => ({
+  decode: as =>
+    as.length === n
+      ? D.success(as)
+      : D.failure(
+          as,
+          `${((): string => {
+            if (n === 0) return 'empty'
+            if (n === 1) return '1-element'
+            return `${n}-elements`
+          })()} array`,
+        ),
+})
+
+// additional elements are invalid
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const tupleFromArrayStrictDecoder = <A extends ReadonlyArray<Decoder<any, any>>>(
+  ...components: A
+): Decoder<List<D.InputOf<A[number]>>, { readonly [K in keyof A]: D.TypeOf<A[K]> }> =>
+  pipe(
+    listLengthDecoder<ReadonlyArray<D.InputOf<A[number]>>>(components.length),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    D.compose(D.fromTuple(...components) as any),
+  )
+
+export const TupleFromArrayStrict = { decoder: tupleFromArrayStrictDecoder }

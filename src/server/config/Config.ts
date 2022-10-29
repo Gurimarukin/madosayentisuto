@@ -7,9 +7,8 @@ import { ValidatedNea } from '../../shared/models/ValidatedNea'
 import { LogLevelOrOff } from '../../shared/models/log/LogLevel'
 import { loadDotEnv } from '../../shared/utils/config/loadDotEnv'
 import { parseConfig } from '../../shared/utils/config/parseConfig'
-import { Either, IO } from '../../shared/utils/fp'
 import type { List, NonEmptyArray, Try } from '../../shared/utils/fp'
-import { Maybe } from '../../shared/utils/fp'
+import { Either, IO, Maybe } from '../../shared/utils/fp'
 import { URLFromString } from '../../shared/utils/ioTsUtils'
 
 import {
@@ -19,7 +18,7 @@ import {
   NumberFromString,
 } from '../utils/ioTsUtils'
 
-const { seqS } = ValidatedNea
+const seqS = ValidatedNea.getSeqS<string>()
 
 export type Config = {
   readonly isDev: boolean
