@@ -96,7 +96,7 @@ const withRoleAndMember =
       futureMaybe.chainTaskEitherK(() =>
         DiscordConnector.messageEdit(
           interaction.message,
-          AutoroleMessage.optionFromMessage(interaction.message),
+          AutoroleMessage.optionsFromMessage(interaction.message),
         ),
       ),
       Future.map(toNotUsed),

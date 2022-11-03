@@ -60,12 +60,10 @@ const of = ({
   ],
 })
 
-const optionFromMessage = (message: Message): BaseMessageOptions => ({
+const optionsFromMessage = (message: Message): BaseMessageOptions => ({
   content: message.content,
   components: message.components,
 })
-
-export { AutoroleMessage }
 
 /**
  * messageDecoder
@@ -144,4 +142,6 @@ const messageDecoder: Decoder<Message, AutoroleMessage> = pipe(
   ),
 )
 
-const AutoroleMessage = { Ids, of, optionFromMessage, messageDecoder }
+const AutoroleMessage = { Ids, of, optionsFromMessage, messageDecoder }
+
+export { AutoroleMessage }

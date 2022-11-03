@@ -2,10 +2,14 @@ import type {
   APIInteractionGuildMember,
   APIPartialChannel,
   APIRole,
+  AttachmentPayload,
   ChatInputCommandInteraction,
   Guild,
   GuildMember,
+  Message,
   MessageContextMenuCommandInteraction,
+  MessageEditOptions,
+  ModalSubmitInteraction,
 } from 'discord.js'
 import { ChannelType, Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
@@ -28,12 +32,15 @@ import {
   NotUsed,
   toNotUsed,
 } from '../../../shared/utils/fp'
+import { futureEither } from '../../../shared/utils/futureEither'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
+import type { Config } from '../../config/Config'
 import type { MyInteraction } from '../../helpers/DiscordConnector'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { AutoroleMessage } from '../../helpers/messages/AutoroleMessage'
-import { EditMessageModal } from '../../helpers/modals/EditMessageModal'
+import type { EditMessageModalDefault } from '../../helpers/modals/EditMessageModal'
+import { EditMessageModal, EditMessageModalAutorole } from '../../helpers/modals/EditMessageModal'
 import { RoleId } from '../../models/RoleId'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
@@ -129,26 +136,26 @@ const adminCommand = Command.chatInput({
       }),
       Command.option.string({
         name: Keys.descriptionMessage,
-        description: "Message d'autorole",
+        description: EditMessageModalAutorole.Labels.descriptionMessage,
         required: true,
       }),
       Command.option.string({
         name: Keys.addButton,
-        description: 'Bouton ajouter',
+        description: EditMessageModalAutorole.Labels.addButton,
         required: true,
       }),
       Command.option.string({
         name: Keys.removeButton,
-        description: 'Bouton enlever',
+        description: EditMessageModalAutorole.Labels.removeButton,
         required: true,
       }),
       Command.option.string({
         name: Keys.addButtonEmoji,
-        description: 'Émoji bouton ajouter',
+        description: EditMessageModalAutorole.Labels.addButtonEmoji,
       }),
       Command.option.string({
         name: Keys.removeButtonEmoji,
-        description: 'Émoji bouton enlever',
+        description: EditMessageModalAutorole.Labels.removeButtonEmoji,
       }),
     ),
   ),
@@ -278,7 +285,7 @@ type GroupWithSubcommand = {
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const AdminCommandsObserver = (
   Logger: LoggerGetter,
-  admins: NonEmptyArray<DiscordUserId>,
+  config: Config,
   discord: DiscordConnector,
   botStateService: BotStateService,
   guildStateService: GuildStateService,
@@ -291,6 +298,7 @@ export const AdminCommandsObserver = (
   )(({ interaction }) => {
     if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
     if (interaction.isMessageContextMenuCommand()) return onMessageContextMenu(interaction)
+    if (interaction.isModalSubmit()) return onModalSubmit(interaction)
     return Future.notUsed
   })
 
@@ -798,8 +806,16 @@ export const AdminCommandsObserver = (
   ): Future<NotUsed> {
     return pipe(
       validateIsAdmin(interaction.user),
+      Either.filterOrElse(
+        () =>
+          DiscordUserId.Eq.equals(
+            DiscordUserId.fromUser(interaction.targetMessage.author),
+            config.client.id,
+          ),
+        () => cannotEditOthersMessage,
+      ),
       Either.fold(
-        content => DiscordConnector.interactionReply(interaction, { content }),
+        content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
         () =>
           pipe(
             EditMessageModal.fromMessage(logger)(interaction.targetMessage),
@@ -822,11 +838,116 @@ export const AdminCommandsObserver = (
   }
 
   /**
+   * onModalSubmit
+   */
+
+  function onModalSubmit(interaction: ModalSubmitInteraction): Future<NotUsed> {
+    return pipe(
+      EditMessageModal.fromInteraction(interaction),
+      Maybe.fold(() => Future.notUsed, onEditMessageModalSubmit(interaction)),
+    )
+  }
+
+  function onEditMessageModalSubmit(
+    interaction: ModalSubmitInteraction,
+  ): (modal: EditMessageModal) => Future<NotUsed> {
+    return modal => {
+      const guild = interaction.guild
+      if (guild === null) return Future.notUsed
+      return withFollowUpIsAdminValidation(interaction)(
+        pipe(
+          DiscordConnector.fetchMessage(guild, modal.messageId),
+          Future.map(Either.fromOption(() => 'Erreur, message non trouvé')),
+          futureEither.filterOrElse(
+            message =>
+              DiscordUserId.Eq.equals(DiscordUserId.fromUser(message.author), config.client.id),
+            () => cannotEditOthersMessage,
+          ),
+          futureEither.bindTo('message'),
+          futureEither.bind('options', ({ message }) =>
+            pipe(
+              modal,
+              EditMessageModal.fold({
+                onAutorole: onEditMessageModalAutoroleSubmit(message),
+                onDefault: onEditMessageModalDefaultSubmit(message),
+              }),
+            ),
+          ),
+          futureEither.chainTaskEitherK(({ message, options }) =>
+            DiscordConnector.messageEdit(message, options),
+          ),
+          Future.map(
+            Either.fold(
+              e => e,
+              () => 'Message modifié',
+            ),
+          ),
+        ),
+      )
+    }
+  }
+
+  function onEditMessageModalAutoroleSubmit(
+    message: Message,
+  ): (modal: EditMessageModalAutorole) => Future<Either<string, MessageEditOptions>> {
+    return ({ descriptionMessage, addButton, removeButton, addButtonEmoji, removeButtonEmoji }) =>
+      pipe(
+        AutoroleMessage.messageDecoder.decode(message),
+        Either.fold(
+          e =>
+            pipe(
+              logger.warn(`Inconsistent state: couldn't decode AutoroleMessage:\n${D.draw(e)}`),
+              Future.fromIOEither,
+              Future.map(() => Either.left('Erreur')),
+            ),
+          ({ roleId }) =>
+            Future.right(
+              Either.right(
+                AutoroleMessage.of({
+                  roleId,
+                  descriptionMessage,
+                  addButton,
+                  removeButton,
+                  addButtonEmoji,
+                  removeButtonEmoji,
+                }),
+              ),
+            ),
+        ),
+      )
+  }
+
+  function onEditMessageModalDefaultSubmit(
+    message: Message,
+  ): (modal: EditMessageModalDefault) => Future<Either<string, MessageEditOptions>> {
+    return ({ content }) => {
+      const options: Omit<Required<MessageEditOptions>, 'allowedMentions' | 'files'> = {
+        content,
+        attachments: pipe(
+          message.attachments.toJSON(),
+          List.map(({ attachment, name, description }) => ({
+            toJSON: (): AttachmentPayload => ({
+              attachment,
+              name: name ?? undefined,
+              description: description ?? undefined,
+            }),
+          })),
+          List.asMutable,
+        ),
+        flags: message.flags.toJSON(),
+        embeds: message.embeds,
+        components: message.components,
+      }
+      return Future.right(Either.right(options))
+    }
+  }
+
+  /**
    * Helpers
    */
 
   function validateIsAdmin(user: User): Either<string, NotUsed> {
-    const isAdmin = pipe(admins, List.elem(DiscordUserId.Eq)(DiscordUserId.fromUser(user)))
+    const isAdmin = pipe(config.admins, List.elem(DiscordUserId.Eq)(DiscordUserId.fromUser(user)))
     if (!isAdmin) return Either.left('Haha ! Tu ne peux pas faire ça !')
     return Either.right(NotUsed)
   }
@@ -932,3 +1053,5 @@ const formatActivity = ({ type, name }: Activity): string => `\`${type} ${name}\
 
 const decode = <A>(decoder: Decoder<unknown, A>, u: unknown): ValidatedNea<string, A> =>
   pipe(decoder.decode(u), Either.mapLeft(flow(D.draw, NonEmptyArray.of)))
+
+const cannotEditOthersMessage = "Haha ! Je ne peux pas éditer un message que je n'ai pas écrit !"

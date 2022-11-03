@@ -37,6 +37,7 @@ import type {
   MessageEditOptions,
   MessagePayload,
   MessageReaction,
+  ModalSubmitInteraction,
   PartialTextBasedChannelFields,
   RESTPostAPIApplicationCommandsJSONBody,
   RequestData,
@@ -80,7 +81,10 @@ type MyPartial<A> = {
   readonly fetch: () => Promise<A>
 }
 
-export type MyInteraction = CommandInteraction | MessageComponentInteraction
+export type MyInteraction =
+  | CommandInteraction
+  | MessageComponentInteraction
+  | ModalSubmitInteraction
 
 export type DiscordConnector = ReturnType<typeof of>
 
