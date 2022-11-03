@@ -75,6 +75,7 @@ import { MessageComponent } from '../models/discord/MessageComponent'
 import type { Modal } from '../models/discord/Modal'
 import type { GuildAudioChannel, GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
+import { debugLeft } from '../utils/debugLeft'
 
 type MyPartial<A> = {
   readonly partial: boolean
@@ -611,15 +612,6 @@ const isMissingAccessOrUnknownMessageError = pipe(
   isMissingAccessError,
   refinement.or(isUnknownMessageError),
 )
-
-const debugLeft = <A>(functionName: string): ((f: Future<A>) => Future<A>) =>
-  Future.mapLeft(e => {
-    const constr = Object.getPrototypeOf(e).contructor
-    return Error(
-      `"${functionName}"\n${nl(constr?.name)}${e.stack !== undefined ? e.stack : e.message}`,
-    )
-  })
-const nl = (str: string | undefined): string => (str !== undefined ? `${str}\n` : '')
 
 const fetchMessageRec =
   (message: string) =>
