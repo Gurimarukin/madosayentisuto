@@ -11,7 +11,7 @@ import type {
   MessageEditOptions,
   ModalSubmitInteraction,
 } from 'discord.js'
-import { ChannelType, Role, TextChannel, User } from 'discord.js'
+import { ChannelType, DiscordAPIError, Role, TextChannel, User } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import type { Decoder } from 'io-ts/Decoder'
@@ -52,6 +52,7 @@ import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { BotStateService } from '../../services/BotStateService'
 import type { GuildStateService } from '../../services/GuildStateService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
+import { DebugError } from '../../utils/debugLeft'
 
 const Keys = {
   admin: 'admin',
@@ -875,6 +876,22 @@ export const AdminCommandsObserver = (
           ),
           futureEither.chainTaskEitherK(({ message, options }) =>
             DiscordConnector.messageEdit(message, options),
+          ),
+          Future.orElse(e =>
+            e instanceof DebugError &&
+            e.originalError instanceof DiscordAPIError &&
+            e.originalError.message.startsWith('Invalid Form Body')
+              ? Future.right(
+                  Either.left(
+                    StringUtils.stripMargins(
+                      `Erreur lors de l'envoi:
+                      |\`\`\`
+                      |${e.originalError.message}
+                      |\`\`\``,
+                    ),
+                  ),
+                )
+              : Future.left(e),
           ),
           Future.map(
             Either.fold(
