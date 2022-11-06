@@ -38,6 +38,7 @@ import type { Config } from '../../config/Config'
 import type { MyInteraction } from '../../helpers/DiscordConnector'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { AutoroleMessage } from '../../helpers/messages/AutoroleMessage'
+import { DeleteMessageModal } from '../../helpers/modals/DeleteMessageModal'
 import type { EditMessageModalDefault } from '../../helpers/modals/EditMessageModal'
 import { EditMessageModal, EditMessageModalAutorole } from '../../helpers/modals/EditMessageModal'
 import { RoleId } from '../../models/RoleId'
@@ -842,10 +843,15 @@ export const AdminCommandsObserver = (
   function onMessageContextMenuDeleteMessage(
     interaction: MessageContextMenuCommandInteraction,
   ): Future<NotUsed> {
-    return withFollowUpIsAdminValidation(interaction)(
-      pipe(
-        DiscordConnector.messageDelete(interaction.targetMessage),
-        Future.map(success => (success ? 'Message supprimé.' : 'Erreur')),
+    return pipe(
+      validateIsAdmin(interaction.user),
+      Either.fold(
+        content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
+        () =>
+          DiscordConnector.interactionShowModal(
+            interaction,
+            DeleteMessageModal.fromMessage(interaction.targetMessage),
+          ),
       ),
     )
   }
@@ -856,9 +862,47 @@ export const AdminCommandsObserver = (
 
   function onModalSubmit(interaction: ModalSubmitInteraction): Future<NotUsed> {
     return pipe(
-      EditMessageModal.fromInteraction(interaction),
-      Maybe.fold(() => Future.notUsed, onEditMessageModalSubmit(interaction)),
+      Maybe.none,
+      Maybe.alt(() =>
+        pipe(
+          DeleteMessageModal.fromInteraction(interaction),
+          Maybe.map(onDeleteMessageModalSubmit(interaction)),
+        ),
+      ),
+      Maybe.alt(() =>
+        pipe(
+          EditMessageModal.fromInteraction(interaction),
+          Maybe.map(onEditMessageModalSubmit(interaction)),
+        ),
+      ),
+      Maybe.getOrElse(() => Future.notUsed),
     )
+  }
+
+  function onDeleteMessageModalSubmit(
+    interaction: ModalSubmitInteraction,
+  ): (modal: DeleteMessageModal) => Future<NotUsed> {
+    return modal => {
+      const guild = interaction.guild
+      if (guild === null) return Future.notUsed
+      return withFollowUpIsAdminValidation(interaction)(
+        pipe(
+          DiscordConnector.fetchMessage(guild, modal.messageId),
+          Future.map(Either.fromOption(() => 'Erreur, message non trouvé')),
+          futureEither.chainTaskEitherK(message => DiscordConnector.messageDelete(message)),
+          futureEither.filterOrElse(
+            success => success,
+            () => 'Erreur',
+          ),
+          Future.map(
+            Either.fold(
+              error => error,
+              () => 'Message supprimé.',
+            ),
+          ),
+        ),
+      )
+    }
   }
 
   function onEditMessageModalSubmit(
