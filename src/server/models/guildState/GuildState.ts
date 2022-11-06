@@ -1,4 +1,5 @@
 import type { Role } from 'discord.js'
+import { io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
@@ -10,6 +11,7 @@ import { Maybe } from '../../../shared/utils/fp'
 import type { AudioSubscription } from '../../helpers/AudioSubscription'
 import type { GuildSendableChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
+import { AudioState } from '../audio/AudioState'
 import { Calls } from './Calls'
 
 export type GuildState = {
@@ -30,12 +32,22 @@ const empty = (id: GuildId): GuildState => ({
   subscription: Maybe.none,
 })
 
-const toView = (s: GuildState): GuildStateView => ({
-  calls: pipe(s.calls, Maybe.map(Calls.toView)),
-  defaultRole: pipe(s.defaultRole, Maybe.map(RoleView.fromRole)),
-  itsFridayChannel: pipe(s.itsFridayChannel, Maybe.map(ChannelUtils.toView)),
-  birthdayChannel: pipe(s.birthdayChannel, Maybe.map(ChannelUtils.toView)),
-})
+const toView = (s: GuildState): io.IO<GuildStateView> => {
+  return pipe(
+    s.subscription,
+    Maybe.fold(
+      () => io.of(Maybe.none),
+      subscription => pipe(subscription.getAudioState, io.map(Maybe.some)),
+    ),
+    io.map(audioState => ({
+      calls: pipe(s.calls, Maybe.map(Calls.toView)),
+      defaultRole: pipe(s.defaultRole, Maybe.map(RoleView.fromRole)),
+      itsFridayChannel: pipe(s.itsFridayChannel, Maybe.map(ChannelUtils.toView)),
+      birthdayChannel: pipe(s.birthdayChannel, Maybe.map(ChannelUtils.toView)),
+      audioState: pipe(audioState, Maybe.map(AudioState.toView)),
+    })),
+  )
+}
 
 const Lens = {
   calls: pipe(lens.id<GuildState>(), lens.prop('calls')),

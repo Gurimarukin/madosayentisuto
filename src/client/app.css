@@ -11,5 +11,9 @@
 @font-face {
   font-family: baloopaaji2;
   src: url('fonts/baloopaaji2-bold.ttf');
-  fontweight: 'bold';
+  font-weight: 'bold';
+}
+
+* {
+  font-family: baloopaaji2;
 }

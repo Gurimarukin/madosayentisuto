@@ -1,8 +1,5 @@
 - Les Quais Abatoirs UwU renamer
 
-- Delete Ephemeral Messages
-
-- elevator: don't clearTimeout if same chan
 - upgrade react
 - select leave message chan
 - deploy: on guild join
@@ -17,7 +14,6 @@
 - `Either.toError`?
 - try to override declaration types to use GuildId, TSnowflake, ...
 - logs id
-- autocomplete for /remind date
 - remove disables
 
 ---

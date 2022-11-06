@@ -1,12 +1,15 @@
 import { eq, string } from 'fp-ts'
+import * as C from 'io-ts/Codec'
 
-import { Maybe } from '../../../../shared/utils/fp'
+import { Maybe } from '../../../utils/fp'
 
-export type Track = {
-  readonly title: string
-  readonly url: string
-  readonly thumbnail: Maybe<string>
-}
+type Track = C.TypeOf<typeof codec>
+
+const codec = C.struct({
+  title: C.string,
+  url: C.string,
+  thumbnail: Maybe.codec(C.string),
+})
 
 const of = (title: string, url: string, thumbnail: Maybe<string>): Track => ({
   title,
@@ -20,4 +23,6 @@ const Eq: eq.Eq<Track> = eq.struct({
   thumbnail: Maybe.getEq(string.Eq),
 })
 
-export const Track = { of, Eq }
+const Track = { of, codec, Eq }
+
+export { Track }
