@@ -1,4 +1,4 @@
-import { identity, pipe } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 import type { Codec } from 'io-ts/Codec'
 import type { Decoder } from 'io-ts/Decoder'
 import type {
@@ -55,7 +55,7 @@ export const FpCollection =
           Future.fromIOEither,
           Future.chain(() =>
             collection.future(c =>
-              c.createIndexes(List.toMutable(indexSpecs as List<MongoIndexDescription>), options),
+              c.createIndexes(List.asMutable(indexSpecs as List<MongoIndexDescription>), options),
             ),
           ),
           Future.map(toNotUsed),
@@ -112,12 +112,8 @@ export const FpCollection =
           collection.future(c => c.findOne(filter, options)),
           Future.chainFirstIOEitherK(res => logger.trace('Found one', JSON.stringify(res))),
           Future.map(Maybe.fromNullable),
-          futureMaybe.chain(u =>
-            pipe(
-              codec.decode(u),
-              Either.bimap(decodeError(codecName)(u), Maybe.some),
-              Future.fromEither,
-            ),
+          futureMaybe.chainEitherK(u =>
+            pipe(codec.decode(u), Either.mapLeft(decodeError(codecName)(u))),
           ),
         ),
 
@@ -208,7 +204,7 @@ const fpCollectionHelpersFindAll =
           TObservable.fromTaskEither,
         ),
       ),
-      TObservable.filterMap(identity),
+      TObservable.compact,
     )
   }
 

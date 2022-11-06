@@ -1,6 +1,5 @@
 import type { AudioResource } from '@discordjs/voice'
-import { createAudioResource } from '@discordjs/voice'
-import { demuxProbe } from '@discordjs/voice'
+import { createAudioResource, demuxProbe } from '@discordjs/voice'
 import { pipe } from 'fp-ts/function'
 import { create as createYtDlp } from 'youtube-dl-exec'
 
@@ -29,12 +28,8 @@ export const YtDlp = (binaryPath?: string) => {
             { stdio: ['ignore', 'pipe', 'ignore'] },
           ),
         ),
-        Future.chain(u =>
-          pipe(
-            VideosMetadata.decoder.decode(u),
-            Either.mapLeft(decodeError('VideosMetadata')(u)),
-            Future.fromEither,
-          ),
+        Future.chainEitherK(u =>
+          pipe(VideosMetadata.decoder.decode(u), Either.mapLeft(decodeError('VideosMetadata')(u))),
         ),
       ),
 

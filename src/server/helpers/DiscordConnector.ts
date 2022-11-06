@@ -14,6 +14,7 @@ import {
   joinVoiceChannel,
 } from '@discordjs/voice'
 import type {
+  APIApplicationCommandPermission,
   APIMessage,
   ApplicationCommand,
   ButtonInteraction,
@@ -36,8 +37,10 @@ import type {
   MessageEditOptions,
   MessagePayload,
   MessageReaction,
+  ModalSubmitInteraction,
   PartialTextBasedChannelFields,
   RESTPostAPIApplicationCommandsJSONBody,
+  RequestData,
   Role,
   RoleResolvable,
   StartThreadOptions,
@@ -46,7 +49,6 @@ import type {
 } from 'discord.js'
 import { Client, DiscordAPIError, GatewayIntentBits, Partials, Routes } from 'discord.js'
 import { refinement } from 'fp-ts'
-import type { Separated } from 'fp-ts/Separated'
 import { pipe } from 'fp-ts/function'
 import type { Decoder } from 'io-ts/Decoder'
 import * as D from 'io-ts/Decoder'
@@ -55,8 +57,8 @@ import { ChannelId } from '../../shared/models/ChannelId'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { GuildId } from '../../shared/models/guild/GuildId'
-import type { NonEmptyArray, NotUsed, Tuple } from '../../shared/utils/fp'
-import { Either, Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
+import type { NotUsed, Tuple } from '../../shared/utils/fp'
+import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
@@ -70,16 +72,20 @@ import { CommandId } from '../models/command/CommandId'
 import { GlobalPutCommandResult } from '../models/command/putCommandResult/GlobalPutCommandResult'
 import { GuildPutCommandResult } from '../models/command/putCommandResult/GuildPutCommandResult'
 import { MessageComponent } from '../models/discord/MessageComponent'
-import type { MyModal } from '../models/discord/Modal'
+import type { Modal } from '../models/discord/Modal'
 import type { GuildAudioChannel, GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
+import { debugLeft } from '../utils/debugLeft'
 
 type MyPartial<A> = {
   readonly partial: boolean
   readonly fetch: () => Promise<A>
 }
 
-type MyInteraction = CommandInteraction | MessageComponentInteraction
+export type MyInteraction =
+  | CommandInteraction
+  | MessageComponentInteraction
+  | ModalSubmitInteraction
 
 export type DiscordConnector = ReturnType<typeof of>
 
@@ -294,7 +300,7 @@ const interactionReply = (
     debugLeft('interactionReply'),
   )
 
-const interactionShowModal = (interaction: CommandInteraction, modal: MyModal): Future<NotUsed> =>
+const interactionShowModal = (interaction: CommandInteraction, modal: Modal): Future<NotUsed> =>
   pipe(
     Future.tryCatch(() => interaction.showModal(modal)),
     Future.map(toNotUsed),
@@ -399,46 +405,44 @@ const restPutApplicationCommands =
   (rest: REST, clientId: DiscordUserId) =>
   (
     body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
-  ): Future<Separated<ReadonlyArray<Error>, List<GlobalPutCommandResult>>> =>
-    decodeFutureArrayResult(
-      Future.tryCatch(() =>
-        rest.put(Routes.applicationCommands(DiscordUserId.unwrap(clientId)), { body }),
-      ),
-    )([GlobalPutCommandResult.decoder, 'GlobalPutCommandResult'])('restPutApplicationCommands')
+  ): Future<List<GlobalPutCommandResult>> =>
+    pipe(
+      restPut(rest)(Routes.applicationCommands(DiscordUserId.unwrap(clientId)), {
+        body,
+      })([GlobalPutCommandResult.decoder, 'GlobalPutCommandResult']),
+      debugLeft('restPutApplicationCommands'),
+    )
 
 const restPutApplicationGuildCommands =
   (rest: REST, clientId: DiscordUserId, guildId: GuildId) =>
   (
     body: NonEmptyArray<RESTPostAPIApplicationCommandsJSONBody>,
-  ): Future<Separated<ReadonlyArray<Error>, List<GuildPutCommandResult>>> =>
-    decodeFutureArrayResult(
-      Future.tryCatch(() =>
-        rest.put(
-          Routes.applicationGuildCommands(DiscordUserId.unwrap(clientId), GuildId.unwrap(guildId)),
-          { body },
-        ),
-      ),
-    )([GuildPutCommandResult.decoder, 'GuildPutCommandResult'])('restPutApplicationGuildCommands')
-
-const decodeFutureArrayResult =
-  (f: Future<unknown>) =>
-  <A>([decoder, decoderName]: Tuple<Decoder<unknown, A>, string>) =>
-  (debugLeftName: string): Future<Separated<ReadonlyArray<Error>, List<A>>> =>
+  ): Future<List<GuildPutCommandResult>> =>
     pipe(
-      f,
-      Future.chain(u =>
-        pipe(
-          D.UnknownArray.decode(u),
-          Either.mapLeft(decodeError('UnknownArray')(u)),
-          Future.fromEither,
+      restPut(rest)(
+        Routes.applicationGuildCommands(DiscordUserId.unwrap(clientId), GuildId.unwrap(guildId)),
+        { body },
+      )([GuildPutCommandResult.decoder, 'GuildPutCommandResult']),
+      debugLeft('restPutApplicationGuildCommands'),
+    )
+
+type PermissionsJSONBody = {
+  readonly permissions: NonEmptyArray<APIApplicationCommandPermission>
+}
+
+const restPutApplicationCommandPermissions =
+  (rest: REST, clientId: DiscordUserId, guildId: GuildId, commandId: CommandId) =>
+  (body: PermissionsJSONBody) =>
+    pipe(
+      restPut(rest)(
+        Routes.applicationCommandPermissions(
+          DiscordUserId.unwrap(clientId),
+          GuildId.unwrap(guildId),
+          CommandId.unwrap(commandId),
         ),
-      ),
-      Future.map(
-        List.partitionMap(u =>
-          pipe(decoder.decode(u), Either.mapLeft(decodeError(decoderName)(u))),
-        ),
-      ),
-      debugLeft(debugLeftName),
+        { body },
+      )([D.struct({ adedigado: D.string }), '{ adedigado: string }']),
+      debugLeft('restPutApplicationCommandPermissions'),
     )
 
 const sendMessage = <InGuild extends boolean = boolean>(
@@ -449,11 +453,6 @@ const sendMessage = <InGuild extends boolean = boolean>(
     Future.tryCatch(() => channel.send(options)),
     Future.map(Maybe.some),
     debugLeft('sendMessage'),
-    // Future.orElse<Maybe<Message>>(e =>
-    //   e instanceof DiscordAPIError && e.message === 'Cannot send messages to this user'
-    //     ? futureMaybe.none
-    //     : Future.left(e),
-    // ),
   )
 
 const sendPrettyMessage = (
@@ -573,6 +572,7 @@ export const DiscordConnector = {
   messageEdit,
   messageReact,
   messageStartThread,
+  restPutApplicationCommandPermissions,
   restPutApplicationCommands,
   restPutApplicationGuildCommands,
   roleAdd,
@@ -613,15 +613,6 @@ const isMissingAccessOrUnknownMessageError = pipe(
   refinement.or(isUnknownMessageError),
 )
 
-const debugLeft = <A>(functionName: string): ((f: Future<A>) => Future<A>) =>
-  Future.mapLeft(e => {
-    const constr = Object.getPrototypeOf(e).contructor
-    return Error(
-      `"${functionName}"\n${nl(constr?.name)}${e.stack !== undefined ? e.stack : e.message}`,
-    )
-  })
-const nl = (str: string | undefined): string => (str !== undefined ? `${str}\n` : '')
-
 const fetchMessageRec =
   (message: string) =>
   (channels: List<GuildSendableChannel>): Future<Maybe<Message<true>>> => {
@@ -638,3 +629,17 @@ const fetchMessageRec =
     }
     return futureMaybe.none
   }
+
+const restPut =
+  (rest: REST) =>
+  (fullRoute: `/${string}`, options?: RequestData | undefined) =>
+  <A>([decoder, decoderName]: Tuple<Decoder<unknown, A>, string>): Future<NonEmptyArray<A>> =>
+    pipe(
+      Future.tryCatch(() => rest.put(fullRoute, options)),
+      Future.chainEitherK(u =>
+        pipe(
+          NonEmptyArray.decoder(decoder).decode(u),
+          Either.mapLeft(decodeError(`NonEmptyArray<${decoderName}>`)(u)),
+        ),
+      ),
+    )

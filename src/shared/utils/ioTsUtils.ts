@@ -1,9 +1,9 @@
 import { json } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
-import * as C from 'io-ts/Codec'
 import type { Codec } from 'io-ts/Codec'
-import * as D from 'io-ts/Decoder'
+import * as C from 'io-ts/Codec'
 import type { DecodeError, Decoder } from 'io-ts/Decoder'
+import * as D from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
 import type { AnyNewtype, CarrierOf } from 'newtype-ts'
 
@@ -35,7 +35,9 @@ export const fromNewtype = <N extends AnyNewtype = never>(
   codec: Codec<unknown, CarrierOf<N>, CarrierOf<N>>,
 ): Codec<unknown, CarrierOf<N>, N> => codec
 
-// DayJsFromISOString
+/**
+ * DayJsFromISOString
+ */
 
 const dayJsFromISOStringDecoder: Decoder<unknown, DayJs> = pipe(
   D.string,
@@ -58,7 +60,9 @@ export const DayJsFromISOString = {
   codec: dayJsFromISOStringCodec,
 }
 
-// URLFromString
+/**
+ * URLFromString
+ */
 
 const urlFromStringDecoder: Decoder<unknown, URL> = pipe(
   D.string,

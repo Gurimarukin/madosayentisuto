@@ -2,11 +2,16 @@ import type {
   APIInteractionGuildMember,
   APIPartialChannel,
   APIRole,
+  AttachmentPayload,
   ChatInputCommandInteraction,
   Guild,
   GuildMember,
+  Message,
+  MessageContextMenuCommandInteraction,
+  MessageEditOptions,
+  ModalSubmitInteraction,
 } from 'discord.js'
-import { ChannelType, Role, TextChannel, User } from 'discord.js'
+import { ChannelType, DiscordAPIError, Role, TextChannel, User, codeBlock } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import type { Decoder } from 'io-ts/Decoder'
@@ -17,13 +22,25 @@ import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import type { NotUsed } from '../../../shared/utils/fp'
-import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
+import {
+  Either,
+  Future,
+  List,
+  Maybe,
+  NonEmptyArray,
+  NotUsed,
+  toNotUsed,
+} from '../../../shared/utils/fp'
+import { futureEither } from '../../../shared/utils/futureEither'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
+import type { Config } from '../../config/Config'
+import type { MyInteraction } from '../../helpers/DiscordConnector'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
-import type { AutoroleMessageArgs } from '../../helpers/messages/AutoroleMessage'
 import { AutoroleMessage } from '../../helpers/messages/AutoroleMessage'
+import { DeleteMessageModal } from '../../helpers/modals/DeleteMessageModal'
+import type { EditMessageModalDefault } from '../../helpers/modals/EditMessageModal'
+import { EditMessageModal, EditMessageModalAutorole } from '../../helpers/modals/EditMessageModal'
 import { RoleId } from '../../models/RoleId'
 import type { Activity } from '../../models/botState/Activity'
 import { ActivityTypeBot } from '../../models/botState/ActivityTypeBot'
@@ -33,8 +50,10 @@ import type { Calls } from '../../models/guildState/Calls'
 import type { GuildState } from '../../models/guildState/GuildState'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { BotStateService } from '../../services/BotStateService'
+import type { EmojidexService } from '../../services/EmojidexService'
 import type { GuildStateService } from '../../services/GuildStateService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
+import { DebugError } from '../../utils/debugLeft'
 
 const Keys = {
   admin: 'admin',
@@ -61,10 +80,8 @@ const Keys = {
   unset: 'unset',
   say: 'say',
   what: 'what',
-
-  // Ids: {
-  //   modal: 'autoroleModal',
-  // },
+  editMessage: 'Edit (admin)',
+  deleteMessage: 'Delete (admin)',
 }
 
 const adminCommand = Command.chatInput({
@@ -121,26 +138,26 @@ const adminCommand = Command.chatInput({
       }),
       Command.option.string({
         name: Keys.descriptionMessage,
-        description: "Message d'autorole",
+        description: EditMessageModalAutorole.Labels.descriptionMessage,
         required: true,
       }),
       Command.option.string({
         name: Keys.addButton,
-        description: 'Bouton ajouter',
+        description: EditMessageModalAutorole.Labels.addButton,
         required: true,
       }),
       Command.option.string({
         name: Keys.removeButton,
-        description: 'Bouton enlever',
+        description: EditMessageModalAutorole.Labels.removeButton,
         required: true,
       }),
       Command.option.string({
         name: Keys.addButtonEmoji,
-        description: 'Émoji bouton ajouter',
+        description: EditMessageModalAutorole.Labels.addButtonEmoji,
       }),
       Command.option.string({
         name: Keys.removeButtonEmoji,
-        description: 'Émoji bouton enlever',
+        description: EditMessageModalAutorole.Labels.removeButtonEmoji,
       }),
     ),
   ),
@@ -256,7 +273,11 @@ const adminCommand = Command.chatInput({
   ),
 )
 
-export const adminCommands = [adminCommand]
+const messageEditCommand = Command.message({ name: Keys.editMessage })
+
+const messageDeleteCommand = Command.message({ name: Keys.deleteMessage })
+
+export const adminCommands = [adminCommand, messageEditCommand, messageDeleteCommand]
 
 type GroupWithSubcommand = {
   readonly subcommandGroup: Maybe<string>
@@ -266,8 +287,9 @@ type GroupWithSubcommand = {
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const AdminCommandsObserver = (
   Logger: LoggerGetter,
-  admins: NonEmptyArray<DiscordUserId>,
+  config: Config,
   discord: DiscordConnector,
+  emojidexService: EmojidexService,
   botStateService: BotStateService,
   guildStateService: GuildStateService,
 ) => {
@@ -278,6 +300,8 @@ export const AdminCommandsObserver = (
     'InteractionCreate',
   )(({ interaction }) => {
     if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
+    if (interaction.isMessageContextMenuCommand()) return onMessageContextMenu(interaction)
+    if (interaction.isModalSubmit()) return onModalSubmit(interaction)
     return Future.notUsed
   })
 
@@ -302,17 +326,16 @@ export const AdminCommandsObserver = (
   function validateAdminCommand(
     interaction: ChatInputCommandInteraction,
   ): Either<string, GroupWithSubcommand> {
-    const isAdmin = pipe(
-      admins,
-      List.elem(DiscordUserId.Eq)(DiscordUserId.fromUser(interaction.user)),
+    return pipe(
+      validateIsAdmin(interaction.user),
+      Either.chain(() => {
+        const subcommandGroup = Maybe.fromNullable(interaction.options.getSubcommandGroup(false))
+        const subcommand = interaction.options.getSubcommand(false)
+        if (subcommand === null) return Either.left('Erreur')
+
+        return Either.right({ subcommandGroup, subcommand })
+      }),
     )
-    if (!isAdmin) return Either.left('Haha ! Tu ne peux pas faire ça !')
-
-    const subcommandGroup = Maybe.fromNullable(interaction.options.getSubcommandGroup(false))
-    const subcommand = interaction.options.getSubcommand(false)
-    if (subcommand === null) return Either.left('Erreur')
-
-    return Either.right({ subcommandGroup, subcommand })
   }
 
   function onValidatedAdminCommand(
@@ -474,8 +497,7 @@ export const AdminCommandsObserver = (
         }),
       ),
       futureMaybe.chainTaskEitherK(a =>
-        sendAutoroleMessage(a.author, a.commandChannel, {
-          role: a.role,
+        sendAutoroleMessage(a.author, a.commandChannel, a.role, {
           descriptionMessage: a.descriptionMessage,
           addButton: a.addButton,
           removeButton: a.removeButton,
@@ -492,9 +514,11 @@ export const AdminCommandsObserver = (
   function sendAutoroleMessage(
     author: User,
     commandChannel: TextChannel,
-    args: AutoroleMessageArgs,
+    role: Role,
+    args: Omit<AutoroleMessage, 'roleId'>,
   ): Future<NotUsed> {
     const options = AutoroleMessage.of({
+      roleId: RoleId.fromRole(role),
       ...args,
       descriptionMessage: args.descriptionMessage.replaceAll('\\n', '\n'),
     })
@@ -510,7 +534,7 @@ export const AdminCommandsObserver = (
             ? pipe(
                 DiscordConnector.sendPrettyMessage(
                   author,
-                  `Impossible d'envoyer le message d'autorole **@${args.role.name}** dans le salon **#${commandChannel.name}**.`,
+                  `Impossible d'envoyer le message d'autorole **@${role.name}** dans le salon **#${commandChannel.name}**.`,
                 ),
                 Future.map(toNotUsed),
               )
@@ -700,7 +724,7 @@ export const AdminCommandsObserver = (
   function onActivitySet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return withFollowUp(interaction)(
       pipe(
-        ValidatedNea.sequenceS({
+        apply.sequenceS(ValidatedNea.getValidation<string>())({
           type: decode(ActivityTypeBot.decoder, interaction.options.getString(Keys.type)),
           name: decode(D.string, interaction.options.getString(Keys.name)),
         }),
@@ -728,36 +752,47 @@ export const AdminCommandsObserver = (
    */
 
   function onSay(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return withFollowUp(interaction)(
-      pipe(
-        apply.sequenceS(Either.Apply)({
-          message: pipe(
-            interaction.options.getString(Keys.what),
-            Either.fromNullable(Error(`Missing option "${Keys.what}" for command "say"`)),
-          ),
-          channel: pipe(
-            Maybe.fromNullable(interaction.channel),
-            Maybe.filter(ChannelUtils.isGuildSendable),
-            Either.fromOption(() => Error(`Invalid or missing channel for command "say"`)),
-          ),
-        }),
-        Future.fromEither,
-        Future.chain(({ message, channel }) =>
-          pipe(
-            DiscordConnector.sendMessage(channel, message),
-            Future.map(
-              Maybe.fold(
-                () =>
-                  pipe(
-                    // TODO: remove disable
-                    // eslint-disable-next-line @typescript-eslint/no-base-to-string
-                    logger.warn(`Couldn't say message in channel ${channel}`),
-                    IO.map(() => 'Error'),
-                  ),
-                () => IO.right('Done'),
+    return pipe(
+      apply.sequenceS(Either.Apply)({
+        content: pipe(
+          interaction.options.getString(Keys.what),
+          Either.fromNullable(Error(`Missing option "${Keys.what}" for command "say"`)),
+        ),
+        channel: pipe(
+          Maybe.fromNullable(interaction.channel),
+          Maybe.filter(ChannelUtils.isGuildSendable),
+          Either.fromOption(() => Error(`Invalid or missing channel for command "say"`)),
+        ),
+      }),
+      Future.fromEither,
+      Future.bind('message', ({ content, channel }) =>
+        DiscordConnector.sendMessage(channel, content.replaceAll('\\n', '\n')),
+      ),
+      Future.chain(({ message, channel }) =>
+        pipe(
+          message,
+          Maybe.fold(
+            () =>
+              pipe(
+                // TODO: remove disable
+                // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                logger.warn(`Couldn't say message in channel ${channel}`),
+                Future.fromIOEither,
+                Future.chain(() =>
+                  DiscordConnector.interactionReply(interaction, {
+                    content: 'Erreur',
+                    ephemeral: true,
+                  }),
+                ),
               ),
-            ),
-            Future.chain(Future.fromIOEither),
+            () =>
+              pipe(
+                DiscordConnector.interactionReply(interaction, {
+                  content: '...',
+                  ephemeral: false,
+                }),
+                Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
+              ),
           ),
         ),
       ),
@@ -765,12 +800,236 @@ export const AdminCommandsObserver = (
   }
 
   /**
+   * onMessageContextMenu
+   */
+
+  function onMessageContextMenu(
+    interaction: MessageContextMenuCommandInteraction,
+  ): Future<NotUsed> {
+    switch (interaction.commandName) {
+      case Keys.editMessage:
+        return onMessageContextMenuEditMessage(interaction)
+      case Keys.deleteMessage:
+        return onMessageContextMenuDeleteMessage(interaction)
+    }
+    return Future.notUsed
+  }
+
+  function onMessageContextMenuEditMessage(
+    interaction: MessageContextMenuCommandInteraction,
+  ): Future<NotUsed> {
+    return pipe(
+      validateIsAdmin(interaction.user),
+      Either.filterOrElse(
+        () =>
+          DiscordUserId.Eq.equals(
+            DiscordUserId.fromUser(interaction.targetMessage.author),
+            config.client.id,
+          ),
+        () => cannotEditOthersMessage,
+      ),
+      Either.fold(
+        content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
+        () =>
+          pipe(
+            EditMessageModal.fromMessage(logger)(interaction.targetMessage),
+            Future.fromIOEither,
+            Future.chain(modal => DiscordConnector.interactionShowModal(interaction, modal)),
+          ),
+      ),
+    )
+  }
+
+  function onMessageContextMenuDeleteMessage(
+    interaction: MessageContextMenuCommandInteraction,
+  ): Future<NotUsed> {
+    return pipe(
+      validateIsAdmin(interaction.user),
+      Either.fold(
+        content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
+        () =>
+          DiscordConnector.interactionShowModal(
+            interaction,
+            DeleteMessageModal.fromMessage(interaction.targetMessage),
+          ),
+      ),
+    )
+  }
+
+  /**
+   * onModalSubmit
+   */
+
+  function onModalSubmit(interaction: ModalSubmitInteraction): Future<NotUsed> {
+    return pipe(
+      Maybe.none,
+      Maybe.alt(() =>
+        pipe(
+          DeleteMessageModal.fromInteraction(interaction),
+          Maybe.map(onDeleteMessageModalSubmit(interaction)),
+        ),
+      ),
+      Maybe.alt(() =>
+        pipe(
+          EditMessageModal.fromInteraction(interaction),
+          Maybe.map(onEditMessageModalSubmit(interaction)),
+        ),
+      ),
+      Maybe.getOrElse(() => Future.notUsed),
+    )
+  }
+
+  function onDeleteMessageModalSubmit(
+    interaction: ModalSubmitInteraction,
+  ): (modal: DeleteMessageModal) => Future<NotUsed> {
+    return modal => {
+      const guild = interaction.guild
+      if (guild === null) return Future.notUsed
+      return withFollowUpIsAdminValidation(interaction)(
+        pipe(
+          DiscordConnector.fetchMessage(guild, modal.messageId),
+          Future.map(Either.fromOption(() => 'Erreur, message non trouvé')),
+          futureEither.chainTaskEitherK(message => DiscordConnector.messageDelete(message)),
+          futureEither.filterOrElse(
+            success => success,
+            () => 'Erreur',
+          ),
+          Future.map(
+            Either.fold(
+              error => error,
+              () => 'Message supprimé.',
+            ),
+          ),
+        ),
+      )
+    }
+  }
+
+  function onEditMessageModalSubmit(
+    interaction: ModalSubmitInteraction,
+  ): (modal: EditMessageModal) => Future<NotUsed> {
+    return modalRaw => {
+      const guild = interaction.guild
+      if (guild === null) return Future.notUsed
+      return withFollowUpIsAdminValidation(interaction)(
+        pipe(
+          futureEither.Do,
+          futureEither.apS(
+            'modal',
+            pipe(
+              EditMessageModal.validate(guild, emojidexService)(modalRaw),
+              Future.map(Either.mapLeft(List.mkString('\n'))),
+            ),
+          ),
+          futureEither.bind('message', ({ modal }) =>
+            pipe(
+              DiscordConnector.fetchMessage(guild, modal.messageId),
+              Future.map(Either.fromOption(() => 'Erreur, message non trouvé')),
+            ),
+          ),
+          futureEither.filterOrElse(
+            ({ message }) =>
+              DiscordUserId.Eq.equals(DiscordUserId.fromUser(message.author), config.client.id),
+            () => cannotEditOthersMessage,
+          ),
+          futureEither.bind('options', ({ modal, message }) =>
+            pipe(
+              modal,
+              EditMessageModal.fold({
+                onAutorole: onEditMessageModalAutoroleSubmit(message),
+                onDefault: onEditMessageModalDefaultSubmit(message),
+              }),
+            ),
+          ),
+          futureEither.chainTaskEitherK(({ message, options }) =>
+            DiscordConnector.messageEdit(message, options),
+          ),
+          Future.orElse(e =>
+            e instanceof DebugError &&
+            e.originalError instanceof DiscordAPIError &&
+            e.originalError.message.startsWith('Invalid Form Body')
+              ? Future.right(
+                  Either.left(`Erreur lors de l'envoi:\n${codeBlock(e.originalError.message)}`),
+                )
+              : Future.left(e),
+          ),
+          Future.map(
+            Either.fold(
+              e => e,
+              () => 'Message modifié',
+            ),
+          ),
+        ),
+      )
+    }
+  }
+
+  function onEditMessageModalAutoroleSubmit(
+    message: Message<true>,
+  ): (modal: EditMessageModalAutorole) => Future<Either<string, MessageEditOptions>> {
+    return ({ descriptionMessage, addButton, removeButton, addButtonEmoji, removeButtonEmoji }) =>
+      pipe(
+        AutoroleMessage.messageDecoder.decode(message),
+        Either.fold(
+          e =>
+            pipe(
+              logger.warn(`Inconsistent state: couldn't decode AutoroleMessage:\n${D.draw(e)}`),
+              Future.fromIOEither,
+              Future.map(() => Either.left('Erreur')),
+            ),
+          ({ roleId }) =>
+            Future.right(
+              Either.right(
+                AutoroleMessage.of({
+                  roleId,
+                  descriptionMessage,
+                  addButton,
+                  removeButton,
+                  addButtonEmoji,
+                  removeButtonEmoji,
+                }),
+              ),
+            ),
+        ),
+      )
+  }
+
+  function onEditMessageModalDefaultSubmit(
+    message: Message,
+  ): (modal: EditMessageModalDefault) => Future<Either<string, MessageEditOptions>> {
+    return ({ content }) => {
+      const options: Omit<Required<MessageEditOptions>, 'allowedMentions' | 'files'> = {
+        content,
+        attachments: pipe(
+          message.attachments.toJSON(),
+          List.map(({ attachment, name, description }) => ({
+            toJSON: (): AttachmentPayload => ({
+              attachment,
+              name: name ?? undefined,
+              description: description ?? undefined,
+            }),
+          })),
+          List.asMutable,
+        ),
+        flags: message.flags.toJSON(),
+        embeds: message.embeds,
+        components: message.components,
+      }
+      return Future.right(Either.right(options))
+    }
+  }
+
+  /**
    * Helpers
    */
 
-  function withFollowUp(
-    interaction: ChatInputCommandInteraction,
-  ): (f: Future<string>) => Future<NotUsed> {
+  function validateIsAdmin(user: User): Either<string, NotUsed> {
+    const isAdmin = pipe(config.admins, List.elem(DiscordUserId.Eq)(DiscordUserId.fromUser(user)))
+    if (!isAdmin) return Either.left('Haha ! Tu ne peux pas faire ça !')
+    return Either.right(NotUsed)
+  }
+
+  function withFollowUp(interaction: MyInteraction): (f: Future<string>) => Future<NotUsed> {
     return f =>
       pipe(
         DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
@@ -779,6 +1038,18 @@ export const AdminCommandsObserver = (
           DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
         ),
         Future.map(toNotUsed),
+      )
+  }
+
+  function withFollowUpIsAdminValidation(
+    interaction: MyInteraction,
+  ): (f: Future<string>) => Future<NotUsed> {
+    return f =>
+      withFollowUp(interaction)(
+        pipe(
+          validateIsAdmin(interaction.user),
+          Either.fold(Future.right, () => f),
+        ),
       )
   }
 
@@ -859,3 +1130,5 @@ const formatActivity = ({ type, name }: Activity): string => `\`${type} ${name}\
 
 const decode = <A>(decoder: Decoder<unknown, A>, u: unknown): ValidatedNea<string, A> =>
   pipe(decoder.decode(u), Either.mapLeft(flow(D.draw, NonEmptyArray.of)))
+
+const cannotEditOthersMessage = "Haha ! Je ne peux pas éditer un message que je n'ai pas écrit !"

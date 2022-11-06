@@ -114,7 +114,7 @@ const detail = (answers: NonEmptyArray<ChoiceWithResponses>): BaseMessageOptions
         color: constants.messagesColor,
       }),
     ),
-    NonEmptyArray.toMutable,
+    NonEmptyArray.asMutable,
   ),
 })
 

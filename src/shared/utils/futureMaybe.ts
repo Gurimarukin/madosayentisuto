@@ -8,7 +8,7 @@ import type { Refinement } from 'fp-ts/Refinement'
 import type { Lazy } from 'fp-ts/function'
 import { flow, identity, pipe } from 'fp-ts/function'
 
-import type { IO } from './fp'
+import type { IO, Try } from './fp'
 import { Future, Maybe } from './fp'
 
 const URI = 'TaskEitherOption' as const
@@ -51,6 +51,9 @@ const Functor: Functor1<URI> = {
 const ap = optionT.ap(Future.ApplyPar)
 
 const chain = optionT.chain(Future.Monad)
+
+const chainEitherK = <A, B>(f: (a: A) => Try<B>): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) =>
+  chainTaskEitherK(flow(f, Future.fromEither))
 
 const chainNullableK: <A, B>(
   f: (a: A) => B | null | undefined,
@@ -118,6 +121,7 @@ export const futureMaybe = {
   bind: fpTsChain.bind(Chain),
   bindTo: functor.bindTo(Functor),
   chain,
+  chainEitherK,
   chainNullableK,
   chainOptionK,
   chainTaskEitherK,

@@ -3,7 +3,7 @@ import { parseConfig } from '../../shared/utils/config/parseConfig'
 import type { Dict, Try } from '../../shared/utils/fp'
 import { URLFromString } from '../../shared/utils/ioTsUtils'
 
-const { seqS } = ValidatedNea
+const seqS = ValidatedNea.getSeqS<string>()
 
 export type Config = {
   readonly apiHost: URL

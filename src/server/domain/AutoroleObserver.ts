@@ -11,7 +11,7 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { AutoroleMessage } from '../helpers/messages/AutoroleMessage'
-import { RoleId } from '../models/RoleId'
+import type { RoleId } from '../models/RoleId'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { LogUtils } from '../utils/LogUtils'
@@ -29,11 +29,11 @@ export const AutoroleObserver = (Logger: LoggerGetter) => {
     if (!interaction.isButton()) return Future.notUsed
 
     return pipe(
-      AutoroleMessage.ButtonIds.add.decode(interaction.customId),
+      AutoroleMessage.Ids.Buttons.add.decode(interaction.customId),
       Either.map(onAutoroleAdd(interaction)),
       Either.orElse(() =>
         pipe(
-          AutoroleMessage.ButtonIds.remove.decode(interaction.customId),
+          AutoroleMessage.Ids.Buttons.remove.decode(interaction.customId),
           Either.map(onAutoroleRemove(interaction)),
         ),
       ),
@@ -41,7 +41,7 @@ export const AutoroleObserver = (Logger: LoggerGetter) => {
     )
   })
 
-  function onAutoroleAdd(interaction: ButtonInteraction): (roleId: string) => Future<NotUsed> {
+  function onAutoroleAdd(interaction: ButtonInteraction): (roleId: RoleId) => Future<NotUsed> {
     return withRoleAndMember(interaction, (role, member) =>
       DiscordConnector.hasRole(member, role)
         ? Future.right(false)
@@ -57,7 +57,7 @@ export const AutoroleObserver = (Logger: LoggerGetter) => {
     )
   }
 
-  function onAutoroleRemove(interaction: ButtonInteraction): (roleId: string) => Future<NotUsed> {
+  function onAutoroleRemove(interaction: ButtonInteraction): (roleId: RoleId) => Future<NotUsed> {
     return withRoleAndMember(interaction, (role, member) =>
       DiscordConnector.hasRole(member, role)
         ? pipe(
@@ -76,7 +76,7 @@ export const AutoroleObserver = (Logger: LoggerGetter) => {
 
 const withRoleAndMember =
   (interaction: ButtonInteraction, f: (role: Role, member: GuildMember) => Future<boolean>) =>
-  (roleId: string): Future<NotUsed> => {
+  (roleId: RoleId): Future<NotUsed> => {
     const guild = interaction.guild
     if (guild === null) return Future.notUsed
 
@@ -84,7 +84,7 @@ const withRoleAndMember =
       DiscordConnector.interactionUpdate(interaction),
       Future.chain(() =>
         apply.sequenceS(futureMaybe.ApplyPar)({
-          role: DiscordConnector.fetchRole(guild, RoleId.wrap(roleId)),
+          role: DiscordConnector.fetchRole(guild, roleId),
           member:
             interaction.member instanceof GuildMember
               ? futureMaybe.some(interaction.member)
@@ -96,7 +96,7 @@ const withRoleAndMember =
       futureMaybe.chainTaskEitherK(() =>
         DiscordConnector.messageEdit(
           interaction.message,
-          AutoroleMessage.fromMessage(interaction.message),
+          AutoroleMessage.optionsFromMessage(interaction.message),
         ),
       ),
       Future.map(toNotUsed),

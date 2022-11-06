@@ -47,9 +47,7 @@ export const WithAuth = (userService: UserService): WithAuth => ({
   upgrade: f => (request, socket, head) =>
     pipe(
       futureMaybe.fromNullable(request.headers.cookie),
-      futureMaybe.chainTaskEitherK(cookie =>
-        Future.fromEither(Try.tryCatch(() => parseCookie(cookie))),
-      ),
+      futureMaybe.chainEitherK(cookie => Try.tryCatch(() => parseCookie(cookie))),
       futureMaybe.chainOptionK(Dict.lookup(constants.account.cookie.name)),
       Future.chain(
         Maybe.fold(

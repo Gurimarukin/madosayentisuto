@@ -1,7 +1,7 @@
-import { identity, pipe } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 
 import { StringUtils } from '../shared/utils/StringUtils'
-import { Future } from '../shared/utils/fp'
+import { Future, NonEmptyArray } from '../shared/utils/fp'
 
 import type { Config } from './config/Config'
 import { Resources } from './config/Resources'
@@ -22,6 +22,7 @@ import { PollQuestionPersistence } from './persistence/PollQuestionPersistence'
 import { PollResponsePersistence } from './persistence/PollResponsePersistence'
 import { ScheduledEventPersistence } from './persistence/ScheduledEventPersistence'
 import { UserPersistence } from './persistence/UserPersistence'
+import { EmojidexService } from './services/EmojidexService'
 import { HealthCheckService } from './services/HealthCheckService'
 import { MigrationService } from './services/MigrationService'
 import { getOnError } from './utils/getOnError'
@@ -48,6 +49,7 @@ const of = (
   const scheduledEventPersistence = ScheduledEventPersistence(Logger, mongoCollection)
   const userPersistence = UserPersistence(Logger, mongoCollection)
 
+  const emojidexService = EmojidexService(Logger)
   const healthCheckService = HealthCheckService(healthCheckPersistence)
 
   const jwtHelper = JwtHelper(config.jwtSecret)
@@ -65,6 +67,7 @@ const of = (
     pollResponsePersistence,
     scheduledEventPersistence,
     userPersistence,
+    emojidexService,
     healthCheckService,
     jwtHelper,
     resourcesHelper,
@@ -108,7 +111,7 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
       Future.chain(() => waitDatabaseReady(healthCheckService)),
       Future.chain(() => migrationService.applyMigrations),
       Future.chain(() =>
-        Future.sequenceArray([
+        NonEmptyArray.sequence(Future.ApplicativeSeq)([
           guildStatePersistence.ensureIndexes,
           logPersistence.ensureIndexes,
           memberBirthdatePersistence.ensureIndexes,
@@ -139,7 +142,10 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
           ),
         ),
       ),
-      Future.filterOrElse(identity, () => Error("HealthCheck wasn't success")),
+      Future.filterOrElse(
+        success => success,
+        () => Error("HealthCheck wasn't success"),
+      ),
     )
   }
 }

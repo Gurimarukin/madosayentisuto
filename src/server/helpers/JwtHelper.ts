@@ -6,9 +6,7 @@ import jwt from 'jsonwebtoken'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { Token } from '../../shared/models/webUser/Token'
 import type { Tuple } from '../../shared/utils/fp'
-import { Either } from '../../shared/utils/fp'
-import { Dict, List } from '../../shared/utils/fp'
-import { Future, Maybe } from '../../shared/utils/fp'
+import { Dict, Either, Future, List, Maybe } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
 type MySignOptions = Omit<jwt.SignOptions, 'expiresIn' | 'notBefore'> & {
@@ -60,8 +58,8 @@ export const JwtHelper = (secret: string) => ({
         Future.chain(
           Future.fromOption(() => Error('undefined payload (this should never happen)')),
         ),
-        Future.chain(u =>
-          pipe(decoder.decode(u), Either.mapLeft(decodeError(decoderName)(u)), Future.fromEither),
+        Future.chainEitherK(u =>
+          pipe(decoder.decode(u), Either.mapLeft(decodeError(decoderName)(u))),
         ),
       ),
 })

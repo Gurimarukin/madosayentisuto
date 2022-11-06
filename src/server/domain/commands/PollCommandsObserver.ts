@@ -122,6 +122,7 @@ export const PollCommandsObserver = (
   })
 
   // onInteraction
+
   function onInteraction(interaction: Interaction): Future<NotUsed> {
     if (interaction.isChatInputCommand()) return onChatInputCommand(interaction)
     if (interaction.isButton()) return onButton(interaction)
@@ -130,6 +131,7 @@ export const PollCommandsObserver = (
   }
 
   // onChatInputCommand
+
   function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     switch (interaction.commandName) {
       case Keys.poll:
@@ -139,6 +141,7 @@ export const PollCommandsObserver = (
   }
 
   // onPollCommand
+
   function onPollCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     return pipe(
       DiscordConnector.interactionDeferReply(interaction, { ephemeral: false }),
@@ -207,6 +210,7 @@ export const PollCommandsObserver = (
   }
 
   // onButton
+
   function onButton(interaction: ButtonInteraction): Future<NotUsed> {
     return pipe(
       PollButton.codec.decode(interaction.customId),
@@ -492,7 +496,18 @@ export const PollCommandsObserver = (
   }
 
   // onMessageContextMenu
+
   function onMessageContextMenu(
+    interaction: MessageContextMenuCommandInteraction,
+  ): Future<NotUsed> {
+    switch (interaction.commandName) {
+      case Keys.deletePoll:
+        return onMessageContextMenuDeletePoll(interaction)
+    }
+    return Future.notUsed
+  }
+
+  function onMessageContextMenuDeletePoll(
     interaction: MessageContextMenuCommandInteraction,
   ): Future<NotUsed> {
     return pipe(
@@ -585,6 +600,7 @@ export const PollCommandsObserver = (
   }
 
   // onMessageDelete
+
   function onMessageDelete(messages: List<Message | PartialMessage>): Future<NotUsed> {
     return pipe(
       messages,

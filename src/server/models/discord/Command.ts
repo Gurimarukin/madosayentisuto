@@ -16,10 +16,9 @@ import type {
 import { ApplicationCommandOptionType, ApplicationCommandType } from 'discord.js'
 import type { nonEmptyArray } from 'fp-ts'
 
-import { List } from '../../../shared/utils/fp'
-import { NonEmptyArray } from '../../../shared/utils/fp'
+import { List, NonEmptyArray } from '../../../shared/utils/fp'
 
-export type Command<
+type Command<
   A extends RESTPostAPIApplicationCommandsJSONBody = RESTPostAPIApplicationCommandsJSONBody,
 > = {
   readonly isGlobal: boolean
@@ -31,6 +30,8 @@ type CommandCommon = {
   readonly description: string
   readonly isGlobal?: boolean // default: false
 }
+
+type CommandCommonMessage = Omit<CommandCommon, 'description'>
 
 type OptionCommon = {
   readonly name: string
@@ -57,7 +58,7 @@ const of = <A extends RESTPostAPIApplicationCommandsJSONBody>(
   value: A,
 ): Command<A> => ({ isGlobal, value })
 
-export const Command = {
+const Command = {
   chatInput:
     ({ isGlobal = false, ...common }: CommandCommon) =>
     (
@@ -72,10 +73,7 @@ export const Command = {
   message: ({
     isGlobal = false,
     ...common
-  }: Omit<
-    CommandCommon,
-    'description'
-  >): Command<RESTPostAPIContextMenuApplicationCommandsJSONBody> =>
+  }: CommandCommonMessage): Command<RESTPostAPIContextMenuApplicationCommandsJSONBody> =>
     of(isGlobal, {
       type: ApplicationCommandType.Message,
       ...common,
@@ -127,5 +125,7 @@ export const Command = {
   choice: <A extends ChoiceType>(name: string, value: A): Choice<A> => ({ name, value }),
 }
 
+export { Command }
+
 const toMutable = <A>(fa: List<A> | undefined): nonEmptyArray.NonEmptyArray<A> | undefined =>
-  fa === undefined ? undefined : List.isNonEmpty(fa) ? NonEmptyArray.toMutable(fa) : undefined
+  fa === undefined ? undefined : List.isNonEmpty(fa) ? NonEmptyArray.asMutable(fa) : undefined

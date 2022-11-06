@@ -156,7 +156,7 @@ export const ScheduledEventObserver = (
               str => logger.info(`Sending "It's friday" in channels: ${str}`),
             ),
           ),
-          Future.chain(Future.traverseArray(sendItsFridayMessage)),
+          Future.chain(List.traverse(Future.ApplicativePar)(sendItsFridayMessage)),
           Future.map(toNotUsed),
         )
       : Future.fromIOEither(

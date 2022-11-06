@@ -70,6 +70,7 @@ export const Application = (
     pollResponsePersistence,
     scheduledEventPersistence,
     userPersistence,
+    emojidexService,
     healthCheckService,
     jwtHelper,
     resourcesHelper,
@@ -142,14 +143,21 @@ export const Application = (
       // └ domain/
       // │  └ commands/
       sub(
-        AdminCommandsObserver(Logger, config.admins, discord, botStateService, guildStateService),
+        AdminCommandsObserver(
+          Logger,
+          config,
+          discord,
+          emojidexService,
+          botStateService,
+          guildStateService,
+        ),
       ),
       sub(MusicCommandsObserver(Logger, ytDlp, guildStateService)),
       sub(OtherCommandsObserver()),
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
       sub(RemindCommandsObserver(scheduledEventService)),
       // │  └ startup/
-      sub(DeployCommandsObserver(Logger, config.client, discord)),
+      sub(DeployCommandsObserver(Logger, config, discord)),
       // │
       sub(ActivityStatusObserver(botStateService)),
       sub(AutoroleObserver(Logger)),
