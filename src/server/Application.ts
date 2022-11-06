@@ -162,7 +162,7 @@ export const Application = (
       sub(ActivityStatusObserver(botStateService)),
       sub(AutoroleObserver(Logger)),
       sub(DisconnectVocalObserver(clientId, guildStateService)),
-      sub(ElevatorObserver(Logger, guildStateService)),
+      sub(ElevatorObserver(Logger, config.elevatorDelay, guildStateService)),
       sub(MusicThreadCleanObserver(Logger, clientId, guildStateService)),
       sub(NotifyBirthdayObserver(discord, guildStateService, memberBirthdateService)),
       sub(NotifyGuildLeaveObserver(Logger)),
