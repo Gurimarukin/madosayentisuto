@@ -1,5 +1,6 @@
 import type { Match, Parser } from 'fp-ts-routing'
-import { end, format, lit, str } from 'fp-ts-routing'
+import { end } from 'fp-ts-routing'
+import { format, lit, str } from 'fp-ts-routing'
 
 import type { DiscordUserId } from './models/DiscordUserId'
 import type { Method } from './models/Method'
@@ -90,7 +91,7 @@ export type ParserWithMethod<A> = WithMethod<Parser<A>>
 type RouteWithMethod = WithMethod<string>
 
 // Match with Method
-function m<A extends Record<string, unknown>>(match: Match<A>, method: Method): MatchWithMethod<A> {
+function m<A>(match: Match<A>, method: Method): MatchWithMethod<A> {
   return [match.then(end), method]
 }
 
