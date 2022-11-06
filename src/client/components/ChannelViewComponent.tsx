@@ -5,18 +5,29 @@ import type { GuildId } from '../../shared/models/guild/GuildId'
 
 import { DiscordUtils } from '../utils/DiscordUtils'
 
+type ChannelType = 'text' | 'audio'
+
 type Props = {
   readonly guild: GuildId
   readonly channel: ChannelView
+  readonly type?: ChannelType
 }
 
-export const ChannelViewComponent = ({ guild, channel }: Props): JSX.Element => (
+export const ChannelViewComponent = ({ guild, channel, type = 'text' }: Props): JSX.Element => (
   <a
     href={DiscordUtils.urls.guildChannel(guild, channel.id)}
     target="_blank"
     rel="noreferrer"
-    className="cursor-pointer"
+    className="cursor-pointer underline"
   >
-    #{channel.name}
+    {((): string => {
+      switch (type) {
+        case 'text':
+          return '#'
+        case 'audio':
+          return '📢'
+      }
+    })()}
+    {channel.name}
   </a>
 )

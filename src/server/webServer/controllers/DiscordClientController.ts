@@ -38,11 +38,9 @@ export const DiscordClientController = (
         pipe(
           apply.sequenceS(Future.ApplyPar)({
             members: DiscordConnector.fetchMembers(guild),
-            state: guildStateService.getState(guild),
+            state: pipe(guildStateService.getState(guild), Future.chainIOK(GuildState.toView)),
           }),
-          Future.map(({ members, state }) =>
-            GuildView.fromGuild(guild, GuildState.toView(state), members.toJSON()),
-          ),
+          Future.map(({ members, state }) => GuildView.fromGuild(guild, state, members.toJSON())),
           futureMaybe.fromTaskEither,
         ),
       ),

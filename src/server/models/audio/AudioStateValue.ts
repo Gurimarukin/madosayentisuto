@@ -2,12 +2,13 @@ import type { Message } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
+import { AudioStateValueView } from '../../../shared/models/audio/AudioStateValueView'
+import type { Track } from '../../../shared/models/audio/music/Track'
 import { createUnion } from '../../../shared/utils/createUnion'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import type { GuildSendableChannel } from '../../utils/ChannelUtils'
 import type { MyFile } from '../FileOrDir'
-import type { Track } from './music/Track'
 
 type AudioStateValue = typeof u.T
 
@@ -37,19 +38,30 @@ type FoldArgs<A, B> = {
   readonly onElevator: (value: AudioStateValueElevator) => B
 }
 
-const AudioStateValue = {
-  is: u.is,
-  fold:
-    <A, B = A>({ onMusic, onElevator }: FoldArgs<A, B>) =>
-    (value: AudioStateValue): A | B => {
-      switch (value.type) {
-        case 'Music':
-          return onMusic(value)
-        case 'Elevator':
-          return onElevator(value)
-      }
-    },
-}
+const fold =
+  <A, B = A>({ onMusic, onElevator }: FoldArgs<A, B>) =>
+  (value: AudioStateValue): A | B => {
+    switch (value.type) {
+      case 'Music':
+        return onMusic(value)
+      case 'Elevator':
+        return onElevator(value)
+    }
+  }
+
+const toView = fold<AudioStateValueView>({
+  onMusic: s => AudioStateValueView.music(s.isPaused, s.currentTrack, s.queue),
+  onElevator: s =>
+    AudioStateValueView.elevator(
+      pipe(
+        s.playlist,
+        NonEmptyArray.map(f => f.basename),
+        NonEmptyArray.rotate(1),
+      ),
+    ),
+})
+
+const AudioStateValue = { is: u.is, fold, toView }
 
 const musicIsPausedLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('isPaused'))
 const musicCurrentTrackLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('currentTrack'))

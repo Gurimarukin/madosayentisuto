@@ -4,6 +4,7 @@ import React from 'react'
 import type { GuildId } from '../../../shared/models/guild/GuildId'
 import { Maybe } from '../../../shared/utils/fp'
 
+import { AudioState } from '../../components/AudioState'
 import { ChannelViewComponent } from '../../components/ChannelViewComponent'
 import { RoleViewComponent } from '../../components/RoleViewComponent'
 import { cssClasses } from '../../utils/cssClasses'
@@ -15,7 +16,7 @@ type Props = {
 export const Guild = ({ guildId }: Props): JSX.Element => (
   <GuildLayout guildId={guildId} selected={undefined}>
     {guild => (
-      <div className="w-full py-4 px-8">
+      <div className="h-full w-full overflow-auto px-8 pt-4 pb-12">
         <ul className="flex list-disc flex-col gap-6">
           <Li label="calls" className="flex-col gap-0">
             {pipe(
@@ -33,25 +34,32 @@ export const Guild = ({ guildId }: Props): JSX.Element => (
               )),
             )}
           </Li>
-          <Li label="defaultRole">
+          <Li label="defaultRole" className="gap-4">
             {pipe(
               guild.state.defaultRole,
               // eslint-disable-next-line react/jsx-key
               Maybe.map(role => <RoleViewComponent role={role} />),
             )}
           </Li>
-          <Li label="itsFridayChannel">
+          <Li label="itsFridayChannel" className="gap-4">
             {pipe(
               guild.state.itsFridayChannel,
               // eslint-disable-next-line react/jsx-key
               Maybe.map(channel => <ChannelViewComponent guild={guildId} channel={channel} />),
             )}
           </Li>
-          <Li label="birthdayChannel">
+          <Li label="birthdayChannel" className="gap-4">
             {pipe(
               guild.state.birthdayChannel,
               // eslint-disable-next-line react/jsx-key
               Maybe.map(channel => <ChannelViewComponent guild={guildId} channel={channel} />),
+            )}
+          </Li>
+          <Li label="audioState" className="flex-col gap-2">
+            {pipe(
+              guild.state.audioState,
+              // eslint-disable-next-line react/jsx-key
+              Maybe.map(state => <AudioState guild={guildId} state={state} />),
             )}
           </Li>
         </ul>
@@ -86,7 +94,7 @@ type LiPreProps = {
 
 const LiPre: React.FC<LiPreProps> = ({ label, className, children }) => (
   <li>
-    <div className={cssClasses('flex gap-4', className)}>
+    <div className={cssClasses('flex', className)}>
       <pre className="text-sm">{label}</pre>
       {children}
     </div>

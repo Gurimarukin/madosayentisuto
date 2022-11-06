@@ -2,12 +2,12 @@ import { pipe } from 'fp-ts/function'
 
 import type { LoggerType } from '../../../../src/shared/models/LoggerType'
 import { MsDuration } from '../../../../src/shared/models/MsDuration'
+import { Track } from '../../../../src/shared/models/audio/music/Track'
 import { Either, IO, Maybe, NonEmptyArray } from '../../../../src/shared/utils/fp'
 
 import { Config } from '../../../../src/server/config/Config'
 import { MusicCommandsObserver } from '../../../../src/server/domain/commands/MusicCommandsObserver'
 import { YtDlp } from '../../../../src/server/helpers/YtDlp'
-import { Track } from '../../../../src/server/models/audio/music/Track'
 import type { GuildStateService } from '../../../../src/server/services/GuildStateService'
 
 describe('validateTracks', () => {

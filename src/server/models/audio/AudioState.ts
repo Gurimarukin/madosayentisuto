@@ -6,9 +6,11 @@ import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 import type { Lens } from 'monocle-ts/Lens'
 
+import { AudioStateView } from '../../../shared/models/audio/AudioStateView'
 import type { Maybe } from '../../../shared/utils/fp'
 
 import type { GuildAudioChannel } from '../../utils/ChannelUtils'
+import { ChannelUtils } from '../../utils/ChannelUtils'
 import type { AudioStateValueElevator, AudioStateValueMusic } from './AudioStateValue'
 import { AudioStateValue } from './AudioStateValue'
 
@@ -132,6 +134,14 @@ const fold =
     }
   }
 
+const toView = fold<AudioStateView>({
+  onDisconnected: () => AudioStateView.disconnected,
+  onConnecting: s =>
+    AudioStateView.connecting(ChannelUtils.toView(s.channel), AudioStateValue.toView(s.value)),
+  onConnected: s =>
+    AudioStateView.connected(ChannelUtils.toView(s.channel), AudioStateValue.toView(s.value)),
+})
+
 const AudioState = {
   disconnected,
   connecting,
@@ -145,6 +155,8 @@ const AudioState = {
   isMusicValue,
 
   fold,
+
+  toView,
 }
 
 type FoldValueArgs<F extends AudioStateConnectedURIS, A, B> = {
