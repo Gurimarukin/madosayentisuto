@@ -32,8 +32,8 @@ const empty = (id: GuildId): GuildState => ({
   subscription: Maybe.none,
 })
 
-const toView = (s: GuildState): io.IO<GuildStateView> => {
-  return pipe(
+const toView = (s: GuildState): io.IO<GuildStateView> =>
+  pipe(
     s.subscription,
     Maybe.fold(
       () => io.of(Maybe.none),
@@ -47,7 +47,6 @@ const toView = (s: GuildState): io.IO<GuildStateView> => {
       audioState: pipe(audioState, Maybe.map(AudioState.toView)),
     })),
   )
-}
 
 const Lens = {
   calls: pipe(lens.id<GuildState>(), lens.prop('calls')),

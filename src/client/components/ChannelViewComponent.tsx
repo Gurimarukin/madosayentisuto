@@ -10,7 +10,7 @@ type ChannelType = 'text' | 'audio'
 type Props = {
   readonly guild: GuildId
   readonly channel: ChannelView
-  type?: ChannelType
+  readonly type?: ChannelType
 }
 
 export const ChannelViewComponent = ({ guild, channel, type = 'text' }: Props): JSX.Element => (

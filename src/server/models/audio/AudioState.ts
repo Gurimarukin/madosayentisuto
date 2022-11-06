@@ -9,7 +9,8 @@ import type { Lens } from 'monocle-ts/Lens'
 import { AudioStateView } from '../../../shared/models/audio/AudioStateView'
 import type { Maybe } from '../../../shared/utils/fp'
 
-import { ChannelUtils, GuildAudioChannel } from '../../utils/ChannelUtils'
+import type { GuildAudioChannel } from '../../utils/ChannelUtils'
+import { ChannelUtils } from '../../utils/ChannelUtils'
 import type { AudioStateValueElevator, AudioStateValueMusic } from './AudioStateValue'
 import { AudioStateValue } from './AudioStateValue'
 

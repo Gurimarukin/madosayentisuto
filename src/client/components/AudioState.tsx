@@ -1,39 +1,37 @@
-import { pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/function'
 import React from 'react'
 
-import { AudioStateValueView } from '../../shared/models/audio/AudioStateValueView'
-import { AudioStateView } from '../../shared/models/audio/AudioStateView'
-import { Track } from '../../shared/models/audio/music/Track'
-import { GuildId } from '../../shared/models/guild/GuildId'
+import type { AudioStateValueView } from '../../shared/models/audio/AudioStateValueView'
+import type { AudioStateView } from '../../shared/models/audio/AudioStateView'
+import type { Track } from '../../shared/models/audio/music/Track'
+import type { GuildId } from '../../shared/models/guild/GuildId'
 import { Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
 import { cssClasses } from '../utils/cssClasses'
 import { ChannelViewComponent } from './ChannelViewComponent'
 
 type Props = {
-  guild: GuildId
-  state: AudioStateView
+  readonly guild: GuildId
+  readonly state: AudioStateView
 }
 
-export const AudioState = ({ guild, state }: Props): JSX.Element => {
-  return (
-    <ul className="flex list-disc flex-col ml-8 gap-2">
-      <Li label="state" className="items-center gap-3">
-        <span>{state.type}</span>
-        {state.type === 'Disconnected' ? null : (
-          <>
-            <span>-</span>
-            <ChannelViewComponent guild={guild} channel={state.channel} type="audio" />
-          </>
-        )}
-      </Li>
-      {state.type === 'Disconnected' ? null : <AudioStateValue value={state.value} />}
-    </ul>
-  )
-}
+export const AudioState = ({ guild, state }: Props): JSX.Element => (
+  <ul className="ml-8 flex list-disc flex-col gap-2">
+    <Li label="state" className="items-center gap-3">
+      <span>{state.type}</span>
+      {state.type === 'Disconnected' ? null : (
+        <>
+          <span>-</span>
+          <ChannelViewComponent guild={guild} channel={state.channel} type="audio" />
+        </>
+      )}
+    </Li>
+    {state.type === 'Disconnected' ? null : <AudioStateValue value={state.value} />}
+  </ul>
+)
 
 type AudioStateValueProps = {
-  value: AudioStateValueView
+  readonly value: AudioStateValueView
 }
 
 const AudioStateValue = ({ value }: AudioStateValueProps): JSX.Element => {
@@ -43,12 +41,8 @@ const AudioStateValue = ({ value }: AudioStateValueProps): JSX.Element => {
         <>
           <Li label="value" className="items-center gap-3">
             <span>{value.type}</span>
-            {value.type === 'Music' ? (
-              <>
-                <span>-</span>
-                <span>{value.isPaused ? '⏸️' : '▶️'}</span>
-              </>
-            ) : null}
+            <span>-</span>
+            <span>{value.isPaused ? '⏸️' : '▶️'}</span>
           </Li>
           <Li label="currentTrack" className="flex-col gap-3">
             {pipe(
@@ -61,8 +55,9 @@ const AudioStateValue = ({ value }: AudioStateValueProps): JSX.Element => {
           </Li>
           <Li label="queue" className="flex-col gap-3">
             <ul>
-              {value.queue.map(track => (
-                <li>
+              {value.queue.map((track, i) => (
+                // eslint-disable-next-line react/no-array-index-key
+                <li key={i}>
                   <TrackComp track={track} />
                 </li>
               ))}
@@ -78,10 +73,10 @@ const AudioStateValue = ({ value }: AudioStateValueProps): JSX.Element => {
             {value.type}
           </Li>
           <Li label="playlist" className="flex-col gap-2">
-            <ul className="list-disc ml-8">
+            <ul className="ml-8 list-disc">
               {pipe(value.playlist, NonEmptyArray.unprepend, ([head, tail]) => (
                 <>
-                  <li className="flex items-center gap-2 ml-[-1rem]">
+                  <li className="ml-[-1rem] flex items-center gap-2">
                     <span>▶️</span>
                     <span className="font-bold">{head}</span>
                   </li>
@@ -98,8 +93,8 @@ const AudioStateValue = ({ value }: AudioStateValueProps): JSX.Element => {
 }
 
 type LiProps = {
-  label: string
-  className?: string
+  readonly label: string
+  readonly className?: string
 }
 
 const Li: React.FC<LiProps> = ({ label, className, children }) => (
@@ -112,7 +107,7 @@ const Li: React.FC<LiProps> = ({ label, className, children }) => (
 )
 
 type TrackProps = {
-  track: Track
+  readonly track: Track
 }
 
 const TrackComp = ({ track }: TrackProps): JSX.Element => (
@@ -120,7 +115,7 @@ const TrackComp = ({ track }: TrackProps): JSX.Element => (
     href={track.url}
     target="_blank"
     rel="noreferrer"
-    className="flex items-center gap-4 w-[calc(100%_+_6rem)] pl-16 ml-[-4rem] py-3 hover:bg-gray2"
+    className="ml-[-4rem] flex w-[calc(100%_+_6rem)] items-center gap-4 py-3 pl-16 hover:bg-gray2"
   >
     {pipe(
       track.thumbnail,

@@ -16,7 +16,7 @@ type Props = {
 export const Guild = ({ guildId }: Props): JSX.Element => (
   <GuildLayout guildId={guildId} selected={undefined}>
     {guild => (
-      <div className="w-full h-full pt-4 px-8 pb-12 overflow-auto">
+      <div className="h-full w-full overflow-auto px-8 pt-4 pb-12">
         <ul className="flex list-disc flex-col gap-6">
           <Li label="calls" className="flex-col gap-0">
             {pipe(
@@ -58,6 +58,7 @@ export const Guild = ({ guildId }: Props): JSX.Element => (
           <Li label="audioState" className="flex-col gap-2">
             {pipe(
               guild.state.audioState,
+              // eslint-disable-next-line react/jsx-key
               Maybe.map(state => <AudioState guild={guildId} state={state} />),
             )}
           </Li>
