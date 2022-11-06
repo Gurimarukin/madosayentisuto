@@ -11,7 +11,7 @@ import type {
   MessageEditOptions,
   ModalSubmitInteraction,
 } from 'discord.js'
-import { ChannelType, DiscordAPIError, Role, TextChannel, User } from 'discord.js'
+import { ChannelType, DiscordAPIError, Role, TextChannel, User, codeBlock } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import type { Decoder } from 'io-ts/Decoder'
@@ -852,20 +852,31 @@ export const AdminCommandsObserver = (
   function onEditMessageModalSubmit(
     interaction: ModalSubmitInteraction,
   ): (modal: EditMessageModal) => Future<NotUsed> {
-    return modal => {
+    return modalRaw => {
       const guild = interaction.guild
       if (guild === null) return Future.notUsed
       return withFollowUpIsAdminValidation(interaction)(
         pipe(
-          DiscordConnector.fetchMessage(guild, modal.messageId),
-          Future.map(Either.fromOption(() => 'Erreur, message non trouvé')),
+          futureEither.Do,
+          futureEither.apS(
+            'modal',
+            pipe(
+              EditMessageModal.validate(guild)(modalRaw),
+              Either.foldW(flow(List.mkString('\n'), futureEither.left), futureEither.right),
+            ),
+          ),
+          futureEither.bind('message', ({ modal }) =>
+            pipe(
+              DiscordConnector.fetchMessage(guild, modal.messageId),
+              Future.map(Either.fromOption(() => 'Erreur, message non trouvé')),
+            ),
+          ),
           futureEither.filterOrElse(
-            message =>
+            ({ message }) =>
               DiscordUserId.Eq.equals(DiscordUserId.fromUser(message.author), config.client.id),
             () => cannotEditOthersMessage,
           ),
-          futureEither.bindTo('message'),
-          futureEither.bind('options', ({ message }) =>
+          futureEither.bind('options', ({ modal, message }) =>
             pipe(
               modal,
               EditMessageModal.fold({
@@ -882,14 +893,7 @@ export const AdminCommandsObserver = (
             e.originalError instanceof DiscordAPIError &&
             e.originalError.message.startsWith('Invalid Form Body')
               ? Future.right(
-                  Either.left(
-                    StringUtils.stripMargins(
-                      `Erreur lors de l'envoi:
-                      |\`\`\`
-                      |${e.originalError.message}
-                      |\`\`\``,
-                    ),
-                  ),
+                  Either.left(`Erreur lors de l'envoi:\n${codeBlock(e.originalError.message)}`),
                 )
               : Future.left(e),
           ),
@@ -905,7 +909,7 @@ export const AdminCommandsObserver = (
   }
 
   function onEditMessageModalAutoroleSubmit(
-    message: Message,
+    message: Message<true>,
   ): (modal: EditMessageModalAutorole) => Future<Either<string, MessageEditOptions>> {
     return ({ descriptionMessage, addButton, removeButton, addButtonEmoji, removeButtonEmoji }) =>
       pipe(

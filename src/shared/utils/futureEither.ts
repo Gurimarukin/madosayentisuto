@@ -1,4 +1,4 @@
-import { eitherT, chain as fpTsChain, functor } from 'fp-ts'
+import { apply, eitherT, chain as fpTsChain, functor } from 'fp-ts'
 import type { Apply2 } from 'fp-ts/Apply'
 import type { Chain2 } from 'fp-ts/Chain'
 import type { Functor2 } from 'fp-ts/Functor'
@@ -18,9 +18,21 @@ declare module 'fp-ts/HKT' {
   }
 }
 
+const right: <A, E = never>(a: A) => Future<Either<E, A>> = eitherT.right(Future.Pointed)
+const left: <E, A = never>(e: E) => Future<Either<E, A>> = eitherT.left(Future.Pointed)
+
 const apPar_: Apply2<URI>['ap'] = (fab, fa) => pipe(fab, ap(fa))
 const chain_: Chain2<URI>['chain'] = (ma, f) => pipe(ma, chain(f))
 const map_: Functor2<URI>['map'] = (fa, f) => pipe(fa, map(f))
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+const Do: Future<Either<never, {}>> = right({})
+
+const ApplyPar: Apply2<URI> = {
+  URI,
+  map: map_,
+  ap: apPar_,
+}
 
 const Chain: Chain2<URI> = {
   URI,
@@ -65,11 +77,15 @@ const filterOrElse = flow(Either.filterOrElse, Future.map) as FilterOrElse
 const map = eitherT.map(Future.Functor)
 
 export const futureEither = {
+  Do,
   ap,
+  apS: apply.apS(ApplyPar),
   bind: fpTsChain.bind(Chain),
   bindTo: functor.bindTo(Functor),
   chain,
   chainTaskEitherK,
   filterOrElse,
+  left,
   map,
+  right,
 }

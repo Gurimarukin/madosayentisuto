@@ -1,4 +1,4 @@
-import type { Message, ModalSubmitInteraction } from 'discord.js'
+import type { Guild, Message, ModalSubmitInteraction } from 'discord.js'
 import { TextInputStyle } from 'discord.js'
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
@@ -6,6 +6,7 @@ import * as C from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
 
 import type { LoggerType } from '../../../shared/models/LoggerType'
+import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { createUnion } from '../../../shared/utils/createUnion'
 import type { Dict } from '../../../shared/utils/fp'
 import { Either, IO, Maybe } from '../../../shared/utils/fp'
@@ -14,6 +15,7 @@ import { MessageId } from '../../models/MessageId'
 import { Modal } from '../../models/discord/Modal'
 import { InteractionUtils } from '../../utils/InteractionUtils'
 import { CustomId } from '../../utils/ioTsUtils'
+import { GuildHelper } from '../GuildHelper'
 import { AutoroleMessage } from '../messages/AutoroleMessage'
 
 type EditMessageModal = typeof u.T
@@ -116,6 +118,37 @@ const EditMessageModalAutorole = {
       Maybe.map(u.Autorole),
     )
   },
+
+  validate:
+    (guild: Guild) =>
+    (m: EditMessageModalAutorole): ValidatedNea<string, EditMessageModalAutorole> => {
+      const getEmoji = GuildHelper.getEmoji(guild)
+
+      const validateEmoji = (
+        key: string,
+      ): ((emojiRaw: Maybe<string>) => ValidatedNea<string, Maybe<string>>) =>
+        Maybe.foldW(
+          () => ValidatedNea.valid(Maybe.none),
+          emojiRaw =>
+            pipe(
+              getEmoji(emojiRaw),
+              Maybe.map(e => Maybe.some(`${e}`)),
+              ValidatedNea.fromOption(() => `${key} : emoji inconnu : \`${emojiRaw}\``),
+            ),
+        )
+
+      return pipe(
+        ValidatedNea.getSeqS<string>()<AutoroleArgs>({
+          messageId: ValidatedNea.valid(m.messageId),
+          descriptionMessage: ValidatedNea.valid(m.descriptionMessage),
+          addButton: ValidatedNea.valid(m.addButton),
+          removeButton: ValidatedNea.valid(m.removeButton),
+          addButtonEmoji: validateEmoji(autoroleLabels.addButtonEmoji)(m.addButtonEmoji),
+          removeButtonEmoji: validateEmoji(autoroleLabels.removeButtonEmoji)(m.removeButtonEmoji),
+        }),
+        Either.map(u.Autorole),
+      )
+    },
 }
 
 /**
@@ -218,6 +251,12 @@ const EditMessageModal = {
       EditMessageModalAutorole.fromInteraction(interaction),
       Maybe.altW(() => EditMessageModalDefault.fromInteraction(interaction)),
     ),
+
+  validate: (guild: Guild): ((modal: EditMessageModal) => ValidatedNea<string, EditMessageModal>) =>
+    fold({
+      onAutorole: EditMessageModalAutorole.validate(guild),
+      onDefault: ValidatedNea.valid,
+    }),
 }
 
 export { EditMessageModal, EditMessageModalAutorole, EditMessageModalDefault }

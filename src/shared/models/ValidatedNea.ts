@@ -42,7 +42,7 @@ type ToValidatedDict<E, A extends Dict<string, unknown>> = {
 
 type SeqS<E> = <A extends Dict<string, unknown>>(a: ToValidatedDict<E, A>) => ValidatedNea<E, A>
 
-const getSeqS = <A = never>(): SeqS<A> => apply.sequenceS(getValidation<A>()) as SeqS<A>
+const getSeqS = <E = never>(): SeqS<E> => apply.sequenceS(getValidation<E>()) as SeqS<E>
 
 const ValidatedNea = {
   valid,
