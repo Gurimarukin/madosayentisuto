@@ -768,7 +768,7 @@ export const AdminCommandsObserver = (
         Future.fromEither,
         Future.chain(({ message, channel }) =>
           pipe(
-            DiscordConnector.sendMessage(channel, message),
+            DiscordConnector.sendMessage(channel, message.replaceAll('\\n', '\n')),
             Future.map(
               Maybe.fold(
                 () =>
