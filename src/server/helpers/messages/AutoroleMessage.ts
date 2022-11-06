@@ -1,4 +1,5 @@
 import type {
+  APIMessageComponentEmoji,
   ActionRow,
   BaseMessageOptions,
   ButtonComponent,
@@ -69,18 +70,25 @@ const optionsFromMessage = (message: Message): BaseMessageOptions => ({
  * messageDecoder
  */
 
-const maybeEmojiDecoder = pipe(
-  Maybe.decoder(
-    D.fromPartial({
-      id: D.id<string>(),
-      animated: D.id<boolean>(),
-    }),
-  ),
-  D.map(
-    Maybe.chain(e =>
-      e.id === undefined ? Maybe.none : Maybe.some(`<${e.animated === true ? 'a' : ''}:_:${e.id}>`),
-    ),
-  ),
+const emojiDecoder: Decoder<APIMessageComponentEmoji, string> = pipe(
+  // all attributes of APIMessageComponentEmoji are partial
+  D.fromPartial({
+    id: D.id<string>(),
+    name: D.id<string>(),
+    animated: D.id<boolean>(),
+  }),
+  D.parse(e => {
+    if (e.id === undefined) {
+      // it's an UTF-8 emoji
+      return e.name === undefined
+        ? D.failure(e, "UTF-8 emoji (defined attribute 'name')")
+        : D.success(e.name)
+    }
+    // it's a guild emoji
+    const animated: string = e.animated === true ? 'a' : ''
+    const name: string = e.name === undefined ? '_' : e.name
+    return D.success(`<${animated}:${name}:${e.id}>`)
+  }),
 )
 
 type RawButton = {
@@ -101,7 +109,7 @@ const buttonFromComponentDecoder = (
       D.fromStruct({
         customId /* : string | null */: pipe(D.string, D.compose(customIdDecoder)),
         label /* : string | null */: D.string,
-        emoji /* : APIMessageComponentEmoji | null */: maybeEmojiDecoder,
+        emoji /* : APIMessageComponentEmoji | null */: Maybe.decoder(emojiDecoder),
       }),
     ),
   )
