@@ -112,12 +112,8 @@ export const FpCollection =
           collection.future(c => c.findOne(filter, options)),
           Future.chainFirstIOEitherK(res => logger.trace('Found one', JSON.stringify(res))),
           Future.map(Maybe.fromNullable),
-          futureMaybe.chain(u =>
-            pipe(
-              codec.decode(u),
-              Either.bimap(decodeError(codecName)(u), Maybe.some),
-              Future.fromEither,
-            ),
+          futureMaybe.chainEitherK(u =>
+            pipe(codec.decode(u), Either.mapLeft(decodeError(codecName)(u))),
           ),
         ),
 

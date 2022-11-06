@@ -1,7 +1,7 @@
 import type { Guild, Message, ModalSubmitInteraction } from 'discord.js'
 import { TextInputStyle } from 'discord.js'
 import { apply } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 import * as D from 'io-ts/Decoder'
 
@@ -9,10 +9,12 @@ import type { LoggerType } from '../../../shared/models/LoggerType'
 import { ValidatedNea } from '../../../shared/models/ValidatedNea'
 import { createUnion } from '../../../shared/utils/createUnion'
 import type { Dict } from '../../../shared/utils/fp'
-import { Either, IO, Maybe } from '../../../shared/utils/fp'
+import { Either, Future, IO, Maybe } from '../../../shared/utils/fp'
+import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { MessageId } from '../../models/MessageId'
 import { Modal } from '../../models/discord/Modal'
+import type { EmojidexService } from '../../services/EmojidexService'
 import { InteractionUtils } from '../../utils/InteractionUtils'
 import { CustomId } from '../../utils/ioTsUtils'
 import { GuildHelper } from '../GuildHelper'
@@ -120,33 +122,44 @@ const EditMessageModalAutorole = {
   },
 
   validate:
-    (guild: Guild) =>
-    (m: EditMessageModalAutorole): ValidatedNea<string, EditMessageModalAutorole> => {
+    (guild: Guild, emojidexService: EmojidexService) =>
+    (m: EditMessageModalAutorole): Future<ValidatedNea<string, EditMessageModalAutorole>> => {
       const getEmoji = GuildHelper.getEmoji(guild)
 
       const validateEmoji = (
         key: string,
-      ): ((emojiRaw: Maybe<string>) => ValidatedNea<string, Maybe<string>>) =>
+      ): ((emojiRaw: Maybe<string>) => Future<ValidatedNea<string, Maybe<string>>>) =>
         Maybe.foldW(
-          () => ValidatedNea.valid(Maybe.none),
+          () => Future.right(ValidatedNea.valid(Maybe.none)),
           emojiRaw =>
             pipe(
               getEmoji(emojiRaw),
-              Maybe.map(e => Maybe.some(`${e}`)),
-              ValidatedNea.fromOption(() => `${key} : emoji inconnu : \`${emojiRaw}\``),
+              Maybe.map(String),
+              futureMaybe.fromOption,
+              futureMaybe.alt(() => emojidexService.getEmoji(emojiRaw)),
+              futureMaybe.map(Maybe.some),
+              Future.map(ValidatedNea.fromOption(() => `emoji inconnu : \`${emojiRaw}\` (${key})`)),
             ),
         )
 
       return pipe(
-        ValidatedNea.getSeqS<string>()<AutoroleArgs>({
-          messageId: ValidatedNea.valid(m.messageId),
-          descriptionMessage: ValidatedNea.valid(m.descriptionMessage),
-          addButton: ValidatedNea.valid(m.addButton),
-          removeButton: ValidatedNea.valid(m.removeButton),
+        apply.sequenceS(Future.ApplyPar)({
           addButtonEmoji: validateEmoji(autoroleLabels.addButtonEmoji)(m.addButtonEmoji),
           removeButtonEmoji: validateEmoji(autoroleLabels.removeButtonEmoji)(m.removeButtonEmoji),
         }),
-        Either.map(u.Autorole),
+        Future.map(({ addButtonEmoji, removeButtonEmoji }) =>
+          pipe(
+            ValidatedNea.getSeqS<string>()<AutoroleArgs>({
+              messageId: ValidatedNea.valid(m.messageId),
+              descriptionMessage: ValidatedNea.valid(m.descriptionMessage),
+              addButton: ValidatedNea.valid(m.addButton),
+              removeButton: ValidatedNea.valid(m.removeButton),
+              addButtonEmoji,
+              removeButtonEmoji,
+            }),
+            Either.map(u.Autorole),
+          ),
+        ),
       )
     },
 }
@@ -252,10 +265,13 @@ const EditMessageModal = {
       Maybe.altW(() => EditMessageModalDefault.fromInteraction(interaction)),
     ),
 
-  validate: (guild: Guild): ((modal: EditMessageModal) => ValidatedNea<string, EditMessageModal>) =>
+  validate: (
+    guild: Guild,
+    emojidexService: EmojidexService,
+  ): ((modal: EditMessageModal) => Future<ValidatedNea<string, EditMessageModal>>) =>
     fold({
-      onAutorole: EditMessageModalAutorole.validate(guild),
-      onDefault: ValidatedNea.valid,
+      onAutorole: EditMessageModalAutorole.validate(guild, emojidexService),
+      onDefault: flow(ValidatedNea.valid, Future.right),
     }),
 }
 

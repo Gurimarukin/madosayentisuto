@@ -70,6 +70,7 @@ export const Application = (
     pollResponsePersistence,
     scheduledEventPersistence,
     userPersistence,
+    emojidexService,
     healthCheckService,
     jwtHelper,
     resourcesHelper,
@@ -141,7 +142,16 @@ export const Application = (
     apply.sequenceT(IO.ApplyPar)(
       // └ domain/
       // │  └ commands/
-      sub(AdminCommandsObserver(Logger, config, discord, botStateService, guildStateService)),
+      sub(
+        AdminCommandsObserver(
+          Logger,
+          config,
+          discord,
+          emojidexService,
+          botStateService,
+          guildStateService,
+        ),
+      ),
       sub(MusicCommandsObserver(Logger, ytDlp, guildStateService)),
       sub(OtherCommandsObserver()),
       sub(PollCommandsObserver(Logger, config, discord, pollService)),

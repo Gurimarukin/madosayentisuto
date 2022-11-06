@@ -636,11 +636,10 @@ const restPut =
   <A>([decoder, decoderName]: Tuple<Decoder<unknown, A>, string>): Future<NonEmptyArray<A>> =>
     pipe(
       Future.tryCatch(() => rest.put(fullRoute, options)),
-      Future.chain(u =>
+      Future.chainEitherK(u =>
         pipe(
           NonEmptyArray.decoder(decoder).decode(u),
           Either.mapLeft(decodeError(`NonEmptyArray<${decoderName}>`)(u)),
-          Future.fromEither,
         ),
       ),
     )

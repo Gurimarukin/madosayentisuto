@@ -22,6 +22,7 @@ import { PollQuestionPersistence } from './persistence/PollQuestionPersistence'
 import { PollResponsePersistence } from './persistence/PollResponsePersistence'
 import { ScheduledEventPersistence } from './persistence/ScheduledEventPersistence'
 import { UserPersistence } from './persistence/UserPersistence'
+import { EmojidexService } from './services/EmojidexService'
 import { HealthCheckService } from './services/HealthCheckService'
 import { MigrationService } from './services/MigrationService'
 import { getOnError } from './utils/getOnError'
@@ -48,6 +49,7 @@ const of = (
   const scheduledEventPersistence = ScheduledEventPersistence(Logger, mongoCollection)
   const userPersistence = UserPersistence(Logger, mongoCollection)
 
+  const emojidexService = EmojidexService(Logger)
   const healthCheckService = HealthCheckService(healthCheckPersistence)
 
   const jwtHelper = JwtHelper(config.jwtSecret)
@@ -65,6 +67,7 @@ const of = (
     pollResponsePersistence,
     scheduledEventPersistence,
     userPersistence,
+    emojidexService,
     healthCheckService,
     jwtHelper,
     resourcesHelper,

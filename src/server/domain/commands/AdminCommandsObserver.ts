@@ -50,6 +50,7 @@ import type { Calls } from '../../models/guildState/Calls'
 import type { GuildState } from '../../models/guildState/GuildState'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { BotStateService } from '../../services/BotStateService'
+import type { EmojidexService } from '../../services/EmojidexService'
 import type { GuildStateService } from '../../services/GuildStateService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { DebugError } from '../../utils/debugLeft'
@@ -288,6 +289,7 @@ export const AdminCommandsObserver = (
   Logger: LoggerGetter,
   config: Config,
   discord: DiscordConnector,
+  emojidexService: EmojidexService,
   botStateService: BotStateService,
   guildStateService: GuildStateService,
 ) => {
@@ -861,8 +863,8 @@ export const AdminCommandsObserver = (
           futureEither.apS(
             'modal',
             pipe(
-              EditMessageModal.validate(guild)(modalRaw),
-              Either.foldW(flow(List.mkString('\n'), futureEither.left), futureEither.right),
+              EditMessageModal.validate(guild, emojidexService)(modalRaw),
+              Future.map(Either.mapLeft(List.mkString('\n'))),
             ),
           ),
           futureEither.bind('message', ({ modal }) =>
