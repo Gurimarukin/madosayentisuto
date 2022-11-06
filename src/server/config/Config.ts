@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import { MsDuration } from '../../shared/models/MsDuration'
 import { ValidatedNea } from '../../shared/models/ValidatedNea'
 import { LogLevelOrOff } from '../../shared/models/log/LogLevel'
 import { loadDotEnv } from '../../shared/utils/config/loadDotEnv'
@@ -24,6 +25,7 @@ export type Config = {
   readonly isDev: boolean
   readonly ytDlpPath: string
   readonly jwtSecret: string
+  readonly elevatorDelay: MsDuration
   readonly client: ClientConfig
   readonly admins: NonEmptyArray<DiscordUserId>
   readonly logger: LoggerConfig
@@ -73,6 +75,7 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
       ),
       ytDlpPath: r(D.string)('YTDLP_PATH'),
       jwtSecret: r(D.string)('JWT_SECRET'),
+      elevatorDelay: r(MsDuration.decoder)('ELEVATOR_DELAY'),
       client: seqS<ClientConfig>({
         id: r(DiscordUserId.codec)('CLIENT_ID'),
         secret: r(D.string)('CLIENT_SECRET'),

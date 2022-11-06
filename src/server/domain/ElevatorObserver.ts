@@ -1,11 +1,11 @@
 import { io } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
+import type { MsDuration } from '../../shared/models/MsDuration'
 import { Store } from '../../shared/models/Store'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { Future, IO, List, Maybe, NotUsed, toNotUsed } from '../../shared/utils/fp'
 
-import { constants } from '../config/constants'
 import { GuildHelper } from '../helpers/GuildHelper'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
@@ -14,7 +14,11 @@ import type { GuildAudioChannel } from '../utils/ChannelUtils'
 import { getOnError } from '../utils/getOnError'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const ElevatorObserver = (Logger: LoggerGetter, guildStateService: GuildStateService) => {
+export const ElevatorObserver = (
+  Logger: LoggerGetter,
+  elevatorDelay: MsDuration,
+  guildStateService: GuildStateService,
+) => {
   const logger = Logger('ElevatorObserver')
 
   const timeoutId = Store<Maybe<NodeJS.Timeout>>(Maybe.none)
@@ -51,7 +55,7 @@ export const ElevatorObserver = (Logger: LoggerGetter, guildStateService: GuildS
     return pipe(
       playElevator(channel),
       IO.fromIO,
-      IO.setTimeout(getOnError(logger))(constants.elevator.delay),
+      IO.setTimeout(getOnError(logger))(elevatorDelay),
       IO.chainIOK(flow(Maybe.some, timeoutId.set)),
       Future.fromIOEither,
       Future.map(toNotUsed),

@@ -1,14 +1,27 @@
 import { option, predicate } from 'fp-ts'
 import type { Option } from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
+import * as D from 'io-ts/Decoder'
 import type { StringValue } from 'ms'
 import vercelMs from 'ms'
 import type { Newtype } from 'newtype-ts'
 import { iso } from 'newtype-ts'
 
+import { Either } from '../utils/fp'
+
 export type MsDuration = Newtype<{ readonly MsDuration: unique symbol }, number>
 
 const { wrap, unwrap } = iso<MsDuration>()
+
+const decoder = pipe(
+  D.string,
+  D.parse(str =>
+    pipe(
+      fromString(str),
+      Either.fromOption(() => D.error(str, 'MsDuration')),
+    ),
+  ),
+)
 
 const fromString = (str: string): Option<MsDuration> =>
   pipe(
@@ -32,6 +45,7 @@ const add =
 export const MsDuration = {
   wrap,
   unwrap,
+  decoder,
   fromString,
   seconds,
   second: seconds,
