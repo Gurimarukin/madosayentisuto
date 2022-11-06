@@ -25,7 +25,6 @@ import { StringUtils } from '../../../shared/utils/StringUtils'
 import {
   Either,
   Future,
-  IO,
   List,
   Maybe,
   NonEmptyArray,
@@ -752,36 +751,47 @@ export const AdminCommandsObserver = (
    */
 
   function onSay(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return withFollowUp(interaction)(
-      pipe(
-        apply.sequenceS(Either.Apply)({
-          message: pipe(
-            interaction.options.getString(Keys.what),
-            Either.fromNullable(Error(`Missing option "${Keys.what}" for command "say"`)),
-          ),
-          channel: pipe(
-            Maybe.fromNullable(interaction.channel),
-            Maybe.filter(ChannelUtils.isGuildSendable),
-            Either.fromOption(() => Error(`Invalid or missing channel for command "say"`)),
-          ),
-        }),
-        Future.fromEither,
-        Future.chain(({ message, channel }) =>
-          pipe(
-            DiscordConnector.sendMessage(channel, message.replaceAll('\\n', '\n')),
-            Future.map(
-              Maybe.fold(
-                () =>
-                  pipe(
-                    // TODO: remove disable
-                    // eslint-disable-next-line @typescript-eslint/no-base-to-string
-                    logger.warn(`Couldn't say message in channel ${channel}`),
-                    IO.map(() => 'Error'),
-                  ),
-                () => IO.right('Done'),
+    return pipe(
+      apply.sequenceS(Either.Apply)({
+        content: pipe(
+          interaction.options.getString(Keys.what),
+          Either.fromNullable(Error(`Missing option "${Keys.what}" for command "say"`)),
+        ),
+        channel: pipe(
+          Maybe.fromNullable(interaction.channel),
+          Maybe.filter(ChannelUtils.isGuildSendable),
+          Either.fromOption(() => Error(`Invalid or missing channel for command "say"`)),
+        ),
+      }),
+      Future.fromEither,
+      Future.bind('message', ({ content, channel }) =>
+        DiscordConnector.sendMessage(channel, content.replaceAll('\\n', '\n')),
+      ),
+      Future.chain(({ message, channel }) =>
+        pipe(
+          message,
+          Maybe.fold(
+            () =>
+              pipe(
+                // TODO: remove disable
+                // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                logger.warn(`Couldn't say message in channel ${channel}`),
+                Future.fromIOEither,
+                Future.chain(() =>
+                  DiscordConnector.interactionReply(interaction, {
+                    content: 'Erreur',
+                    ephemeral: true,
+                  }),
+                ),
               ),
-            ),
-            Future.chain(Future.fromIOEither),
+            () =>
+              pipe(
+                DiscordConnector.interactionReply(interaction, {
+                  content: '...',
+                  ephemeral: false,
+                }),
+                Future.chain(() => DiscordConnector.interactionDeleteReply(interaction)),
+              ),
           ),
         ),
       ),
