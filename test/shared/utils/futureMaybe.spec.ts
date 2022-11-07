@@ -4,6 +4,8 @@ import { pipe } from 'fp-ts/function'
 import { Future, Maybe, Try } from '../../../src/shared/utils/fp'
 import { futureMaybe } from '../../../src/shared/utils/futureMaybe'
 
+import { expectT } from '../../expectT'
+
 describe('futureMaybe.chainFirst', () => {
   const futureToto = futureMaybe.some('toto')
 
@@ -12,7 +14,7 @@ describe('futureMaybe.chainFirst', () => {
       futureMaybe.some(123),
       futureMaybe.chainFirst(() => futureToto),
       task.map(res => {
-        expect(res).toStrictEqual(Try.right(Maybe.some(123)))
+        expectT(res).toStrictEqual(Try.right(Maybe.some(123)))
       }),
     )())
 
@@ -21,7 +23,7 @@ describe('futureMaybe.chainFirst', () => {
       futureMaybe.none,
       futureMaybe.chainFirst(() => futureToto),
       task.map(res => {
-        expect(res).toStrictEqual(Try.right(Maybe.none))
+        expectT(res).toStrictEqual(Try.right(Maybe.none))
       }),
     )())
 
@@ -30,7 +32,7 @@ describe('futureMaybe.chainFirst', () => {
       Future.left(Error('my error')),
       futureMaybe.chainFirst(() => futureToto),
       task.map(res => {
-        expect(res).toStrictEqual(Try.left(Error('my error')))
+        expectT(res).toStrictEqual(Try.left(Error('my error')))
       }),
     )())
 })

@@ -1,4 +1,4 @@
-/* eslint-disable functional/no-return-void, functional/no-expression-statement */
+/* eslint-disable functional/no-return-void  */
 import { io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
@@ -6,18 +6,22 @@ import { RandomUtils } from '../../../src/shared/utils/RandomUtils'
 import type { Tuple } from '../../../src/shared/utils/fp'
 import { List, NonEmptyArray, Try } from '../../../src/shared/utils/fp'
 
+import { expectT } from '../../expectT'
+
 const { __testableRandomPop: randomPop } = RandomUtils
 
 describe('RandomUtils.randomPop', () => {
   it('should pop', () => {
-    expect(randomPop([1])()).toStrictEqual([1, []])
+    expectT(randomPop([1])()).toStrictEqual([1, []])
 
+    // eslint-disable-next-line functional/no-expression-statement
     pipe(
       randomPop([1, 2]),
       io.map(altExpect<Tuple<number, List<number>>>([1, [2]], [2, [1]])),
       nTimes(100),
     )
 
+    // eslint-disable-next-line functional/no-expression-statement
     pipe(
       randomPop([1, 2, 3]),
       io.map(
@@ -47,7 +51,7 @@ const nTimes =
 
 const altExpect =
   <A>(a: A, ...as: NonEmptyArray<A>) =>
-  (result: A): void =>
+  (result: A): A =>
     pipe(
       as,
       NonEmptyArray.reduce(tryCatch(result, a), (acc, a_) =>
@@ -59,4 +63,4 @@ const altExpect =
       Try.getUnsafe,
     )
 
-const tryCatch = <A>(a: A, b: A): Try<void> => Try.tryCatch(() => expect(a).toStrictEqual(b))
+const tryCatch = <A>(a: A, b: A): Try<A> => Try.tryCatch(() => expectT(a).toStrictEqual(b))

@@ -1,9 +1,9 @@
+import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
-import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../shared/utils/StringUtils'
-import { Future, List } from '../../shared/utils/fp'
+import { Future, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
 import type { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
@@ -26,14 +26,51 @@ type IGuildMember = {
   readonly nickname: string | null
 }
 
-const uwUOrOwORegex = /(uwu|owo)/i
+const uwuOrOwORegex = /(uwu|owo)/i
 
-const isValidUwU =
-  (whitelisted: List<DiscordUserId>) =>
-  ({ id, nickname }: IGuildMember): boolean =>
-    pipe(whitelisted, List.elem(DiscordUserId.Eq)(DiscordUserId.wrap(id))) ||
-    (nickname !== null && uwUOrOwORegex.test(StringUtils.cleanUTF8ToASCII(nickname)))
+const isValidUwU = (nickname: string): boolean =>
+  uwuOrOwORegex.test(StringUtils.cleanUTF8ToASCII(nickname))
 
-const UwURenamerObserver = { of, isValidUwU }
+// none: no rename needed
+const renameUwU = (username: string): Maybe<string> => {
+  if (isValidUwU(username)) return Maybe.none
+  const reversed = StringUtils.reverse(username)
+  return pipe(
+    renamersReversed,
+    List.findFirstMap(rename => pipe(rename(reversed), Maybe.fromPredicate(isValidUwU))),
+    Maybe.map(StringUtils.reverse),
+    Maybe.getOrElse(() =>
+      pipe(renamersNormal, NonEmptyArray.unappend, ([initRenamers, lastRenamer]) =>
+        pipe(
+          initRenamers,
+          List.findFirstMap(rename => pipe(rename(username), Maybe.fromPredicate(isValidUwU))),
+          Maybe.getOrElse(() => lastRenamer(username)),
+        ),
+      ),
+    ),
+    Maybe.some,
+  )
+}
+
+const spaceRegex = /\s/
+
+const renamersReversed: NonEmptyArray<(username: string) => string> = [
+  string.replace('U', 'UwU'),
+  string.replace('u', 'UwU'),
+  string.replace('O', 'OwO'),
+  string.replace('Y', 'UwU'),
+  string.replace('y', 'UwUy'), // y close enough to u; UwUy becomes yUwU after reverse
+  string.replace('o', 'OwO'),
+  string.replace('w', 'UwU'),
+  string.replace('0', 'OwO'),
+]
+
+const renamersNormal: NonEmptyArray<(username: string) => string> = [
+  // if nothing interesting in username, just append it
+  string.replace(/[aeiouy]$/i, 'UwU'), // squish ending vowel
+  s => (spaceRegex.test(s) ? `${s} UwU` : `${s}UwU`),
+]
+
+const UwURenamerObserver = { of, isValidUwU, renameUwU }
 
 export { UwURenamerObserver }

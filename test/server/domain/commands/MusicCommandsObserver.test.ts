@@ -10,6 +10,8 @@ import { MusicCommandsObserver } from '../../../../src/server/domain/commands/Mu
 import { YtDlp } from '../../../../src/server/helpers/YtDlp'
 import type { GuildStateService } from '../../../../src/server/services/GuildStateService'
 
+import { expectT } from '../../../expectT'
+
 describe('validateTracks', () => {
   const { ytDlpPath } = pipe(Config.load, IO.runUnsafe)
 
@@ -27,19 +29,19 @@ describe('validateTracks', () => {
 
   it('should validate YouTube video', () =>
     validateTracks('https://www.youtube.com/watch?v=aeWfN6CinGY')().then(res => {
-      expect(res).toStrictEqual(Either.right(Either.right(NonEmptyArray.of(whenImTwi))))
+      expectT(res).toStrictEqual(Either.right(Either.right(NonEmptyArray.of(whenImTwi))))
     }))
 
   it('should validate YouTube video (short)', () =>
     validateTracks('https://youtu.be/aeWfN6CinGY')().then(res => {
-      expect(res).toStrictEqual(Either.right(Either.right(NonEmptyArray.of(whenImTwi))))
+      expectT(res).toStrictEqual(Either.right(Either.right(NonEmptyArray.of(whenImTwi))))
     }))
 
   it('should validate YouTube playlist', () =>
     validateTracks(
       'https://www.youtube.com/playlist?list=PLIbD1ba8REOOWyzNL1AEPQMpEflxjcOEL',
     )().then(res => {
-      expect(res).toStrictEqual(
+      expectT(res).toStrictEqual(
         Either.right(
           Either.right([
             Track.of(
@@ -59,7 +61,7 @@ describe('validateTracks', () => {
 
   it('should search', () =>
     validateTracks('sardoche le nerveux')().then(res => {
-      expect(res).toStrictEqual(
+      expectT(res).toStrictEqual(
         Either.right(
           Either.right(
             NonEmptyArray.of(
@@ -76,7 +78,7 @@ describe('validateTracks', () => {
 
   it('should fail on invalid site', () =>
     validateTracks('https://dl.blbl.ch')().then(res => {
-      expect(res).toStrictEqual(
+      expectT(res).toStrictEqual(
         Either.left(
           Error(
             `Command failed with exit code 1: ${ytDlpPath} https://dl.blbl.ch --dump-single-json --default-search ytsearch --abort-on-error`,
@@ -89,7 +91,7 @@ describe('validateTracks', () => {
     'should validate Bandcamp album',
     () =>
       validateTracks('https://frayle.bandcamp.com/album/the-white-witch-ep')().then(res => {
-        expect(res).toStrictEqual(
+        expectT(res).toStrictEqual(
           Either.right(
             Either.right([
               Track.of(
@@ -121,7 +123,7 @@ describe('validateTracks', () => {
 
   it('should validate Bandcamp track', () =>
     validateTracks('https://frayle.bandcamp.com/track/the-white-witch')().then(res => {
-      expect(res).toStrictEqual(
+      expectT(res).toStrictEqual(
         Either.right(
           Either.right(
             NonEmptyArray.of(

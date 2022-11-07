@@ -1,5 +1,5 @@
-import { random } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
+import { random, string } from 'fp-ts'
+import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../models/DayJs'
 import { MsDuration } from '../models/MsDuration'
@@ -35,6 +35,8 @@ const pad100 = padStart(3)
 
 const cleanUTF8ToASCII = (str: string): string =>
   str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+const reverse: (str: string) => string = flow(string.split(''), List.reverse, List.mkString(''))
 
 const prettyMs = (ms: MsDuration): string => {
   const date = DayJs.of(MsDuration.unwrap(ms))
@@ -91,6 +93,7 @@ export const StringUtils = {
   matcher2,
   padStart,
   cleanUTF8ToASCII,
+  reverse,
   prettyMs,
   randomCase,
   stripMargins,

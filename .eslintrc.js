@@ -101,7 +101,7 @@ module.exports = {
           '^beforeEach\\(',
           '^console\\.',
           '^describe(\\.only)?\\(',
-          '^expect(\\.only)?\\(',
+          '^expectT(\\.only)?\\(',
           '^it(\\.only)?\\(',
           '^useEffect\\(',
         ],
