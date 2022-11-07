@@ -19,4 +19,4 @@ const codec = fromNewtype<DiscordUserId>(C.string)
 const Ord: ord.Ord<DiscordUserId> = pipe(string.Ord, ord.contramap(unwrap))
 const Eq: eq.Eq<DiscordUserId> = Ord
 
-export const DiscordUserId = { fromUser, unwrap, codec, Eq, Ord }
+export const DiscordUserId = { fromUser, wrap, unwrap, codec, Eq, Ord }
