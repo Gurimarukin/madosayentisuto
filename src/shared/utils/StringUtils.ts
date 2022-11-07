@@ -33,6 +33,9 @@ const padStart =
 const pad10 = padStart(2)
 const pad100 = padStart(3)
 
+const cleanUTF8ToASCII = (str: string): string =>
+  str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
 const prettyMs = (ms: MsDuration): string => {
   const date = DayJs.of(MsDuration.unwrap(ms))
   const zero = DayJs.of(0)
@@ -87,6 +90,7 @@ export const StringUtils = {
   matcher1,
   matcher2,
   padStart,
+  cleanUTF8ToASCII,
   prettyMs,
   randomCase,
   stripMargins,
