@@ -111,7 +111,7 @@ export const Application = (
     serverToClientEventPubSub.observable,
     wsServerEventPubSub.subject,
   )
-  const memberController = MemberController(Logger, memberBirthdateService)
+  const memberController = MemberController(memberBirthdateService)
   const scheduledEventController = ScheduledEventController(Logger, discord, scheduledEventService)
   const userController = UserController(userService)
 

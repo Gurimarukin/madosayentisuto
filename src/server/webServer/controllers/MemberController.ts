@@ -4,7 +4,6 @@ import { Status } from 'hyper-ts'
 import type { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { DayJsFromISOString } from '../../../shared/utils/ioTsUtils'
 
-import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { MemberBirthdateService } from '../../services/MemberBirthdateService'
 import type { EndedMiddleware } from '../models/MyMiddleware'
 import { MyMiddleware as M } from '../models/MyMiddleware'
@@ -12,10 +11,7 @@ import { MyMiddleware as M } from '../models/MyMiddleware'
 export type MemberController = ReturnType<typeof MemberController>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const MemberController = (
-  Logger: LoggerGetter,
-  memberBirthdateService: MemberBirthdateService,
-) => ({
+export const MemberController = (memberBirthdateService: MemberBirthdateService) => ({
   updateMemberBirthdate: (userId: DiscordUserId) => (/* user: User */): EndedMiddleware =>
     /* User.canUpdateMember(user) */
     pipe(
