@@ -1,5 +1,3 @@
-- Les Quais Abatoirs UwU renamer
-
 - upgrade react
 - select leave message chan
 - deploy: on guild join

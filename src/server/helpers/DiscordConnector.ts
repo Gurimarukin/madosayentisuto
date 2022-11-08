@@ -151,10 +151,10 @@ const of = (client: Client<true>) => {
 
 const fetchAuditLogs = <A extends GuildAuditLogsResolvable = null>(
   guild: Guild,
-  options?: Omit<GuildAuditLogsFetchOptions<A>, 'limit'>,
+  options?: GuildAuditLogsFetchOptions<A>,
 ): Future<Maybe<Collection<string, GuildAuditLogsEntry<A>>>> =>
   pipe(
-    Future.tryCatch(() => guild.fetchAuditLogs<A>({ ...options, limit: constants.fetchLogsLimit })),
+    Future.tryCatch(() => guild.fetchAuditLogs<A>(options)),
     Future.map(logs => Maybe.some(logs.entries)),
     Future.orElse(e => (isMissingPermissionsError(e) ? futureMaybe.none : Future.left(e))),
     debugLeft('fetchAuditLogs'),
@@ -318,6 +318,16 @@ const interactionUpdate = (
       isDiscordAPIError('Unknown interaction')(e) ? Future.notUsed : Future.left(e),
     ),
     debugLeft('interactionUpdate'),
+  )
+
+const memberSetNickname = (
+  member: GuildMember,
+  nickname: Maybe<string>,
+  reason?: string,
+): Future<GuildMember> =>
+  pipe(
+    Future.tryCatch(() => member.setNickname(Maybe.toNullable(nickname), reason)),
+    debugLeft('memberSetNickname'),
   )
 
 const messageDelete = (message: Message): Future<boolean> =>
@@ -568,6 +578,7 @@ export const DiscordConnector = {
   interactionReply,
   interactionShowModal,
   interactionUpdate,
+  memberSetNickname,
   messageDelete,
   messageEdit,
   messageReact,

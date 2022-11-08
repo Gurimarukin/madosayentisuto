@@ -13,6 +13,7 @@ import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import { StringUtils } from '../../shared/utils/StringUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, toNotUsed } from '../../shared/utils/fp'
 
@@ -101,9 +102,10 @@ const sendIDontLikeThieves = sendMessage(
 const sendNoNeedToThankMe = sendMessage('Haha ! Inutile de me remercier...')
 
 const cleanMessage = (message: string): List<string> =>
-  message
-    .trim()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .split(/[^a-z0-9_]/)
+  pipe(
+    message,
+    string.trim,
+    StringUtils.cleanUTF8ToASCII,
+    string.toLowerCase,
+    string.split(/[^a-z0-9_]/),
+  )

@@ -3,13 +3,15 @@ import { pipe } from 'fp-ts/function'
 
 import { Either, Future, NonEmptyArray } from '../../../src/shared/utils/fp'
 
+import { expectT } from '../../expectT'
+
 describe('Future.orElse', () => {
   it("should return f if it isn't failed", () => {
     const res = pipe(
       Future.right<string>('toto'),
       Future.orElse(() => Future.right('titi')),
     )()
-    return res.then(r => expect(r).toStrictEqual(Either.right('toto')))
+    return res.then(r => expectT(r).toStrictEqual(Either.right('toto')))
   })
 
   it('should return first matching recovery', () => {
@@ -25,7 +27,7 @@ describe('Future.orElse', () => {
           : Future.left(e),
       ),
     )()
-    return res.then(r => expect(r).toStrictEqual(Either.right('syntax error')))
+    return res.then(r => expectT(r).toStrictEqual(Either.right('syntax error')))
   })
 
   it('should return f if no matching error', () => {
@@ -39,7 +41,7 @@ describe('Future.orElse', () => {
           : Future.left(e),
       ),
     )()
-    return res.then(r => expect(r).toStrictEqual(Either.left(SyntaxError('this is an error'))))
+    return res.then(r => expectT(r).toStrictEqual(Either.left(SyntaxError('this is an error'))))
   })
 })
 
@@ -54,13 +56,13 @@ describe('date.Ord', () => {
   )
 
   it('shoud NonEmptyArray.max', () => {
-    expect(pipe([date2, date3, date1], NonEmptyArray.max(dateOrd))).toStrictEqual(date3)
+    expectT(pipe([date2, date3, date1], NonEmptyArray.max(dateOrd))).toStrictEqual(date3)
 
-    expect(pipe([date3, date1, date2], NonEmptyArray.min(dateOrd))).toStrictEqual(date1)
+    expectT(pipe([date3, date1, date2], NonEmptyArray.min(dateOrd))).toStrictEqual(date1)
   })
 
   it('should ord.max', () => {
-    expect(ord.max(dateOrd)(date1, date2)).toStrictEqual(date2)
-    expect(ord.min(dateOrd)(date1, date2)).toStrictEqual(date1)
+    expectT(ord.max(dateOrd)(date1, date2)).toStrictEqual(date2)
+    expectT(ord.min(dateOrd)(date1, date2)).toStrictEqual(date1)
   })
 })

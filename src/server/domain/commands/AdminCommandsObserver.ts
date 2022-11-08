@@ -918,7 +918,13 @@ export const AdminCommandsObserver = (
             'modal',
             pipe(
               EditMessageModal.validate(guild, emojidexService)(modalRaw),
-              Future.map(Either.mapLeft(List.mkString('\n'))),
+              Future.map(
+                Either.mapLeft(nea =>
+                  nea.length === 1
+                    ? NonEmptyArray.head(nea)
+                    : pipe(nea, List.mkString('- ', '\n- ', '')),
+                ),
+              ),
             ),
           ),
           futureEither.bind('message', ({ modal }) =>

@@ -5,6 +5,7 @@ import * as D from 'io-ts/Decoder'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { MsDuration } from '../../shared/models/MsDuration'
 import { ValidatedNea } from '../../shared/models/ValidatedNea'
+import { GuildId } from '../../shared/models/guild/GuildId'
 import { LogLevelOrOff } from '../../shared/models/log/LogLevel'
 import { loadDotEnv } from '../../shared/utils/config/loadDotEnv'
 import { parseConfig } from '../../shared/utils/config/parseConfig'
@@ -23,20 +24,16 @@ const seqS = ValidatedNea.getSeqS<string>()
 
 export type Config = {
   readonly isDev: boolean
-  readonly ytDlpPath: string
-  readonly jwtSecret: string
-  readonly elevatorDelay: MsDuration
-  readonly client: ClientConfig
-  readonly admins: NonEmptyArray<DiscordUserId>
   readonly logger: LoggerConfig
-  readonly db: DbConfig
-  readonly captain: CaptainConfig
+  readonly client: ClientConfig
   readonly http: HttpConfig
-}
-
-export type ClientConfig = {
-  readonly id: DiscordUserId
-  readonly secret: string
+  readonly db: DbConfig
+  readonly jwtSecret: string
+  readonly ytDlpPath: string
+  readonly admins: NonEmptyArray<DiscordUserId>
+  readonly uwuServers: List<GuildId>
+  readonly captain: CaptainConfig
+  readonly elevatorDelay: MsDuration
 }
 
 type LoggerConfig = {
@@ -44,9 +41,14 @@ type LoggerConfig = {
   readonly discordDM: LoggerDiscordDMConfig
 }
 
-export type LoggerDiscordDMConfig = {
-  readonly level: LogLevelOrOff
-  readonly isCompact: boolean
+export type ClientConfig = {
+  readonly id: DiscordUserId
+  readonly secret: string
+}
+
+export type HttpConfig = {
+  readonly port: number
+  readonly allowedOrigins: Maybe<NonEmptyArray<URL>>
 }
 
 type DbConfig = {
@@ -56,14 +58,14 @@ type DbConfig = {
   readonly password: string
 }
 
+export type LoggerDiscordDMConfig = {
+  readonly level: LogLevelOrOff
+  readonly isCompact: boolean
+}
+
 export type CaptainConfig = {
   readonly mentions: List<string>
   readonly thanks: List<string>
-}
-
-export type HttpConfig = {
-  readonly port: number
-  readonly allowedOrigins: Maybe<NonEmptyArray<URL>>
 }
 
 const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
@@ -73,14 +75,6 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
         r(Maybe.decoder(BooleanFromString.decoder))('IS_DEV'),
         Either.map(Maybe.getOrElseW(() => false)),
       ),
-      ytDlpPath: r(D.string)('YTDLP_PATH'),
-      jwtSecret: r(D.string)('JWT_SECRET'),
-      elevatorDelay: r(MsDuration.decoder)('ELEVATOR_DELAY'),
-      client: seqS<ClientConfig>({
-        id: r(DiscordUserId.codec)('CLIENT_ID'),
-        secret: r(D.string)('CLIENT_SECRET'),
-      }),
-      admins: r(NonEmptyArrayFromString.decoder(DiscordUserId.codec))('ADMINS'),
       logger: seqS<LoggerConfig>({
         consoleLevel: r(LogLevelOrOff.codec)('LOGGER_CONSOLE_LEVEL'),
         discordDM: seqS<LoggerDiscordDMConfig>({
@@ -88,15 +82,9 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
           isCompact: r(BooleanFromString.decoder)('LOGGER_DISCORD_DM_IS_COMPACT'),
         }),
       }),
-      db: seqS<DbConfig>({
-        host: r(D.string)('DB_HOST'),
-        dbName: r(D.string)('DB_NAME'),
-        user: r(D.string)('DB_USER'),
-        password: r(D.string)('DB_PASSWORD'),
-      }),
-      captain: seqS<CaptainConfig>({
-        mentions: r(ArrayFromString.decoder(D.string))('CAPTAIN_MENTIONS'),
-        thanks: r(ArrayFromString.decoder(D.string))('CAPTAIN_THANKS'),
+      client: seqS<ClientConfig>({
+        id: r(DiscordUserId.codec)('CLIENT_ID'),
+        secret: r(D.string)('CLIENT_SECRET'),
       }),
       http: seqS<HttpConfig>({
         port: r(NumberFromString.decoder)('HTTP_PORT'),
@@ -104,6 +92,21 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
           'HTTP_ALLOWED_ORIGINS',
         ),
       }),
+      db: seqS<DbConfig>({
+        host: r(D.string)('DB_HOST'),
+        dbName: r(D.string)('DB_NAME'),
+        user: r(D.string)('DB_USER'),
+        password: r(D.string)('DB_PASSWORD'),
+      }),
+      jwtSecret: r(D.string)('JWT_SECRET'),
+      ytDlpPath: r(D.string)('YTDLP_PATH'),
+      admins: r(NonEmptyArrayFromString.decoder(DiscordUserId.codec))('ADMINS'),
+      uwuServers: r(ArrayFromString.decoder(GuildId.codec))('UWU_SERVERS'),
+      captain: seqS<CaptainConfig>({
+        mentions: r(ArrayFromString.decoder(D.string))('CAPTAIN_MENTIONS'),
+        thanks: r(ArrayFromString.decoder(D.string))('CAPTAIN_THANKS'),
+      }),
+      elevatorDelay: r(MsDuration.decoder)('ELEVATOR_DELAY'),
     }),
   )
 

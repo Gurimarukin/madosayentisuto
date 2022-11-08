@@ -90,7 +90,7 @@ export const NotifyVoiceCallObserver = (
         pipe(
           DiscordConnector.sendMessage(
             calls.channel,
-            `Ha ha ! **@${member.displayName}** appelle ${channel}... ${calls.role} doit payer !`,
+            `Haha ! **@${member.displayName}** appelle ${channel}... ${calls.role} doit payer !`,
           ),
           futureMaybe.match(
             () => log.warn(`Couldn't send call started notification in #${calls.channel.name}`),

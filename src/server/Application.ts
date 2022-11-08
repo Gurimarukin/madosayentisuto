@@ -23,6 +23,7 @@ import { ScheduledEventObserver } from './domain/ScheduledEventObserver'
 import { SendWelcomeDMObserver } from './domain/SendWelcomeDMObserver'
 import { SetDefaultRoleObserver } from './domain/SetDefaultRoleObserver'
 import { TextInteractionsObserver } from './domain/TextInteractionsObserver'
+import { UwURenamerObserver } from './domain/UwURenamerObserver'
 import { AdminCommandsObserver } from './domain/commands/AdminCommandsObserver'
 import { MusicCommandsObserver } from './domain/commands/MusicCommandsObserver'
 import { OtherCommandsObserver } from './domain/commands/OtherCommandsObserver'
@@ -111,7 +112,7 @@ export const Application = (
     serverToClientEventPubSub.observable,
     wsServerEventPubSub.subject,
   )
-  const memberController = MemberController(Logger, memberBirthdateService)
+  const memberController = MemberController(memberBirthdateService)
   const scheduledEventController = ScheduledEventController(Logger, discord, scheduledEventService)
   const userController = UserController(userService)
 
@@ -172,13 +173,14 @@ export const Application = (
       sub(SendWelcomeDMObserver(Logger)),
       sub(SetDefaultRoleObserver(Logger, guildStateService)),
       sub(TextInteractionsObserver(config.captain, discord)),
+      sub(UwURenamerObserver(Logger, clientId, config.uwuServers)),
       // └ helpers/
       sub(ObserverWithRefinement.of(LogMadEventObserver(logger))),
       loggerObservable.subscribe('debug', logsObserver.logEventObserver),
       sub(logsObserver.madEventObserver),
       publishDiscordEvents(logger, discord, madEventsPubSub.subject),
       scheduleCronJob(Logger, madEventsPubSub.subject),
-      sub(VoiceStateUpdateTransformer(clientId, madEventsPubSub.subject)),
+      sub(VoiceStateUpdateTransformer(madEventsPubSub.subject)),
     ),
     IO.chain(() => startWebServer(Logger, config.http, routes)),
     IO.chain(() => madEventsPubSub.subject.next(MadEvent.AppStarted())),

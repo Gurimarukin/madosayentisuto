@@ -86,17 +86,12 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
 const getLastLog =
   (guild: Guild, userId: DiscordUserId) =>
   (now: DayJs): Future<Maybe<ValidEntry<KickOrBanAction>>> => {
-    const nowMinusNetworkTolerance = pipe(now, DayJs.subtract(constants.networkTolerance))
+    const nowMinusNetworkTolerance = pipe(now, DayJs.subtract(constants.kickBans.networkTolerance))
+    const fetchAuditLogsCurry = fetchAuditLogs(guild, userId, nowMinusNetworkTolerance)
     return pipe(
       apply.sequenceS(Future.ApplyPar)({
-        lastMemberKick: pipe(
-          DiscordConnector.fetchAuditLogs(guild, { type: AuditLogEvent.MemberKick }),
-          futureMaybe.chainOptionK(validateLogs(nowMinusNetworkTolerance, userId)),
-        ),
-        lastMemberBan: pipe(
-          DiscordConnector.fetchAuditLogs(guild, { type: AuditLogEvent.MemberBanAdd }),
-          futureMaybe.chainOptionK(validateLogs(nowMinusNetworkTolerance, userId)),
-        ),
+        lastMemberKick: fetchAuditLogsCurry(AuditLogEvent.MemberKick),
+        lastMemberBan: fetchAuditLogsCurry(AuditLogEvent.MemberBanAdd),
       }),
       Future.map(({ lastMemberKick, lastMemberBan }) =>
         Maybe.isSome(lastMemberKick) && Maybe.isSome(lastMemberBan)
@@ -113,6 +108,14 @@ const getLastLog =
       ),
     )
   }
+
+const fetchAuditLogs =
+  (guild: Guild, userId: DiscordUserId, nowMinusNetworkTolerance: DayJs) =>
+  <A extends KickOrBanAction>(type: A): Future<Maybe<ValidEntry<A>>> =>
+    pipe(
+      DiscordConnector.fetchAuditLogs(guild, { type, limit: constants.kickBans.fetchLogsLimit }),
+      futureMaybe.chainOptionK(validateLogs(nowMinusNetworkTolerance, userId)),
+    )
 
 const ordByCreateAt = <A extends CreatedAt>(): Ord<A> =>
   pipe(

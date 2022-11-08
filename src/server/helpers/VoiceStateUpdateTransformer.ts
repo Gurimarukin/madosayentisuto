@@ -1,7 +1,6 @@
 import type { GuildMember } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
-import type { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import type { TSubject } from '../../shared/models/rx/TSubject'
 import { Future, IO, Maybe } from '../../shared/utils/fp'
@@ -20,10 +19,7 @@ type AudioChannelEvent =
   | MadEventAudioChannelDisconnected
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const VoiceStateUpdateTransformer = (
-  clientId: DiscordUserId,
-  subject: TSubject<AudioChannelEvent>,
-) =>
+export const VoiceStateUpdateTransformer = (subject: TSubject<AudioChannelEvent>) =>
   ObserverWithRefinement.fromNext(
     MadEvent,
     'VoiceStateUpdate',
