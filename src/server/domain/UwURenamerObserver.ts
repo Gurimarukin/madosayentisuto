@@ -1,19 +1,24 @@
 import type {
+  AuditLogChange,
+  Guild,
   GuildAuditLogsEntry,
-  GuildAuditLogsResolvable,
   GuildMember,
   PartialGuildMember,
   User,
 } from 'discord.js'
 import { AuditLogEvent } from 'discord.js'
-import { string } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
+import { apply, string } from 'fp-ts'
+import { flow, pipe } from 'fp-ts/function'
+import * as D from 'io-ts/Decoder'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import { ValidatedNea } from '../../shared/models/ValidatedNea'
+import { GuildId } from '../../shared/models/guild/GuildId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import type { NotUsed } from '../../shared/utils/fp'
-import { Future, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
+import { Either, Future, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { GuildHelper } from '../helpers/GuildHelper'
@@ -24,7 +29,11 @@ import { LogUtils } from '../utils/LogUtils'
 type UwURenamerObserver = ReturnType<typeof UwURenamerObserver>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const UwURenamerObserver = (Logger: LoggerGetter, clientId: DiscordUserId) => {
+const UwURenamerObserver = (
+  Logger: LoggerGetter,
+  clientId: DiscordUserId,
+  uwuServer: List<GuildId>,
+) => {
   const logger = Logger('UwURenamerObserver')
 
   return ObserverWithRefinement.fromNext(
@@ -43,67 +52,157 @@ const UwURenamerObserver = (Logger: LoggerGetter, clientId: DiscordUserId) => {
   ): Future<NotUsed> {
     if (DiscordUserId.fromUser(newMember.user) === clientId) return Future.notUsed // do nothing if bot was updated
 
-    if (oldMember.nickname !== newMember.nickname) return onNicknameUpdated(oldMember, newMember)
+    if (oldMember.nickname !== newMember.nickname) {
+      // oldMember is not reliable for previous nickname, we have to use guild's audit logs
+      // (audit logs also gives us executor)
+      return onNicknameUpdated(newMember)
+    }
 
     return Future.notUsed
   }
 
-  function onNicknameUpdated(
-    oldMember: GuildMember | PartialGuildMember,
-    newMember: GuildMember,
-  ): Future<NotUsed> {
-    const wasRenamedMessage = `${newMember.user.tag} renamed from ${oldMember.nickname} to ${newMember.nickname}`
-
+  function onNicknameUpdated(renamedMember: GuildMember): Future<NotUsed> {
+    const guild = renamedMember.guild
     return pipe(
-      GuildHelper.fetchLastAuditLog(newMember.guild, { type: AuditLogEvent.MemberUpdate }),
-      Future.chain(
-        Maybe.fold(
-          () => Future.left(Error(`No AuditLogsEntry was found (${wasRenamedMessage})`)),
-          Future.right,
+      GuildHelper.fetchLastAuditLog(guild, { type: AuditLogEvent.MemberUpdate }),
+      futureMaybe.getOrElse(() =>
+        Future.left(
+          Error(
+            `onNicknameUpdated: No GuildAuditLogsEntry<MemberUpdate> was found for ${guild.name}`,
+          ),
         ),
       ),
-      Future.filterOrElse(entryIsDefined, () => Error(`executor was null (${wasRenamedMessage})`)),
-      Future.chain(entry => {
-        const log = LogUtils.pretty(logger, newMember.guild)
-        const wasRenamedByMessage = `${wasRenamedMessage} by ${entry.executor.tag}`
+      Future.chainEitherK(
+        flow(
+          validateMemberRename,
+          Either.mapLeft(nea =>
+            Error(
+              `Invalid MemberRename:${
+                nea.length === 1
+                  ? ` ${NonEmptyArray.head(nea)}`
+                  : pipe(nea, List.mkString('\n- ', '\n- ', ''))
+              }`,
+            ),
+          ),
+        ),
+      ),
+      Future.chain(({ executor, oldNickname, newNickname }) => {
+        const log = LogUtils.pretty(logger, guild)
+        const wasRenamedMessage = `${renamedMember.user.tag} was renamed from ${formatNickname(
+          oldNickname,
+        )} to ${formatNickname(newNickname)} by ${executor.tag}`
 
-        if (DiscordUserId.fromUser(entry.executor) === clientId) {
-          return Future.fromIOEither(log.info(wasRenamedByMessage))
+        if (!isUwUGuild(guild)) {
+          // just log and don't do anything else (event if bot was renamed)
+          return Future.fromIOEither(log.debug(wasRenamedMessage))
         }
 
-        // null    > UwU
-        // not UwU > UwU
-        // UwU     > UwU
-        if (isValidUwU(newMember.displayName)) {
-          return Future.fromIOEither(log.debug(wasRenamedByMessage))
+        if (DiscordUserId.fromUser(executor) === clientId) {
+          // don't log (should have been logged when setNickname was called)
+          return Future.notUsed
+        }
+
+        if (isValidUwU(getDisplayName(renamedMember.user, newNickname))) {
+          // null    > UwU
+          // not UwU > UwU
+          // UwU     > UwU
+
+          // no rename needed, just log
+          return Future.fromIOEither(log.debug(wasRenamedMessage))
         }
 
         // null    > not UwU
         // not UwU > not UwU
         // UwU     > not UwU
+
+        // we have to rename it back
+        // warn if renaming to invalid UwU
         return pipe(
-          DiscordConnector.memberSetNickname(newMember, Maybe.fromNullable(oldMember.nickname)),
-          Future.chainIOEitherK(() =>
-            isValidUwU(oldMember.displayName)
-              ? log.debug(wasRenamedByMessage)
-              : log.warn(`${wasRenamedByMessage} but it's not a valid UwU`),
-          ),
+          log.debug(wasRenamedMessage),
+          Future.fromIOEither,
+          Future.chain(() => DiscordConnector.memberSetNickname(renamedMember, oldNickname)),
+          Future.chainIOEitherK(() => {
+            const wasRenamedBackMessage = `${
+              renamedMember.user.tag
+            } was renamed back to ${formatNickname(oldNickname)}`
+            return isValidUwU(getDisplayName(renamedMember.user, oldNickname))
+              ? log.info(wasRenamedBackMessage)
+              : log.warn(`${wasRenamedBackMessage}, but it's not a valid UwU`)
+          }),
         )
       }),
     )
   }
+
+  function isUwUGuild(guild: Guild): boolean {
+    return pipe(
+      uwuServer,
+      List.exists(guildId => guildId === GuildId.fromGuild(guild)),
+    )
+  }
 }
 
-type DefinedGuildAuditLogsEntry<A extends GuildAuditLogsResolvable = null> = Omit<
-  GuildAuditLogsEntry<A>,
-  'executor'
-> & {
+type MemberRename = {
   readonly executor: User
+  readonly oldNickname: Maybe<string>
+  readonly newNickname: Maybe<string>
 }
 
-const entryIsDefined = <A extends GuildAuditLogsResolvable = null>(
-  entry: GuildAuditLogsEntry<A>,
-): entry is DefinedGuildAuditLogsEntry<A> => entry.executor !== null
+const stringValidation = ValidatedNea.getValidation<string>()
+
+const validateMemberRename = (
+  entry: GuildAuditLogsEntry<AuditLogEvent.MemberUpdate>,
+): ValidatedNea<string, MemberRename> =>
+  pipe(
+    apply.sequenceS(stringValidation)({
+      executor: pipe(
+        Maybe.fromNullable(entry.executor),
+        ValidatedNea.fromOption(() => 'executor was not defined'),
+      ),
+      nickChange: pipe(
+        entry.changes,
+        List.filter(change => change.key === 'nick'),
+        List.match(
+          () => ValidatedNea.invalid('No nick change found'),
+          nea =>
+            nea.length === 1
+              ? ValidatedNea.valid(NonEmptyArray.head(nea))
+              : ValidatedNea.invalid('More than one nick changes found'),
+        ),
+        Either.chain(nickChange => {
+          const validateNick = <K extends keyof AuditLogChange>(
+            key: K,
+          ): ValidatedNea<string, Maybe<string>> =>
+            pipe(
+              Maybe.decoder(D.string).decode(nickChange[key]),
+              Either.mapLeft(e => NonEmptyArray.of(`nickChange.${key}: ${D.draw(e)}`)),
+            )
+          return pipe(
+            apply.sequenceS(stringValidation)({
+              oldNickname: validateNick('old'),
+              newNickname: validateNick('new'),
+            }),
+          )
+        }),
+      ),
+    }),
+    Either.map(
+      ({ executor, nickChange: { oldNickname, newNickname } }): MemberRename => ({
+        executor,
+        oldNickname,
+        newNickname,
+      }),
+    ),
+  )
+
+const getDisplayName = (user: User, nickname: Maybe<string>): string =>
+  pipe(
+    nickname,
+    Maybe.getOrElse(() => user.username),
+  )
+
+const formatNickname = (nickname: Maybe<string>): string =>
+  pipe(nickname, Maybe.toNullable, JSON.stringify)
 
 const uwuOrOwORegex = /(uwu|owo)/i
 

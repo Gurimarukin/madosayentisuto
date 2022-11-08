@@ -173,7 +173,7 @@ export const Application = (
       sub(SendWelcomeDMObserver(Logger)),
       sub(SetDefaultRoleObserver(Logger, guildStateService)),
       sub(TextInteractionsObserver(config.captain, discord)),
-      sub(UwURenamerObserver(Logger, clientId)),
+      sub(UwURenamerObserver(Logger, clientId, config.uwuServers)),
       // └ helpers/
       sub(ObserverWithRefinement.of(LogMadEventObserver(logger))),
       loggerObservable.subscribe('debug', logsObserver.logEventObserver),
