@@ -37,6 +37,9 @@ export const LogMadEventObserver = (logger: LoggerType): TObserver<MadEvent> => 
         case 'GuildMemberRemove':
           return `${format(event.member.guild)} ${event.member.user.tag}`
 
+        case 'GuildMemberUpdate':
+          return `${format(event.newMember.guild)} ${event.newMember.user.tag}`
+
         case 'VoiceStateUpdate':
           return `${format(
             event.oldState.guild,

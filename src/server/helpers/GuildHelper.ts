@@ -1,12 +1,22 @@
-import type { Guild, GuildEmoji, GuildMember } from 'discord.js'
+import type {
+  Guild,
+  GuildAuditLogsEntry,
+  GuildAuditLogsFetchOptions,
+  GuildAuditLogsResolvable,
+  GuildEmoji,
+  GuildMember,
+} from 'discord.js'
 import { refinement, string } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import { StringUtils } from '../../shared/utils/StringUtils'
+import type { Future } from '../../shared/utils/fp'
 import { List, Maybe, NonEmptyArray, Tuple, refinementFromPredicate } from '../../shared/utils/fp'
+import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import type { GuildAudioChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
+import { DiscordConnector } from './DiscordConnector'
 
 const membersInPublicAudioChans = (
   guild: Guild,
@@ -28,6 +38,16 @@ const isPublicAudio = pipe(
   ChannelUtils.isGuildAudio,
   refinement.compose(refinementFromPredicate<GuildAudioChannel>(ChannelUtils.isPublic)),
 )
+
+const fetchLastAuditLog = <A extends GuildAuditLogsResolvable = null>(
+  guild: Guild,
+  options?: Omit<GuildAuditLogsFetchOptions<A>, 'limit'>,
+): Future<Maybe<GuildAuditLogsEntry<A>>> =>
+  pipe(
+    DiscordConnector.fetchAuditLogs(guild, { ...options, limit: 1 }),
+    futureMaybe.map(logs => logs.toJSON()),
+    futureMaybe.chainOptionK(List.head),
+  )
 
 const getEmoji = (guild: Guild): ((emojiRaw: string) => Maybe<GuildEmoji>) => {
   const emojis = guild.emojis.valueOf().toJSON()
@@ -85,4 +105,4 @@ const parseEmojiTagId: (raw: string) => Maybe<EmojiId> = StringUtils.matcher1(/^
 // :billy:
 const parseEmojiMarkup: (raw: string) => Maybe<EmojiName> = StringUtils.matcher1(/^:(\S+):$/)
 
-export const GuildHelper = { membersInPublicAudioChans, getEmoji }
+export const GuildHelper = { membersInPublicAudioChans, fetchLastAuditLog, getEmoji }

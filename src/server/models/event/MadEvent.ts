@@ -26,6 +26,11 @@ export const MadEvent = createUnion({
 
   GuildMemberRemove: (member: GuildMember | PartialGuildMember) => ({ member }),
 
+  GuildMemberUpdate: (oldMember: GuildMember | PartialGuildMember, newMember: GuildMember) => ({
+    oldMember,
+    newMember,
+  }),
+
   VoiceStateUpdate: (oldState: VoiceState, newState: VoiceState) => ({ oldState, newState }),
 
   AudioChannelConnected: (member: GuildMember, channel: GuildAudioChannel) => ({ member, channel }),
@@ -51,6 +56,7 @@ export type MadEventCronJob = typeof MadEvent.CronJob.T
 export type MadEventInteractionCreate = typeof MadEvent.InteractionCreate.T
 export type MadEventGuildMemberAdd = typeof MadEvent.GuildMemberAdd.T
 export type MadEventGuildMemberRemove = typeof MadEvent.GuildMemberRemove.T
+export type MadEventGuildMemberUpdate = typeof MadEvent.GuildMemberUpdate.T
 export type MadEventVoiceStateUpdate = typeof MadEvent.VoiceStateUpdate.T
 export type MadEventAudioChannelConnected = typeof MadEvent.AudioChannelConnected.T
 export type MadEventAudioChannelMoved = typeof MadEvent.AudioChannelMoved.T

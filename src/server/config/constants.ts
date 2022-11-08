@@ -32,9 +32,10 @@ export const constants = {
     musicExtension: /\.(ogg|webm)$/,
   },
 
-  // kicks/bans
-  fetchLogsLimit: 30,
-  networkTolerance: MsDuration.seconds(4),
+  kickBans: {
+    fetchLogsLimit: 30,
+    networkTolerance: MsDuration.seconds(4),
+  },
 
   itsFriday: {
     day: 5,

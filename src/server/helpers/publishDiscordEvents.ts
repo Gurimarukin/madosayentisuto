@@ -26,6 +26,7 @@ export const publishDiscordEvents = (
     apply.sequenceT(IO.ApplyPar)(
       pub('guildMemberAdd', MadEvent.GuildMemberAdd),
       pub('guildMemberRemove', MadEvent.GuildMemberRemove),
+      pub('guildMemberUpdate', MadEvent.GuildMemberUpdate),
       pub('interactionCreate', MadEvent.InteractionCreate),
       pub('messageCreate', MadEvent.MessageCreate),
       pub('messageDelete', flow(List.of, MadEvent.MessageDelete)),

@@ -1,7 +1,7 @@
 import type { List } from '../../../src/shared/utils/fp'
 import { Maybe } from '../../../src/shared/utils/fp'
 
-import { UwURenamerObserver } from '../../../src/server/domain/UwURenamerObserver'
+import { isValidUwU, renameUwU } from '../../../src/server/domain/UwURenamerObserver'
 
 import { expectT } from '../../expectT'
 
@@ -91,7 +91,7 @@ describe('isValidUwU', () => {
   // eslint-disable-next-line functional/no-expression-statement
   members.forEach(({ user, actual }) => {
     it(`should ${JSON.stringify(user)} - ${JSON.stringify(actual)}`, () => {
-      expectT(UwURenamerObserver.isValidUwU(actual)).toStrictEqual(true)
+      expectT(isValidUwU(actual)).toStrictEqual(true)
     })
   })
 })
@@ -100,7 +100,7 @@ describe('renameUwU', () => {
   // eslint-disable-next-line functional/no-expression-statement
   members.forEach(({ user, actual, expected }) => {
     it(`should ${JSON.stringify(user)} - ${JSON.stringify(actual)}`, () => {
-      expectT(UwURenamerObserver.renameUwU(user)).toStrictEqual(
+      expectT(renameUwU(user)).toStrictEqual(
         expected === undefined ? Maybe.some(actual) : Maybe.fromNullable(expected),
       )
     })
