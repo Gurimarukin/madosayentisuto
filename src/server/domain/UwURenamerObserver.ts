@@ -38,13 +38,41 @@ const UwURenamerObserver = (
 
   return ObserverWithRefinement.fromNext(
     MadEvent,
+    'GuildMemberAdd',
     'GuildMemberUpdate',
   )(event => {
     switch (event.type) {
+      case 'GuildMemberAdd':
+        return onGuildMemberAdd(event.member)
       case 'GuildMemberUpdate':
         return onGuildMemberUpdate(event.oldMember, event.newMember)
     }
   })
+
+  function onGuildMemberAdd(member: GuildMember): Future<NotUsed> {
+    if (DiscordUserId.fromUser(member.user) === clientId || !isUwUGuild(member.guild)) {
+      return Future.notUsed
+    }
+
+    const log = LogUtils.pretty(logger, member.guild)
+    return pipe(
+      renameUwU(member.user.username),
+      Maybe.fold(
+        () => Future.fromIOEither(log.info(`No need to renamed ${member.user.tag} on guild join`)),
+        newNickname =>
+          pipe(
+            DiscordConnector.memberSetNickname(member, Maybe.some(newNickname)),
+            Future.chainIOEitherK(newMember =>
+              log.info(
+                `Renamed ${member.user.tag} to ${formatNickname(
+                  Maybe.fromNullable(newMember.nickname),
+                )} on guild join`,
+              ),
+            ),
+          ),
+      ),
+    )
+  }
 
   function onGuildMemberUpdate(
     oldMember: GuildMember | PartialGuildMember,
@@ -122,12 +150,12 @@ const UwURenamerObserver = (
           Future.fromIOEither,
           Future.chain(() => DiscordConnector.memberSetNickname(renamedMember, oldNickname)),
           Future.chainIOEitherK(() => {
-            const wasRenamedBackMessage = `${
+            const wasRenamedBackMessage = `Renamed ${
               renamedMember.user.tag
-            } was renamed back to ${formatNickname(oldNickname)}`
+            } back to ${formatNickname(oldNickname)} after invalid UwU rename`
             return isValidUwU(getDisplayName(renamedMember.user, oldNickname))
               ? log.info(wasRenamedBackMessage)
-              : log.warn(`${wasRenamedBackMessage}, but it's not a valid UwU`)
+              : log.warn(`${wasRenamedBackMessage}, but it's also not a valid UwU`)
           }),
         )
       }),

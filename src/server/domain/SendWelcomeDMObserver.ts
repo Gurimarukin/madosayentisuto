@@ -38,10 +38,10 @@ export const SendWelcomeDMObserver = (Logger: LoggerGetter) => {
 
 const welcomeMessage = (member: GuildMember): BaseMessageOptions => ({
   content: StringUtils.stripMargins(
-    `Ha ha !
+    `Haha !
     |Tu as rejoint le serveur **${member.guild.name}**, quelle erreur !
     |En guise de cadeau de bienvenue, découvre immédiatement l'histoire du véritable capitaine en cliquant sur ce lien plein de malice !
-    |C'est comme OSS 117 mais en pirate.`,
+    |C'est comme OSS 117, mais en pirate.`,
   ),
   embeds: [
     MessageComponent.safeEmbed({
