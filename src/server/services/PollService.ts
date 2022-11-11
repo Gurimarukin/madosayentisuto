@@ -1,10 +1,10 @@
 import { pipe } from 'fp-ts/function'
 
-import { Future } from '../../shared/utils/fp'
+import type { MessageId } from '../../shared/models/MessageId'
 import type { Maybe, NonEmptyArray } from '../../shared/utils/fp'
+import { Future } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import type { MessageId } from '../models/MessageId'
 import { Poll } from '../models/poll/Poll'
 import type { PollQuestionPersistence } from '../persistence/PollQuestionPersistence'
 import type { PollResponsePersistence } from '../persistence/PollResponsePersistence'

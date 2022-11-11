@@ -1,12 +1,12 @@
 import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import { MessageId } from '../../shared/models/MessageId'
 import { Sink } from '../../shared/models/rx/Sink'
 import type { NonEmptyArray, NotUsed } from '../../shared/utils/fp'
 import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import { MessageId } from '../models/MessageId'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 import { PollResponse } from '../models/poll/PollResponse'

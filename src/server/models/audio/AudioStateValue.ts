@@ -2,12 +2,14 @@ import type { Message } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
+import { MessageView } from '../../../shared/models/MessageView'
 import { AudioStateValueView } from '../../../shared/models/audio/AudioStateValueView'
 import type { Track } from '../../../shared/models/audio/music/Track'
 import { createUnion } from '../../../shared/utils/createUnion'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import type { GuildSendableChannel } from '../../utils/ChannelUtils'
+import { ChannelUtils } from '../../utils/ChannelUtils'
 import type { MyFile } from '../FileOrDir'
 
 type AudioStateValue = typeof u.T
@@ -50,7 +52,14 @@ const fold =
   }
 
 const toView = fold<AudioStateValueView>({
-  onMusic: s => AudioStateValueView.music(s.isPaused, s.currentTrack, s.queue),
+  onMusic: s =>
+    AudioStateValueView.music(
+      s.isPaused,
+      s.currentTrack,
+      s.queue,
+      ChannelUtils.toView(s.messageChannel),
+      pipe(s.message, Maybe.map(MessageView.fromMessage)),
+    ),
   onElevator: s =>
     AudioStateValueView.elevator(
       pipe(

@@ -1,8 +1,7 @@
 import * as C from 'io-ts/Codec'
 
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
-
-import { MessageId } from '../MessageId'
+import { MessageId } from '../../../shared/models/MessageId'
 
 const codec = C.struct({
   message: MessageId.codec,

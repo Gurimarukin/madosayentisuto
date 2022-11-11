@@ -2,9 +2,9 @@ import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
 import type { DiscordUserId } from '../../../shared/models/DiscordUserId'
+import type { MessageId } from '../../../shared/models/MessageId'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
-import type { MessageId } from '../MessageId'
 import type { ChoiceWithResponses } from './ChoiceWithResponses'
 import type { PollQuestion } from './PollQuestion'
 import type { PollResponse } from './PollResponse'

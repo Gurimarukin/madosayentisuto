@@ -1,9 +1,9 @@
 import * as C from 'io-ts/Codec'
 
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
+import { MessageId } from '../../../shared/models/MessageId'
 import { Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
-import { MessageId } from '../MessageId'
 import { ThreadWithMessage } from './ThreadWithMessage'
 
 const codec = C.struct({

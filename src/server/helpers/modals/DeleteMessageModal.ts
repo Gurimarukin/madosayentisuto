@@ -3,9 +3,9 @@ import { TextInputStyle } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
+import { MessageId } from '../../../shared/models/MessageId'
 import { Maybe } from '../../../shared/utils/fp'
 
-import { MessageId } from '../../models/MessageId'
 import { Modal } from '../../models/discord/Modal'
 import { CustomId } from '../../utils/ioTsUtils'
 

@@ -1,6 +1,7 @@
 import { pipe } from 'fp-ts/function'
 import React from 'react'
 
+import { MessageId } from '../../shared/models/MessageId'
 import type { AudioStateValueView } from '../../shared/models/audio/AudioStateValueView'
 import type { AudioStateView } from '../../shared/models/audio/AudioStateView'
 import type { Track } from '../../shared/models/audio/music/Track'
@@ -26,21 +27,41 @@ export const AudioState = ({ guild, state }: Props): JSX.Element => (
         </>
       )}
     </Li>
-    {state.type === 'Disconnected' ? null : <AudioStateValue value={state.value} />}
+    {state.type === 'Disconnected' ? null : <AudioStateValue guild={guild} value={state.value} />}
   </ul>
 )
 
 type AudioStateValueProps = {
+  readonly guild: GuildId
   readonly value: AudioStateValueView
 }
 
-const AudioStateValue = ({ value }: AudioStateValueProps): JSX.Element => {
+const AudioStateValue = ({ guild, value }: AudioStateValueProps): JSX.Element => {
   switch (value.type) {
     case 'Music':
       return (
         <>
           <Li label="value" className="items-center gap-3">
             <span>{value.type}</span>
+            <span>-</span>
+            <span>
+              {pipe(
+                value.message,
+                Maybe.fold(
+                  () => <ChannelViewComponent guild={guild} channel={value.messageChannel} />,
+                  ({ id, url }) => (
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="cursor-pointer underline"
+                    >
+                      Message{`<${MessageId.unwrap(id)}>`}
+                    </a>
+                  ),
+                ),
+              )}
+            </span>
             <span>-</span>
             <span>{value.isPaused ? '⏸️' : '▶️'}</span>
           </Li>
