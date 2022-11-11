@@ -4,7 +4,9 @@ import { flow, pipe } from 'fp-ts/function'
 import type { Lens } from 'monocle-ts/Lens'
 
 import type { ChannelId } from '../../shared/models/ChannelId'
+import { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
 import { GuildId } from '../../shared/models/guild/GuildId'
+import type { TSubject } from '../../shared/models/rx/TSubject'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
@@ -13,6 +15,7 @@ import { AudioSubscription } from '../helpers/AudioSubscription'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import type { ResourcesHelper } from '../helpers/ResourcesHelper'
 import type { YtDlp } from '../helpers/YtDlp'
+import { OldAndNewState } from '../models/OldAndNewState'
 import type { Calls } from '../models/guildState/Calls'
 import { GuildState } from '../models/guildState/GuildState'
 import type { CallsDb } from '../models/guildState/db/CallsDb'
@@ -38,6 +41,7 @@ export const GuildStateService = (
   resourcesHelper: ResourcesHelper,
   ytDlp: YtDlp,
   guildStatePersistence: GuildStatePersistence,
+  serverToClientEventSubject: TSubject<ServerToClientEvent>,
 ) => {
   const logger = Logger('GuildStateService')
 
@@ -100,16 +104,24 @@ export const GuildStateService = (
     type Setter = (a_: LensInner<GuildStateLens[K]>) => (s: GuildState) => GuildState
     const update = (GuildState.Lens[key].set as Setter)(a)
 
-    return shouldUpsert ? cacheUpdateAtAndUpsertDb(guild, update) : cacheUpdateAt(guild, update)
+    return pipe(
+      shouldUpsert ? cacheUpdateAtAndUpsertDb(guild, update) : cacheUpdateAt(guild, update),
+      Future.chainFirstIOEitherK(({ oldState, newState }) =>
+        GuildState.Eq.equals(oldState, newState)
+          ? IO.notUsed
+          : serverToClientEventSubject.next(ServerToClientEvent.guildStateUpdated),
+      ),
+      Future.map(({ newState }) => newState),
+    )
   }
 
   function cacheUpdateAtAndUpsertDb(
     guild: Guild,
     update: (state: GuildState) => GuildState,
-  ): Future<GuildState> {
+  ): Future<OldAndNewState<GuildState>> {
     return pipe(
       cacheUpdateAt(guild, update),
-      Future.chainFirstIOK(newState => {
+      Future.chainFirstIOK(({ newState }) => {
         const log = LogUtils.pretty(logger, guild)
 
         // upsert new state, but don't wait until it's done; immediatly return state from cache
@@ -130,11 +142,11 @@ export const GuildStateService = (
   function cacheUpdateAt(
     guild: Guild,
     update: (state: GuildState) => GuildState,
-  ): Future<GuildState> {
+  ): Future<OldAndNewState<GuildState>> {
     return pipe(
       getShouldLoadFromDb(guild),
-      Future.map(update),
-      Future.chainFirstIOEitherK(newState => cacheSet(GuildId.fromGuild(guild), newState)),
+      Future.map(oldState => OldAndNewState(oldState, update(oldState))),
+      Future.chainFirstIOEitherK(({ newState }) => cacheSet(GuildId.fromGuild(guild), newState)),
     )
   }
 

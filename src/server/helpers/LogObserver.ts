@@ -29,7 +29,7 @@ export const LogObserver = (
         level === 'trace'
           ? Future.notUsed
           : pipe(
-              serverToClientEventSubject.next(ServerToClientEvent.Log({ name, level, message })),
+              serverToClientEventSubject.next(ServerToClientEvent.log({ name, level, message })),
               IO.chain(() => IO.fromIO(DayJs.now)),
               IO.chainIOK(date => logService.addLog({ date, name, level, message })),
               Future.fromIOEither,

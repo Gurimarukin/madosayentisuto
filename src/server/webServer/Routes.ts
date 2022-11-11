@@ -48,7 +48,7 @@ export const Routes = (
     m(api.scheduledEvents.get, () => withAuth(scheduledEventController.listScheduledEvents)),
 
     m(api.logs.get, () => withAuth(logController.listLogs)),
-    u(api.logs.ws, () => withAuthUpgrade(logController.webSocket)),
+    u(api.ws, () => withAuthUpgrade(logController.webSocket)),
   ]
 }
 

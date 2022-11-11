@@ -22,6 +22,7 @@ import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
+import type { OldAndNewState } from '../models/OldAndNewState'
 import type { AudioStateConnected, AudioStateConnecting } from '../models/audio/AudioState'
 import { AudioState, AudioStateConnect } from '../models/audio/AudioState'
 import {
@@ -64,11 +65,6 @@ type AudioPlayerEvents = {
   ) => void
 }
 /* eslint-enable functional/no-return-void */
-
-export type OldAndNewState<A, B = A> = {
-  readonly oldState: A
-  readonly newState: B
-}
 
 export type AudioSubscription = {
   readonly getAudioState: io.IO<AudioState>

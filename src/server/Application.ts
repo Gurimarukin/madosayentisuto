@@ -81,7 +81,8 @@ export const Application = (
   const { Logger } = loggerObservable
   const logger = Logger('Application')
 
-  const clientId = config.client.id
+  const serverToClientEventPubSub = PubSub<ServerToClientEvent>()
+  const wsServerEventPubSub = PubSub<WSServerEvent>() // TODO: do something with wsServerEventPubSub.observable?
 
   const botStateService = BotStateService(Logger, discord, botStatePersistence)
   const logService = LogService(logPersistence)
@@ -91,14 +92,12 @@ export const Application = (
     resourcesHelper,
     ytDlp,
     guildStatePersistence,
+    serverToClientEventPubSub.subject,
   )
   const memberBirthdateService = MemberBirthdateService(memberBirthdatePersistence)
   const pollService = PollService(pollQuestionPersistence, pollResponsePersistence)
   const scheduledEventService = ScheduledEventService(scheduledEventPersistence)
   const userService = UserService(Logger, userPersistence, jwtHelper)
-
-  const serverToClientEventPubSub = PubSub<ServerToClientEvent>()
-  const wsServerEventPubSub = PubSub<WSServerEvent>() // TODO: do something with wsServerEventPubSub.observable?
 
   const discordClientController = DiscordClientController(
     discord,
@@ -162,18 +161,18 @@ export const Application = (
       // │
       sub(ActivityStatusObserver(botStateService)),
       sub(AutoroleObserver(Logger)),
-      sub(DisconnectVocalObserver(clientId, guildStateService)),
+      sub(DisconnectVocalObserver(config.client.id, guildStateService)),
       sub(ElevatorObserver(Logger, config.elevatorDelay, guildStateService)),
-      sub(MusicThreadCleanObserver(Logger, clientId, guildStateService)),
+      sub(MusicThreadCleanObserver(Logger, config.client.id, guildStateService)),
       sub(NotifyBirthdayObserver(discord, guildStateService, memberBirthdateService)),
       sub(NotifyGuildLeaveObserver(Logger)),
-      sub(NotifyVoiceCallObserver(Logger, clientId, guildStateService)),
+      sub(NotifyVoiceCallObserver(Logger, config.client.id, guildStateService)),
       sub(ScheduledEventObserver(Logger, discord, scheduledEventService, guildStateService)),
       sub(ScheduleItsFridayObserver(Logger, scheduledEventService)),
       sub(SendWelcomeDMObserver(Logger)),
       sub(SetDefaultRoleObserver(Logger, guildStateService)),
       sub(TextInteractionsObserver(config.captain, discord)),
-      sub(UwURenamerObserver(Logger, clientId, config.uwuServers)),
+      sub(UwURenamerObserver(Logger, config.client.id, config.uwuServers)),
       // └ helpers/
       sub(ObserverWithRefinement.of(LogMadEventObserver(logger))),
       loggerObservable.subscribe('debug', logsObserver.logEventObserver),

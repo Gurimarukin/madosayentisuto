@@ -1,4 +1,5 @@
 import type {
+  APIPartialChannel,
   CategoryChannel,
   Channel,
   DMChannel,
@@ -11,7 +12,7 @@ import type {
   VoiceChannel,
 } from 'discord.js'
 import { ChannelType } from 'discord.js'
-import { predicate, refinement } from 'fp-ts'
+import { eq, predicate, refinement } from 'fp-ts'
 import type { Refinement } from 'fp-ts/Refinement'
 import { pipe } from 'fp-ts/function'
 
@@ -177,6 +178,8 @@ const toView = (c: NamedChannel): ChannelView => ({
   name: c.name,
 })
 
+const EqById: eq.Eq<APIPartialChannel> = pipe(ChannelId.Eq, eq.contramap(ChannelId.fromChannel))
+
 // export
 
 export const ChannelUtils = {
@@ -200,6 +203,7 @@ export const ChannelUtils = {
   isThread,
 
   toView,
+  EqById,
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
