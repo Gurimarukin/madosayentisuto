@@ -1,9 +1,8 @@
-import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
 import { LogLevelWithoutTrace } from '../log/LogLevel'
 
-const commonCodec = C.struct({})
+type ServerToClientEventLog = C.TypeOf<typeof logCodec>
 
 const logCodec = C.struct({
   type: C.literal('Log'),
@@ -12,23 +11,32 @@ const logCodec = C.struct({
   message: C.string,
 })
 
-const codec = pipe(
-  commonCodec,
-  C.intersect(
-    C.sum('type')({
-      Log: logCodec,
-    }),
-  ),
-)
+type LogArgs = Omit<ServerToClientEventLog, 'type'>
+const log = (args: LogArgs): ServerToClientEventLog => ({ type: 'Log', ...args })
 
-export type ServerToClientEvent = C.TypeOf<typeof codec>
+type ServerToClientEventGuildStateUpdated = C.TypeOf<typeof guildStateUpdatedCodec>
 
-type Common = C.TypeOf<typeof commonCodec>
+const guildStateUpdatedCodec = C.struct({
+  type: C.literal('GuildStateUpdated'),
+})
 
-type Log = Common & C.TypeOf<typeof logCodec>
+const guildStateUpdated: ServerToClientEventGuildStateUpdated = { type: 'GuildStateUpdated' }
 
-type LogArgs = Omit<Log, 'type'>
+type ServerToClientEvent = C.TypeOf<typeof codec>
 
-const Log = (args: LogArgs): Log => ({ type: 'Log', ...args })
+const codec = C.sum('type')({
+  Log: logCodec,
+  GuildStateUpdated: guildStateUpdatedCodec,
+})
 
-export const ServerToClientEvent = { Log, codec }
+const ServerToClientEvent = {
+  isLog: (event: ServerToClientEvent): event is ServerToClientEventLog => event.type === 'Log',
+  isGuildStateUpdated: (
+    event: ServerToClientEvent,
+  ): event is ServerToClientEventGuildStateUpdated => event.type === 'GuildStateUpdated',
+  log,
+  guildStateUpdated,
+  codec,
+}
+
+export { ServerToClientEvent, ServerToClientEventLog }

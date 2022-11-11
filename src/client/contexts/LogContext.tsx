@@ -1,31 +1,18 @@
 /* eslint-disable functional/no-expression-statement, functional/no-return-void */
-import { apply, json } from 'fp-ts'
-import { flow, pipe } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import type {
-  CloseEvent as ReconnectingCloseEvent,
-  ErrorEvent as ReconnectingErrorEvent,
-  Event as ReconnectingEvent,
-} from 'reconnecting-websocket'
-import ReconnectingWebSocket from 'reconnecting-websocket'
 
 import { apiRoutes } from '../../shared/ApiRouter'
 import { DayJs } from '../../shared/models/DayJs'
-import { ClientToServerEvent } from '../../shared/models/event/ClientToServerEvent'
 import type { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
 import type { Log } from '../../shared/models/log/Log'
 import { LogsWithCount } from '../../shared/models/log/LogsWithCount'
-import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { PubSub } from '../../shared/models/rx/PubSub'
 import { TObservable } from '../../shared/models/rx/TObservable'
-import type { TSubject } from '../../shared/models/rx/TSubject'
-import { PubSubUtils } from '../../shared/utils/PubSubUtils'
-import { Either, Future, IO, List, NotUsed, toNotUsed } from '../../shared/utils/fp'
+import { Future, IO, List, NotUsed } from '../../shared/utils/fp'
 
-import { config } from '../config/unsafe'
-import { WSClientEvent } from '../model/event/WSClientEvent'
 import { getOnError } from '../utils/getOnError'
 import { useHttp } from './HttpContext'
+import { useServerClientWS } from './ServerClientWSContext'
 
 type LogContext = {
   readonly logs: List<Log>
@@ -37,6 +24,7 @@ const LogContext = createContext<LogContext | undefined>(undefined)
 
 export const LogContextProvider: React.FC = ({ children }) => {
   const { http } = useHttp()
+  const { serverToClientEventObservable } = useServerClientWS()
 
   const [logs, setLogs] = useState<List<Log>>([])
   const [count, setCount] = useState(0)
@@ -62,28 +50,13 @@ export const LogContextProvider: React.FC = ({ children }) => {
   )
 
   useEffect(() => {
-    const { closeWebSocket } = pipe(
-      initWs,
-      IO.chainFirst(({ wsClientEventObservable }) =>
-        pipe(wsClientEventObservable, TObservable.subscribe(getOnError)({ next: onWSClientEvent })),
-      ),
+    const subscription = pipe(
+      serverToClientEventObservable,
+      TObservable.subscribe(getOnError)({ next: onServerToClientEvent }),
       IO.chainFirstIOK(() => pipe(fetchInitialLogs(), IO.runFuture(getOnError))),
       IO.runUnsafe,
     )
-    return () => pipe(closeWebSocket, IO.runUnsafe)
-
-    function onWSClientEvent(e: WSClientEvent): Future<NotUsed> {
-      switch (e.type) {
-        case 'Message':
-          return onServerToClientEvent(e.event)
-        case 'Open':
-        case 'Close':
-        case 'WSError':
-        case 'InvalidMessageError':
-          // return Future.fromIOEither(logger.info(e)) // TODO: do something?
-          return Future.notUsed
-      }
-    }
+    return () => subscription.unsubscribe()
 
     function onServerToClientEvent(e: ServerToClientEvent): Future<NotUsed> {
       switch (e.type) {
@@ -98,9 +71,11 @@ export const LogContextProvider: React.FC = ({ children }) => {
               return NotUsed
             }),
           )
+        case 'GuildStateUpdated':
+          return Future.notUsed
       }
     }
-  }, [fetchInitialLogs])
+  }, [fetchInitialLogs, serverToClientEventObservable])
 
   const tryRefetchInitialLogs = useCallback(
     (): Promise<NotUsed> => Future.run(getOnError)(fetchInitialLogs()),
@@ -124,69 +99,3 @@ export const useLog = (): LogContext => {
   }
   return context
 }
-
-const reconnectingWebSocket: IO<ReconnectingWebSocket> = IO.tryCatch(() => {
-  const url = new URL(apiRoutes.logs.ws, config.apiHost)
-  // eslint-disable-next-line functional/immutable-data
-  url.protocol = window.location.protocol.startsWith('https') ? 'wss' : 'ws'
-  return new ReconnectingWebSocket(url.toString())
-})
-
-type InitWSResult = {
-  readonly clientToServerEventSubject: TSubject<ClientToServerEvent>
-  readonly wsClientEventObservable: TObservable<WSClientEvent>
-  readonly closeWebSocket: IO<void>
-}
-
-const initWs: IO<InitWSResult> = pipe(
-  reconnectingWebSocket,
-  IO.chain(ws => {
-    const wsClientEventPubSub = PubSub<WSClientEvent>()
-    const pub = PubSubUtils.publish(getOnError)(wsClientEventPubSub.subject.next)(
-      'addEventListener',
-    )<{
-      /* eslint-disable functional/no-return-void */
-      readonly open: (event: ReconnectingEvent) => void
-      readonly close: (event: ReconnectingCloseEvent) => void
-      readonly error: (event: ReconnectingErrorEvent) => void
-      readonly message: (event: MessageEvent<unknown>) => void
-      /* eslint-enable functional/no-return-void */
-    }>(ws)
-
-    const clientToServerEventPubSub = PubSub<ClientToServerEvent>()
-
-    return pipe(
-      apply.sequenceT(IO.ApplyPar)(
-        // wsClientEventPubSub
-        pub('open', WSClientEvent.Open),
-        pub('close', WSClientEvent.Close),
-        pub('error', WSClientEvent.WSError),
-        pub('message', WSClientEvent.messageFromRawEvent),
-
-        // clientToServerEventPubSub
-        PubSubUtils.subscribeWithRefinement(
-          getOnError,
-          clientToServerEventPubSub.observable,
-        )(
-          ObserverWithRefinement.of({
-            next: flow(
-              ClientToServerEvent.codec.encode,
-              json.stringify,
-              Either.mapLeft(Either.toError),
-              Future.fromEither,
-              Future.chainIOEitherK(encodedJson => IO.tryCatch(() => ws.send(encodedJson))),
-              Future.map(toNotUsed),
-            ),
-          }),
-        ),
-      ),
-      IO.map(
-        (): InitWSResult => ({
-          clientToServerEventSubject: clientToServerEventPubSub.subject,
-          wsClientEventObservable: wsClientEventPubSub.observable,
-          closeWebSocket: IO.tryCatch(() => ws.close()),
-        }),
-      ),
-    )
-  }),
-)

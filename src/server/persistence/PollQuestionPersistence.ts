@@ -1,10 +1,10 @@
 import { pipe } from 'fp-ts/function'
 
+import { MessageId } from '../../shared/models/MessageId'
 import type { NonEmptyArray, NotUsed } from '../../shared/utils/fp'
 import { Future, List, Maybe } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
-import { MessageId } from '../models/MessageId'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 import { PollQuestion } from '../models/poll/PollQuestion'

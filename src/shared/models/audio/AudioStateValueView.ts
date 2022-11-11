@@ -1,6 +1,8 @@
 import * as C from 'io-ts/Codec'
 
 import { List, Maybe, NonEmptyArray } from '../../utils/fp'
+import { ChannelView } from '../ChannelView'
+import { MessageView } from '../MessageView'
 import { Track } from './music/Track'
 
 type AudioStateValueView = C.TypeOf<typeof codec>
@@ -13,8 +15,8 @@ const musicCodec = C.struct({
   isPaused: C.boolean,
   currentTrack: Maybe.codec(Track.codec),
   queue: List.codec(Track.codec),
-  // messageChannel: ChannelView.codec,
-  // message: Maybe.codec(MessageView.codec),
+  messageChannel: ChannelView.codec,
+  message: Maybe.codec(MessageView.codec),
   // pendingEvents: List.codec(C.string),
 })
 
@@ -32,16 +34,16 @@ const music = (
   isPaused: boolean,
   currentTrack: Maybe<Track>,
   queue: List<Track>,
-  // messageChannel: ChannelView,
-  // message: Maybe<MessageView>,
+  messageChannel: ChannelView,
+  message: Maybe<MessageView>,
   // pendingEvents: List<string>,
 ): AudioStateValueViewMusic => ({
   type: 'Music',
   isPaused,
   currentTrack,
   queue,
-  // messageChannel,
-  // message,
+  messageChannel,
+  message,
   // pendingEvents,
 })
 

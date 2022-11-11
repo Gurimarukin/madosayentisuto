@@ -26,6 +26,7 @@ type Message = typeof u.Message.T
 export type WSClientEvent = typeof u.T
 
 export const WSClientEvent = {
+  is: u.is,
   Open: u.Open,
   Close: u.Close,
   WSError: u.WSError,

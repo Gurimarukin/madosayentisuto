@@ -1,6 +1,5 @@
 import type { Match, Parser } from 'fp-ts-routing'
-import { end } from 'fp-ts-routing'
-import { format, lit, str } from 'fp-ts-routing'
+import { end, format, lit, str } from 'fp-ts-routing'
 
 import type { DiscordUserId } from './models/DiscordUserId'
 import type { Method } from './models/Method'
@@ -24,7 +23,7 @@ const apiMember = api.then(lit('member')).then(codec('userId')<DiscordUserId>(st
 const apiMemberBirthdate = apiMember.then(lit('birthdate'))
 const apiScheduledEvents = api.then(lit('scheduledEvents'))
 const apiLogs = api.then(lit('logs'))
-const apiLogsWs = apiLogs.then(lit('ws'))
+const apiWs = api.then(lit('ws'))
 
 // final
 const healthcheckGet = m(apiHealthcheck, 'get')
@@ -57,7 +56,8 @@ export const apiParsers = {
     },
   },
   scheduledEvents: { get: p(scheduledEventsGet) },
-  logs: { get: p(logsGet), ws: apiLogsWs.then(end).parser },
+  logs: { get: p(logsGet) },
+  ws: apiWs.then(end).parser,
 }
 
 /**
@@ -75,10 +75,8 @@ export const apiRoutes = {
     },
   },
   scheduledEvents: { get: r(scheduledEventsGet, {}) },
-  logs: {
-    get: r(logsGet, {}),
-    ws: format(apiLogsWs.formatter, {}),
-  },
+  logs: { get: r(logsGet, {}) },
+  ws: format(apiWs.formatter, {}),
 }
 
 /**

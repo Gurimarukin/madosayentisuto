@@ -15,40 +15,43 @@ import { DiscordUtils } from '../utils/DiscordUtils'
 import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
 import { cssClasses } from '../utils/cssClasses'
 
-export const ScheduledEvents = (): JSX.Element =>
-  basicAsyncRenderer(
-    useMySWR(apiRoutes.scheduledEvents.get, {}, [
-      List.decoder(ScheduledEventView.codec),
-      'ScheduledEventView[]',
-    ]),
-  )(events => (
-    <div className="flex h-full flex-col">
-      <Header>
-        <h1 className="text-3xl">Rappels</h1>
-      </Header>
-      <div className="grow overflow-auto">
-        <table className="grid grid-cols-[auto_auto_auto_auto_1fr]">
-          <thead className="contents">
-            <tr className="contents text-lg font-bold">
-              <Th>Date</Th>
-              <Th>Auteur</Th>
-              <Th>Qui</Th>
-              <Th>Quoi</Th>
-              <Th />
-            </tr>
-          </thead>
-          <tbody className="contents">
-            {events.map((event, i) => (
-              // eslint-disable-next-line react/no-array-index-key
-              <tr key={i} className="group contents">
-                {renderEvent(event)}
+export const ScheduledEvents = (): JSX.Element => (
+  <div className="flex h-full flex-col">
+    <Header>
+      <h1 className="text-3xl">Rappels</h1>
+    </Header>
+    <div className="flex grow justify-center overflow-auto">
+      {basicAsyncRenderer(
+        useMySWR(apiRoutes.scheduledEvents.get, {}, [
+          List.decoder(ScheduledEventView.codec),
+          'ScheduledEventView[]',
+        ]),
+      )(events => (
+        <div className="grow overflow-auto">
+          <table className="grid grid-cols-[auto_auto_auto_auto_1fr]">
+            <thead className="contents">
+              <tr className="contents text-lg font-bold">
+                <Th>Date</Th>
+                <Th>Auteur</Th>
+                <Th>Qui</Th>
+                <Th>Quoi</Th>
+                <Th />
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="contents">
+              {events.map((event, i) => (
+                // eslint-disable-next-line react/no-array-index-key
+                <tr key={i} className="group contents">
+                  {renderEvent(event)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
     </div>
-  ))
+  </div>
+)
 
 const renderEvent = (event: ScheduledEventView): JSX.Element => {
   switch (event.type) {
