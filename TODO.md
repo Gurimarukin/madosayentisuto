@@ -1,18 +1,14 @@
-- upgrade react
+- tier-list
 - select leave message chan
 - deploy: on guild join
-- admin : move some things to webapp
-- modal?
-- Img
-- moderators/owner
-- generalize bot
-- webapp
-  - tier-list
-- commands register: unsubscribe when done?
-- `Either.toError`?
-- try to override declaration types to use GuildId, TSnowflake, ...
+- admin: move some things to webapp
+- img
 - logs id
+- GuildState: use AsyncQueue
 - remove disables
+- upgrade react
+- commands register: unsubscribe when done?
+- try to override declaration types to use GuildId, TSnowflake, ...
 
 ---
 
