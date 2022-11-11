@@ -14,7 +14,7 @@ import { config } from '../config/unsafe'
 import { appRoutes } from '../router/AppRouter'
 import { useHistory } from './HistoryContext'
 
-type HttpContext = {
+export type HttpContext = {
   readonly http: {
     <O, B>(methodWithUrl: Tuple<string, HttpMethod>, options?: HttpOptions<O, B>): Promise<unknown>
     <A, O, B>(

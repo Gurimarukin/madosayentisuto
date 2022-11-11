@@ -14,9 +14,11 @@ import { flow, identity, pipe } from 'fp-ts/function'
 import type { LoggerType } from '../../shared/models/LoggerType'
 import { Store } from '../../shared/models/Store'
 import { Track } from '../../shared/models/audio/music/Track'
+import { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
 import { AsyncQueue } from '../../shared/models/rx/AsyncQueue'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../../shared/models/rx/PubSub'
+import type { TSubject } from '../../shared/models/rx/TSubject'
 import { PubSubUtils } from '../../shared/utils/PubSubUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
@@ -85,6 +87,7 @@ const of = (
   Logger: LoggerGetter,
   resourcesHelper: ResourcesHelper,
   ytDlp: YtDlp,
+  serverToClientEventSubject: TSubject<ServerToClientEvent>,
   guild: Guild,
 ): IO<AudioSubscription> => {
   const logger = Logger(`AudioSubscription-${guild.name}#${guild.id}`)
@@ -476,6 +479,11 @@ const of = (
             f(oldState),
             Future.chain(newState =>
               refreshMusicMessageAndSendPendingEvents({ oldState, newState }),
+            ),
+            Future.chainFirstIOEitherK(newState =>
+              AudioState.Eq.equals(oldState, newState)
+                ? IO.notUsed
+                : serverToClientEventSubject.next(ServerToClientEvent.guildStateUpdated),
             ),
           ),
         ),

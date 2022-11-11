@@ -1,5 +1,5 @@
 import type { AudioPlayer, PlayerSubscription, VoiceConnection } from '@discordjs/voice'
-import { refinement } from 'fp-ts'
+import { eq, refinement } from 'fp-ts'
 import type { Kind } from 'fp-ts/HKT'
 import type { Refinement } from 'fp-ts/Refinement'
 import { pipe } from 'fp-ts/function'
@@ -142,6 +142,41 @@ const toView = fold<AudioStateView>({
     AudioStateView.connected(ChannelUtils.toView(s.channel), AudioStateValue.toView(s.value)),
 })
 
+const Eq: eq.Eq<AudioState> = eq.fromEquals((x, y) => {
+  if (x.type !== y.type) return false
+  switch (x.type) {
+    case 'Disconnected':
+      return audioStateDisconnectedEq.equals(x, y as AudioStateDisconnected)
+    case 'Connecting':
+      return audioStateConnectingEq.equals(x, y as AudioStateConnecting<AudioStateValue>)
+    case 'Connected':
+      return audioStateConnectedEq.equals(x, y as AudioStateConnected<AudioStateValue>)
+  }
+})
+
+const eqIgnore: eq.Eq<unknown> = eq.fromEquals(() => true)
+
+const audioStateDisconnectedEq = eq.struct<AudioStateDisconnected>({
+  type: eqIgnore,
+})
+
+const audioStateConnectingEq = eq.struct<AudioStateConnecting<AudioStateValue>>({
+  type: eqIgnore,
+  channel: ChannelUtils.EqById,
+  value: AudioStateValue.Eq,
+  voiceConnection: eqIgnore,
+  audioPlayer: eqIgnore,
+})
+
+const audioStateConnectedEq = eq.struct<AudioStateConnected<AudioStateValue>>({
+  type: eqIgnore,
+  channel: ChannelUtils.EqById,
+  value: AudioStateValue.Eq,
+  voiceConnection: eqIgnore,
+  audioPlayer: eqIgnore,
+  subscription: eqIgnore,
+})
+
 const AudioState = {
   disconnected,
   connecting,
@@ -157,6 +192,7 @@ const AudioState = {
   fold,
 
   toView,
+  Eq,
 }
 
 type FoldValueArgs<F extends AudioStateConnectedURIS, A, B> = {

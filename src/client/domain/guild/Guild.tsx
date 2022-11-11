@@ -20,7 +20,7 @@ type Props = {
   readonly guildId: GuildId
 }
 export const Guild = ({ guildId }: Props): JSX.Element => (
-  <GuildLayout guildId={guildId} selected={undefined}>
+  <GuildLayout guildId={guildId} selected={undefined} options={{ revalidateOnFocus: false }}>
     {(guild, { mutate }) => <GuildComponent guild={guild} mutate={mutate} />}
   </GuildLayout>
 )

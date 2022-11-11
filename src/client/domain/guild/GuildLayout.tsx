@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/function'
 import React from 'react'
-import type { SWRResponse } from 'swr'
+import type { BareFetcher, SWRConfiguration, SWRResponse } from 'swr'
 
 import { apiRoutes } from '../../../shared/ApiRouter'
 import type { GuildId } from '../../../shared/models/guild/GuildId'
@@ -18,11 +18,18 @@ export type GuildViewResponse = Omit<SWRResponse<GuildView, unknown>, 'data'>
 type Props = {
   readonly guildId: GuildId
   readonly selected: 'emojis' | 'members' | undefined
+  readonly options?: SWRConfiguration<GuildView, unknown, BareFetcher<GuildView>>
   readonly children?: (guild: GuildView, response: GuildViewResponse) => React.ReactNode
 }
 
-export const GuildLayout = ({ guildId, selected, children }: Props): JSX.Element => {
-  const response = useMySWR(apiRoutes.guild.get(guildId), {}, [GuildView.codec, 'GuildView'])
+export const GuildLayout = ({ guildId, selected, options, children }: Props): JSX.Element => {
+  const response = useMySWR(
+    apiRoutes.guild.get(guildId),
+    {},
+    [GuildView.codec, 'GuildView'],
+    options,
+  )
+
   const { data: guild, ...rest } = response
 
   return (

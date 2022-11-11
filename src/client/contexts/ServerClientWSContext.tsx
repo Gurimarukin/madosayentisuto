@@ -34,7 +34,10 @@ const ServerClientWSContext = createContext<ServerClientWSContext | undefined>(u
 
 export const ServerClientWSContextProvider: React.FC = ({ children }) =>
   basicAsyncRenderer(
-    useSWR(apiRoutes.ws, url => pipe(initWs(url), Future.fromIOEither, Future.runUnsafe)),
+    useSWR(apiRoutes.ws, url => pipe(initWs(url), Future.fromIOEither, Future.runUnsafe), {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }),
   )(({ value }) => (
     <ServerClientWSContext.Provider value={value}>{children}</ServerClientWSContext.Provider>
   ))
