@@ -18,7 +18,7 @@
   },
   "scripts": {
     "clean": "rm -fr .parcel-cache dist",
-    "prebuild": "yarn run checkEnv && yarn run clean",
+    "prebuild": "yarn run clean && yarn run checkEnv",
     "build": "tsc -p tsconfig.build.json && parcel build",
     "checkEnv": "ts-node src/server/checkEnv.ts && ts-node src/client/checkEnv.ts",
     "createUser": "ts-node src/server/createUser.ts",
