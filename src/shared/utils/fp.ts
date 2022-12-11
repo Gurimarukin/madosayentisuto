@@ -14,7 +14,7 @@ import {
 import type { Predicate } from 'fp-ts/Predicate'
 import type { Refinement } from 'fp-ts/Refinement'
 import type { Lazy } from 'fp-ts/function'
-import { flow, identity, pipe } from 'fp-ts/function'
+import { flow, identity, pipe, tuple } from 'fp-ts/function'
 import type { Codec } from 'io-ts/Codec'
 import * as C_ from 'io-ts/Codec'
 import type { Decoder } from 'io-ts/Decoder'
@@ -124,7 +124,7 @@ export const List = {
 export type Tuple<A, B> = readonly [A, B]
 export const Tuple = {
   ...readonlyTuple,
-  of: <A, B>(a: A, b: B): Tuple<A, B> => [a, b],
+  of: tuple,
 }
 
 export type Tuple3<A, B, C> = readonly [A, B, C]

@@ -1,4 +1,9 @@
-- elevator: next track
+- /admin rename
+- /koh-lanta
+- DM on rename
+- /shi-fu-mi
+- edit autorole: role select?
+- webapp: elevator: next track
 - tier-list
 - select leave message chan
 - deploy: on guild join

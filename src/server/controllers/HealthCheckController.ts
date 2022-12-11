@@ -1,9 +1,9 @@
 import { pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 
-import type { HealthCheckService } from '../../services/HealthCheckService'
-import type { EndedMiddleware } from '../models/MyMiddleware'
-import { MyMiddleware as M } from '../models/MyMiddleware'
+import type { HealthCheckService } from '../services/HealthCheckService'
+import type { EndedMiddleware } from '../webServer/models/MyMiddleware'
+import { MyMiddleware as M } from '../webServer/models/MyMiddleware'
 
 export type HealthCheckController = ReturnType<typeof HealthCheckController>
 

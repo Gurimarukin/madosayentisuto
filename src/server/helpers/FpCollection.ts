@@ -23,7 +23,7 @@ import type {
 import type { LoggerType } from '../../shared/models/LoggerType'
 import { Store } from '../../shared/models/Store'
 import { TObservable } from '../../shared/models/rx/TObservable'
-import type { Dict, NotUsed, Tuple } from '../../shared/utils/fp'
+import type { NotUsed, Tuple } from '../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
@@ -35,7 +35,7 @@ export type FpCollection = ReturnType<ReturnType<ReturnType<typeof FpCollection>
 
 export const FpCollection =
   (logger: LoggerType) =>
-  <A, O extends Dict<string, unknown>>(
+  <A, O extends MongoDocument>(
     codecWithName: Tuple<Codec<unknown, OptionalUnlessRequiredId<O>, A>, string>,
   ) =>
   (collection: MongoCollection<O>) => {
@@ -178,7 +178,7 @@ type Path<S> = {
 const getPath = <A>(): Path<A> => List.mkString('.')
 
 const fpCollectionHelpersFindAll =
-  <O, B>(
+  <O extends MongoDocument, B>(
     logger: LoggerType,
     collection: MongoCollection<O>,
     [decoder, decoderName]: Tuple<Decoder<unknown, B>, string>,

@@ -5,7 +5,7 @@ import type { DiscordUserId } from './models/DiscordUserId'
 import type { Method } from './models/Method'
 import type { GuildId } from './models/guild/GuildId'
 import { RouterUtils } from './utils/RouterUtils'
-import type { Tuple } from './utils/fp'
+import type { Dict, Tuple } from './utils/fp'
 
 const { codec } = RouterUtils
 
@@ -89,7 +89,7 @@ export type ParserWithMethod<A> = WithMethod<Parser<A>>
 type RouteWithMethod = WithMethod<string>
 
 // Match with Method
-function m<A>(match: Match<A>, method: Method): MatchWithMethod<A> {
+function m<A extends Dict<string, unknown>>(match: Match<A>, method: Method): MatchWithMethod<A> {
   return [match.then(end), method]
 }
 

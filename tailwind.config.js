@@ -1,6 +1,6 @@
 module.exports = {
   mode: 'jit',
-  content: ['./src/**/*.{html,js,ts,jsx,tsx}'],
+  content: ['./src/client/**/*.{html,js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {

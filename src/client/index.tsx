@@ -10,6 +10,5 @@ ReactDOM.render(
   <DndProvider backend={HTML5Backend}>
     <App />
   </DndProvider>,
-
   document.getElementById('root'),
 )

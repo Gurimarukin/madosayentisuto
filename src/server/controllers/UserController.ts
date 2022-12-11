@@ -1,14 +1,14 @@
 import { pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 
-import { LoginPayload } from '../../../shared/models/webUser/LoginPayload'
-import { Token } from '../../../shared/models/webUser/Token'
-import { Maybe } from '../../../shared/utils/fp'
+import { LoginPayload } from '../../shared/models/webUser/LoginPayload'
+import { Token } from '../../shared/models/webUser/Token'
+import { Maybe } from '../../shared/utils/fp'
 
-import { constants } from '../../config/constants'
-import type { UserService } from '../../services/UserService'
-import type { EndedMiddleware } from '../models/MyMiddleware'
-import { MyMiddleware as M } from '../models/MyMiddleware'
+import { constants } from '../config/constants'
+import type { UserService } from '../services/UserService'
+import type { EndedMiddleware } from '../webServer/models/MyMiddleware'
+import { MyMiddleware as M } from '../webServer/models/MyMiddleware'
 
 export type UserController = ReturnType<typeof UserController>
 

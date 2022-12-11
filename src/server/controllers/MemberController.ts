@@ -1,12 +1,12 @@
 import { pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 
-import type { DiscordUserId } from '../../../shared/models/DiscordUserId'
-import { DayJsFromISOString } from '../../../shared/utils/ioTsUtils'
+import type { DiscordUserId } from '../../shared/models/DiscordUserId'
+import { DayJsFromISOString } from '../../shared/utils/ioTsUtils'
 
-import type { MemberBirthdateService } from '../../services/MemberBirthdateService'
-import type { EndedMiddleware } from '../models/MyMiddleware'
-import { MyMiddleware as M } from '../models/MyMiddleware'
+import type { MemberBirthdateService } from '../services/MemberBirthdateService'
+import type { EndedMiddleware } from '../webServer/models/MyMiddleware'
+import { MyMiddleware as M } from '../webServer/models/MyMiddleware'
 
 export type MemberController = ReturnType<typeof MemberController>
 
