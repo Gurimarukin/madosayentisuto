@@ -1,10 +1,11 @@
-- bug: first rename: oldNickname is always null
 - /admin rename
 - /koh-lanta
 - /shi-fu-mi
 - edit autorole: role select?
 - webapp: elevator: next track
 - tier-list
+- check UwU on userUpdate
+- UwURenamer: maybe same mechanism for kicks/bans for fetching logs? (network delay, handle lots of logs :shrug:)
 - select leave message chan
 - deploy: on guild join
 - admin: move some things to webapp

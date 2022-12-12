@@ -4,7 +4,6 @@ import type {
   GuildAuditLogsEntry,
   GuildMember,
   Message,
-  PartialGuildMember,
   User,
 } from 'discord.js'
 import { AuditLogEvent } from 'discord.js'
@@ -50,7 +49,7 @@ const UwURenamerObserver = (
       case 'GuildMemberAdd':
         return onGuildMemberAdd(event.member)
       case 'GuildMemberUpdate':
-        return onGuildMemberUpdate(event.oldMember, event.newMember)
+        return onGuildMemberUpdate(event.newMember)
     }
   })
 
@@ -90,32 +89,25 @@ const UwURenamerObserver = (
   }
 
   function onGuildMemberUpdate(
-    oldMember: GuildMember | PartialGuildMember,
+    // oldMember: GuildMember | PartialGuildMember,
     newMember: GuildMember,
   ): Future<NotUsed> {
     if (DiscordUserId.fromUser(newMember.user) === clientId) return Future.notUsed // do nothing if bot was updated
 
-    if (oldMember.nickname !== newMember.nickname) {
-      // oldMember is not reliable for previous nickname, we have to use guild's audit logs
-      // (audit logs also gives us executor)
-      return onNicknameUpdated(newMember)
-    }
-
-    return Future.notUsed
+    // oldMember is not reliable for previous nickname, we have to use guild's audit logs
+    // (audit logs also gives us executor)
+    return pipe(
+      fetchMemberRenameFromAudioLog(newMember.guild),
+      futureMaybe.chainTaskEitherK(onNicknameUpdated(newMember)),
+      Future.map<Maybe<NotUsed>, NotUsed>(toNotUsed),
+    )
   }
 
-  function onNicknameUpdated(renamedMember: GuildMember): Future<NotUsed> {
-    const guild = renamedMember.guild
+  function fetchMemberRenameFromAudioLog(guild: Guild): Future<Maybe<MemberRename>> {
     return pipe(
-      GuildHelper.fetchLastAuditLog(guild, { type: AuditLogEvent.MemberUpdate }),
-      futureMaybe.getOrElse(() =>
-        Future.left(
-          Error(
-            `onNicknameUpdated: No GuildAuditLogsEntry<MemberUpdate> was found for ${guild.name}`,
-          ),
-        ),
-      ),
-      Future.chainEitherK(
+      GuildHelper.fetchLastAuditLog<AuditLogEvent>(guild),
+      futureMaybe.filter(isAuditLogEventMemberUpdate),
+      futureMaybe.chainEitherK(
         flow(
           validateMemberRename,
           Either.mapLeft(nea =>
@@ -129,56 +121,65 @@ const UwURenamerObserver = (
           ),
         ),
       ),
-      Future.chain(({ executor, oldNickname, newNickname }) => {
-        const log = LogUtils.pretty(logger, guild)
-        const wasRenamedMessage = `${renamedMember.user.tag} was renamed from ${formatNickname(
-          oldNickname,
-        )} to ${formatNickname(newNickname)} by ${executor.tag}`
-
-        if (!isUwUGuild(guild)) {
-          // just log and don't do anything else (even if bot was renamed)
-          return Future.fromIOEither(log.debug(wasRenamedMessage))
-        }
-
-        if (DiscordUserId.fromUser(executor) === clientId) {
-          // don't log (should have been logged when setNickname was called)
-          return Future.notUsed
-        }
-
-        if (isValidUwU(getDisplayName(renamedMember.user, newNickname))) {
-          // null    > UwU
-          // not UwU > UwU
-          // UwU     > UwU
-
-          // no rename needed, just log
-          return Future.fromIOEither(log.debug(wasRenamedMessage))
-        }
-
-        // null    > not UwU
-        // not UwU > not UwU
-        // UwU     > not UwU
-
-        // we have to rename it back
-        // warn if renaming to invalid UwU
-        return pipe(
-          log.debug(wasRenamedMessage),
-          Future.fromIOEither,
-          Future.chain(() => memberSetNickname(renamedMember, oldNickname)),
-          futureMaybe.chainFirstIOEitherK(() => {
-            const wasRenamedBackMessage = `Renamed ${
-              renamedMember.user.tag
-            } back to ${formatNickname(oldNickname)} after invalid UwU rename`
-            return isValidUwU(getDisplayName(renamedMember.user, oldNickname))
-              ? log.info(wasRenamedBackMessage)
-              : log.warn(`${wasRenamedBackMessage}, but it's also not a valid UwU`)
-          }),
-          futureMaybe.chain(newMember =>
-            sendRenamedDM(newMember, renamedBackMessage(newMember, newNickname)),
-          ),
-          Future.map(toNotUsed),
-        )
-      }),
+      futureMaybe.filter(
+        ({ oldNickname, newNickname }) => !Maybe.getEq(string.Eq).equals(oldNickname, newNickname),
+      ),
     )
+  }
+
+  function onNicknameUpdated(
+    renamedMember: GuildMember,
+  ): (memberRename: MemberRename) => Future<NotUsed> {
+    return ({ executor, oldNickname, newNickname }) => {
+      const guild = renamedMember.guild
+      const log = LogUtils.pretty(logger, guild)
+      const wasRenamedMessage = `${renamedMember.user.tag} was renamed from ${formatNickname(
+        oldNickname,
+      )} to ${formatNickname(newNickname)} by ${executor.tag}`
+
+      if (!isUwUGuild(guild)) {
+        // just log and don't do anything else (even if bot was renamed)
+        return Future.fromIOEither(log.debug(wasRenamedMessage))
+      }
+
+      if (DiscordUserId.fromUser(executor) === clientId) {
+        // don't log (should have been logged when setNickname was called)
+        return Future.notUsed
+      }
+
+      if (isValidUwU(getDisplayName(renamedMember.user, newNickname))) {
+        // null    > UwU
+        // not UwU > UwU
+        // UwU     > UwU
+
+        // no rename needed, just log
+        return Future.fromIOEither(log.debug(wasRenamedMessage))
+      }
+
+      // null    > not UwU
+      // not UwU > not UwU
+      // UwU     > not UwU
+
+      // we have to rename it back
+      // warn if renaming to invalid UwU
+      return pipe(
+        log.debug(wasRenamedMessage),
+        Future.fromIOEither,
+        Future.chain(() => memberSetNickname(renamedMember, oldNickname)),
+        futureMaybe.chainFirstIOEitherK(() => {
+          const wasRenamedBackMessage = `Renamed ${renamedMember.user.tag} back to ${formatNickname(
+            oldNickname,
+          )} after invalid UwU rename ("${formatNickname(newNickname)}")`
+          return isValidUwU(getDisplayName(renamedMember.user, oldNickname))
+            ? log.info(wasRenamedBackMessage)
+            : log.warn(`${wasRenamedBackMessage}, but it's also not a valid UwU`)
+        }),
+        futureMaybe.chain(newMember =>
+          sendRenamedDM(newMember, renamedBackMessage(newMember, newNickname)),
+        ),
+        Future.map(toNotUsed),
+      )
+    }
   }
 
   /**
@@ -214,6 +215,11 @@ const UwURenamerObserver = (
     )
   }
 }
+
+const isAuditLogEventMemberUpdate = (
+  log: GuildAuditLogsEntry<AuditLogEvent>,
+): log is GuildAuditLogsEntry<AuditLogEvent.MemberUpdate> =>
+  log.action === AuditLogEvent.MemberUpdate
 
 type MemberRename = {
   readonly executor: User
