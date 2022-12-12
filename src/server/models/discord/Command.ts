@@ -8,6 +8,7 @@ import type {
   APIApplicationCommandStringOption,
   APIApplicationCommandSubcommandGroupOption,
   APIApplicationCommandSubcommandOption,
+  APIApplicationCommandUserOption,
   ChannelType,
   RESTPostAPIApplicationCommandsJSONBody,
   RESTPostAPIChatInputApplicationCommandsJSONBody,
@@ -105,6 +106,10 @@ const Command = {
     }),
     boolean: (common: OptionCommon): APIApplicationCommandBooleanOption => ({
       type: ApplicationCommandOptionType.Boolean,
+      ...common,
+    }),
+    user: (common: OptionCommon): APIApplicationCommandUserOption => ({
+      type: ApplicationCommandOptionType.User,
       ...common,
     }),
     channel: ({ channel_types, ...common }: OptionChannel): APIApplicationCommandChannelOption => ({

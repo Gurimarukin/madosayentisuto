@@ -29,6 +29,7 @@ import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { LogUtils } from '../utils/LogUtils'
 import { DebugError } from '../utils/debugLeft'
+import { formatNickname } from '../utils/formatNickname'
 
 type UwURenamerObserver = ReturnType<typeof UwURenamerObserver>
 
@@ -68,19 +69,14 @@ const UwURenamerObserver = (
             memberSetNickname(member, Maybe.some(newNickname)),
             futureMaybe.chainFirstIOEitherK(newMember =>
               log.info(
-                `Renamed ${member.user.tag} to ${formatNickname(
-                  Maybe.fromNullable(newMember.nickname),
-                )} on guild join`,
+                `Renamed ${member.user.tag} to ${formatNickname(newMember.nickname)} on guild join`,
               ),
             ),
-            futureMaybe.chain(
-              (
-                newMember,
-              ): Future<Maybe<Message<false>>> => // TODO: remove explicit return type when upgrading TypeScript
-                pipe(
-                  sendRenamedDM(newMember, renamedOnJoinMessage(newMember)),
-                  Future.delay(constants.guildJoinRenamedDelay),
-                ),
+            futureMaybe.chain(newMember =>
+              pipe(
+                sendRenamedDM(newMember, renamedOnJoinMessage(newMember)),
+                Future.delay(constants.guildJoinRenamedDelay),
+              ),
             ),
             Future.map(toNotUsed),
           ),
@@ -197,7 +193,7 @@ const UwURenamerObserver = (
           ? pipe(
               LogUtils.pretty(logger, member.guild).warn(
                 `Couldn't rename ${member.user.tag} from ${formatNickname(
-                  Maybe.fromNullable(member.nickname),
+                  member.nickname,
                 )} to ${formatNickname(nickname)}: missing permissions`,
               ),
               Future.fromIOEither,
@@ -234,10 +230,7 @@ const validateMemberRename = (
 ): ValidatedNea<string, MemberRename> =>
   pipe(
     apply.sequenceS(stringValidation)({
-      executor: pipe(
-        Maybe.fromNullable(entry.executor),
-        ValidatedNea.fromOption(() => 'executor was not defined'),
-      ),
+      executor: pipe(entry.executor, ValidatedNea.fromNullable('executor was not defined')),
       nickChange: pipe(
         entry.changes,
         List.filter(change => change.key === 'nick'),
@@ -279,9 +272,6 @@ const getDisplayName = (user: User, nickname: Maybe<string>): string =>
     nickname,
     Maybe.getOrElse(() => user.username),
   )
-
-const formatNickname = (nickname: Maybe<string>): string =>
-  pipe(nickname, Maybe.toNullable, JSON.stringify)
 
 const uwuOrOwORegex = /(uwu|owo)/i
 

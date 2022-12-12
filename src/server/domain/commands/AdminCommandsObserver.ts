@@ -36,7 +36,7 @@ import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import type { Config } from '../../config/Config'
 import type { MyInteraction } from '../../helpers/DiscordConnector'
-import { DiscordConnector } from '../../helpers/DiscordConnector'
+import { DiscordConnector, isMissingPermissionsError } from '../../helpers/DiscordConnector'
 import { AutoroleMessage } from '../../helpers/messages/AutoroleMessage'
 import { DeleteMessageModal } from '../../helpers/modals/DeleteMessageModal'
 import type { EditMessageModalDefault } from '../../helpers/modals/EditMessageModal'
@@ -54,6 +54,7 @@ import type { EmojidexService } from '../../services/EmojidexService'
 import type { GuildStateService } from '../../services/GuildStateService'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { DebugError } from '../../utils/debugLeft'
+import { formatNickname } from '../../utils/formatNickname'
 
 const Keys = {
   admin: 'admin',
@@ -80,6 +81,9 @@ const Keys = {
   unset: 'unset',
   say: 'say',
   what: 'what',
+  rename: 'rename',
+  user: 'user',
+  nickname: 'nickname',
   editMessage: 'Edit (admin)',
   deleteMessage: 'Delete (admin)',
 }
@@ -271,6 +275,21 @@ const adminCommand = Command.chatInput({
       required: true,
     }),
   ),
+
+  Command.option.subcommand({
+    name: Keys.rename,
+    description: 'Jean Plank peut renommer un utilisateur pour vous',
+  })(
+    Command.option.user({
+      name: Keys.user,
+      description: "L'utilisateur à renommer",
+      required: true,
+    }),
+    Command.option.string({
+      name: Keys.nickname,
+      description: "Le nouveau pseudo (laisser vide pour le nom d'utilisateur)",
+    }),
+  ),
 )
 
 const messageEditCommand = Command.message({ name: Keys.editMessage })
@@ -383,6 +402,8 @@ export const AdminCommandsObserver = (
     switch (subcommand) {
       case Keys.say:
         return onSay(interaction)
+      case Keys.rename:
+        return onRename(interaction)
     }
     return Future.notUsed
   }
@@ -795,6 +816,46 @@ export const AdminCommandsObserver = (
               ),
           ),
         ),
+      ),
+    )
+  }
+
+  /**
+   * rename
+   */
+
+  function onRename(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    return pipe(
+      apply.sequenceS(Maybe.Apply)({
+        guild: Maybe.fromNullable(interaction.guild),
+        user: Maybe.fromNullable(interaction.options.getUser(Keys.user)),
+        newNickname: Maybe.some(Maybe.fromNullable(interaction.options.getString(Keys.nickname))),
+      }),
+      futureMaybe.fromOption,
+      futureMaybe.bind('member', ({ guild, user }) =>
+        DiscordConnector.fetchMember(guild, DiscordUserId.fromUser(user)),
+      ),
+      futureMaybe.bind('oldNickname', ({ member }) => futureMaybe.some(member.nickname)),
+      futureMaybe.chainFirst(({ member, newNickname }) =>
+        pipe(
+          DiscordConnector.memberSetNickname(member, newNickname),
+          Future.map(Maybe.some),
+          Future.orElse(e =>
+            e instanceof DebugError && isMissingPermissionsError(e.originalError)
+              ? futureMaybe.none
+              : Future.left(e),
+          ),
+        ),
+      ),
+      futureMaybe.match(
+        () => 'Erreur',
+        ({ member, oldNickname, newNickname }) =>
+          `Pseudo de ${member} changé de ${formatNickname(oldNickname)} à ${formatNickname(
+            newNickname,
+          )}`,
+      ),
+      Future.chain(content =>
+        DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
       ),
     )
   }

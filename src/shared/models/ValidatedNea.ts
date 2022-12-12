@@ -18,8 +18,11 @@ const fromEither: <E, A>(either: Either<E, A>) => ValidatedNea<E, A> = Either.ma
   NonEmptyArray.of,
 )
 
-const fromOption = <E, A>(onNone: () => E): ((ma: Maybe<A>) => ValidatedNea<E, A>) =>
+const fromOption = <E>(onNone: () => E): (<A>(ma: Maybe<A>) => ValidatedNea<E, A>) =>
   flow(Either.fromOption(onNone), fromEither)
+
+const fromNullable = <E>(e: E): (<A>(a: A) => ValidatedNea<E, NonNullable<A>>) =>
+  flow(Either.fromNullable(e), fromEither)
 
 const fromEmptyE = <E, A>(e: E): ((either: Either<List<E>, A>) => ValidatedNea<E, A>) =>
   Either.mapLeft(
@@ -49,6 +52,7 @@ const ValidatedNea = {
   invalid,
   fromEither,
   fromOption,
+  fromNullable,
   fromEmptyE,
   fromEmptyErrors,
   getValidation,

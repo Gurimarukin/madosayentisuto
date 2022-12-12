@@ -1,4 +1,3 @@
-- /admin rename
 - /koh-lanta
 - /shi-fu-mi
 - edit autorole: role select?
@@ -11,6 +10,7 @@
 - admin: move some things to webapp
 - img
 - logs id
+- cli: replace unset > with set empty option
 - GuildState: use AsyncQueue
 - remove disables
 - upgrade react
