@@ -1,5 +1,5 @@
-import { ChannelId } from '../../shared/models/ChannelId'
-import { GuildId } from '../../shared/models/guild/GuildId'
+import { ChannelId } from '../models/ChannelId'
+import { GuildId } from '../models/guild/GuildId'
 
 const url = (path: string): string => new URL(path, 'https://discord.com').toString()
 

@@ -69,6 +69,9 @@ const chainTaskEitherK = <A, B>(
 const chainIOK = <A, B>(f: (a: A) => io.IO<B>): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) =>
   chainTaskEitherK(flow(f, Future.fromIO))
 
+const chainIOEitherK = <A, B>(f: (a: A) => IO<B>): ((fa: Future<Maybe<A>>) => Future<Maybe<B>>) =>
+  chainTaskEitherK(flow(f, Future.fromIOEither))
+
 const chainFirst = fpTsChain.chainFirst(Chain)
 
 const chainFirstTaskEitherK = <A, B>(
@@ -126,6 +129,7 @@ export const futureMaybe = {
   chainOptionK,
   chainTaskEitherK,
   chainIOK,
+  chainIOEitherK,
   chainFirst,
   chainFirstTaskEitherK,
   chainFirstIOEitherK,

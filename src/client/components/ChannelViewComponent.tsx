@@ -2,8 +2,7 @@ import React from 'react'
 
 import type { ChannelView } from '../../shared/models/ChannelView'
 import type { GuildId } from '../../shared/models/guild/GuildId'
-
-import { DiscordUtils } from '../utils/DiscordUtils'
+import { DiscordUtils } from '../../shared/utils/DiscordUtils'
 
 type ChannelType = 'text' | 'audio'
 

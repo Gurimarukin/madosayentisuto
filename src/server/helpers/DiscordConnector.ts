@@ -462,6 +462,10 @@ const sendMessage = <InGuild extends boolean = boolean>(
   pipe(
     Future.tryCatch(() => channel.send(options)),
     Future.map(Maybe.some),
+    Future.orElse(e =>
+      // user blocked us
+      isDiscordAPIError('Cannot send messages to this user')(e) ? futureMaybe.none : Future.left(e),
+    ),
     debugLeft('sendMessage'),
   )
 

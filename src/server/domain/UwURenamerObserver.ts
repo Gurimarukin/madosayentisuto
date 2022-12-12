@@ -3,6 +3,7 @@ import type {
   Guild,
   GuildAuditLogsEntry,
   GuildMember,
+  Message,
   PartialGuildMember,
   User,
 } from 'discord.js'
@@ -15,16 +16,20 @@ import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ValidatedNea } from '../../shared/models/ValidatedNea'
 import { GuildId } from '../../shared/models/guild/GuildId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
+import { DiscordUtils } from '../../shared/utils/DiscordUtils'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import type { NotUsed } from '../../shared/utils/fp'
-import { Either, Future, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
+import { Either, Future, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import { DiscordConnector } from '../helpers/DiscordConnector'
+import { constants } from '../config/constants'
+import { DiscordConnector, isMissingPermissionsError } from '../helpers/DiscordConnector'
 import { GuildHelper } from '../helpers/GuildHelper'
+import { MessageComponent } from '../models/discord/MessageComponent'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { LogUtils } from '../utils/LogUtils'
+import { DebugError } from '../utils/debugLeft'
 
 type UwURenamerObserver = ReturnType<typeof UwURenamerObserver>
 
@@ -56,19 +61,29 @@ const UwURenamerObserver = (
 
     const log = LogUtils.pretty(logger, member.guild)
     return pipe(
-      renameUwU(member.user.username),
+      uwuRename(member.user.username),
       Maybe.fold(
-        () => Future.fromIOEither(log.info(`No need to renamed ${member.user.tag} on guild join`)),
+        () => Future.fromIOEither(log.info(`No need to rename ${member.user.tag} on guild join`)),
         newNickname =>
           pipe(
-            DiscordConnector.memberSetNickname(member, Maybe.some(newNickname)),
-            Future.chainIOEitherK(newMember =>
+            memberSetNickname(member, Maybe.some(newNickname)),
+            futureMaybe.chainFirstIOEitherK(newMember =>
               log.info(
                 `Renamed ${member.user.tag} to ${formatNickname(
                   Maybe.fromNullable(newMember.nickname),
                 )} on guild join`,
               ),
             ),
+            futureMaybe.chain(
+              (
+                newMember,
+              ): Future<Maybe<Message<false>>> => // TODO: remove explicit return type when upgrading TypeScript
+                pipe(
+                  sendRenamedDM(newMember, renamedOnJoinMessage(newMember)),
+                  Future.delay(constants.guildJoinRenamedDelay),
+                ),
+            ),
+            Future.map(toNotUsed),
           ),
       ),
     )
@@ -121,7 +136,7 @@ const UwURenamerObserver = (
         )} to ${formatNickname(newNickname)} by ${executor.tag}`
 
         if (!isUwUGuild(guild)) {
-          // just log and don't do anything else (event if bot was renamed)
+          // just log and don't do anything else (even if bot was renamed)
           return Future.fromIOEither(log.debug(wasRenamedMessage))
         }
 
@@ -148,8 +163,8 @@ const UwURenamerObserver = (
         return pipe(
           log.debug(wasRenamedMessage),
           Future.fromIOEither,
-          Future.chain(() => DiscordConnector.memberSetNickname(renamedMember, oldNickname)),
-          Future.chainIOEitherK(() => {
+          Future.chain(() => memberSetNickname(renamedMember, oldNickname)),
+          futureMaybe.chainFirstIOEitherK(() => {
             const wasRenamedBackMessage = `Renamed ${
               renamedMember.user.tag
             } back to ${formatNickname(oldNickname)} after invalid UwU rename`
@@ -157,8 +172,38 @@ const UwURenamerObserver = (
               ? log.info(wasRenamedBackMessage)
               : log.warn(`${wasRenamedBackMessage}, but it's also not a valid UwU`)
           }),
+          futureMaybe.chain(newMember =>
+            sendRenamedDM(newMember, renamedBackMessage(newMember, newNickname)),
+          ),
+          Future.map(toNotUsed),
         )
       }),
+    )
+  }
+
+  /**
+   * @returns none if missing permissions
+   */
+  function memberSetNickname(
+    member: GuildMember,
+    nickname: Maybe<string>,
+  ): Future<Maybe<GuildMember>> {
+    return pipe(
+      DiscordConnector.memberSetNickname(member, nickname),
+      Future.map(Maybe.some),
+      Future.orElse(e =>
+        e instanceof DebugError && isMissingPermissionsError(e.originalError)
+          ? pipe(
+              LogUtils.pretty(logger, member.guild).warn(
+                `Couldn't rename ${member.user.tag} from ${formatNickname(
+                  Maybe.fromNullable(member.nickname),
+                )} to ${formatNickname(nickname)}: missing permissions`,
+              ),
+              Future.fromIOEither,
+              Future.map(() => Maybe.none),
+            )
+          : Future.left(e),
+      ),
     )
   }
 
@@ -238,7 +283,7 @@ export const isValidUwU = (nickname: string): boolean =>
   uwuOrOwORegex.test(StringUtils.cleanUTF8ToASCII(nickname))
 
 // none: no rename needed
-export const renameUwU = (username: string): Maybe<string> => {
+export const uwuRename = (username: string): Maybe<string> => {
   if (isValidUwU(username)) return Maybe.none
   const reversed = StringUtils.reverse(username)
   return pipe(
@@ -276,5 +321,35 @@ const renamersNormal: NonEmptyArray<(username: string) => string> = [
   string.replace(/[aeiouy]$/i, 'UwU'), // squish ending vowel
   s => (spaceRegex.test(s) ? `${s} UwU` : `${s}UwU`),
 ]
+
+const sendRenamedDM = (member: GuildMember, content: string): Future<Maybe<Message<false>>> =>
+  DiscordConnector.sendMessage(member, {
+    embeds: [
+      MessageComponent.safeEmbed({
+        color: constants.messagesColor,
+        title: `[Serveur ${member.guild.name}]`,
+        url: DiscordUtils.urls.guild(GuildId.fromGuild(member.guild)),
+        description: content,
+      }),
+    ],
+  })
+
+const renamedOnJoinMessage = (member: GuildMember): string =>
+  StringUtils.stripMargins(
+    `Haha !
+      |Pour info, je t'ai renommé **${member.displayName}** sur le serveur **${member.guild.name}**, vu qu'il faut que TOUT LE MONDE ait *"UwU"* (ou *"OwO"*) dans son pseudal.
+      |Oui, je sais, ce serveur a des standards bizarres.`,
+  )
+
+const renamedBackMessage = (member: GuildMember, forbiddenRenameAttempt: Maybe<string>): string =>
+  StringUtils.stripMargins(
+    `Haha !
+      |Tu as essayé de te renommer **${pipe(
+        forbiddenRenameAttempt,
+        Maybe.getOrElse(() => member.user.username),
+      )}** sur le serveur **${member.guild.name}**.
+      |Or, il faut que TOUT LE MONDE ait *"UwU"* (ou *"OwO"*) dans son pseudal.
+      |J'ai donc annulé ton renommage (en te repassant à **${member.displayName}**).`,
+  )
 
 export { UwURenamerObserver }

@@ -1,6 +1,6 @@
+- bug: first rename: oldNickname is always null
 - /admin rename
 - /koh-lanta
-- DM on rename
 - /shi-fu-mi
 - edit autorole: role select?
 - webapp: elevator: next track
