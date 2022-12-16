@@ -46,6 +46,7 @@ import type {
   StartThreadOptions,
   ThreadChannel,
   User,
+  VoiceState,
 } from 'discord.js'
 import { Client, DiscordAPIError, GatewayIntentBits, Partials, Routes } from 'discord.js'
 import { refinement } from 'fp-ts'
@@ -525,6 +526,12 @@ const voiceConnectionSubscribe = (
     IO.map(Maybe.fromNullable),
   )
 
+const voiceStateDisconnect = (voiceState: VoiceState, reason?: string): Future<GuildMember> =>
+  pipe(
+    Future.tryCatch(() => voiceState.disconnect(reason)),
+    debugLeft('voiceStateDisconnect'),
+  )
+
 /**
  * constructor
  */
@@ -600,6 +607,7 @@ export const DiscordConnector = {
   voiceConnectionDestroy,
   voiceConnectionJoin,
   voiceConnectionSubscribe,
+  voiceStateDisconnect,
 
   fromConfig,
 }

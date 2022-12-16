@@ -1,4 +1,3 @@
-- /koh-lanta
 - /shi-fu-mi
 - edit autorole: role select?
 - webapp: elevator: next track
@@ -6,6 +5,7 @@
 - check UwU on userUpdate
 - UwURenamer: maybe same mechanism for kicks/bans for fetching logs? (network delay, handle lots of logs :shrug:)
 - select leave message chan
+- command: reply "Erreur", when error
 - deploy: on guild join
 - admin: move some things to webapp
 - img
