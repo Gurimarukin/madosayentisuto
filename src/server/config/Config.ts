@@ -32,6 +32,7 @@ export type Config = {
   readonly ytDlpPath: string
   readonly admins: NonEmptyArray<DiscordUserId>
   readonly uwuServers: List<GuildId>
+  readonly kohLantaVictims: List<DiscordUserId>
   readonly captain: CaptainConfig
   readonly elevatorDelay: MsDuration
 }
@@ -102,6 +103,7 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
       ytDlpPath: r(D.string)('YTDLP_PATH'),
       admins: r(NonEmptyArrayFromString.decoder(DiscordUserId.codec))('ADMINS'),
       uwuServers: r(ArrayFromString.decoder(GuildId.codec))('UWU_SERVERS'),
+      kohLantaVictims: r(ArrayFromString.decoder(DiscordUserId.codec))('KOH_LANTA_VICTIMS'),
       captain: seqS<CaptainConfig>({
         mentions: r(ArrayFromString.decoder(D.string))('CAPTAIN_MENTIONS'),
         thanks: r(ArrayFromString.decoder(D.string))('CAPTAIN_THANKS'),

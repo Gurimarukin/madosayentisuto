@@ -153,7 +153,7 @@ export const Application = (
         ),
       ),
       sub(MusicCommandsObserver(Logger, ytDlp, guildStateService)),
-      sub(OtherCommandsObserver(config.client.id)),
+      sub(OtherCommandsObserver(config)),
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
       sub(RemindCommandsObserver(scheduledEventService)),
       // │  └ startup/

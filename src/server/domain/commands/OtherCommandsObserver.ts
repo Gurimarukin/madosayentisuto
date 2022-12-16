@@ -1,6 +1,6 @@
 import type { ChatInputCommandInteraction } from 'discord.js'
 import { GuildMember } from 'discord.js'
-import { random } from 'fp-ts'
+import { io, random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
@@ -8,8 +8,10 @@ import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { NotUsed } from '../../../shared/utils/fp'
-import { Either, Future, List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
+import { Either, Future, List, Maybe, NonEmptyArray, Try } from '../../../shared/utils/fp'
+import { futureEither } from '../../../shared/utils/futureEither'
 
+import type { Config } from '../../config/Config'
 import { constants } from '../../config/constants'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
 import { Command } from '../../models/discord/Command'
@@ -49,7 +51,7 @@ const kohLantaCommand = Command.chatInput({
 export const otherCommands = [pingCommand, randomCaseCommand, kohLantaCommand]
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const OtherCommandsObserver = (clientId: DiscordUserId) => {
+export const OtherCommandsObserver = (config: Config) => {
   return ObserverWithRefinement.fromNext(
     MadEvent,
     'InteractionCreate',
@@ -95,37 +97,69 @@ export const OtherCommandsObserver = (clientId: DiscordUserId) => {
         ? Maybe.fromNullable(interaction.member.voice.channel)
         : Maybe.none,
       Either.fromOption(() => 'Haha ! Il faut être dans un salon vocal pour faire ça !'),
-      Either.chainOptionK(() => 'Erreur')(channel =>
-        pipe(
-          channel.members.toJSON(),
-          List.filter(m => !DiscordUserId.Eq.equals(DiscordUserId.fromUser(m.user), clientId)),
-          NonEmptyArray.fromReadonlyArray,
-        ),
-      ),
-      Either.map(random.randomElem),
-      Either.fold(
-        content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
-        flow(
-          Future.fromIO,
-          Future.chainFirst(eliminated =>
-            DiscordConnector.voiceStateDisconnect(
-              eliminated.voice,
-              "J'ai décidé de vous éliminer et ma sentence est irrévocable.",
+      Future.right,
+      futureEither.chainTaskEitherK(channel => {
+        const members = channel.members.toJSON()
+        return pipe(
+          findFirstConnectedVictim(members),
+          Maybe.map(flow(io.of, Try.right)),
+          Maybe.getOrElse(() => randomNonBotMember(members)),
+          Future.fromEither,
+        )
+      }),
+      Future.chain(
+        Either.fold(
+          content => DiscordConnector.interactionReply(interaction, { content, ephemeral: true }),
+          flow(
+            Future.fromIO,
+            Future.chainFirst(eliminated =>
+              DiscordConnector.voiceStateDisconnect(
+                eliminated.voice,
+                "J'ai décidé de vous éliminer et ma sentence est irrévocable.",
+              ),
+            ),
+            Future.chain(eliminated =>
+              DiscordConnector.interactionReply(interaction, {
+                embeds: [
+                  MessageComponent.safeEmbed({
+                    color: constants.messagesColor,
+                    description: `J'ai décidé d'éliminer ${eliminated} et ma sentence est irrévocable.`,
+                  }),
+                ],
+                ephemeral: false,
+              }),
             ),
           ),
-          Future.chain(eliminated =>
-            DiscordConnector.interactionReply(interaction, {
-              embeds: [
-                MessageComponent.safeEmbed({
-                  color: constants.messagesColor,
-                  description: `J'ai décidé d'éliminer ${eliminated} et ma sentence est irrévocable.`,
-                }),
-              ],
-              ephemeral: false,
-            }),
+        ),
+      ),
+    )
+  }
+
+  function findFirstConnectedVictim(members: List<GuildMember>): Maybe<GuildMember> {
+    return pipe(
+      config.kohLantaVictims,
+      List.findFirstMap(victim =>
+        pipe(
+          members,
+          List.findFirst(member =>
+            DiscordUserId.Eq.equals(DiscordUserId.fromUser(member.user), victim),
           ),
         ),
       ),
+    )
+  }
+
+  function randomNonBotMember(members: List<GuildMember>): Try<io.IO<GuildMember>> {
+    return pipe(
+      members,
+      List.filter(m => !DiscordUserId.Eq.equals(DiscordUserId.fromUser(m.user), config.client.id)),
+      NonEmptyArray.fromReadonlyArray,
+      Try.fromOption(() =>
+        Error(
+          `randomNonBotMember: empty members after filtering out bot. This should never happen.`,
+        ),
+      ),
+      Try.map(random.randomElem),
     )
   }
 }
