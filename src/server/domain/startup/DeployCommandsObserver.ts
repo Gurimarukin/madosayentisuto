@@ -12,11 +12,13 @@ import { DiscordConnector } from '../../helpers/DiscordConnector'
 import type { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
+import { DebugError } from '../../utils/debugLeft'
 import { adminCommands } from '../commands/AdminCommandsObserver'
 import { musicCommands } from '../commands/MusicCommandsObserver'
 import { otherCommands } from '../commands/OtherCommandsObserver'
 import { pollCommands } from '../commands/PollCommandsObserver'
 import { remindCommands } from '../commands/RemindCommandsObserver'
+import { shifumiCommands } from '../commands/ShifumiObserver'
 
 const commands = List.flatten<Command>([
   adminCommands,
@@ -24,6 +26,7 @@ const commands = List.flatten<Command>([
   otherCommands,
   pollCommands,
   remindCommands,
+  shifumiCommands,
 ])
 
 const { left: guildCommands, right: globalCommands } = pipe(
@@ -87,9 +90,14 @@ export const DeployCommandsObserver = (
         NonEmptyArray.map(command => command.value),
         DiscordConnector.restPutApplicationGuildCommands(rest, config.client.id, guildId),
         Future.map(toNotUsed),
-        Future.orElseIOEitherK(e =>
-          logger.warn(`Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${e.stack}`),
-        ),
+        Future.orElseIOEitherK(e_ => {
+          const e = e_ instanceof DebugError ? e_.originalError : e_
+          return logger.warn(
+            `Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${e.name}: ${
+              e.message
+            }`,
+          )
+        }),
       )
     }
   }

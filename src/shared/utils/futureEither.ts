@@ -74,6 +74,9 @@ type FilterOrElse = {
 
 const filterOrElse = flow(Either.filterOrElse, Future.map) as FilterOrElse
 
+const fromNullable: <E>(e: E) => <A>(a: A) => Future<Either<E, NonNullable<A>>> =
+  eitherT.fromNullable(Future.Pointed)
+
 const map = eitherT.map(Future.Functor)
 
 export const futureEither = {
@@ -85,6 +88,7 @@ export const futureEither = {
   chain,
   chainTaskEitherK,
   filterOrElse,
+  fromNullable,
   left,
   map,
   right,

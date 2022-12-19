@@ -1,4 +1,5 @@
-- /shi-fu-mi
+- better command validation
+- merci DM
 - edit autorole: role select?
 - webapp: elevator: next track
 - tier-list
