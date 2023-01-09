@@ -35,6 +35,7 @@ import { MusicCommandsObserver } from './domain/commands/MusicCommandsObserver'
 import { OtherCommandsObserver } from './domain/commands/OtherCommandsObserver'
 import { PollCommandsObserver } from './domain/commands/PollCommandsObserver'
 import { RemindCommandsObserver } from './domain/commands/RemindCommandsObserver'
+import { ShifumiObserver } from './domain/commands/ShifumiObserver'
 import { DeployCommandsObserver } from './domain/startup/DeployCommandsObserver'
 import type { DiscordConnector } from './helpers/DiscordConnector'
 import { LogMadEventObserver } from './helpers/LogMadEventObserver'
@@ -156,6 +157,7 @@ export const Application = (
       sub(OtherCommandsObserver(config)),
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
       sub(RemindCommandsObserver(scheduledEventService)),
+      sub(ShifumiObserver(config.client.id)),
       // │  └ startup/
       sub(DeployCommandsObserver(Logger, config, discord)),
       // │
