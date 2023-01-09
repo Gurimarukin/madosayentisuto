@@ -157,7 +157,7 @@ export const Application = (
       sub(OtherCommandsObserver(config)),
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
       sub(RemindCommandsObserver(scheduledEventService)),
-      sub(ShifumiObserver()),
+      sub(ShifumiObserver(config.client.id)),
       // │  └ startup/
       sub(DeployCommandsObserver(Logger, config, discord)),
       // │
