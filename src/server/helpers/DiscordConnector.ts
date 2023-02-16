@@ -1,4 +1,3 @@
-import type { REST } from '@discordjs/rest'
 import type {
   AudioPlayer,
   AudioPlayerStatus,
@@ -39,6 +38,7 @@ import type {
   MessageReaction,
   ModalSubmitInteraction,
   PartialTextBasedChannelFields,
+  REST,
   RESTPostAPIApplicationCommandsJSONBody,
   RequestData,
   Role,

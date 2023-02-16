@@ -1,5 +1,5 @@
-import { REST } from '@discordjs/rest'
 import type { Guild } from 'discord.js'
+import { REST } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
 import { GuildId } from '../../../shared/models/guild/GuildId'
