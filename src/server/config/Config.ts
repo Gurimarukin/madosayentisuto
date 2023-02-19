@@ -13,6 +13,7 @@ import type { List, NonEmptyArray, Try } from '../../shared/utils/fp'
 import { Either, IO, Maybe } from '../../shared/utils/fp'
 import { URLFromString } from '../../shared/utils/ioTsUtils'
 
+import { BotToken } from '../models/discord/BotToken'
 import {
   ArrayFromString,
   BooleanFromString,
@@ -44,7 +45,7 @@ type LoggerConfig = {
 
 export type ClientConfig = {
   readonly id: DiscordUserId
-  readonly secret: string
+  readonly token: BotToken
 }
 
 export type HttpConfig = {
@@ -85,7 +86,7 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
       }),
       client: seqS<ClientConfig>({
         id: r(DiscordUserId.codec)('CLIENT_ID'),
-        secret: r(D.string)('CLIENT_SECRET'),
+        token: r(BotToken.codec)('CLIENT_SECRET'),
       }),
       http: seqS<HttpConfig>({
         port: r(NumberFromString.decoder)('HTTP_PORT'),

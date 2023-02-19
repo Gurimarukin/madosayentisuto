@@ -72,6 +72,7 @@ import { ActivityTypeBot } from '../models/botState/ActivityTypeBot'
 import { CommandId } from '../models/command/CommandId'
 import { GlobalPutCommandResult } from '../models/command/putCommandResult/GlobalPutCommandResult'
 import { GuildPutCommandResult } from '../models/command/putCommandResult/GuildPutCommandResult'
+import { BotToken } from '../models/discord/BotToken'
 import { MessageComponent } from '../models/discord/MessageComponent'
 import type { Modal } from '../models/discord/Modal'
 import type { GuildAudioChannel, GuildSendableChannel } from '../utils/ChannelUtils'
@@ -561,7 +562,7 @@ const fromConfig = (config: ClientConfig): Future<DiscordConnector> =>
         })
         /* eslint-disable functional/no-expression-statement */
         client.once('ready', () => resolve(of(client)))
-        client.login(config.secret)
+        client.login(BotToken.unwrap(config.token))
         /* eslint-enable functional/no-expression-statement */
       }),
   )

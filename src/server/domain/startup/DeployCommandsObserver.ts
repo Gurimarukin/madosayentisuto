@@ -9,6 +9,7 @@ import { Future, List, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp
 
 import type { Config } from '../../config/Config'
 import { DiscordConnector } from '../../helpers/DiscordConnector'
+import { BotToken } from '../../models/discord/BotToken'
 import type { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
@@ -39,7 +40,7 @@ export const DeployCommandsObserver = (
 ) => {
   const logger = Logger('DeployCommandsObserver')
 
-  const rest = new REST().setToken(config.client.secret)
+  const rest = new REST().setToken(BotToken.unwrap(config.client.token))
 
   return ObserverWithRefinement.fromNext(
     MadEvent,
