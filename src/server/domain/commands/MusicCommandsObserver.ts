@@ -10,6 +10,7 @@ import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../..
 import type { AudioSubscription } from '../../helpers/AudioSubscription'
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
 import type { YtDlp } from '../../helpers/YtDlp'
+import { YtDlpResult } from '../../helpers/YtDlp'
 import { MusicStateMessage } from '../../helpers/messages/MusicStateMessage'
 import { AudioState } from '../../models/audio/AudioState'
 import { AudioStateValue } from '../../models/audio/AudioStateValue'
@@ -143,16 +144,7 @@ export const MusicCommandsObserver = (
       Maybe.fromNullable,
       Maybe.fold(
         () => Future.right(Either.left(`Argument manquant : ${MusicStateMessage.Keys.track}`)),
-        flow(
-          validateTracks,
-          Future.orElse(e =>
-            pipe(
-              logger.warn(`validateTrack Error:\n${e.stack}`),
-              Future.fromIOEither,
-              Future.map(() => Either.left('URL invalide.')),
-            ),
-          ),
-        ),
+        validateTracks,
       ),
     )
   }
@@ -160,11 +152,26 @@ export const MusicCommandsObserver = (
   function validateTracks(url: string): Future<Either<string, NonEmptyArray<Track>>> {
     return pipe(
       ytDlp.metadata(url),
-      Future.map(({ videos }) =>
+      Future.chainIOEitherK((res): IO<Either<string, NonEmptyArray<Track>>> => {
+        switch (res.type) {
+          case 'Success':
+            return pipe(
+              res.value.videos,
+              NonEmptyArray.map(v => Track.of(v.title, v.webpage_url, v.thumbnail)),
+              Either.right,
+              IO.right,
+            )
+          case 'UnsupportedURLError':
+            return IO.right(Either.left('URL invalide.'))
+          case 'DecodeError':
+            return IO.left(YtDlpResult.decodeError(res))
+        }
+      }),
+      Future.orElse(e =>
         pipe(
-          videos,
-          NonEmptyArray.map(v => Track.of(v.title, v.webpage_url, v.thumbnail)),
-          Either.right,
+          logger.error(`validateTrack Error:\n${e.stack}`),
+          IO.map(() => Either.left<string, NonEmptyArray<Track>>('Erreur')),
+          Future.fromIOEither,
         ),
       ),
     )
