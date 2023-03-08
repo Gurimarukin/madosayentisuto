@@ -1,21 +1,36 @@
 import type { AudioResource } from '@discordjs/voice'
 import { createAudioResource, demuxProbe } from '@discordjs/voice'
+import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
+import type { DecodeError } from 'io-ts/Decoder'
 import { create as createYtDlp } from 'youtube-dl-exec'
 
-import { Either, Future, IO } from '../../shared/utils/fp'
+import { createUnion } from '../../shared/utils/createUnion'
+import { Either, Future, IO, NonEmptyArray } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import { VideosMetadata } from '../models/audio/music/VideosMetadata'
 
-export type YtDlp = ReturnType<typeof YtDlp>
+const u = createUnion({
+  Success: (value: VideosMetadata) => ({ value }),
+  UnsupportedURLError: (error: Error) => ({ error }),
+  DecodeError: (json: unknown, error: DecodeError) => ({ json, error }),
+})
+
+type YtDlpResult = typeof u.T
+
+const YtDlpResult = {
+  decodeError: (e: typeof u.DecodeError.T): Error => decodeError('VideosMetadata')(e.json)(e.error),
+}
+
+type YtDlp = ReturnType<typeof YtDlp>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const YtDlp = (binaryPath?: string) => {
+const YtDlp = (binaryPath: string) => {
   const ytDlpExec = createYtDlp(binaryPath)
 
   return {
-    metadata: (url: string): Future<VideosMetadata> =>
+    metadata: (url: string): Future<YtDlpResult> =>
       pipe(
         Future.tryCatch<unknown>(() =>
           ytDlpExec(
@@ -25,11 +40,19 @@ export const YtDlp = (binaryPath?: string) => {
               defaultSearch: 'ytsearch',
               abortOnError: true,
             },
-            { stdio: ['ignore', 'pipe', 'ignore'] },
+            { stdio: ['ignore', 'pipe', 'pipe'] },
           ),
         ),
-        Future.chainEitherK(u =>
-          pipe(VideosMetadata.decoder.decode(u), Either.mapLeft(decodeError('VideosMetadata')(u))),
+        Future.map(json =>
+          pipe(
+            VideosMetadata.decoder.decode(json),
+            Either.fold((error): YtDlpResult => u.DecodeError(json, error), u.Success),
+          ),
+        ),
+        Future.orElse(error =>
+          isUnsupportedURLError(url)(error)
+            ? Future.right(u.UnsupportedURLError(error))
+            : Future.left(error),
         ),
       ),
 
@@ -79,3 +102,12 @@ export const YtDlp = (binaryPath?: string) => {
       ),
   }
 }
+
+export { YtDlp, YtDlpResult }
+
+const isUnsupportedURLError =
+  (url: string) =>
+  (error: Error): boolean => {
+    const lastLine = pipe(error.message, string.split('\n'), NonEmptyArray.last)
+    return lastLine.trim() === `ERROR: Unsupported URL: ${url.trim()}`
+  }
