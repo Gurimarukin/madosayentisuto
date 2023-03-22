@@ -1,13 +1,8 @@
 import type {
-  DMChannel,
   Message,
   MessageCreateOptions,
   MessagePayload,
-  NewsChannel,
-  PartialDMChannel,
-  TextChannel,
-  ThreadChannel,
-  VoiceChannel,
+  PartialTextBasedChannelFields,
 } from 'discord.js'
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
@@ -22,14 +17,6 @@ import { constants } from '../config/constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MessageComponent } from '../models/discord/MessageComponent'
 import { MadEvent } from '../models/event/MadEvent'
-
-type MyChannel =
-  | DMChannel
-  | PartialDMChannel
-  | NewsChannel
-  | TextChannel
-  | ThreadChannel
-  | VoiceChannel
 
 // 'vol' & 'plagiat'
 // mention & thanks
@@ -89,7 +76,7 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
 
 const sendMessage =
   (message: string | MessagePayload | MessageCreateOptions) =>
-  (channel: MyChannel): Future<NotUsed> =>
+  (channel: PartialTextBasedChannelFields): Future<NotUsed> =>
     pipe(DiscordConnector.sendMessage(channel, message), Future.map(toNotUsed))
 
 const sendIDontLikeThieves = sendMessage(

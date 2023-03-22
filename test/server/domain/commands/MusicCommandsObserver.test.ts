@@ -1,13 +1,26 @@
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
+import util from 'util'
 
+import { DayJs } from '../../../../src/shared/models/DayJs'
 import type { LoggerType } from '../../../../src/shared/models/LoggerType'
 import { MsDuration } from '../../../../src/shared/models/MsDuration'
 import { Track } from '../../../../src/shared/models/audio/music/Track'
-import { Either, IO, Maybe, NonEmptyArray } from '../../../../src/shared/utils/fp'
+import { LogLevel } from '../../../../src/shared/models/log/LogLevel'
+import {
+  Dict,
+  Either,
+  IO,
+  List,
+  Maybe,
+  NonEmptyArray,
+  Tuple,
+  toNotUsed,
+} from '../../../../src/shared/utils/fp'
 
 import { Config } from '../../../../src/server/config/Config'
 import { MusicCommandsObserver } from '../../../../src/server/domain/commands/MusicCommandsObserver'
 import { YtDlp } from '../../../../src/server/helpers/YtDlp'
+import { consoleLogFormat } from '../../../../src/server/models/logger/observers/ConsoleLogObserver'
 import type { GuildStateService } from '../../../../src/server/services/GuildStateService'
 
 import { expectT } from '../../../expectT'
@@ -16,7 +29,22 @@ describe('validateTracks', () => {
   const { ytDlpPath } = pipe(Config.load, IO.runUnsafe)
 
   const { validateTracks } = MusicCommandsObserver(
-    () => ({} as LoggerType),
+    name =>
+      pipe(
+        LogLevel.values,
+        List.map(level =>
+          Tuple.of<readonly [LogLevel, LoggerType[LogLevel]]>(level, (...u) =>
+            pipe(
+              DayJs.now,
+              IO.fromIO,
+              IO.map(
+                flow(consoleLogFormat(name, level, util.format(...u)), console.log, toNotUsed),
+              ),
+            ),
+          ),
+        ),
+        Dict.fromEntries,
+      ),
     YtDlp(ytDlpPath),
     {} as GuildStateService,
   )
@@ -59,33 +87,35 @@ describe('validateTracks', () => {
       )
     }))
 
-  it('should search', () =>
-    validateTracks('sardoche le nerveux')().then(res => {
-      expectT(res).toStrictEqual(
-        Either.right(
+  it(
+    'should search',
+    () =>
+      validateTracks('sardoche le nerveux')().then(res => {
+        expectT(res).toStrictEqual(
           Either.right(
-            NonEmptyArray.of(
-              Track.of(
-                'SARDOCHE LE NERVEUX',
-                'https://www.youtube.com/watch?v=IvKbpO0cMKM',
-                Maybe.some('https://i.ytimg.com/vi_webp/IvKbpO0cMKM/maxresdefault.webp'),
+            Either.right(
+              NonEmptyArray.of(
+                Track.of(
+                  'SARDOCHE LE NERVEUX',
+                  'https://www.youtube.com/watch?v=IvKbpO0cMKM',
+                  Maybe.some('https://i.ytimg.com/vi_webp/IvKbpO0cMKM/maxresdefault.webp'),
+                ),
               ),
             ),
           ),
-        ),
-      )
-    }))
+        )
+      }),
+    MsDuration.unwrap(MsDuration.seconds(30)),
+  )
 
-  it('should fail on invalid site', () =>
-    validateTracks('https://dl.blbl.ch')().then(res => {
-      expectT(res).toStrictEqual(
-        Either.left(
-          Error(
-            `Command failed with exit code 1: ${ytDlpPath} https://dl.blbl.ch --dump-single-json --default-search ytsearch --abort-on-error`,
-          ),
-        ),
-      )
-    }))
+  it(
+    'should fail on invalid site',
+    () =>
+      validateTracks('https://blbl.ch')().then(res => {
+        expectT(res).toStrictEqual(Either.right(Either.left('URL invalide.')))
+      }),
+    MsDuration.unwrap(MsDuration.seconds(30)),
+  )
 
   it(
     'should validate Bandcamp album',

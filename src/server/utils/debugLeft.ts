@@ -4,7 +4,7 @@ import { Future } from '../../shared/utils/fp'
                   functional/no-this-expression */
 // eslint-disable-next-line functional/no-class
 export class DebugError extends Error {
-  public readonly stack = undefined
+  public override readonly stack = undefined
 
   constructor(functionName: string, public readonly originalError: Error) {
     super()

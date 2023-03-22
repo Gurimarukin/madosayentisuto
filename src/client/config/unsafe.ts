@@ -7,7 +7,7 @@ import { Config } from './Config'
 
 // It's important to have process.env.ENV_VAR fully, as it is inlined by Parcel
 const inlined: Dict<string, string | undefined> = {
-  API_HOST: process.env.API_HOST,
+  API_HOST: process.env['API_HOST'],
 }
 
 export const config = pipe(inlined, Config.parse, Try.getUnsafe)

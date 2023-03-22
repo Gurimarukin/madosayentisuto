@@ -16,6 +16,9 @@
 - upgrade react
 - commands register: unsubscribe when done?
 - try to override declaration types to use GuildId, TSnowflake, ...
+- swr v2
+- eslint-plugin-functional v5
+- Try.success/failure, Future.successful/failed
 
 ---
 

@@ -2,7 +2,6 @@ import type {
   APIInteractionGuildMember,
   APIPartialChannel,
   APIRole,
-  AttachmentPayload,
   ChatInputCommandInteraction,
   Guild,
   GuildMember,
@@ -1065,19 +1064,11 @@ export const AdminCommandsObserver = (
     message: Message,
   ): (modal: EditMessageModalDefault) => Future<Either<string, MessageEditOptions>> {
     return ({ content }) => {
-      const options: Omit<Required<MessageEditOptions>, 'allowedMentions' | 'files'> = {
+      const options: Omit<
+        Required<MessageEditOptions>,
+        'allowedMentions' | 'attachments' | 'files'
+      > = {
         content,
-        attachments: pipe(
-          message.attachments.toJSON(),
-          List.map(({ attachment, name, description }) => ({
-            toJSON: (): AttachmentPayload => ({
-              attachment,
-              name: name ?? undefined,
-              description: description ?? undefined,
-            }),
-          })),
-          List.asMutable,
-        ),
         flags: message.flags.toJSON(),
         embeds: message.embeds,
         components: message.components,
