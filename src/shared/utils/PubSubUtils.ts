@@ -8,8 +8,8 @@ import type { Dict, List, NotUsed } from './fp'
 import { IO, toNotUsed } from './fp'
 
 type TinyListenerSignature<L> = {
-  readonly // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [E in keyof L]: (...args: List<any>) => any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readonly [E in keyof L]: (...args: List<any>) => any
 }
 
 type ListenerSignature<L> = {
@@ -17,8 +17,8 @@ type ListenerSignature<L> = {
 }
 
 export type ToTiny<L extends ListenerSignature<L>> = {
-  readonly // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [K in keyof L]: (...args: L[K]) => any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readonly [K in keyof L]: (...args: L[K]) => any
 }
 
 type EventListenable<On extends string, L extends TinyListenerSignature<L>> = Dict<

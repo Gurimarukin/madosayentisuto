@@ -471,11 +471,11 @@ const sendMessage = <InGuild extends boolean = boolean>(
     debugLeft('sendMessage'),
   )
 
-const sendPrettyMessage = (
-  channel: PartialTextBasedChannelFields,
+const sendPrettyMessage = <InGuild extends boolean = boolean>(
+  channel: PartialTextBasedChannelFields<InGuild>,
   message: string,
   options: Omit<MessageCreateOptions, 'embeds'> = {},
-): Future<Maybe<Message>> =>
+): Future<Maybe<Message<InGuild>>> =>
   sendMessage(channel, {
     ...options,
     embeds: [MessageComponent.safeEmbed({ color: constants.messagesColor, description: message })],
