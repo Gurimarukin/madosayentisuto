@@ -16,6 +16,10 @@ export const constants = {
     tada: '🎉', // :tada:
 
     characters: emojiCharacters(),
+
+    mastery7: ':maitrise7:',
+    mastery6: ':maitrise6:',
+    mastery5: ':maitrise5:',
   } as const,
 
   messagesColor: Color.darkred,
@@ -52,6 +56,11 @@ export const constants = {
     // thumbnail: https://cdn.discordapp.com/attachments/636626556734930948/909048276957945886/unknown.png
     imageUrl:
       'https://cdn.discordapp.com/attachments/849299103362973777/969617031487975454/unknown.png',
+  },
+
+  theQuest: {
+    iconYuumi:
+      'https://cdn.discordapp.com/attachments/636626556734930948/1088869027021074482/icon-yuumi.png',
   },
 
   // webapp

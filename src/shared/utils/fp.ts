@@ -156,6 +156,8 @@ export const Future = {
     <A, B>(f: (a: A) => IO<B>) =>
     (fa: Future<A>): Future<A> =>
       pipe(fa, taskEither.chainFirst(flow(f, taskEither.fromIOEither))),
+  orElseEitherK: <A>(f: (e: Error) => Try<A>): ((fa: Future<A>) => Future<A>) =>
+    taskEither.orElse(flow(f, Future.fromEither)),
   orElseIOEitherK:
     <A>(f: (e: Error) => IO<A>) =>
     (fa: Future<A>): Future<A> =>

@@ -2,6 +2,7 @@ import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
 import { ChannelId } from '../../../../shared/models/ChannelId'
+import { MessageId } from '../../../../shared/models/MessageId'
 import { GuildId } from '../../../../shared/models/guild/GuildId'
 import { Dict, Maybe } from '../../../../shared/utils/fp'
 
@@ -15,6 +16,7 @@ const properties = {
   defaultRole: Maybe.codec(RoleId.codec),
   itsFridayChannel: Maybe.codec(ChannelId.codec),
   birthdayChannel: Maybe.codec(ChannelId.codec),
+  theQuestMessage: Maybe.codec(MessageId.codec),
 }
 
 const keys = Dict.keys(properties)
@@ -27,6 +29,7 @@ const empty = (id: GuildId): GuildStateDb => ({
   defaultRole: Maybe.none,
   itsFridayChannel: Maybe.none,
   birthdayChannel: Maybe.none,
+  theQuestMessage: Maybe.none,
 })
 
 const fromGuildState = ({
@@ -35,6 +38,7 @@ const fromGuildState = ({
   defaultRole,
   itsFridayChannel,
   birthdayChannel,
+  theQuestMessage,
 }: GuildState): GuildStateDb => ({
   id,
   calls: pipe(calls, Maybe.map(CallsDb.fromCalls)),
@@ -44,6 +48,7 @@ const fromGuildState = ({
   ),
   itsFridayChannel: pipe(itsFridayChannel, Maybe.map(ChannelId.fromChannel)),
   birthdayChannel: pipe(birthdayChannel, Maybe.map(ChannelId.fromChannel)),
+  theQuestMessage: pipe(theQuestMessage, Maybe.map(MessageId.fromMessage)),
 })
 
 export type GuildStateDb = C.TypeOf<typeof codec>

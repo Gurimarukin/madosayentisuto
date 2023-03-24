@@ -39,6 +39,7 @@ import { DeployCommandsObserver } from './domain/startup/DeployCommandsObserver'
 import type { DiscordConnector } from './helpers/DiscordConnector'
 import { LogMadEventObserver } from './helpers/LogMadEventObserver'
 import { LogObserver } from './helpers/LogObserver'
+import { TheQuestHelper } from './helpers/TheQuestHelper'
 import { VoiceStateUpdateTransformer } from './helpers/VoiceStateUpdateTransformer'
 import { publishDiscordEvents } from './helpers/publishDiscordEvents'
 import { scheduleCronJob } from './helpers/scheduleCronJob'
@@ -50,6 +51,7 @@ import { LogService } from './services/LogService'
 import { MemberBirthdateService } from './services/MemberBirthdateService'
 import { PollService } from './services/PollService'
 import { ScheduledEventService } from './services/ScheduledEventService'
+import { TheQuestService } from './services/TheQuestService'
 import { UserService } from './services/UserService'
 import { getOnError } from './utils/getOnError'
 import { Routes } from './webServer/Routes'
@@ -71,6 +73,7 @@ export const Application = (
     pollResponsePersistence,
     scheduledEventPersistence,
     userPersistence,
+    httpClient,
     emojidexService,
     healthCheckService,
     jwtHelper,
@@ -97,7 +100,10 @@ export const Application = (
   const memberBirthdateService = MemberBirthdateService(memberBirthdatePersistence)
   const pollService = PollService(pollQuestionPersistence, pollResponsePersistence)
   const scheduledEventService = ScheduledEventService(scheduledEventPersistence)
+  const theQuestService = TheQuestService(config.theQuest, httpClient)
   const userService = UserService(Logger, userPersistence, jwtHelper)
+
+  const theQuestHelper = TheQuestHelper(config.theQuest, guildStateService, theQuestService)
 
   const discordClientController = DiscordClientController(
     discord,
@@ -147,6 +153,7 @@ export const Application = (
           Logger,
           config,
           discord,
+          theQuestHelper,
           emojidexService,
           botStateService,
           guildStateService,

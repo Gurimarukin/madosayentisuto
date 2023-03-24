@@ -1,4 +1,4 @@
-import type { Role } from 'discord.js'
+import type { Message, Role } from 'discord.js'
 import { eq, io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
@@ -11,6 +11,7 @@ import { Maybe } from '../../../shared/utils/fp'
 import type { AudioSubscription } from '../../helpers/AudioSubscription'
 import type { GuildSendableChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
+import { MessageUtils } from '../../utils/MessageUtils'
 import { RoleUtils } from '../../utils/RoleUtils'
 import { AudioState } from '../audio/AudioState'
 import { Calls } from './Calls'
@@ -22,6 +23,7 @@ export type GuildState = {
   readonly itsFridayChannel: Maybe<GuildSendableChannel>
   readonly birthdayChannel: Maybe<GuildSendableChannel>
   readonly subscription: Maybe<AudioSubscription>
+  readonly theQuestMessage: Maybe<Message<true>>
 }
 
 const empty = (id: GuildId): GuildState => ({
@@ -30,6 +32,7 @@ const empty = (id: GuildId): GuildState => ({
   defaultRole: Maybe.none,
   itsFridayChannel: Maybe.none,
   birthdayChannel: Maybe.none,
+  theQuestMessage: Maybe.none,
   subscription: Maybe.none,
 })
 
@@ -55,6 +58,7 @@ const Eq: eq.Eq<GuildState> = eq.struct({
   defaultRole: Maybe.getEq(pipe(RoleUtils.EqById)),
   itsFridayChannel: Maybe.getEq(ChannelUtils.EqById),
   birthdayChannel: Maybe.getEq(ChannelUtils.EqById),
+  theQuestMessage: Maybe.getEq(MessageUtils.EqById),
   subscription: Maybe.getEq(eq.eqStrict),
 })
 
@@ -63,6 +67,7 @@ const Lens = {
   defaultRole: pipe(lens.id<GuildState>(), lens.prop('defaultRole')),
   itsFridayChannel: pipe(lens.id<GuildState>(), lens.prop('itsFridayChannel')),
   birthdayChannel: pipe(lens.id<GuildState>(), lens.prop('birthdayChannel')),
+  theQuestMessage: pipe(lens.id<GuildState>(), lens.prop('theQuestMessage')),
   subscription: pipe(lens.id<GuildState>(), lens.prop('subscription')),
 }
 

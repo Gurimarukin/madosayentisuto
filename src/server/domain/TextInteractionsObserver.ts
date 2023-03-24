@@ -81,7 +81,7 @@ const sendMessage =
 
 const sendIDontLikeThieves = sendMessage(
   MessageComponent.singleSafeEmbed({
-    title: "J'aime pas trop les voleurs et les fils de pute.",
+    title: 'J’aime pas trop les voleurs et les fils de pute.',
     url: 'http://george-abitbol.fr/v/374a915e',
     color: constants.messagesColor,
   }),
