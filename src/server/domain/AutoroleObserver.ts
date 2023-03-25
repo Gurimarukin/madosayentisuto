@@ -18,7 +18,7 @@ import { LogUtils } from '../utils/LogUtils'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const AutoroleObserver = (Logger: LoggerGetter) => {
-  const logger = Logger('CallsAutoroleObserver')
+  const logger = Logger('AutoroleObserver')
 
   return ObserverWithRefinement.fromNext(
     MadEvent,

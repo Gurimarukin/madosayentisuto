@@ -344,10 +344,10 @@ const messageDelete = (message: Message): Future<boolean> =>
     debugLeft('messageDelete'),
   )
 
-const messageEdit = (
-  message: Message,
+const messageEdit = <InGuild extends boolean = boolean>(
+  message: Message<InGuild>,
   options: string | MessagePayload | MessageEditOptions,
-): Future<Message> =>
+): Future<Message<InGuild>> =>
   pipe(
     Future.tryCatch(() => message.edit(options)),
     debugLeft('messageEdit'),

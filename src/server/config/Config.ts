@@ -75,6 +75,7 @@ export type TheQuestConfig = {
   readonly webappUrl: string
   readonly apiUrl: string
   readonly token: string
+  readonly refreshEveryMinutes: number
 }
 
 const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
@@ -121,6 +122,7 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
         webappUrl: r(D.string)('THE_QUEST_WEBAPP_URL'),
         apiUrl: r(D.string)('THE_QUEST_API_URL'),
         token: r(D.string)('THE_QUEST_TOKEN'),
+        refreshEveryMinutes: r(NumberFromString.decoder)('THE_QUEST_REFRESH_EVERY_MINUTES'),
       }),
     }),
   )

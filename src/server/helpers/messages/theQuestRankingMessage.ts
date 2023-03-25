@@ -31,13 +31,20 @@ export const theQuestRankingMessage = ({
     register: `${webappUrl}/register`,
     summoner: ({ platform, name }: Summoner) => `${webappUrl}/${platform}/${name}`,
   }
+  const theQuest = 'La Quête'
 
   return {
     embeds: [
       MessageComponent.safeEmbed({
         color: constants.messagesColor,
-        title: 'La Quête',
-        thumbnail: MessageComponent.thumbnail(constants.theQuest.iconYuumi, 32, 32),
+        title: pipe(
+          constants.emojis.mastery7,
+          GuildHelper.getEmoji(guild),
+          Maybe.fold(
+            () => theQuest,
+            e => `${e}  ${theQuest}`,
+          ),
+        ),
         description: pipe(
           progressions,
           NonEmptyArray.fromReadonlyArray,
@@ -52,19 +59,19 @@ export const theQuestRankingMessage = ({
               NonEmptyArray.mapWithIndex((i, u) => {
                 const summonerLinkAndUser = `[${u.summoner.name}](${webappUrls.summoner(
                   u.summoner,
-                )}/) (<@${DiscordUserId.unwrap(u.userId)}>)`
-                const masteries = pipe(
+                )}/) <@${DiscordUserId.unwrap(u.userId)}>`
+                const bullets = pipe(
                   [
+                    `**${round1Fixed(u.percents)}%**`,
+                    summonerLinkAndUser,
                     masteriesWithEmoji(u.champions.mastery7.length, constants.emojis.mastery7),
                     masteriesWithEmoji(u.champions.mastery6.length, constants.emojis.mastery6),
                     masteriesWithEmoji(u.champions.mastery5.length, constants.emojis.mastery5),
-                    `${u.totalMasteryLevel}`,
+                    `**${u.totalMasteryLevel}**`,
                   ],
                   List.mkString(' • '),
                 )
-                return `${i + 1}. **${round1Fixed(
-                  u.percents,
-                )}%** ${summonerLinkAndUser} — ${masteries}`
+                return `${i + 1}. ${bullets}`
               }),
               List.mkString('\n'),
             ),

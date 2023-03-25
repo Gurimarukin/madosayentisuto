@@ -58,11 +58,6 @@ export const constants = {
       'https://cdn.discordapp.com/attachments/849299103362973777/969617031487975454/unknown.png',
   },
 
-  theQuest: {
-    iconYuumi:
-      'https://cdn.discordapp.com/attachments/636626556734930948/1088869027021074482/icon-yuumi.png',
-  },
-
   // webapp
   rateLimiterLifeTime: MsDuration.days(1),
   account: {

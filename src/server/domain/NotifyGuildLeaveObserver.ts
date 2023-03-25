@@ -35,7 +35,7 @@ type CreatedAt = {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
-  const logger = Logger('NotifyGuildLeave')
+  const logger = Logger('NotifyGuildLeaveObserver')
 
   return ObserverWithRefinement.fromNext(
     MadEvent,

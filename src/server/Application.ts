@@ -29,6 +29,7 @@ import { ScheduledEventObserver } from './domain/ScheduledEventObserver'
 import { SendWelcomeDMObserver } from './domain/SendWelcomeDMObserver'
 import { SetDefaultRoleObserver } from './domain/SetDefaultRoleObserver'
 import { TextInteractionsObserver } from './domain/TextInteractionsObserver'
+import { TheQuestObserver } from './domain/TheQuestObserver'
 import { UwURenamerObserver } from './domain/UwURenamerObserver'
 import { AdminCommandsObserver } from './domain/commands/AdminCommandsObserver'
 import { MusicCommandsObserver } from './domain/commands/MusicCommandsObserver'
@@ -179,6 +180,7 @@ export const Application = (
       sub(SendWelcomeDMObserver(Logger)),
       sub(SetDefaultRoleObserver(Logger, guildStateService)),
       sub(TextInteractionsObserver(config.captain, discord)),
+      sub(TheQuestObserver(Logger, config, discord, guildStateService, theQuestHelper)),
       sub(UwURenamerObserver(Logger, config.client.id, config.uwuServers)),
       // └ helpers/
       sub(ObserverWithRefinement.of(LogMadEventObserver(logger))),

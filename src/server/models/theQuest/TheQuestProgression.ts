@@ -1,3 +1,5 @@
+import { number, ord } from 'fp-ts'
+import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
@@ -20,6 +22,11 @@ const decoder = D.struct({
   }),
 })
 
-const TheQuestProgression = { decoder }
+const byPercentsOrd: ord.Ord<TheQuestProgression> = pipe(
+  number.Ord,
+  ord.contramap(p => p.percents),
+)
+
+const TheQuestProgression = { decoder, byPercentsOrd }
 
 export { TheQuestProgression }
