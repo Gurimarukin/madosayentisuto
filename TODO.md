@@ -1,4 +1,5 @@
 - /shi-fu-mi
+- maybe move sinks
 - edit autorole: role select?
 - webapp: elevator: next track
 - tier-list

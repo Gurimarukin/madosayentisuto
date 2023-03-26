@@ -6,13 +6,19 @@ import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { List } from '../../../shared/utils/fp'
 
 import { ChampionKey } from './ChampionKey'
-import { Summoner } from './Summoner'
+import { Platform } from './Platform'
+import { SummonerId } from './SummonerId'
 
-type TheQuestProgression = D.TypeOf<typeof decoder>
+type TheQuestProgressionApi = D.TypeOf<typeof decoder>
 
 const decoder = D.struct({
   userId: DiscordUserId.codec,
-  summoner: Summoner.codec,
+  summoner: D.struct({
+    id: SummonerId.codec,
+    platform: Platform.codec,
+    name: D.string,
+    profileIconId: D.number,
+  }),
   percents: D.number,
   totalMasteryLevel: D.number,
   champions: D.struct({
@@ -22,11 +28,11 @@ const decoder = D.struct({
   }),
 })
 
-const byPercentsOrd: ord.Ord<TheQuestProgression> = pipe(
+const byPercentsOrd: ord.Ord<TheQuestProgressionApi> = pipe(
   number.Ord,
   ord.contramap(p => p.percents),
 )
 
-const TheQuestProgression = { decoder, byPercentsOrd }
+const TheQuestProgressionApi = { decoder, byPercentsOrd }
 
-export { TheQuestProgression }
+export { TheQuestProgressionApi }

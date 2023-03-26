@@ -73,6 +73,7 @@ export const Application = (
     pollQuestionPersistence,
     pollResponsePersistence,
     scheduledEventPersistence,
+    theQuestProgressionPersistence,
     userPersistence,
     httpClient,
     emojidexService,
@@ -101,7 +102,11 @@ export const Application = (
   const memberBirthdateService = MemberBirthdateService(memberBirthdatePersistence)
   const pollService = PollService(pollQuestionPersistence, pollResponsePersistence)
   const scheduledEventService = ScheduledEventService(scheduledEventPersistence)
-  const theQuestService = TheQuestService(config.theQuest, httpClient)
+  const theQuestService = TheQuestService(
+    config.theQuest,
+    theQuestProgressionPersistence,
+    httpClient,
+  )
   const userService = UserService(Logger, userPersistence, jwtHelper)
 
   const theQuestHelper = TheQuestHelper(config.theQuest, guildStateService, theQuestService)

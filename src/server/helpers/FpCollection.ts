@@ -23,7 +23,7 @@ import type {
 import type { LoggerType } from '../../shared/models/LoggerType'
 import { Store } from '../../shared/models/Store'
 import { TObservable } from '../../shared/models/rx/TObservable'
-import type { NotUsed, Tuple } from '../../shared/utils/fp'
+import type { NonEmptyArray, NotUsed, Tuple } from '../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 import { decodeError } from '../../shared/utils/ioTsUtils'
@@ -47,7 +47,7 @@ export const FpCollection =
       path: FpCollectionHelpers.getPath<O>(),
 
       ensureIndexes: (
-        indexSpecs: List<IndexDescription<A>>,
+        indexSpecs: NonEmptyArray<IndexDescription<A>>,
         options: { readonly session?: ClientSession } = {},
       ): Future<NotUsed> =>
         pipe(
@@ -55,7 +55,10 @@ export const FpCollection =
           Future.fromIOEither,
           Future.chain(() =>
             collection.future(c =>
-              c.createIndexes(List.asMutable(indexSpecs as List<MongoIndexDescription>), options),
+              c.createIndexes(
+                List.asMutable(indexSpecs as NonEmptyArray<MongoIndexDescription>),
+                options,
+              ),
             ),
           ),
           Future.map(toNotUsed),
@@ -69,7 +72,10 @@ export const FpCollection =
         )
       },
 
-      insertMany: (docs: List<A>, options: BulkWriteOptions = {}): Future<InsertManyResult<O>> => {
+      insertMany: (
+        docs: NonEmptyArray<A>,
+        options: BulkWriteOptions = {},
+      ): Future<InsertManyResult<O>> => {
         const encoded = docs.map(codec.encode)
         return pipe(
           collection.future(c => c.insertMany(encoded, options)),

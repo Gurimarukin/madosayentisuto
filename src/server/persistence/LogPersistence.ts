@@ -5,8 +5,8 @@ import type { DayJs } from '../../shared/models/DayJs'
 import type { Log } from '../../shared/models/log/Log'
 import { LogLevelWithoutTrace } from '../../shared/models/log/LogLevel'
 import type { TObservable } from '../../shared/models/rx/TObservable'
-import type { List, NotUsed } from '../../shared/utils/fp'
-import { Future } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
@@ -45,10 +45,12 @@ export function LogPersistence(Logger: LoggerGetter, mongoCollection: MongoColle
       collection.findAll()({}, { sort: [[collection.path(['date']), 1]], skip, limit }),
 
     insertMany: (logs: List<Log>): Future<number> =>
-      pipe(
-        collection.insertMany(logs),
-        Future.map(r => r.insertedCount),
-      ),
+      !List.isNonEmpty(logs)
+        ? Future.right(0)
+        : pipe(
+            collection.insertMany(logs),
+            Future.map(r => r.insertedCount),
+          ),
 
     deleteBeforeDate: (date: DayJs): Future<number> =>
       pipe(

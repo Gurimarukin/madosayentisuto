@@ -602,7 +602,7 @@ export const PollCommandsObserver = (
   // onMessageDelete
 
   function onMessageDelete(messages: List<Message | PartialMessage>): Future<NotUsed> {
-    return pipe(
+    const toRemove = pipe(
       messages,
       List.filterMap(m =>
         m.guild !== null &&
@@ -611,23 +611,18 @@ export const PollCommandsObserver = (
           ? Maybe.some(MessageId.fromMessage(m))
           : Maybe.none,
       ),
-      NonEmptyArray.fromReadonlyArray,
-      Maybe.fold(
-        () => Future.notUsed,
-        toRemove =>
-          pipe(
-            pollService.removePollForMessages(toRemove),
-            Future.chainIOEitherK(({ removedQuestions, removedResponses }) => {
-              if (removedQuestions === 0) return IO.notUsed
-              if (removedQuestions === toRemove.length) {
-                return logger.info(
-                  `Removed polls: ${removedQuestions} questions, ${removedResponses} responses`,
-                )
-              }
-              return logger.warn('Failed to remove poll')
-            }),
-          ),
-      ),
+    )
+    return pipe(
+      pollService.removePollForMessages(toRemove),
+      Future.chainIOEitherK(({ removedQuestions, removedResponses }) => {
+        if (removedQuestions === 0) return IO.notUsed
+        if (removedQuestions === toRemove.length) {
+          return logger.info(
+            `Removed polls: ${removedQuestions} questions, ${removedResponses} responses`,
+          )
+        }
+        return logger.warn('Failed to remove poll')
+      }),
     )
   }
 }

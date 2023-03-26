@@ -24,6 +24,8 @@ export const constants = {
 
   messagesColor: Color.darkred,
 
+  embedMaxLength: 10,
+
   defaultActivity: Activity.of('PLAYING', 'hisser les voiles...'),
 
   guildJoinRenamedDelay: MsDuration.second(1),

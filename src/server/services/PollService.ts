@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/function'
 
 import type { MessageId } from '../../shared/models/MessageId'
-import type { Maybe, NonEmptyArray } from '../../shared/utils/fp'
+import type { List, Maybe } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
@@ -44,7 +44,7 @@ export const PollService = (
 
   removeResponsesForUser: pollResponsePersistence.removeForUser,
 
-  removePollForMessages: (messages: NonEmptyArray<MessageId>): Future<RemoveResult> =>
+  removePollForMessages: (messages: List<MessageId>): Future<RemoveResult> =>
     pipe(
       pollQuestionPersistence.removeForMessages(messages),
       Future.chain(removedQuestions =>

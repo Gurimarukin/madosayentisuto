@@ -1,30 +1,49 @@
-import { pipe } from 'fp-ts/function'
-
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
-import type { Future } from '../../shared/utils/fp'
-import { List, NonEmptyArray } from '../../shared/utils/fp'
+import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 
 import type { TheQuestConfig } from '../config/Config'
 import type { HttpClient } from '../helpers/HttpClient'
-import { TheQuestProgression } from '../models/theQuest/TheQuestProgression'
+import { StaticData } from '../models/theQuest/StaticData'
+import { TheQuestProgressionApi } from '../models/theQuest/TheQuestProgressionApi'
+import type { TheQuestProgressionPersistence } from '../persistence/TheQuestProgressionPersistence'
 
 type TheQuestService = ReturnType<typeof TheQuestService>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const TheQuestService = (config: TheQuestConfig, httpClient: HttpClient) => ({
-  fetchForUsers: (users: NonEmptyArray<DiscordUserId>): Future<List<TheQuestProgression>> =>
-    pipe(
-      httpClient.http(
-        [`${config.apiUrl}/madosayentisuto/users/getProgression`, 'post'],
-        {
-          headers: {
-            Authorization: config.token,
-          },
-          json: [NonEmptyArray.encoder(DiscordUserId.codec), users],
-        },
-        [List.decoder(TheQuestProgression.decoder), 'List<TheQuestProgression>'],
-      ),
-    ),
-})
+const TheQuestService = (
+  config: TheQuestConfig,
+  theQuestProgressionPersistence: TheQuestProgressionPersistence,
+  httpClient: HttpClient,
+) => {
+  const apiStaticData: Future<StaticData> = httpClient.http(
+    [`${config.apiUrl}/madosayentisuto/staticData`, 'get'],
+    { headers: { Authorization: config.token } },
+    [StaticData.decoder, 'StaticData'],
+  )
+
+  return {
+    api: {
+      staticData: apiStaticData,
+
+      usersGetProgression: (users: List<DiscordUserId>): Future<List<TheQuestProgressionApi>> =>
+        !List.isNonEmpty(users)
+          ? Future.right([])
+          : httpClient.http(
+              [`${config.apiUrl}/madosayentisuto/users/getProgression`, 'post'],
+              {
+                headers: { Authorization: config.token },
+                json: [NonEmptyArray.encoder(DiscordUserId.codec), users],
+              },
+              [List.decoder(TheQuestProgressionApi.decoder), 'List<TheQuestProgression>'],
+            ),
+    },
+
+    persistence: {
+      listAllForIds: theQuestProgressionPersistence.listAllForIds,
+      bulkUpsert: theQuestProgressionPersistence.bulkUpsert,
+      removeForIds: theQuestProgressionPersistence.removeForIds,
+    },
+  }
+}
 
 export { TheQuestService }

@@ -22,6 +22,7 @@ import { MigrationPersistence } from './persistence/MigrationPersistence'
 import { PollQuestionPersistence } from './persistence/PollQuestionPersistence'
 import { PollResponsePersistence } from './persistence/PollResponsePersistence'
 import { ScheduledEventPersistence } from './persistence/ScheduledEventPersistence'
+import { TheQuestProgressionPersistence } from './persistence/TheQuestProgressionPersistence'
 import { UserPersistence } from './persistence/UserPersistence'
 import { EmojidexService } from './services/EmojidexService'
 import { HealthCheckService } from './services/HealthCheckService'
@@ -48,6 +49,7 @@ const of = (
   const pollQuestionPersistence = PollQuestionPersistence(Logger, mongoCollection)
   const pollResponsePersistence = PollResponsePersistence(Logger, mongoCollection)
   const scheduledEventPersistence = ScheduledEventPersistence(Logger, mongoCollection)
+  const theQuestProgressionPersistence = TheQuestProgressionPersistence(Logger, mongoCollection)
   const userPersistence = UserPersistence(Logger, mongoCollection)
 
   const httpClient = HttpClient(Logger)
@@ -69,6 +71,7 @@ const of = (
     pollQuestionPersistence,
     pollResponsePersistence,
     scheduledEventPersistence,
+    theQuestProgressionPersistence,
     userPersistence,
     httpClient,
     emojidexService,
@@ -101,6 +104,7 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
       pollQuestionPersistence,
       pollResponsePersistence,
       scheduledEventPersistence,
+      theQuestProgressionPersistence,
       userPersistence,
       healthCheckService,
     } = context
@@ -122,6 +126,7 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
           pollQuestionPersistence.ensureIndexes,
           pollResponsePersistence.ensureIndexes,
           scheduledEventPersistence.ensureIndexes,
+          theQuestProgressionPersistence.ensureIndexes,
           userPersistence.ensureIndexes,
         ]),
       ),
