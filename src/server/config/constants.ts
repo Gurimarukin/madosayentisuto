@@ -14,6 +14,7 @@ export const constants = {
     next: '⏩', // :fast_forward:
     birthday: '🎂', // :birthday:
     tada: '🎉', // :tada:
+    cry: '😢', // :cry:
 
     characters: emojiCharacters(),
 

@@ -1,16 +1,22 @@
-import type { APIEmbed, BaseMessageOptions, Guild } from 'discord.js'
+import type { APIEmbed, BaseMessageOptions, Guild, GuildEmoji } from 'discord.js'
+import { AttachmentBuilder } from 'discord.js'
+import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../../shared/models/DayJs'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { Dict } from '../../../shared/utils/fp'
-import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
+import { Future, IO, List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
+import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
 import { constants } from '../../config/constants'
+import type { MyFile } from '../../models/FileOrDir'
+import { Dir } from '../../models/FileOrDir'
 import { MessageComponent } from '../../models/discord/MessageComponent'
 import { ChampionId } from '../../models/theQuest/ChampionId'
 import { ChampionKey } from '../../models/theQuest/ChampionKey'
+import type { ChampionLevel } from '../../models/theQuest/ChampionLevel'
 import { DDragonVersion } from '../../models/theQuest/DDragonVersion'
 import type { PlatformWithName } from '../../models/theQuest/PlatformWithName'
 import type { StaticData } from '../../models/theQuest/StaticData'
@@ -21,17 +27,20 @@ import type {
 } from '../../models/theQuest/TheQuestNotification'
 import { TheQuestNotification } from '../../models/theQuest/TheQuestNotification'
 import type { TheQuestProgressionApi } from '../../models/theQuest/TheQuestProgressionApi'
+import { CanvasHelper } from '../CanvasHelper'
 import { GuildHelper } from '../GuildHelper'
 
 const otherTheQuestWebapp = 'https://la-quete.netlify.app'
 
-type Mastery = TheQuestNotificationChampionLeveledUp['champion']['level']
-
-const masteryImage: Dict<`${Mastery}`, string> = {
-  7: 'https://cdn.discordapp.com/attachments/636626556734930948/1089586964895907940/mastery-7-42.png',
-  6: 'https://cdn.discordapp.com/attachments/636626556734930948/1089586984961441872/mastery-6-42.png',
-  5: 'https://cdn.discordapp.com/attachments/636626556734930948/1089587003798081628/mastery-5-42.png',
+const masteryEmoji: Dict<`${ChampionLevel}`, string> = {
+  7: constants.emojis.mastery7,
+  6: constants.emojis.mastery6,
+  5: constants.emojis.mastery5,
 }
+
+/**
+ * ranking
+ */
 
 type RankingArgs = {
   readonly webappUrl: string
@@ -47,7 +56,7 @@ const ranking = ({
   updatedAt,
 }: RankingArgs): BaseMessageOptions => {
   const webappUrlRegister = `${webappUrl}/register`
-  const formatSummoner = getFormatSummoner(getSummonerUrl(webappUrl))
+  const formatSummoner = getFormatSummoner(webappUrl)
   const theQuest = 'La Quête'
 
   return {
@@ -74,11 +83,10 @@ const ranking = ({
               ),
             flow(
               NonEmptyArray.mapWithIndex((i, u) => {
-                const summonerLinkAndUser = `${formatSummoner(u.summoner)} ${formatUser(u.userId)}`
                 const bullets = pipe(
                   [
                     `**${round1Fixed(u.percents)}%**`,
-                    summonerLinkAndUser,
+                    `${formatSummoner(u.summoner)}${formatUser(u.userId)}`,
                     masteriesWithEmoji(u.champions.mastery7.length, constants.emojis.mastery7),
                     masteriesWithEmoji(u.champions.mastery6.length, constants.emojis.mastery6),
                     masteriesWithEmoji(u.champions.mastery5.length, constants.emojis.mastery5),
@@ -120,75 +128,213 @@ const ranking = ({
   }
 }
 
+/**
+ * notification
+ */
+
+const thumbnailHeight = 42
+const thumbnailGap = 8
+
+type MessageOptionsWithEmoji = {
+  readonly messageOptions: BaseMessageOptions
+  readonly emoji: Maybe<string | GuildEmoji>
+}
+
+type EmbedWithAttachmentAndEmoji = {
+  readonly embed: APIEmbed
+  readonly attachment: Maybe<AttachmentBuilder>
+  readonly emoji: Maybe<string | GuildEmoji>
+}
+
 type NotificationsArgs = {
   readonly webappUrl: string
   readonly staticData: StaticData
+  readonly guild: Guild
 }
 
-const notifications =
-  ({ webappUrl, staticData }: NotificationsArgs) =>
-  (nea: NonEmptyArray<TheQuestNotification>): BaseMessageOptions => {
-    const ddragonUrls = getDdragonUrls(staticData.version)
-    const summonerUrl = getSummonerUrl(webappUrl)
-    const formatSummoner = getFormatSummoner(summonerUrl)
+const notification = ({
+  webappUrl,
+  staticData,
+  guild,
+}: NotificationsArgs): ((notif: TheQuestNotification) => Future<MessageOptionsWithEmoji>) => {
+  const ddragonUrls = getDdragonUrls(staticData.version)
+  const formatSummoner = getFormatSummoner(webappUrl)
 
-    return {
-      embeds: pipe(
-        nea,
-        NonEmptyArray.map(
-          TheQuestNotification.match({
-            UserJoined: notificationUserJoined,
-            UserLeft: notificationUserLeft,
-            ChampionLeveledUp: notificationChampionLeveledUp,
+  return notif => {
+    return pipe(
+      notif,
+
+      TheQuestNotification.match({
+        UserJoined: notificationUserJoined,
+        UserLeft: notificationUserLeft,
+        ChampionLeveledUp: notificationChampionLeveledUp,
+      }),
+      Future.map(
+        ({ embed, attachment, emoji }): MessageOptionsWithEmoji => ({
+          messageOptions: {
+            embeds: [embed],
+            files: pipe(
+              attachment,
+              Maybe.fold(() => undefined, flow(List.of, List.asMutable)),
+            ),
+          },
+          emoji,
+        }),
+      ),
+    )
+
+    function notificationUserJoined(
+      n: Omit<TheQuestNotificationUserJoined, 'type'>,
+    ): Future<EmbedWithAttachmentAndEmoji> {
+      const attachmentName = `${n.summoner.profileIcondId}.png`
+      return pipe(
+        profileIconAttachment(n.summoner.profileIcondId, attachmentName),
+        Future.map(
+          (attachment): EmbedWithAttachmentAndEmoji => ({
+            embed: MessageComponent.safeEmbed({
+              description: `${summonerUser(n)} a rejoint le classement de La Quête !`,
+              thumbnail: MessageComponent.thumbnail(attachmentUrl(attachmentName)),
+            }),
+            attachment: Maybe.some(attachment),
+            emoji: Maybe.some(constants.emojis.tada),
           }),
         ),
-        NonEmptyArray.asMutable,
-      ),
+      )
     }
 
-    function notificationUserJoined(n: Omit<TheQuestNotificationUserJoined, 'type'>): APIEmbed {
-      return MessageComponent.safeEmbed({
-        description: `${userSummoner(n)} a rejoint le classement de La Quête !`,
-        thumbnail: MessageComponent.thumbnail(ddragonUrls.profileIcon(n.summoner.profileIcondId)),
-      })
+    function profileIconAttachment(
+      profileIcondId: number,
+      attachmentName: string,
+    ): Future<AttachmentBuilder> {
+      return pipe(
+        CanvasHelper.loadImage(ddragonUrls.profileIcon(profileIcondId)),
+        Future.chainIOEitherK(profileIconImg =>
+          pipe(
+            CanvasHelper.createCanvas(thumbnailHeight, thumbnailHeight),
+            IO.chain(
+              CanvasHelper.canvasContext2DModify(
+                CanvasHelper.contextDrawImage(
+                  profileIconImg,
+                  0,
+                  0,
+                  thumbnailHeight,
+                  thumbnailHeight,
+                ),
+              ),
+            ),
+          ),
+        ),
+        Future.chain(CanvasHelper.canvasEncode('png')),
+        Future.map(buffer => new AttachmentBuilder(buffer, { name: attachmentName })),
+      )
     }
 
-    function notificationUserLeft(n: Omit<TheQuestNotificationUserLeft, 'type'>): APIEmbed {
-      return MessageComponent.safeEmbed({
-        description: `${userSummoner(n)} a abandonné La Quête...`,
+    function notificationUserLeft(
+      n: Omit<TheQuestNotificationUserLeft, 'type'>,
+    ): Future<EmbedWithAttachmentAndEmoji> {
+      return Future.right({
+        embed: MessageComponent.safeEmbed({
+          description: `${summonerUser(n)} a abandonné La Quête...`,
+        }),
+        attachment: Maybe.none,
+        emoji: Maybe.some(constants.emojis.cry),
       })
     }
 
     function notificationChampionLeveledUp(
       n: Omit<TheQuestNotificationChampionLeveledUp, 'type'>,
-    ): APIEmbed {
-      const champion = pipe(
+    ): Future<EmbedWithAttachmentAndEmoji> {
+      return pipe(
         staticData.champions,
         List.findFirst(c => ChampionKey.Eq.equals(c.key, n.champion.id)),
-      )
-      return MessageComponent.safeEmbed({
-        description: `${userSummoner(n)} est désormais maîtrise ${n.champion.level} avec ${pipe(
-          champion,
-          Maybe.fold(
-            () => `<champion ${ChampionKey.unwrap(n.champion.id)}>`,
-            c => c.name,
-          ),
-        )} !`,
-        thumbnail: MessageComponent.thumbnail(masteryImage[n.champion.level]),
-        image: pipe(
-          champion,
-          Maybe.map(c => MessageComponent.image(ddragonUrls.champion(c.id))),
-          Maybe.toUndefined,
+        futureMaybe.fromOption,
+        futureMaybe.bindTo('champion'),
+        futureMaybe.bind('attachment', ({ champion }) => {
+          const attachmentName = `${ChampionId.unwrap(champion.id)}-mastery${n.champion.level}.png`
+          return futureMaybe.fromTaskEither(
+            apply.sequenceS(Future.ApplyPar)({
+              attachment: championMasteryAttachment(champion.id, n.champion.level, attachmentName),
+              name: Future.right(attachmentName),
+            }),
+          )
+        }),
+        Future.map(
+          (option): EmbedWithAttachmentAndEmoji => ({
+            embed: MessageComponent.safeEmbed({
+              description: `${summonerUser(n)} est désormais maîtrise ${
+                n.champion.level
+              } avec ${pipe(
+                option,
+                Maybe.fold(
+                  () => `<champion ${ChampionKey.unwrap(n.champion.id)}>`,
+                  o => o.champion.name,
+                ),
+              )} !`,
+              thumbnail: pipe(
+                option,
+                Maybe.map(o => MessageComponent.thumbnail(attachmentUrl(o.attachment.name))),
+                Maybe.toUndefined,
+              ),
+            }),
+            attachment: pipe(
+              option,
+              Maybe.map(o => o.attachment.attachment),
+            ),
+            emoji: GuildHelper.getEmoji(guild)(masteryEmoji[n.champion.level]),
+          }),
         ),
-      })
+      )
     }
 
-    function userSummoner(n: Pick<TheQuestNotificationUserLeft, 'userId' | 'summoner'>): string {
-      return `${formatUser(n.userId)} (${formatSummoner(n.summoner)})`
+    function championMasteryAttachment(
+      championId: ChampionId,
+      championLevel: ChampionLevel,
+      attachmentName: string,
+    ): Future<AttachmentBuilder> {
+      return pipe(
+        apply.sequenceS(Future.ApplyPar)({
+          championImg: CanvasHelper.loadImage(ddragonUrls.champion(championId)),
+          masteryImg: CanvasHelper.loadImage(masteryPng(championLevel).path),
+        }),
+        Future.chainIOEitherK(({ championImg, masteryImg }) =>
+          pipe(
+            // mastery image is 48x42
+            // champion image will be resized to 42x42
+            // (we assume champion is always square, mastery isn't, but its height is already thumbnailHeight)
+            CanvasHelper.createCanvas(
+              thumbnailHeight + thumbnailGap + masteryImg.width,
+              thumbnailHeight,
+            ),
+            IO.chain(
+              CanvasHelper.canvasContext2DModify(
+                flow(
+                  CanvasHelper.contextDrawImage(
+                    championImg,
+                    0,
+                    0,
+                    thumbnailHeight,
+                    thumbnailHeight,
+                  ),
+                  IO.chain(
+                    CanvasHelper.contextDrawImage(masteryImg, thumbnailHeight + thumbnailGap, 0),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Future.chain(CanvasHelper.canvasEncode('png')),
+        Future.map(buffer => new AttachmentBuilder(buffer, { name: attachmentName })),
+      )
+    }
+
+    function summonerUser(n: Pick<TheQuestNotificationUserLeft, 'userId' | 'summoner'>): string {
+      return `${formatSummoner(n.summoner)}${formatUser(n.userId)}`
     }
   }
+}
 
-export const TheQuestMessage = { ranking, notifications }
+export const TheQuestMessage = { ranking, notification }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const getDdragonUrls = (version: DDragonVersion) => ({
@@ -206,12 +352,12 @@ const round1Fixed = (n: number): string => (Math.round(n * 10) / 10).toFixed(1)
 
 const formatUser = (id: DiscordUserId): string => `<@${DiscordUserId.unwrap(id)}>`
 
-const getSummonerUrl =
+const getFormatSummoner =
   (webappUrl: string) =>
   ({ platform, name }: PlatformWithName): string =>
-    `${webappUrl}/${platform}/${name}}`
+    `[${name}](${webappUrl}/${platform}/${name}})`
 
-const getFormatSummoner =
-  (summonerUrl: ReturnType<typeof getSummonerUrl>) =>
-  (summoner: PlatformWithName): string =>
-    `[${summoner.name}](${summonerUrl(summoner)})`
+const attachmentUrl = (file: string): string => `attachment://${file}`
+
+const masteryPng = (level: ChampionLevel): MyFile =>
+  pipe(Dir.of(__dirname), Dir.joinFile('..', '..', 'imgs', `mastery-${level}.png`))

@@ -1,4 +1,4 @@
-import type { Guild, GuildTextBasedChannel, Message } from 'discord.js'
+import type { Guild, GuildTextBasedChannel, Message, MessageReaction } from 'discord.js'
 import { apply, ord } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
@@ -10,8 +10,8 @@ import { Future, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import type { TheQuestConfig } from '../config/Config'
-import { constants } from '../config/constants'
 import { ChampionKey } from '../models/theQuest/ChampionKey'
+import type { ChampionLevel } from '../models/theQuest/ChampionLevel'
 import type { PlatformWithName } from '../models/theQuest/PlatformWithName'
 import type { StaticData } from '../models/theQuest/StaticData'
 import type { TheQuestNotificationChampionLeveledUp } from '../models/theQuest/TheQuestNotification'
@@ -210,14 +210,37 @@ const TheQuestHelper = (
   ): Future<NotUsed> {
     return pipe(
       notifications,
-      List.chunksOf(constants.embedMaxLength),
-      List.traverse(Future.ApplicativeSeq)(n =>
-        DiscordConnector.sendMessage(
-          channel,
-          TheQuestMessage.notifications({ webappUrl: config.webappUrl, staticData })(n),
+      // build notification messages in parallel
+      List.traverse(Future.ApplicativePar)(
+        TheQuestMessage.notification({
+          webappUrl: config.webappUrl,
+          staticData,
+          guild: channel.guild,
+        }),
+      ),
+      Future.chain(options =>
+        pipe(
+          options,
+          // send notification messages sequentially
+          List.traverse(Future.ApplicativeSeq)(({ messageOptions }) =>
+            DiscordConnector.sendMessage(channel, messageOptions),
+          ),
+          Future.map(List.zip(options)),
         ),
       ),
-      Future.map(toNotUsed),
+      Future.chain(
+        // emoji react to messages in parallel
+        List.traverse(Future.ApplicativePar)(([maybeMessage, { emoji: maybeEmoji }]) =>
+          pipe(
+            apply.sequenceS(Maybe.Apply)({ message: maybeMessage, emoji: maybeEmoji }),
+            futureMaybe.fromOption,
+            futureMaybe.chainTaskEitherK(({ message, emoji }) =>
+              DiscordConnector.messageReact(message, emoji),
+            ),
+          ),
+        ),
+      ),
+      Future.map<List<Maybe<MessageReaction>>, NotUsed>(toNotUsed),
     )
   }
 }
@@ -229,7 +252,7 @@ const masteryDifference =
   (
     xs: List<ChampionKey>,
     ys: List<ChampionKey>,
-    championLevel: TheQuestNotificationChampionLeveledUp['champion']['level'],
+    championLevel: ChampionLevel,
   ): List<TheQuestNotificationChampionLeveledUp> =>
     pipe(
       List.difference(ChampionKey.Eq)(xs, ys),
