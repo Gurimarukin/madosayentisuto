@@ -1,8 +1,8 @@
 import { pipe } from 'fp-ts/function'
 
 import { MessageId } from '../../shared/models/MessageId'
-import type { NonEmptyArray, NotUsed } from '../../shared/utils/fp'
-import { Future, List, Maybe } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Future, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
@@ -51,12 +51,14 @@ export const PollQuestionPersistence = (
       )
     },
 
-    removeForMessages: (messages: NonEmptyArray<MessageId>): Future<number> =>
-      pipe(
-        collection.deleteMany({
-          message: { $in: List.encoder(MessageId.codec).encode(messages) },
-        }),
-        Future.map(r => r.deletedCount),
-      ),
+    removeForMessages: (messages: List<MessageId>): Future<number> =>
+      !List.isNonEmpty(messages)
+        ? Future.right(0)
+        : pipe(
+            collection.deleteMany({
+              message: { $in: NonEmptyArray.encoder(MessageId.codec).encode(messages) },
+            }),
+            Future.map(r => r.deletedCount),
+          ),
   }
 }

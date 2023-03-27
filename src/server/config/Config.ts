@@ -36,6 +36,7 @@ export type Config = {
   readonly kohLantaVictims: List<DiscordUserId>
   readonly captain: CaptainConfig
   readonly elevatorDelay: MsDuration
+  readonly theQuest: TheQuestConfig
 }
 
 type LoggerConfig = {
@@ -68,6 +69,13 @@ export type LoggerDiscordDMConfig = {
 export type CaptainConfig = {
   readonly mentions: List<string>
   readonly thanks: List<string>
+}
+
+export type TheQuestConfig = {
+  readonly webappUrl: string
+  readonly apiUrl: string
+  readonly token: string
+  readonly refreshEveryMinutes: number
 }
 
 const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
@@ -110,6 +118,12 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
         thanks: r(ArrayFromString.decoder(D.string))('CAPTAIN_THANKS'),
       }),
       elevatorDelay: r(MsDuration.decoder)('ELEVATOR_DELAY'),
+      theQuest: seqS<TheQuestConfig>({
+        webappUrl: r(D.string)('THE_QUEST_WEBAPP_URL'),
+        apiUrl: r(D.string)('THE_QUEST_API_URL'),
+        token: r(D.string)('THE_QUEST_TOKEN'),
+        refreshEveryMinutes: r(NumberFromString.decoder)('THE_QUEST_REFRESH_EVERY_MINUTES'),
+      }),
     }),
   )
 

@@ -4,7 +4,7 @@ import type { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { Sink } from '../../shared/models/rx/Sink'
 import type { NotUsed } from '../../shared/utils/fp'
-import { Future, List } from '../../shared/utils/fp'
+import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
@@ -45,10 +45,14 @@ export const MemberBirthdatePersistence = (
     },
 
     listForMembers: (ids: List<DiscordUserId>): Future<List<MemberBirthdate>> =>
-      pipe(
-        collection.findAll()({ id: { $in: List.encoder(DiscordUserId.codec).encode(ids) } }),
-        Sink.readonlyArray,
-      ),
+      !List.isNonEmpty(ids)
+        ? Future.right([])
+        : pipe(
+            collection.findAll()({
+              id: { $in: NonEmptyArray.encoder(DiscordUserId.codec).encode(ids) },
+            }),
+            Sink.readonlyArray,
+          ),
 
     upsert: (state: MemberBirthdate): Future<boolean> =>
       pipe(

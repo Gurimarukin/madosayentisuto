@@ -2,8 +2,8 @@ import { pipe } from 'fp-ts/function'
 
 import type { DayJs } from '../../shared/models/DayJs'
 import type { TObservable } from '../../shared/models/rx/TObservable'
-import type { NonEmptyArray, NotUsed } from '../../shared/utils/fp'
-import { Future, List } from '../../shared/utils/fp'
+import type { NotUsed } from '../../shared/utils/fp'
+import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
@@ -48,10 +48,14 @@ export function ScheduledEventPersistence(
         Future.map(r => r.acknowledged),
       ),
 
-    removeByIds: (ids: NonEmptyArray<TObjectId>): Future<number> =>
-      pipe(
-        collection.deleteMany({ _id: { $in: List.encoder(TObjectId.encoder).encode(ids) } }),
-        Future.map(r => r.deletedCount),
-      ),
+    removeByIds: (ids: List<TObjectId>): Future<number> =>
+      !List.isNonEmpty(ids)
+        ? Future.right(0)
+        : pipe(
+            collection.deleteMany({
+              _id: { $in: NonEmptyArray.encoder(TObjectId.encoder).encode(ids) },
+            }),
+            Future.map(r => r.deletedCount),
+          ),
   }
 }

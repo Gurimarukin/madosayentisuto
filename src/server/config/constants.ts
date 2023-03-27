@@ -14,11 +14,18 @@ export const constants = {
     next: '⏩', // :fast_forward:
     birthday: '🎂', // :birthday:
     tada: '🎉', // :tada:
+    cry: '😢', // :cry:
 
     characters: emojiCharacters(),
+
+    mastery7: ':maitrise7:',
+    mastery6: ':maitrise6:',
+    mastery5: ':maitrise5:',
   } as const,
 
   messagesColor: Color.darkred,
+
+  embedMaxLength: 10,
 
   defaultActivity: Activity.of('PLAYING', 'hisser les voiles...'),
 

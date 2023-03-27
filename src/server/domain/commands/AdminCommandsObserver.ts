@@ -36,6 +36,7 @@ import { futureMaybe } from '../../../shared/utils/futureMaybe'
 import type { Config } from '../../config/Config'
 import type { MyInteraction } from '../../helpers/DiscordConnector'
 import { DiscordConnector, isMissingPermissionsError } from '../../helpers/DiscordConnector'
+import type { TheQuestHelper } from '../../helpers/TheQuestHelper'
 import { AutoroleMessage } from '../../helpers/messages/AutoroleMessage'
 import { DeleteMessageModal } from '../../helpers/modals/DeleteMessageModal'
 import type { EditMessageModalDefault } from '../../helpers/modals/EditMessageModal'
@@ -83,6 +84,7 @@ const Keys = {
   rename: 'rename',
   user: 'user',
   nickname: 'nickname',
+  theQuest: 'the-quest',
   editMessage: 'Edit (admin)',
   deleteMessage: 'Delete (admin)',
 }
@@ -289,6 +291,27 @@ const adminCommand = Command.chatInput({
       description: "Le nouveau pseudo (laisser vide pour le nom d'utilisateur)",
     }),
   ),
+
+  Command.option.subcommandGroup({
+    name: Keys.theQuest,
+    description: 'Jean Plank tient à jour le classement de La Quête',
+  })(
+    Command.option.subcommand({
+      name: Keys.set,
+      description: 'Jean Plank veut bien changer le salon pour La Quête',
+    })(
+      Command.option.channel({
+        name: Keys.channel,
+        description: 'Le nouveau salon pour La Quête',
+        channel_types: [ChannelType.GuildText],
+        required: true,
+      }),
+    ),
+    Command.option.subcommand({
+      name: Keys.unset,
+      description: 'Plus de mises à joru pour La Quête',
+    })(),
+  ),
 )
 
 const messageEditCommand = Command.message({ name: Keys.editMessage })
@@ -307,6 +330,7 @@ export const AdminCommandsObserver = (
   Logger: LoggerGetter,
   config: Config,
   discord: DiscordConnector,
+  theQuestHelper: TheQuestHelper,
   emojidexService: EmojidexService,
   botStateService: BotStateService,
   guildStateService: GuildStateService,
@@ -389,6 +413,8 @@ export const AdminCommandsObserver = (
           return onBirthday(interaction, subcommand)
         case Keys.activity:
           return onActivity(interaction, subcommand)
+        case Keys.theQuest:
+          return onTheQuest(interaction, subcommand)
       }
       return Future.notUsed
     }
@@ -447,7 +473,7 @@ export const AdminCommandsObserver = (
   }
 
   function onCallsSet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           channel: pipe(
@@ -473,10 +499,10 @@ export const AdminCommandsObserver = (
 
   function onCallsUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     if (interaction.guild === null) return Future.notUsed
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         guildStateService.setCalls(interaction.guild, Maybe.none),
-        Future.map(() => "Nouveau paramètres d'appels : null"),
+        Future.map(() => "Nouveau paramètres d'appels : `null`"),
       ),
     )
   }
@@ -582,7 +608,7 @@ export const AdminCommandsObserver = (
   }
 
   function onDefaultRoleSet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: futureMaybe.fromNullable(interaction.guild),
@@ -601,10 +627,10 @@ export const AdminCommandsObserver = (
 
   function onDefaultRoleUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     if (interaction.guild === null) return Future.notUsed
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         guildStateService.setDefaultRole(interaction.guild, Maybe.none),
-        Future.map(() => 'Nouveau rôle par défaut : null'),
+        Future.map(() => 'Nouveau rôle par défaut : `null`'),
       ),
     )
   }
@@ -627,7 +653,7 @@ export const AdminCommandsObserver = (
   }
 
   function onItsFridaySet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: futureMaybe.fromNullable(interaction.guild),
@@ -646,10 +672,10 @@ export const AdminCommandsObserver = (
 
   function onItsFridayUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     if (interaction.guild === null) return Future.notUsed
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         guildStateService.setItsFridayChannel(interaction.guild, Maybe.none),
-        Future.map(() => `Nouveau salon pour "C'est vendredi" : null`),
+        Future.map(() => `Nouveau salon pour "C'est vendredi" : \`null\``),
       ),
     )
   }
@@ -672,7 +698,7 @@ export const AdminCommandsObserver = (
   }
 
   function onBirthdaySet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: futureMaybe.fromNullable(interaction.guild),
@@ -693,10 +719,10 @@ export const AdminCommandsObserver = (
 
   function onBirthdayUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     if (interaction.guild === null) return Future.notUsed
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         guildStateService.setBirthdayChannel(interaction.guild, Maybe.none),
-        Future.map(() => 'Nouveau salon pour les anniversaires : null'),
+        Future.map(() => 'Nouveau salon pour les anniversaires : `null`'),
       ),
     )
   }
@@ -723,7 +749,7 @@ export const AdminCommandsObserver = (
   }
 
   function onActivityGet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         botStateService.find(),
         Future.map(({ activity }) => activity),
@@ -733,7 +759,7 @@ export const AdminCommandsObserver = (
   }
 
   function onActivityUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         botStateService.unsetActivity(),
         Future.map(() => 'Activity unset'),
@@ -742,7 +768,7 @@ export const AdminCommandsObserver = (
   }
 
   function onActivitySet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         apply.sequenceS(ValidatedNea.getValidation<string>())({
           type: decode(ActivityTypeBot.decoder, interaction.options.getString(Keys.type)),
@@ -759,10 +785,58 @@ export const AdminCommandsObserver = (
   }
 
   function onActivityRefresh(interaction: ChatInputCommandInteraction): Future<NotUsed> {
-    return withFollowUp(interaction)(
+    return withFollowUpIsAdmin(interaction)(
       pipe(
         botStateService.discordSetActivityFromDb(),
         Future.map(() => 'Activity refreshed'),
+      ),
+    )
+  }
+
+  /**
+   * theQuest
+   */
+
+  function onTheQuest(
+    interaction: ChatInputCommandInteraction,
+    subcommand: string,
+  ): Future<NotUsed> {
+    switch (subcommand) {
+      case Keys.set:
+        return onTheQuestSet(interaction)
+      case Keys.unset:
+        return onTheQuestUnset(interaction)
+    }
+    return Future.notUsed
+  }
+
+  function onTheQuestSet(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    return withFollowUpIsAdmin(interaction)(
+      pipe(
+        apply.sequenceS(futureMaybe.ApplyPar)({
+          guild: futureMaybe.fromNullable(interaction.guild),
+          channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
+        }),
+        futureMaybe.chain(({ guild, channel }) =>
+          theQuestHelper.sendNotificationsAndRefreshMessage(guild, channel),
+        ),
+        futureMaybe.match(
+          () => 'Erreur',
+          message => `Nouveau salon pour La Quête : ${message.url}`,
+        ),
+      ),
+    )
+  }
+
+  function onTheQuestUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    const guild = interaction.guild
+    if (guild === null) return Future.notUsed
+    return withFollowUpIsAdmin(interaction)(
+      pipe(
+        guildStateService.getTheQuestMessage(guild),
+        futureMaybe.chainTaskEitherK(DiscordConnector.messageDelete),
+        Future.chain(() => guildStateService.setTheQuestMessage(guild, Maybe.none)),
+        Future.map(() => 'Nouveau salon pour La Quête : `null`'),
       ),
     )
   }
@@ -945,7 +1019,7 @@ export const AdminCommandsObserver = (
     return modal => {
       const guild = interaction.guild
       if (guild === null) return Future.notUsed
-      return withFollowUpIsAdminValidation(interaction)(
+      return withFollowUpIsAdmin(interaction)(
         pipe(
           DiscordConnector.fetchMessage(guild, modal.messageId),
           Future.map(Either.fromOption(() => 'Erreur, message non trouvé')),
@@ -971,7 +1045,7 @@ export const AdminCommandsObserver = (
     return modalRaw => {
       const guild = interaction.guild
       if (guild === null) return Future.notUsed
-      return withFollowUpIsAdminValidation(interaction)(
+      return withFollowUpIsAdmin(interaction)(
         pipe(
           futureEither.Do,
           futureEither.apS(
@@ -1087,27 +1161,26 @@ export const AdminCommandsObserver = (
     return Either.right(NotUsed)
   }
 
-  function withFollowUp(interaction: MyInteraction): (f: Future<string>) => Future<NotUsed> {
+  function withFollowUpIsAdmin(interaction: MyInteraction): (f: Future<string>) => Future<NotUsed> {
     return f =>
       pipe(
         DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
-        Future.chain(() => f),
+        Future.chain(() =>
+          pipe(
+            validateIsAdmin(interaction.user),
+            Either.fold(Future.right, () => f),
+            Future.orElse(e =>
+              pipe(
+                Future.right('Erreur'),
+                Future.chainFirstIOEitherK(() => logger.error(e)),
+              ),
+            ),
+          ),
+        ),
         Future.chain(content =>
           DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
         ),
         Future.map(toNotUsed),
-      )
-  }
-
-  function withFollowUpIsAdminValidation(
-    interaction: MyInteraction,
-  ): (f: Future<string>) => Future<NotUsed> {
-    return f =>
-      withFollowUp(interaction)(
-        pipe(
-          validateIsAdmin(interaction.user),
-          Either.fold(Future.right, () => f),
-        ),
       )
   }
 
@@ -1169,6 +1242,7 @@ const formatState = ({
   defaultRole,
   itsFridayChannel,
   birthdayChannel,
+  theQuestMessage,
   subscription,
 }: GuildState): string =>
   StringUtils.stripMargins(
@@ -1176,6 +1250,7 @@ const formatState = ({
     |- **defaultRole**: ${maybeStr(defaultRole)}
     |- **itsFridayChannel**: ${maybeStr(itsFridayChannel)}
     |- **birthdayChannel**: ${maybeStr(birthdayChannel)}
+    |- **theQuestMessage**: ${maybeStr(theQuestMessage, m => m.url)}
     |- **subscription**: ${maybeStr(subscription, s => s.stringify())}`,
   )
 
