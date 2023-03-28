@@ -1,3 +1,5 @@
+- backoffice: state: the quest
+- fix yt-dlp (--downloader ffmpeg? yt-dlp -F <video>)
 - /shi-fu-mi
 - maybe move sinks
 - edit autorole: role select?

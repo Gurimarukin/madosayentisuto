@@ -263,13 +263,13 @@ const notification = ({
             embed: MessageComponent.safeEmbed({
               description: `${summonerUser(n)} est désormais maîtrise ${
                 n.champion.level
-              } avec ${pipe(
+              } avec **${pipe(
                 option,
                 Maybe.fold(
                   () => `<champion ${ChampionKey.unwrap(n.champion.id)}>`,
                   o => o.champion.name,
                 ),
-              )} !`,
+              )}** !`,
               thumbnail: pipe(
                 option,
                 Maybe.map(o => MessageComponent.thumbnail(attachmentUrl(o.attachment.name))),
