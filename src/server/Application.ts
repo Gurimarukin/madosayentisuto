@@ -109,7 +109,12 @@ export const Application = (
   )
   const userService = UserService(Logger, userPersistence, jwtHelper)
 
-  const theQuestHelper = TheQuestHelper(config.theQuest, guildStateService, theQuestService)
+  const theQuestHelper = TheQuestHelper(
+    config.theQuest,
+    discord,
+    guildStateService,
+    theQuestService,
+  )
 
   const discordClientController = DiscordClientController(
     discord,

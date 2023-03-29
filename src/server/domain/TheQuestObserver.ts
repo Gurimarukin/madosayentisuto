@@ -37,7 +37,7 @@ export const TheQuestObserver = (
             ),
           ),
           futureMaybe.chain(message =>
-            theQuestHelper.sendNotificationsAndRefreshMessage(guild, message.channel),
+            theQuestHelper.sendNotificationsAndRefreshMessage(logger)(guild, message.channel),
           ),
         ),
       ),
