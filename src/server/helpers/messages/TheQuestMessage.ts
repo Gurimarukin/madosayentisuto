@@ -354,8 +354,10 @@ const formatUser = (id: DiscordUserId): string => `<@${DiscordUserId.unwrap(id)}
 
 const getFormatSummoner =
   (webappUrl: string) =>
-  ({ platform, name }: PlatformWithName): string =>
-    `[${name}](${webappUrl}/${platform}/${name}})`
+  ({ platform, name }: PlatformWithName): string => {
+    const url = `${webappUrl}/${platform}/${name}`
+    return `[${name}](${encodeURI(url)})`
+  }
 
 const attachmentUrl = (file: string): string => `attachment://${file}`
 
