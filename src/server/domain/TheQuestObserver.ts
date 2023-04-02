@@ -33,7 +33,7 @@ export const TheQuestObserver = (
           guildStateService.getTheQuestMessage(guild),
           futureMaybe.chainFirstIOEitherK(message =>
             LogUtils.pretty(logger, guild, null, message.channel).debug(
-              'sendNotificationsAndRefreshMessage',
+              'Sending notification and refreshing The Quest message',
             ),
           ),
           futureMaybe.chain(message =>
@@ -44,7 +44,7 @@ export const TheQuestObserver = (
     ),
     Future.chainIOEitherK(messages =>
       List.isEmpty(List.compact(messages))
-        ? logger.debug('sendNotificationsAndRefreshMessage: no messages to refresh')
+        ? logger.debug('No The Quest message in any guild')
         : IO.notUsed,
     ),
   )

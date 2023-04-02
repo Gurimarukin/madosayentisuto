@@ -23,6 +23,7 @@ import { TheQuestProgressionResult } from '../models/theQuest/TheQuestProgressio
 import type { GuildStateService } from '../services/GuildStateService'
 import type { TheQuestService } from '../services/TheQuestService'
 import { ChannelUtils } from '../utils/ChannelUtils'
+import { LogUtils } from '../utils/LogUtils'
 import { DiscordConnector } from './DiscordConnector'
 import { TheQuestMessage } from './messages/TheQuestMessage'
 
@@ -149,7 +150,7 @@ const TheQuestHelper = (
                           )}: ${e.connectionName}`,
                       ),
                       List.mkString('Summoner connection not found for users:\n', '\n', ''),
-                      logger.warn,
+                      LogUtils.pretty(logger, guild).warn,
                     ),
                   ),
                 ),
