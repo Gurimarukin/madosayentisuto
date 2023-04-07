@@ -13,7 +13,7 @@ const decoder = D.struct({
   id: CommandId.codec,
   application_id: ApplicationId.codec,
   version: D.string,
-  default_permission: D.boolean,
+  default_permission: Maybe.decoder(D.boolean),
   default_member_permissions: Maybe.decoder(D.boolean),
   type: applicationCommandTypeCodec,
   name: D.string,
