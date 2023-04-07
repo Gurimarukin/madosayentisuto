@@ -381,7 +381,7 @@ const of = (
     if (AudioState.isDisconnected(state)) return Future.right(state)
 
     const log = (chan?: NamedChannel): LoggerType => LogUtils.pretty(logger, guild, null, chan)
-    const orElse = Future.orElseIOEitherK(e => logger.warn(e.stack))
+    const orElse = Future.orElseIOEitherK(e => logger.warn(e))
 
     const maybeMessage = pipe(
       state,
@@ -628,7 +628,7 @@ const of = (
     return pipe(
       DiscordConnector.voiceConnectionDestroy(voiceConnection),
       Future.fromIOEither,
-      Future.orElseIOEitherK(e => (isAlreadyDestroyedError(e) ? IO.notUsed : logger.warn(e.stack))),
+      Future.orElseIOEitherK(e => (isAlreadyDestroyedError(e) ? IO.notUsed : logger.warn(e))),
     )
   }
 

@@ -1,6 +1,7 @@
 import type { ButtonInteraction, ChatInputCommandInteraction, Interaction } from 'discord.js'
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
+import util from 'util'
 
 import { Track } from '../../../shared/models/audio/music/Track'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
@@ -169,7 +170,7 @@ export const MusicCommandsObserver = (
       }),
       Future.orElse(e =>
         pipe(
-          logger.error(`validateTrack Error:\n${e.stack}`),
+          logger.error(`validateTrack Error:\n${util.format(e)}`),
           IO.map(() => Either.left<string, NonEmptyArray<Track>>('Erreur')),
           Future.fromIOEither,
         ),

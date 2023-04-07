@@ -1,6 +1,7 @@
 import type { Guild } from 'discord.js'
 import { REST } from 'discord.js'
 import { pipe } from 'fp-ts/function'
+import util from 'util'
 
 import { GuildId } from '../../../shared/models/guild/GuildId'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
@@ -62,7 +63,9 @@ export const DeployCommandsObserver = (
       NonEmptyArray.map(command => command.value),
       DiscordConnector.restPutApplicationCommands(rest, config.client.id),
       Future.map(toNotUsed),
-      Future.orElseIOEitherK(e => logger.warn(`Failed to deploy global commands\n${e.stack}`)),
+      Future.orElseIOEitherK(e =>
+        logger.warn(`Failed to deploy global commands\n${util.format(e)}`),
+      ),
       Future.chainIOEitherK(() => logger.debug('Deployed global commands')),
     )
   }
@@ -89,7 +92,9 @@ export const DeployCommandsObserver = (
         DiscordConnector.restPutApplicationGuildCommands(rest, config.client.id, guildId),
         Future.map(toNotUsed),
         Future.orElseIOEitherK(e =>
-          logger.warn(`Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${e.stack}`),
+          logger.warn(
+            `Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${util.format(e)}`,
+          ),
         ),
       )
     }
