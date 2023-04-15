@@ -64,7 +64,7 @@ const YtDlp = (binaryPath: string) => {
             {
               output: '-',
               quiet: true,
-              format: 'bestaudio[acodec=opus]/bestaudio[ext=webm]/bestaudio', // ext=webm+acodec=opus+asr=48000
+              format: 'bestaudio',
               limitRate: '100K',
             },
             { stdio: ['ignore', 'pipe', 'ignore'] },
