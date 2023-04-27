@@ -2,6 +2,7 @@ import type { APIEmbed, BaseMessageOptions, Guild, GuildEmoji } from 'discord.js
 import { AttachmentBuilder } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
+import qs from 'qs'
 
 import { DayJs } from '../../../shared/models/DayJs'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
@@ -86,7 +87,7 @@ const ranking = ({
                 const bullets = pipe(
                   [
                     `**${round1Fixed(u.percents)}%**`,
-                    `${formatSummoner(u.summoner)}${formatUser(u.userId)}`,
+                    `${formatSummoner(u.summoner)})}${formatUser(u.userId)}`,
                     masteriesWithEmoji(u.champions.mastery7.length, constants.emojis.mastery7),
                     masteriesWithEmoji(u.champions.mastery6.length, constants.emojis.mastery6),
                     masteriesWithEmoji(u.champions.mastery5.length, constants.emojis.mastery5),
@@ -261,9 +262,13 @@ const notification = ({
         Future.map(
           (option): EmbedWithAttachmentAndEmoji => ({
             embed: MessageComponent.safeEmbed({
-              description: `${summonerUser(n)} est désormais maîtrise ${
-                n.champion.level
-              } avec **${pipe(
+              description: `${summonerUser(
+                n,
+                pipe(
+                  option,
+                  Maybe.map(o => o.champion.name),
+                ),
+              )} est désormais maîtrise ${n.champion.level} avec **${pipe(
                 option,
                 Maybe.fold(
                   () => `<champion ${ChampionKey.unwrap(n.champion.id)}>`,
@@ -328,8 +333,11 @@ const notification = ({
       )
     }
 
-    function summonerUser(n: Pick<TheQuestNotificationUserLeft, 'userId' | 'summoner'>): string {
-      return `${formatSummoner(n.summoner)}${formatUser(n.userId)}`
+    function summonerUser(
+      n: Pick<TheQuestNotificationUserLeft, 'userId' | 'summoner'>,
+      search?: Maybe<string>,
+    ): string {
+      return `${formatSummoner(n.summoner, search)}${formatUser(n.userId)}`
     }
   }
 }
@@ -354,8 +362,13 @@ const formatUser = (id: DiscordUserId): string => `<@${DiscordUserId.unwrap(id)}
 
 const getFormatSummoner =
   (webappUrl: string) =>
-  ({ platform, name }: PlatformWithName): string => {
-    const url = `${webappUrl}/${platform}/${name}`
+  ({ platform, name }: PlatformWithName, search: Maybe<string> = Maybe.none): string => {
+    const query = {
+      level: 'all',
+      search: Maybe.toUndefined(search),
+    }
+    const queryStr = qs.stringify(query)
+    const url = `${webappUrl}/${platform}/${name}?${queryStr}`
     return `[${name}](${encodeURI(url)})`
   }
 
