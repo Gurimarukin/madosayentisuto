@@ -191,7 +191,7 @@ export const Application = (
       sub(SetDefaultRoleObserver(Logger, guildStateService)),
       sub(TextInteractionsObserver(config.captain, discord)),
       sub(TheQuestObserver(Logger, config, discord, guildStateService, theQuestHelper)),
-      sub(UwURenamerObserver(Logger, config.client.id, config.uwuServers)),
+      sub(UwURenamerObserver(Logger, config.client.id, config.uwuGuilds)),
       // └ helpers/
       sub(ObserverWithRefinement.of(LogMadEventObserver(logger))),
       loggerObservable.subscribe('debug', logsObserver.logEventObserver),

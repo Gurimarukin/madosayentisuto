@@ -29,8 +29,6 @@ export const constants = {
 
   defaultActivity: Activity.of('PLAYING', 'hisser les voiles...'),
 
-  guildJoinRenamedDelay: MsDuration.second(1),
-
   pollGraphWidth: 20, // chars
 
   dbRetryDelay: MsDuration.seconds(10),

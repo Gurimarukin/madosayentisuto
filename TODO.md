@@ -1,12 +1,11 @@
 - backoffice: state: the quest
+- clean constants (only multiple references)
 - fix yt-dlp (--downloader ffmpeg? yt-dlp -F <video>)
 - /shi-fu-mi
 - maybe move sinks
 - edit autorole: role select?
 - webapp: elevator: next track
 - tier-list
-- check UwU on userUpdate
-- UwURenamer: maybe same mechanism for kicks/bans for fetching logs? (network delay, handle lots of logs :shrug:)
 - select leave message chan
 - command: reply "Erreur", when error
 - deploy: on guild join

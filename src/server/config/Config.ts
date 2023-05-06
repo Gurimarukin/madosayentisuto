@@ -32,7 +32,7 @@ export type Config = {
   readonly jwtSecret: string
   readonly ytDlpPath: string
   readonly admins: NonEmptyArray<DiscordUserId>
-  readonly uwuServers: List<GuildId>
+  readonly uwuGuilds: List<GuildId>
   readonly kohLantaVictims: List<DiscordUserId>
   readonly captain: CaptainConfig
   readonly elevatorDelay: MsDuration
@@ -111,7 +111,7 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
       jwtSecret: r(D.string)('JWT_SECRET'),
       ytDlpPath: r(D.string)('YTDLP_PATH'),
       admins: r(NonEmptyArrayFromString.decoder(DiscordUserId.codec))('ADMINS'),
-      uwuServers: r(ArrayFromString.decoder(GuildId.codec))('UWU_SERVERS'),
+      uwuGuilds: r(ArrayFromString.decoder(GuildId.codec))('UWU_GUILDS'),
       kohLantaVictims: r(ArrayFromString.decoder(DiscordUserId.codec))('KOH_LANTA_VICTIMS'),
       captain: seqS<CaptainConfig>({
         mentions: r(ArrayFromString.decoder(D.string))('CAPTAIN_MENTIONS'),
