@@ -1,6 +1,5 @@
 import { pipe } from 'fp-ts/function'
 import type * as rxjs from 'rxjs'
-import util from 'util'
 
 import type { LoggerType } from '../../../shared/models/LoggerType'
 import { LogEvent } from '../../../shared/models/event/LogEvent'
@@ -12,6 +11,7 @@ import type { NotUsed } from '../../../shared/utils/fp'
 import { IO, NonEmptyArray } from '../../../shared/utils/fp'
 
 import { getOnError } from '../../utils/getOnError'
+import { utilFormat } from '../../utils/utilInspect'
 
 export type LoggerObservable = {
   readonly Logger: LoggerGetter
@@ -27,11 +27,11 @@ type SubscribeLogEvent = (
 
 const init = (): LoggerObservable => {
   const Logger: LoggerGetter = name => ({
-    trace: (...params) => log(name, 'trace', util.format(...params)),
-    debug: (...params) => log(name, 'debug', util.format(...params)),
-    info: (...params) => log(name, 'info', util.format(...params)),
-    warn: (...params) => log(name, 'warn', util.format(...params)),
-    error: (...params) => log(name, 'error', util.format(...params)),
+    trace: (...params) => log(name, 'trace', utilFormat(...params)),
+    debug: (...params) => log(name, 'debug', utilFormat(...params)),
+    info: (...params) => log(name, 'info', utilFormat(...params)),
+    warn: (...params) => log(name, 'warn', utilFormat(...params)),
+    error: (...params) => log(name, 'error', utilFormat(...params)),
   })
 
   const logger = Logger('LoggerObservable')

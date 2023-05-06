@@ -1,7 +1,6 @@
 import type { Guild } from 'discord.js'
 import { REST } from 'discord.js'
 import { pipe } from 'fp-ts/function'
-import util from 'util'
 
 import { GuildId } from '../../../shared/models/guild/GuildId'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
@@ -14,6 +13,7 @@ import { BotToken } from '../../models/discord/BotToken'
 import type { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
+import { utilInspect } from '../../utils/utilInspect'
 import { adminCommands } from '../commands/AdminCommandsObserver'
 import { musicCommands } from '../commands/MusicCommandsObserver'
 import { otherCommands } from '../commands/OtherCommandsObserver'
@@ -64,7 +64,7 @@ export const DeployCommandsObserver = (
       DiscordConnector.restPutApplicationCommands(rest, config.client.id),
       Future.map(toNotUsed),
       Future.orElseIOEitherK(e =>
-        logger.warn(`Failed to deploy global commands\n${util.format(e)}`),
+        logger.warn(`Failed to deploy global commands\n${utilInspect(e)}`),
       ),
       Future.chainIOEitherK(() => logger.debug('Deployed global commands')),
     )
@@ -93,7 +93,7 @@ export const DeployCommandsObserver = (
         Future.map(toNotUsed),
         Future.orElseIOEitherK(e =>
           logger.warn(
-            `Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${util.format(e)}`,
+            `Failed to deploy commands for guild ${GuildId.unwrap(guildId)}\n${utilInspect(e)}`,
           ),
         ),
       )

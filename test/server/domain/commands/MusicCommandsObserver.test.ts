@@ -1,5 +1,4 @@
 import { flow, pipe } from 'fp-ts/function'
-import util from 'util'
 
 import { DayJs } from '../../../../src/shared/models/DayJs'
 import type { LoggerType } from '../../../../src/shared/models/LoggerType'
@@ -22,6 +21,7 @@ import { MusicCommandsObserver } from '../../../../src/server/domain/commands/Mu
 import { YtDlp } from '../../../../src/server/helpers/YtDlp'
 import { consoleLogFormat } from '../../../../src/server/models/logger/observers/ConsoleLogObserver'
 import type { GuildStateService } from '../../../../src/server/services/GuildStateService'
+import { utilFormat } from '../../../../src/server/utils/utilInspect'
 
 import { expectT } from '../../../expectT'
 
@@ -37,9 +37,7 @@ describe('validateTracks', () => {
             pipe(
               DayJs.now,
               IO.fromIO,
-              IO.map(
-                flow(consoleLogFormat(name, level, util.format(...u)), console.log, toNotUsed),
-              ),
+              IO.map(flow(consoleLogFormat(name, level, utilFormat(...u)), console.log, toNotUsed)),
             ),
           ),
         ),

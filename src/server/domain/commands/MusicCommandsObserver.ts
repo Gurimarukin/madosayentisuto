@@ -1,7 +1,6 @@
 import type { ButtonInteraction, ChatInputCommandInteraction, Interaction } from 'discord.js'
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
-import util from 'util'
 
 import { Track } from '../../../shared/models/audio/music/Track'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
@@ -21,6 +20,7 @@ import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { GuildStateService } from '../../services/GuildStateService'
 import type { GuildAudioChannel, GuildSendableChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
+import { utilInspect } from '../../utils/utilInspect'
 
 type PlayCommand = {
   readonly musicChannel: GuildAudioChannel
@@ -170,7 +170,7 @@ export const MusicCommandsObserver = (
       }),
       Future.orElse(e =>
         pipe(
-          logger.error(`validateTrack Error:\n${util.format(e)}`),
+          logger.error(`validateTrack Error:\n${utilInspect(e)}`),
           IO.map(() => Either.left<string, NonEmptyArray<Track>>('Erreur')),
           Future.fromIOEither,
         ),

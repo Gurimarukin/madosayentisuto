@@ -1,5 +1,3 @@
-import util from 'util'
-
 import type { LoggerType } from '../../shared/models/LoggerType'
 import type { TObserver } from '../../shared/models/rx/TObserver'
 import { Future } from '../../shared/utils/fp'
@@ -7,6 +5,7 @@ import { Future } from '../../shared/utils/fp'
 import type { MadEvent } from '../models/event/MadEvent'
 import type { GuildAudioChannel } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
+import { utilInspect } from '../utils/utilInspect'
 
 const { format } = LogUtils
 
@@ -30,7 +29,7 @@ export const LogMadEventObserver = (logger: LoggerType): TObserver<MadEvent> => 
               ? event.interaction
               : event.interaction.isButton()
               ? `Button("${event.interaction.customId}")`
-              : util.formatWithOptions({ breakLength: Infinity }, { type: event.interaction.type })
+              : utilInspect({ type: event.interaction.type }, { breakLength: Infinity })
           }`
 
         case 'GuildMemberAdd':
