@@ -206,7 +206,7 @@ export const GuildStateService = (
     return pipe(
       guildStatePersistence.find(guildId),
       futureMaybe.matchE(
-        () => Future.right(GuildState.empty(guildId)),
+        () => Future.successful(GuildState.empty(guildId)),
         flow(
           fetchDbProperties(guild),
           Future.map(

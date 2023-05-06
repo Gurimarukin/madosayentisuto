@@ -81,8 +81,8 @@ export const statusesToOption = (
     Future.map(Maybe.some),
     Future.orElseEitherK(e =>
       e instanceof HTTPError && pipe(statuses, List.elem(number.Eq)(e.response.statusCode))
-        ? Try.right(Maybe.none)
-        : Try.left(e),
+        ? Try.success(Maybe.none)
+        : Try.failure(e),
     ),
   )
 

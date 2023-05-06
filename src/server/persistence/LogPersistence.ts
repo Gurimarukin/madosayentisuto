@@ -46,7 +46,7 @@ export function LogPersistence(Logger: LoggerGetter, mongoCollection: MongoColle
 
     insertMany: (logs: List<Log>): Future<number> =>
       !List.isNonEmpty(logs)
-        ? Future.right(0)
+        ? Future.successful(0)
         : pipe(
             collection.insertMany(logs),
             Future.map(r => r.insertedCount),

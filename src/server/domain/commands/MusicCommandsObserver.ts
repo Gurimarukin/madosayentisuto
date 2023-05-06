@@ -126,7 +126,7 @@ export const MusicCommandsObserver = (
       Future.chain(state =>
         pipe(
           validateAudioAndStateChannel(interaction, state),
-          Either.fold(flow(Either.left, Future.right), ({ musicChannel, stateChannel }) =>
+          Either.fold(flow(Either.left, Future.successful), ({ musicChannel, stateChannel }) =>
             pipe(
               validateUrlThenTracks(interaction),
               Future.map(Either.map(tracks => ({ musicChannel, stateChannel, tracks }))),
@@ -144,7 +144,7 @@ export const MusicCommandsObserver = (
       interaction.options.getString(MusicStateMessage.Keys.track),
       Maybe.fromNullable,
       Maybe.fold(
-        () => Future.right(Either.left(`Argument manquant : ${MusicStateMessage.Keys.track}`)),
+        () => Future.successful(Either.left(`Argument manquant : ${MusicStateMessage.Keys.track}`)),
         validateTracks,
       ),
     )
@@ -209,8 +209,8 @@ export const MusicCommandsObserver = (
                     e =>
                       isUnknownMessageError(e)
                         ? Future.notUsed // maybe it was deleted before we can update the interaction)
-                        : Future.left(e),
-                    Future.right,
+                        : Future.failed(e),
+                    Future.successful,
                   ),
                 ),
             ),

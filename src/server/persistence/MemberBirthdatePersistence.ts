@@ -46,7 +46,7 @@ export const MemberBirthdatePersistence = (
 
     listForMembers: (ids: List<DiscordUserId>): Future<List<MemberBirthdate>> =>
       !List.isNonEmpty(ids)
-        ? Future.right([])
+        ? Future.successful([])
         : pipe(
             collection.findAll()({
               id: { $in: NonEmptyArray.encoder(DiscordUserId.codec).encode(ids) },

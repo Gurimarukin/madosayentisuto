@@ -70,7 +70,7 @@ const TheQuestHelper = (
               Future.chainFirst(newMessage =>
                 pipe(
                   oldMessage,
-                  Maybe.fold(() => Future.right(true), DiscordConnector.messageDelete),
+                  Maybe.fold(() => Future.successful(true), DiscordConnector.messageDelete),
                   Future.chain(() => guildStateService.setTheQuestMessage(guild, newMessage)),
                 ),
               ),

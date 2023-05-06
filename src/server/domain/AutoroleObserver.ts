@@ -44,7 +44,7 @@ export const AutoroleObserver = (Logger: LoggerGetter) => {
   function onAutoroleAdd(interaction: ButtonInteraction): (roleId: RoleId) => Future<NotUsed> {
     return withRoleAndMember(interaction, (role, member) =>
       DiscordConnector.hasRole(member, role)
-        ? Future.right(false)
+        ? Future.successful(false)
         : pipe(
             DiscordConnector.roleAdd(member, role),
             Future.chainFirstIOEitherK(success => {
@@ -69,7 +69,7 @@ export const AutoroleObserver = (Logger: LoggerGetter) => {
                 : log.info(`Couldn't remove ${member.user.tag} from role @${role.name}`)
             }),
           )
-        : Future.right(false),
+        : Future.successful(false),
     )
   }
 }

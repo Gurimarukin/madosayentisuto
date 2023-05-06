@@ -14,8 +14,8 @@ export const Migration202203281837 = (mongoCollection: MongoCollectionGetter): M
     mongoCollection<PollResponseOutput>('pollResponse').future(coll => coll.drop()),
     Future.orElse(e =>
       e instanceof MongoServerError && e.message === 'ns not found'
-        ? Future.right(true)
-        : Future.left(e),
+        ? Future.successful(true)
+        : Future.failed(e),
     ),
     Future.map(toNotUsed),
   ),

@@ -27,7 +27,7 @@ const TheQuestService = (
 
       usersGetProgression: (users: List<DiscordUserId>): Future<List<TheQuestProgressionResult>> =>
         !List.isNonEmpty(users)
-          ? Future.right([])
+          ? Future.successful([])
           : httpClient.http(
               [`${config.apiUrl}/madosayentisuto/users/getProgression`, 'post'],
               {

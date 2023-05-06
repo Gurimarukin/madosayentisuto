@@ -151,7 +151,7 @@ const of = (
         AudioStateValue.fold({
           onMusic: flow(
             state.channel.id === audioChannel.id ? queueTracksValueMusic : identity,
-            Future.right,
+            Future.successful,
             Future.map(value => pipe(state, AudioStateConnect.setValue()(value))),
           ),
 
@@ -211,7 +211,7 @@ const of = (
       switch (state.type) {
         case 'Disconnected':
         case 'Connecting':
-          return Future.right(state)
+          return Future.successful(state)
 
         case 'Connected':
           return pipe(
@@ -232,7 +232,7 @@ const of = (
                       ),
                       playMusicFirstTrackFromQueue,
                     ),
-              onElevator: Future.right,
+              onElevator: Future.successful,
             }),
           )
       }
@@ -244,7 +244,7 @@ const of = (
       switch (state.type) {
         case 'Disconnected':
         case 'Connecting':
-          return Future.right(state)
+          return Future.successful(state)
 
         case 'Connected':
           return pipe(
@@ -258,7 +258,7 @@ const of = (
                     : playPauseTrackCommon(DiscordConnector.audioPlayerPause, true),
                   Future.fromIOEither,
                 ),
-              onElevator: Future.right,
+              onElevator: Future.successful,
             }),
           )
       }
@@ -279,7 +279,7 @@ const of = (
 
         case 'Connecting':
         case 'Connected':
-          return Future.right(state)
+          return Future.successful(state)
       }
     })
   }
@@ -305,7 +305,7 @@ const of = (
 
             case 'ConnectionDisconnected':
               // When bot is actually moving from a channel to another.
-              if (AudioState.isConnecting(state)) return Future.right(state)
+              if (AudioState.isConnecting(state)) return Future.successful(state)
 
               return onConnectionDestroyed(state)
 
@@ -330,7 +330,7 @@ const of = (
         )
 
       case 'Connected':
-        return Future.right(state)
+        return Future.successful(state)
 
       case 'Connecting':
         return pipe(
@@ -378,7 +378,7 @@ const of = (
   }
 
   function onConnectionDestroyed(state: AudioState): Future<AudioState> {
-    if (AudioState.isDisconnected(state)) return Future.right(state)
+    if (AudioState.isDisconnected(state)) return Future.successful(state)
 
     const log = (chan?: NamedChannel): LoggerType => LogUtils.pretty(logger, guild, null, chan)
     const orElse = Future.orElseIOEitherK(e => logger.warn(e))
@@ -439,7 +439,7 @@ const of = (
   function onPlayerIdle(state: AudioState): Future<AudioState> {
     switch (state.type) {
       case 'Disconnected':
-        return Future.right(state)
+        return Future.successful(state)
 
       case 'Connecting':
         return pipe(
@@ -505,7 +505,7 @@ const of = (
             return initMusicMessage(value) as Future<A>
 
           case 'Elevator':
-            return Future.right(value)
+            return Future.successful(value)
         }
       })(),
       joinVoiceChannel(channel),
@@ -557,7 +557,7 @@ const of = (
     return pipe(
       state.value.queue,
       List.match(
-        () => Future.right(state),
+        () => Future.successful(state),
         flow(NonEmptyArray.unprepend, ([head, tail]) =>
           pipe(
             ytDlp.audioResource(head.url),
@@ -708,12 +708,12 @@ const refreshMusicMessageAndSendPendingEvents = (
 ): Future<AudioState> => {
   const { oldState, newState } = oldAndNewState
 
-  if (!AudioState.isMusicValue(newState)) return Future.right(newState)
+  if (!AudioState.isMusicValue(newState)) return Future.successful(newState)
 
   return pipe(
     newState.value.message,
     Maybe.fold(
-      () => Future.right(newState),
+      () => Future.successful(newState),
       flow(
         refreshMusicMessage({ oldState, newState }),
         Future.map(() => newState),
@@ -757,13 +757,13 @@ const sendPendingEventsAndUpdateState = (
 ): Future<AudioStateConnect<AudioStateValueMusic>> => {
   const { pendingEvents } = state.value
 
-  if (!List.isNonEmpty(pendingEvents)) return Future.right(state)
+  if (!List.isNonEmpty(pendingEvents)) return Future.successful(state)
 
   return pipe(
     state.value.message,
     Maybe.chain(m => Maybe.fromNullable(m.thread)),
     Maybe.fold(
-      () => Future.right(state),
+      () => Future.successful(state),
       thread =>
         pipe(
           pendingEvents,

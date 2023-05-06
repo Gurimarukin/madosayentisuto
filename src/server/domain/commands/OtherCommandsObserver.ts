@@ -97,12 +97,12 @@ export const OtherCommandsObserver = (config: Config) => {
         ? Maybe.fromNullable(interaction.member.voice.channel)
         : Maybe.none,
       Either.fromOption(() => 'Haha ! Il faut être dans un salon vocal pour faire ça !'),
-      Future.right,
+      Future.successful,
       futureEither.chainTaskEitherK(channel => {
         const members = channel.members.toJSON()
         return pipe(
           findFirstConnectedVictim(members),
-          Maybe.map(flow(io.of, Try.right)),
+          Maybe.map(flow(io.of, Try.success)),
           Maybe.getOrElse(() => randomNonBotMember(members)),
           Future.fromEither,
         )

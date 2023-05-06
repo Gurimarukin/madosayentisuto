@@ -262,7 +262,7 @@ export const PollCommandsObserver = (
               }
               return pipe(
                 poll.isMultiple
-                  ? Future.right(poll)
+                  ? Future.successful(poll)
                   : // we want only one response
                     removeResponsesForUser(poll, userId),
                 Future.chain(addResponse(userId, choiceIndex)),
@@ -288,7 +288,7 @@ export const PollCommandsObserver = (
       ),
       List.size,
     )
-    if (toRemove === 0) return Future.right(poll)
+    if (toRemove === 0) return Future.successful(poll)
     return pipe(
       pollService.removeResponsesForUser(poll.message, user),
       Future.chainIOEitherK(count =>

@@ -14,7 +14,7 @@ describe('futureMaybe.chainFirst', () => {
       futureMaybe.some(123),
       futureMaybe.chainFirst(() => futureToto),
       task.map(res => {
-        expectT(res).toStrictEqual(Try.right(Maybe.some(123)))
+        expectT(res).toStrictEqual(Try.success(Maybe.some(123)))
       }),
     )())
 
@@ -23,16 +23,16 @@ describe('futureMaybe.chainFirst', () => {
       futureMaybe.none,
       futureMaybe.chainFirst(() => futureToto),
       task.map(res => {
-        expectT(res).toStrictEqual(Try.right(Maybe.none))
+        expectT(res).toStrictEqual(Try.success(Maybe.none))
       }),
     )())
 
   it('should Future.left(Error)', () =>
     pipe(
-      Future.left(Error('my error')),
+      Future.failed(Error('my error')),
       futureMaybe.chainFirst(() => futureToto),
       task.map(res => {
-        expectT(res).toStrictEqual(Try.left(Error('my error')))
+        expectT(res).toStrictEqual(Try.failure(Error('my error')))
       }),
     )())
 })

@@ -11,7 +11,7 @@ const stat = (f: FileOrDir): Future<Maybe<fs.Stats>> =>
   pipe(
     Future.tryCatch(() => fs.promises.stat(f.path)),
     Future.map(Maybe.some),
-    Future.orElse(() => Future.right<Maybe<fs.Stats>>(Maybe.none)),
+    Future.orElse(() => Future.successful<Maybe<fs.Stats>>(Maybe.none)),
   )
 
 const chdir = (dir: Dir): IO<NotUsed> =>

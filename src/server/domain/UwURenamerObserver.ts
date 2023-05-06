@@ -199,7 +199,7 @@ const UwURenamerObserver = (
               Future.fromIOEither,
               Future.map(() => Maybe.none),
             )
-          : Future.left(e),
+          : Future.failed(e),
       ),
     )
   }

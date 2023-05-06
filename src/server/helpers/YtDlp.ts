@@ -51,8 +51,8 @@ const YtDlp = (binaryPath: string) => {
         ),
         Future.orElse(error =>
           isUnsupportedURLError(url)(error)
-            ? Future.right(u.UnsupportedURLError(error))
-            : Future.left(error),
+            ? Future.successful(u.UnsupportedURLError(error))
+            : Future.failed(error),
         ),
       ),
 
@@ -72,7 +72,7 @@ const YtDlp = (binaryPath: string) => {
         ),
         Future.fromIOEither,
         Future.chain(process => {
-          if (process.stdout === null) return Future.left(Error('No stdout'))
+          if (process.stdout === null) return Future.failed(Error('No stdout'))
 
           const stream = process.stdout
           return Future.tryCatch(

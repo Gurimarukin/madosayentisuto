@@ -53,7 +53,7 @@ export const PollQuestionPersistence = (
 
     removeForMessages: (messages: List<MessageId>): Future<number> =>
       !List.isNonEmpty(messages)
-        ? Future.right(0)
+        ? Future.successful(0)
         : pipe(
             collection.deleteMany({
               message: { $in: NonEmptyArray.encoder(MessageId.codec).encode(messages) },

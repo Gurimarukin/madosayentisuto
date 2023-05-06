@@ -39,7 +39,7 @@ export function UserService(
     ),
     Future.chain(([userName, password, confirm]) =>
       password !== confirm
-        ? Future.left(Error('Passwords must be the same'))
+        ? Future.failed(Error('Passwords must be the same'))
         : pipe(
             apply.sequenceS(Future.ApplyPar)({
               id: Future.fromIOEither(WebUserId.generate),

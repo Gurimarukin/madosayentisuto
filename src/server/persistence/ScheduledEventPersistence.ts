@@ -50,7 +50,7 @@ export function ScheduledEventPersistence(
 
     removeByIds: (ids: List<TObjectId>): Future<number> =>
       !List.isNonEmpty(ids)
-        ? Future.right(0)
+        ? Future.successful(0)
         : pipe(
             collection.deleteMany({
               _id: { $in: NonEmptyArray.encoder(TObjectId.encoder).encode(ids) },

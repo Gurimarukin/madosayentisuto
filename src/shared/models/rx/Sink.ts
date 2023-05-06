@@ -31,7 +31,7 @@ const reduce =
 
 const reduceTaskEither = <A, B>(b: B, f: (acc: B, a: A) => Future<B>): Sink<A, B> =>
   flow(
-    reduce(Future.right(b), (futureAcc, a) =>
+    reduce(Future.successful(b), (futureAcc, a) =>
       pipe(
         futureAcc,
         Future.chain(acc => f(acc, a)),

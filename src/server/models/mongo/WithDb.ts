@@ -52,7 +52,7 @@ const of = (onError: (e: Error) => io.IO<NotUsed>, { url, dbName }: Of): WithDb 
               pipe(
                 Future.tryCatch(() => client.close()),
                 Future.map(() => subscriber.error(e)),
-                Future.orElse(err => Future.right(subscriber.error(err))), // clientClose failed (very unlikely)
+                Future.orElse(err => Future.successful(subscriber.error(err))), // clientClose failed (very unlikely)
                 Future.map<void, NotUsed>(toNotUsed),
                 Future.run(onError),
               ),
@@ -60,7 +60,7 @@ const of = (onError: (e: Error) => io.IO<NotUsed>, { url, dbName }: Of): WithDb 
               pipe(
                 Future.tryCatch(() => client.close()),
                 Future.map(() => subscriber.complete()),
-                Future.orElse(err => Future.right(subscriber.error(err))), // clientClose failed (very unlikely)
+                Future.orElse(err => Future.successful(subscriber.error(err))), // clientClose failed (very unlikely)
                 Future.map<void, NotUsed>(toNotUsed),
                 Future.run(onError),
               ),

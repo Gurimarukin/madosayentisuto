@@ -106,7 +106,7 @@ const of = (client: Client<true>) => {
       pipe(
         Future.tryCatch(() => client.channels.fetch(ChannelId.unwrap(channelId))),
         Future.map(Maybe.fromNullable),
-        Future.orElse(e => (isUnknownChannelError(e) ? futureMaybe.none : Future.left(e))),
+        Future.orElse(e => (isUnknownChannelError(e) ? futureMaybe.none : Future.failed(e))),
         debugLeft('fetchChannel'),
       ),
 
@@ -158,7 +158,7 @@ const fetchAuditLogs = <A extends GuildAuditLogsResolvable = null>(
   pipe(
     Future.tryCatch(() => guild.fetchAuditLogs<A>(options)),
     Future.map(logs => Maybe.some(logs.entries)),
-    Future.orElse(e => (isMissingPermissionsError(e) ? futureMaybe.none : Future.left(e))),
+    Future.orElse(e => (isMissingPermissionsError(e) ? futureMaybe.none : Future.failed(e))),
     debugLeft('fetchAuditLogs'),
   )
 
@@ -193,7 +193,7 @@ const fetchPartial = <A extends MyPartial<A>>(partial: A): Future<A> =>
         Future.tryCatch(() => partial.fetch()),
         debugLeft('fetchPartial'),
       )
-    : Future.right(partial)
+    : Future.successful(partial)
 
 const fetchRole = (guild: Guild, roleId: RoleId): Future<Maybe<Role>> =>
   pipe(
@@ -297,7 +297,7 @@ const interactionReply = (
     Future.tryCatch(() => interaction.reply(options)),
     Future.map(toNotUsed), // TODO: maybe do something with result?
     Future.orElse(e =>
-      isDiscordAPIError('Cannot send an empty message')(e) ? Future.notUsed : Future.left(e),
+      isDiscordAPIError('Cannot send an empty message')(e) ? Future.notUsed : Future.failed(e),
     ),
     debugLeft('interactionReply'),
   )
@@ -317,7 +317,7 @@ const interactionUpdate = (
     Future.tryCatch(() => interaction.update(options)),
     Future.map(toNotUsed), // TODO: maybe do something with result?
     Future.orElse(e =>
-      isDiscordAPIError('Unknown interaction')(e) ? Future.notUsed : Future.left(e),
+      isDiscordAPIError('Unknown interaction')(e) ? Future.notUsed : Future.failed(e),
     ),
     debugLeft('interactionUpdate'),
   )
@@ -338,8 +338,8 @@ const messageDelete = (message: Message): Future<boolean> =>
     Future.map(() => true),
     Future.orElse(e =>
       isMissingPermissionsError(e) || isUnknownMessageError(e)
-        ? Future.right(false)
-        : Future.left(e),
+        ? Future.successful(false)
+        : Future.failed(e),
     ),
     debugLeft('messageDelete'),
   )
@@ -364,8 +364,8 @@ const threadMessageEdit = (
     Future.map(Either.right),
     Future.orElse(e =>
       isThreadIsArchivedError(e)
-        ? Future.right(Either.left<ThreadMessageEditError, Message>('threadIsArchived'))
-        : Future.left(e),
+        ? Future.successful(Either.left<ThreadMessageEditError, Message>('threadIsArchived'))
+        : Future.failed(e),
     ),
     debugLeft('threadMessageEdit'),
   )
@@ -394,7 +394,7 @@ const roleAdd = (
     Future.tryCatch(() => member.roles.add(roleOrRoles, reason)),
     Future.map(() => true),
     Future.orElse(e =>
-      isMissingAccessOrMissingPermissionError(e) ? Future.right(false) : Future.left(e),
+      isMissingAccessOrMissingPermissionError(e) ? Future.successful(false) : Future.failed(e),
     ),
     debugLeft('roleAdd'),
   )
@@ -408,7 +408,7 @@ const roleRemove = (
     Future.tryCatch(() => member.roles.remove(roleOrRoles, reason)),
     Future.map(() => true),
     Future.orElse(e =>
-      isMissingAccessOrMissingPermissionError(e) ? Future.right(false) : Future.left(e),
+      isMissingAccessOrMissingPermissionError(e) ? Future.successful(false) : Future.failed(e),
     ),
     debugLeft('roleRemove'),
   )
@@ -466,7 +466,9 @@ const sendMessage = <InGuild extends boolean = boolean>(
     Future.map(Maybe.some),
     Future.orElse(e =>
       // user blocked us
-      isDiscordAPIError('Cannot send messages to this user')(e) ? futureMaybe.none : Future.left(e),
+      isDiscordAPIError('Cannot send messages to this user')(e)
+        ? futureMaybe.none
+        : Future.failed(e),
     ),
     debugLeft('sendMessage'),
   )
@@ -487,8 +489,8 @@ const threadDelete = (thread: ThreadChannel): Future<boolean> =>
     Future.map(() => true),
     Future.orElse(e =>
       isMissingPermissionsError(e) || isUnknownMessageError(e)
-        ? Future.right(false)
-        : Future.left(e),
+        ? Future.successful(false)
+        : Future.failed(e),
     ),
     debugLeft('threadDelete'),
   )
@@ -646,7 +648,7 @@ const fetchMessageRec =
         Future.tryCatch(() => head.messages.fetch(message)),
         Future.map(Maybe.some),
         Future.orElse(e =>
-          isMissingAccessOrUnknownMessageError(e) ? futureMaybe.none : Future.left(e),
+          isMissingAccessOrUnknownMessageError(e) ? futureMaybe.none : Future.failed(e),
         ),
         futureMaybe.matchE(() => fetchMessageRec(message)(tail), futureMaybe.some),
       )

@@ -233,7 +233,7 @@ const notification = ({
     function notificationUserLeft(
       n: Omit<TheQuestNotificationUserLeft, 'type'>,
     ): Future<EmbedWithAttachmentAndEmoji> {
-      return Future.right({
+      return Future.successful({
         embed: MessageComponent.safeEmbed({
           description: `${summonerUser(n)} a abandonné La Quête...`,
         }),
@@ -255,7 +255,7 @@ const notification = ({
           return futureMaybe.fromTaskEither(
             apply.sequenceS(Future.ApplyPar)({
               attachment: championMasteryAttachment(champion.id, n.champion.level, attachmentName),
-              name: Future.right(attachmentName),
+              name: Future.successful(attachmentName),
             }),
           )
         }),

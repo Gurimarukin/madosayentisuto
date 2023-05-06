@@ -49,7 +49,7 @@ export const PollService = (
       pollQuestionPersistence.removeForMessages(messages),
       Future.chain(removedQuestions =>
         removedQuestions === 0
-          ? Future.right<RemoveResult>({ removedQuestions, removedResponses: 0 })
+          ? Future.successful<RemoveResult>({ removedQuestions, removedResponses: 0 })
           : pipe(
               pollResponsePersistence.removeForMessages(messages),
               Future.map(

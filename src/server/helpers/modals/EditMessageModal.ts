@@ -130,7 +130,7 @@ const EditMessageModalAutorole = {
         key: string,
       ): ((emojiRaw: Maybe<string>) => Future<ValidatedNea<string, Maybe<string>>>) =>
         Maybe.foldW(
-          () => Future.right(ValidatedNea.valid(Maybe.none)),
+          () => Future.successful(ValidatedNea.valid(Maybe.none)),
           emojiRaw =>
             pipe(
               getEmoji(emojiRaw),
@@ -271,7 +271,7 @@ const EditMessageModal = {
   ): ((modal: EditMessageModal) => Future<ValidatedNea<string, EditMessageModal>>) =>
     fold({
       onAutorole: EditMessageModalAutorole.validate(guild, emojidexService),
-      onDefault: flow(ValidatedNea.valid, Future.right),
+      onDefault: flow(ValidatedNea.valid, Future.successful),
     }),
 }
 

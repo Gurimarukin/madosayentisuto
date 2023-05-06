@@ -53,7 +53,7 @@ function TheQuestProgressionPersistence(
         }),
       )
       return !List.isNonEmpty(operations)
-        ? Future.right(true)
+        ? Future.successful(true)
         : pipe(
             collection.collection.future(c =>
               c.bulkWrite(List.asMutable(operations), { ordered: false }),
@@ -64,7 +64,7 @@ function TheQuestProgressionPersistence(
 
     removeForIds: (ids: List<DiscordUserId>): Future<number> =>
       !List.isNonEmpty(ids)
-        ? Future.right(0)
+        ? Future.successful(0)
         : pipe(
             collection.deleteMany({
               userId: { $in: NonEmptyArray.encoder(DiscordUserId.codec).encode(ids) },

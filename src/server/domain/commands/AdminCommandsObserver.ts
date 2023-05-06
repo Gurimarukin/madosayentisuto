@@ -916,7 +916,7 @@ export const AdminCommandsObserver = (
           Future.orElse(e =>
             e instanceof DebugError && isMissingPermissionsError(e.originalError)
               ? futureMaybe.none
-              : Future.left(e),
+              : Future.failed(e),
           ),
         ),
       ),
@@ -1088,10 +1088,10 @@ export const AdminCommandsObserver = (
             e instanceof DebugError &&
             e.originalError instanceof DiscordAPIError &&
             e.originalError.message.startsWith('Invalid Form Body')
-              ? Future.right(
+              ? Future.successful(
                   Either.left(`Erreur lors de l'envoi:\n${codeBlock(e.originalError.message)}`),
                 )
-              : Future.left(e),
+              : Future.failed(e),
           ),
           Future.map(
             Either.fold(
@@ -1118,7 +1118,7 @@ export const AdminCommandsObserver = (
               Future.map(() => Either.left('Erreur')),
             ),
           ({ roleId }) =>
-            Future.right(
+            Future.successful(
               Either.right(
                 AutoroleMessage.of({
                   roleId,
@@ -1147,7 +1147,7 @@ export const AdminCommandsObserver = (
         embeds: message.embeds,
         components: message.components,
       }
-      return Future.right(Either.right(options))
+      return Future.successful(Either.right(options))
     }
   }
 
@@ -1168,10 +1168,10 @@ export const AdminCommandsObserver = (
         Future.chain(() =>
           pipe(
             validateIsAdmin(interaction.user),
-            Either.fold(Future.right, () => f),
+            Either.fold(Future.successful, () => f),
             Future.orElse(e =>
               pipe(
-                Future.right('Erreur'),
+                Future.successful('Erreur'),
                 Future.chainFirstIOEitherK(() => logger.error(e)),
               ),
             ),
