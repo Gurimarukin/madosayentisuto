@@ -1,3 +1,4 @@
+- better HTTPError logs
 - backoffice: state: the quest
 - fix yt-dlp (--downloader ffmpeg? yt-dlp -F <video>)
 - /shi-fu-mi
