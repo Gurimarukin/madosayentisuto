@@ -38,8 +38,10 @@ const YtDlp = (binaryPath: string) => {
 
   // ID  EXT   RESOLUTION FPS CH │    FILESIZE   TBR PROTO │ VCODEC        VBR ACODEC      ABR ASR MORE INFO
   // ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  // 249 webm  audio only      2 │   475.72KiB   53k dash  │ audio only        opus        53k 48k low, webm_dash
+  // 250 webm  audio only      2 │   627.80KiB   70k dash  │ audio only        opus        70k 48k low, webm_dash
   // 251 webm  audio only      2 │     1.19MiB  135k dash  │ audio only        opus       135k 48k medium, webm_dash
-  const youtubeResource = audioResource('251', input =>
+  const youtubeResource = audioResource('250', input =>
     Promise.resolve(createAudioResource(input, { inputType: StreamType.WebmOpus })),
   )
 
