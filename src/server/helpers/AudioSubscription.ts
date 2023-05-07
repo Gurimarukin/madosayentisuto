@@ -515,7 +515,7 @@ const of = (
           pipe(
             f(oldState),
             Future.chain(newState =>
-              refreshMusicMessageAndSendPendingEvents({ oldState, newState }),
+              refreshPlayerMessageAndSendPendingEvents({ oldState, newState }),
             ),
             Future.chainFirstIOEitherK(newState =>
               AudioState.Eq.equals(oldState, newState)
@@ -731,7 +731,7 @@ const sendStateMessageAndStartThread = (
     ),
   )
 
-const refreshMusicMessageAndSendPendingEvents = (
+const refreshPlayerMessageAndSendPendingEvents = (
   oldAndNewState: OldAndNewState<AudioState>,
 ): Future<AudioState> => {
   const { oldState, newState } = oldAndNewState
@@ -743,7 +743,7 @@ const refreshMusicMessageAndSendPendingEvents = (
     Maybe.fold(
       () => Future.successful(newState),
       flow(
-        refreshMusicMessage({ oldState, newState }),
+        refreshPlayerMessage({ oldState, newState }),
         Future.map(() => newState),
       ),
     ),
@@ -751,7 +751,7 @@ const refreshMusicMessageAndSendPendingEvents = (
   )
 }
 
-const refreshMusicMessage =
+const refreshPlayerMessage =
   ({
     oldState,
     newState,
