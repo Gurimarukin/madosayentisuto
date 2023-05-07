@@ -1,12 +1,9 @@
 import type { AudioResource } from '@discordjs/voice'
-import { createAudioResource, demuxProbe } from '@discordjs/voice'
+import { StreamType, createAudioResource } from '@discordjs/voice'
 import type { io } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
-import fs from 'fs'
 
 import { RandomUtils } from '../../shared/utils/RandomUtils'
 import type { NonEmptyArray } from '../../shared/utils/fp'
-import { Future } from '../../shared/utils/fp'
 
 import type { Resources } from '../config/Resources'
 import type { MyFile } from '../models/FileOrDir'
@@ -22,10 +19,7 @@ const of = (resources: Resources) => {
   return { randomElevatorPlaylist }
 }
 
-const audioResourceFromFile = (file: MyFile): Future<AudioResource> =>
-  pipe(
-    Future.tryCatch(() => demuxProbe(fs.createReadStream(file.path))),
-    Future.map(probe => createAudioResource(probe.stream, { inputType: probe.type })),
-  )
+const audioResourceFromOggFile = (file: MyFile): AudioResource =>
+  createAudioResource(file.path, { inputType: StreamType.OggOpus })
 
-export const ResourcesHelper = { of, audioResourceFromFile }
+export const ResourcesHelper = { of, audioResourceFromOggFile }

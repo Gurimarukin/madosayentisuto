@@ -6,15 +6,10 @@ import { Maybe } from '../../../utils/fp'
 type Track = C.TypeOf<typeof codec>
 
 const codec = C.struct({
+  extractor: C.string,
   title: C.string,
   url: C.string,
   thumbnail: Maybe.codec(C.string),
-})
-
-const of = (title: string, url: string, thumbnail: Maybe<string>): Track => ({
-  title,
-  url,
-  thumbnail,
 })
 
 const Eq: eq.Eq<Track> = eq.struct({
@@ -23,6 +18,6 @@ const Eq: eq.Eq<Track> = eq.struct({
   thumbnail: Maybe.getEq(string.Eq),
 })
 
-const Track = { of, codec, Eq }
+const Track = { codec, Eq }
 
 export { Track }

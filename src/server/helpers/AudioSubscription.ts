@@ -344,7 +344,10 @@ const of = (
                   )
                 : onConnectionReadyConnecting(musicState, playMusicFirstTrackFromQueue),
             onElevator: elevatorState =>
-              onConnectionReadyConnecting(elevatorState, playElevatorFile),
+              onConnectionReadyConnecting(
+                elevatorState,
+                flow(playElevatorFile, Future.fromIOEither),
+              ),
           }),
         )
     }
@@ -459,7 +462,7 @@ const of = (
                     Future.map(() => musicState),
                   )
                 : playMusicFirstTrackFromQueue(musicState),
-            onElevator: playElevatorFile,
+            onElevator: flow(playElevatorFile, Future.fromIOEither),
           }),
         )
     }
@@ -560,7 +563,7 @@ const of = (
         () => Future.successful(state),
         flow(NonEmptyArray.unprepend, ([head, tail]) =>
           pipe(
-            ytDlp.audioResource(head.url),
+            ytDlp.audioResource(head),
             Future.chainIOEitherK(audioResource =>
               DiscordConnector.audioPlayerPlayAudioResource(state.audioPlayer, audioResource),
             ),
@@ -585,15 +588,15 @@ const of = (
 
   function playElevatorFile(
     state: AudioStateConnected<AudioStateValueElevator>,
-  ): Future<AudioStateConnected<AudioStateValueElevator>> {
-    return pipe(
+  ): IO<AudioStateConnected<AudioStateValueElevator>> {
+    const audioResource = pipe(
       state.value.playlist,
       NonEmptyArray.head,
-      ResourcesHelper.audioResourceFromFile,
-      Future.chainIOEitherK(audioResource =>
-        DiscordConnector.audioPlayerPlayAudioResource(state.audioPlayer, audioResource),
-      ),
-      Future.map(() =>
+      ResourcesHelper.audioResourceFromOggFile,
+    )
+    return pipe(
+      DiscordConnector.audioPlayerPlayAudioResource(state.audioPlayer, audioResource),
+      IO.map(() =>
         pipe(
           state,
           AudioStateConnect.modifyValue<'AudioStateConnected'>()(

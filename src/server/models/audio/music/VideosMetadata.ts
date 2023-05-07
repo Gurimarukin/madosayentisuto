@@ -10,11 +10,11 @@ export type VideoMetadata = D.TypeOf<typeof videoMetadataDecoder>
 
 const videoMetadataDecoder = D.struct({
   title: D.string,
-  url: Maybe.decoder(D.string),
+  // url: Maybe.decoder(D.string),
   webpage_url: D.string,
   thumbnail: Maybe.decoder(D.string),
-  playlist: Maybe.decoder(D.string),
-  playlist_index: Maybe.decoder(D.number),
+  // playlist: Maybe.decoder(D.string),
+  // playlist_index: Maybe.decoder(D.number),
 })
 
 export type VideosMetadata = {
