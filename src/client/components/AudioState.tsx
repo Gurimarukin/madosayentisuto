@@ -27,44 +27,47 @@ export const AudioState = ({ guild, state }: Props): JSX.Element => (
         </>
       )}
     </Li>
-    {state.type === 'Disconnected' ? null : <AudioStateValue guild={guild} value={state.value} />}
+    {state.type === 'Disconnected' ? null : (
+      <>
+        <Li label="value" className="items-center gap-3">
+          <span>{state.value.type}</span>
+          <span>-</span>
+          <span>
+            {pipe(
+              state.value.message,
+              Maybe.fold(
+                () => <ChannelViewComponent guild={guild} channel={state.value.messageChannel} />,
+                ({ id, url }) => (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="cursor-pointer underline"
+                  >
+                    Message{`<${MessageId.unwrap(id)}>`}
+                  </a>
+                ),
+              ),
+            )}
+          </span>
+          <span>-</span>
+          <span>{state.value.isPaused ? '⏸️' : '▶️'}</span>
+        </Li>
+        <AudioStateValue value={state.value} />
+      </>
+    )}
   </ul>
 )
 
 type AudioStateValueProps = {
-  guild: GuildId
   value: AudioStateValueView
 }
 
-const AudioStateValue = ({ guild, value }: AudioStateValueProps): JSX.Element => {
+const AudioStateValue = ({ value }: AudioStateValueProps): JSX.Element => {
   switch (value.type) {
     case 'Music':
       return (
         <>
-          <Li label="value" className="items-center gap-3">
-            <span>{value.type}</span>
-            <span>-</span>
-            <span>
-              {pipe(
-                value.message,
-                Maybe.fold(
-                  () => <ChannelViewComponent guild={guild} channel={value.messageChannel} />,
-                  ({ id, url }) => (
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="cursor-pointer underline"
-                    >
-                      Message{`<${MessageId.unwrap(id)}>`}
-                    </a>
-                  ),
-                ),
-              )}
-            </span>
-            <span>-</span>
-            <span>{value.isPaused ? '⏸️' : '▶️'}</span>
-          </Li>
           <Li label="currentTrack" className="flex-col gap-3">
             {pipe(
               value.currentTrack,
@@ -90,17 +93,11 @@ const AudioStateValue = ({ guild, value }: AudioStateValueProps): JSX.Element =>
     case 'Elevator':
       return (
         <>
-          <Li label="value" className="items-center gap-3">
-            {value.type}
-          </Li>
           <Li label="playlist" className="flex-col gap-2">
             <ul className="ml-8 list-disc">
               {pipe(value.playlist, NonEmptyArray.unprepend, ([head, tail]) => (
                 <>
-                  <li className="ml-[-1rem] flex items-center gap-2">
-                    <span>▶️</span>
-                    <span className="font-bold">{head}</span>
-                  </li>
+                  <li className="underline">{head}</li>
                   {tail.map(file => (
                     <li key={file}>{file}</li>
                   ))}

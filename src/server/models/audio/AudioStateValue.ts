@@ -59,9 +59,9 @@ const fold =
 const toView = fold<AudioStateValueView>({
   onMusic: s =>
     AudioStateValueView.music(
-      s.isPaused,
       s.currentTrack,
       s.queue,
+      s.isPaused,
       ChannelUtils.toView(s.messageChannel),
       pipe(s.message, Maybe.map(MessageView.fromMessage)),
     ),
@@ -72,6 +72,9 @@ const toView = fold<AudioStateValueView>({
         NonEmptyArray.map(f => f.basename),
         NonEmptyArray.rotate(1),
       ),
+      s.isPaused,
+      ChannelUtils.toView(s.messageChannel),
+      pipe(s.message, Maybe.map(MessageView.fromMessage)),
     ),
 })
 
