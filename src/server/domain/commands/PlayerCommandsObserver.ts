@@ -148,6 +148,8 @@ export const PlayerCommandsObserver = (
         return onPlayPauseButton(interaction)
       case PlayerStateMessage.ButtonId.next:
         return onNextButton(interaction)
+      case PlayerStateMessage.ButtonId.stop:
+        return onStopButton(interaction)
     }
     return Future.notUsed
   }
@@ -158,6 +160,10 @@ export const PlayerCommandsObserver = (
 
   function onNextButton(interaction: ButtonInteraction): Future<NotUsed> {
     return buttonCommon(interaction, subscription => subscription.playNextTrack(interaction.user))
+  }
+
+  function onStopButton(interaction: ButtonInteraction): Future<NotUsed> {
+    return buttonCommon(interaction, subscription => subscription.stop)
   }
 
   function validatePlayCommand(

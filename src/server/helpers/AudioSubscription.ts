@@ -79,13 +79,14 @@ export type AudioSubscription = {
     messageChannel: GuildSendableChannel,
     tracks: NonEmptyArray<Track>,
   ) => IO<NotUsed>
-  playNextTrack: (author: User) => IO<NotUsed>
-  playPauseTrack: IO<NotUsed>
   startElevator: (
     author: User,
     audioChannel: GuildAudioChannel,
     messageChannel: GuildSendableChannel,
   ) => IO<NotUsed>
+  playPauseTrack: IO<NotUsed>
+  playNextTrack: (author: User) => IO<NotUsed>
+  stop: IO<NotUsed>
   stringify: () => string
 }
 
@@ -123,9 +124,10 @@ const of = (
         ),
 
         queueTracks,
-        playNextTrack,
-        playPauseTrack: getPlayPauseTrack(),
         startElevator,
+        playPauseTrack: getPlayPauseTrack(),
+        playNextTrack,
+        stop: getStop(),
 
         stringify,
       }),
@@ -228,6 +230,57 @@ const of = (
     })
   }
 
+  function startElevator(
+    author: User,
+    audioChannel: GuildAudioChannel,
+    messageChannel: GuildSendableChannel,
+  ): IO<NotUsed> {
+    return queueStateReducer(state => {
+      switch (state.type) {
+        case 'Disconnected':
+          return pipe(
+            resourcesHelper.randomElevatorPlaylist,
+            Future.fromIO,
+            Future.chain(playlist =>
+              getConnecting(
+                audioChannel,
+                AudioStateValue.elevator({
+                  playlist,
+                  isPaused: false,
+                  messageChannel,
+                  message: Maybe.none,
+                  pendingEvents: List.of(PlayerEventMessage.elevatorStarted(author)),
+                }),
+              ),
+            ),
+          )
+
+        case 'Connecting':
+        case 'Connected':
+          return Future.successful(state)
+      }
+    })
+  }
+
+  function getPlayPauseTrack(): IO<NotUsed> {
+    return queueStateReducer(state => {
+      switch (state.type) {
+        case 'Disconnected':
+        case 'Connecting':
+          return Future.successful(state)
+
+        case 'Connected':
+          return pipe(
+            state,
+            state.value.isPaused
+              ? playPauseTrackCommon(DiscordConnector.audioPlayerUnpause, false)
+              : playPauseTrackCommon(DiscordConnector.audioPlayerPause, true),
+            Future.fromIOEither,
+          )
+      }
+    })
+  }
+
   function playNextTrack(author: User): IO<NotUsed> {
     return queueStateReducer(state => {
       switch (state.type) {
@@ -272,53 +325,18 @@ const of = (
     })
   }
 
-  function getPlayPauseTrack(): IO<NotUsed> {
+  function getStop(): IO<NotUsed> {
     return queueStateReducer(state => {
       switch (state.type) {
         case 'Disconnected':
-        case 'Connecting':
           return Future.successful(state)
-
-        case 'Connected':
-          return pipe(
-            state,
-            state.value.isPaused
-              ? playPauseTrackCommon(DiscordConnector.audioPlayerUnpause, false)
-              : playPauseTrackCommon(DiscordConnector.audioPlayerPause, true),
-            Future.fromIOEither,
-          )
-      }
-    })
-  }
-
-  function startElevator(
-    author: User,
-    audioChannel: GuildAudioChannel,
-    messageChannel: GuildSendableChannel,
-  ): IO<NotUsed> {
-    return queueStateReducer(state => {
-      switch (state.type) {
-        case 'Disconnected':
-          return pipe(
-            resourcesHelper.randomElevatorPlaylist,
-            Future.fromIO,
-            Future.chain(playlist =>
-              getConnecting(
-                audioChannel,
-                AudioStateValue.elevator({
-                  playlist,
-                  isPaused: false,
-                  messageChannel,
-                  message: Maybe.none,
-                  pendingEvents: List.of(PlayerEventMessage.elevatorStarted(author)),
-                }),
-              ),
-            ),
-          )
 
         case 'Connecting':
         case 'Connected':
-          return Future.successful(state)
+          return pipe(
+            voiceConnectionDestroy(state.voiceConnection),
+            Future.map(() => state),
+          )
       }
     })
   }

@@ -1,4 +1,4 @@
-import type { BaseMessageOptions } from 'discord.js'
+import type { APIButtonComponentWithCustomId, BaseMessageOptions } from 'discord.js'
 import { io, random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
@@ -11,6 +11,10 @@ import { constants } from '../../config/constants'
 import type { MyFile } from '../../models/FileOrDir'
 import type { AudioStateValue } from '../../models/audio/AudioStateValue'
 import { MessageComponent } from '../../models/discord/MessageComponent'
+
+type IsPaused = {
+  isPaused: boolean
+}
 
 const queueDisplay = 5
 
@@ -26,8 +30,9 @@ const images = {
 }
 
 const ButtonIds = {
-  playPause: 'musicPlayPause',
-  next: 'musicNext',
+  playPause: 'playerPlayPause',
+  next: 'playerNext',
+  stop: 'playerStop',
 }
 
 const pauseButton = MessageComponent.buttonWithCustomId({
@@ -42,10 +47,19 @@ const playButton = MessageComponent.buttonWithCustomId({
   emoji: constants.emojis.play,
 })
 
+const playPauseButton = ({ isPaused }: IsPaused): APIButtonComponentWithCustomId =>
+  isPaused ? playButton : pauseButton
+
 const nextButton = MessageComponent.buttonWithCustomId({
   custom_id: ButtonIds.next,
   label: 'Suivant',
   emoji: constants.emojis.next,
+})
+
+const stopButton = MessageComponent.buttonWithCustomId({
+  custom_id: ButtonIds.stop,
+  label: 'Stop',
+  emoji: constants.emojis.stop,
 })
 
 const getConnecting = (images_: NonEmptyArray<string>): io.IO<BaseMessageOptions> =>
@@ -63,8 +77,9 @@ const getConnecting = (images_: NonEmptyArray<string>): io.IO<BaseMessageOptions
         ],
         components: [
           MessageComponent.row([
-            { ...playButton, disabled: true },
+            { ...playPauseButton({ isPaused: false }), disabled: true },
             { ...nextButton, disabled: true },
+            { ...stopButton, disabled: true },
           ]),
         ],
       }),
@@ -74,10 +89,6 @@ const getConnecting = (images_: NonEmptyArray<string>): io.IO<BaseMessageOptions
 const connecting: Dict<AudioStateValue['type'], io.IO<BaseMessageOptions>> = {
   Music: getConnecting(images.jpDjGifs),
   Elevator: getConnecting(images.jpElevators),
-}
-
-type IsPaused = {
-  isPaused: boolean
 }
 
 const playing = {
@@ -145,7 +156,9 @@ const playing = {
               image: MessageComponent.image(image),
             }),
           ],
-          components: [MessageComponent.row([isPaused ? playButton : pauseButton, nextButton])],
+          components: [
+            MessageComponent.row([playPauseButton({ isPaused }), nextButton, stopButton]),
+          ],
         }),
       ),
     ),
@@ -174,7 +187,9 @@ const playing = {
               image: MessageComponent.image(image),
             }),
           ],
-          components: [MessageComponent.row([isPaused ? playButton : pauseButton, nextButton])],
+          components: [
+            MessageComponent.row([playPauseButton({ isPaused }), nextButton, stopButton]),
+          ],
         }),
       ),
     ),
