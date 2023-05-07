@@ -90,7 +90,7 @@ const prompt = (label: string): Future<string> =>
       })
       return new Promise<string>(resolve => rl.question(label, answer => resolve(answer))).then(
         res => {
-          // eslint-disable-next-line functional/no-expression-statement
+          // eslint-disable-next-line functional/no-expression-statements
           rl.close()
           return res
         },

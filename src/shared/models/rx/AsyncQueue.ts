@@ -9,8 +9,8 @@ import type { TObservable } from './TObservable'
 const maxQueueSize = 100
 
 type AsyncQueue<A> = {
-  readonly observable: TObservable<A>
-  readonly queue: (f: Future<A>) => IO<NotUsed>
+  observable: TObservable<A>
+  queue: (f: Future<A>) => IO<NotUsed>
 }
 
 /**

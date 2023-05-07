@@ -22,36 +22,36 @@ import { List, NonEmptyArray } from '../../../shared/utils/fp'
 type Command<
   A extends RESTPostAPIApplicationCommandsJSONBody = RESTPostAPIApplicationCommandsJSONBody,
 > = {
-  readonly isGlobal: boolean
-  readonly value: A
+  isGlobal: boolean
+  value: A
 }
 
 type CommandCommon = {
-  readonly name: string
-  readonly description: string
-  readonly isGlobal?: boolean // default: false
+  name: string
+  description: string
+  isGlobal?: boolean // default: false
 }
 
 type CommandCommonMessage = Omit<CommandCommon, 'description'>
 
 type OptionCommon = {
-  readonly name: string
-  readonly description: string
-  readonly required?: boolean
+  name: string
+  description: string
+  required?: boolean
 }
 
 type OptionString = OptionCommon & {
-  readonly choices?: List<Choice<string>>
+  choices?: List<Choice<string>>
 }
 
 type ChoiceType = string | number
 type Choice<A extends ChoiceType> = {
-  readonly name: string
-  readonly value: A
+  name: string
+  value: A
 }
 
 type OptionChannel = OptionCommon & {
-  readonly channel_types?: List<Exclude<ChannelType, ChannelType.DM | ChannelType.GroupDM>>
+  channel_types?: List<Exclude<ChannelType, ChannelType.DM | ChannelType.GroupDM>>
 }
 
 const of = <A extends RESTPostAPIApplicationCommandsJSONBody>(

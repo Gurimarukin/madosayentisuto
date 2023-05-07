@@ -7,7 +7,7 @@ import * as E from 'io-ts/Encoder'
 import { CustomId, NumberFromString } from '../../utils/ioTsUtils'
 
 export type PollButton = {
-  readonly choiceIndex: number
+  choiceIndex: number
 }
 
 const of = (choiceIndex: number): PollButton => ({ choiceIndex })

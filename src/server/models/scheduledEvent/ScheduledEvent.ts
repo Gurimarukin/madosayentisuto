@@ -49,14 +49,14 @@ type ReminderArgs = Omit<ScheduledEventReminder, 'type'>
 type ItsFridayArgs = Omit<ScheduledEventItsFriday, 'type'>
 
 type ToViewArgs = {
-  readonly scheduledAt: DayJs
-  readonly createdBy: User
-  readonly who: Maybe<{
-    readonly guild: Guild
-    readonly role: Role
-    readonly channel: NamedChannel
+  scheduledAt: DayJs
+  createdBy: User
+  who: Maybe<{
+    guild: Guild
+    role: Role
+    channel: NamedChannel
   }>
-  readonly what: string
+  what: string
 }
 
 export const ScheduledEvent = {

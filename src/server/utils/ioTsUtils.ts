@@ -167,7 +167,7 @@ const listLengthDecoder = <A = never>(n: number): D.Decoder<List<A>, List<A>> =>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tupleFromArrayStrictDecoder = <A extends ReadonlyArray<Decoder<any, any>>>(
   ...components: A
-): Decoder<List<D.InputOf<A[number]>>, { readonly [K in keyof A]: D.TypeOf<A[K]> }> =>
+): Decoder<List<D.InputOf<A[number]>>, { [K in keyof A]: D.TypeOf<A[K]> }> =>
   pipe(
     listLengthDecoder<ReadonlyArray<D.InputOf<A[number]>>>(components.length),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

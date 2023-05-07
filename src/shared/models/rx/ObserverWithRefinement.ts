@@ -2,14 +2,13 @@ import { refinement as refinement_ } from 'fp-ts'
 import type { Refinement } from 'fp-ts/Refinement'
 import { pipe } from 'fp-ts/function'
 
-import type { UnionDescription, UnionKeys, UnionResult } from '../../utils/createUnion'
-import type { UnionTypes } from '../../utils/createUnion'
+import type { UnionDescription, UnionKeys, UnionResult, UnionTypes } from '../../utils/createUnion'
 import { List, NonEmptyArray } from '../../utils/fp'
 import type { TObserver } from './TObserver'
 
 export type ObserverWithRefinement<A, B extends A> = {
-  readonly observer: TObserver<B>
-  readonly refinement: Refinement<A, B>
+  observer: TObserver<B>
+  refinement: Refinement<A, B>
 }
 
 function of<A>(observer: TObserver<A>): ObserverWithRefinement<A, A>

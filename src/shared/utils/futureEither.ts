@@ -14,7 +14,7 @@ type URI = typeof URI
 declare module 'fp-ts/HKT' {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface URItoKind2<E, A> {
-    readonly [URI]: Future<Either<E, A>>
+    [URI]: Future<Either<E, A>>
   }
 }
 

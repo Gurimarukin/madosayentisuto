@@ -17,13 +17,13 @@ import { AudioState } from '../audio/AudioState'
 import { Calls } from './Calls'
 
 export type GuildState = {
-  readonly id: GuildId
-  readonly calls: Maybe<Calls>
-  readonly defaultRole: Maybe<Role>
-  readonly itsFridayChannel: Maybe<GuildSendableChannel>
-  readonly birthdayChannel: Maybe<GuildSendableChannel>
-  readonly subscription: Maybe<AudioSubscription>
-  readonly theQuestMessage: Maybe<Message<true>>
+  id: GuildId
+  calls: Maybe<Calls>
+  defaultRole: Maybe<Role>
+  itsFridayChannel: Maybe<GuildSendableChannel>
+  birthdayChannel: Maybe<GuildSendableChannel>
+  subscription: Maybe<AudioSubscription>
+  theQuestMessage: Maybe<Message<true>>
 }
 
 const empty = (id: GuildId): GuildState => ({

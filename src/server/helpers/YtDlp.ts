@@ -78,7 +78,7 @@ const YtDlp = (binaryPath: string) => {
           return Future.tryCatch(
             () =>
               new Promise<AudioResource>((resolve, reject) => {
-                /* eslint-disable functional/no-expression-statement */
+                /* eslint-disable functional/no-expression-statements */
                 process
                   .once('spawn', () =>
                     demuxProbe(stream)
@@ -95,7 +95,7 @@ const YtDlp = (binaryPath: string) => {
                   stream.resume()
                   reject(error)
                 }
-                /* eslint-enable functional/no-expression-statement */
+                /* eslint-enable functional/no-expression-statements */
               }),
           )
         }),

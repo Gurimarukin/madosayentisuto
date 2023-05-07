@@ -13,7 +13,7 @@ import { DiscordConnector } from '../../../helpers/DiscordConnector'
 import { MessageComponent } from '../../discord/MessageComponent'
 
 type DiscordDMCompact = {
-  readonly discordDMIsCompact: boolean
+  discordDMIsCompact: boolean
 }
 
 export const DiscordDMLogObserver = (

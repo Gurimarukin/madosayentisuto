@@ -12,13 +12,13 @@ import { Future, Try, toNotUsed } from '../../../shared/utils/fp'
 import { TObservableUtils } from '../../utils/TObservableUtils'
 
 export type WithDb = {
-  readonly future: <A>(f: (db: Db) => Promise<A>) => Future<A>
-  readonly observable: (f: (db: Db) => Readable) => TObservable<unknown>
+  future: <A>(f: (db: Db) => Promise<A>) => Future<A>
+  observable: (f: (db: Db) => Readable) => TObservable<unknown>
 }
 
 type Of = {
-  readonly url: string
-  readonly dbName: string
+  url: string
+  dbName: string
 }
 
 const of = (onError: (e: Error) => io.IO<NotUsed>, { url, dbName }: Of): WithDb => ({

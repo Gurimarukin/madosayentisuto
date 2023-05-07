@@ -4,9 +4,9 @@ import qs from 'qs'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 type HistoryContext = {
-  readonly location: history.Location
-  readonly navigate: (to: string) => void
-  readonly query: qs.ParsedQs
+  location: history.Location
+  navigate: (to: string) => void
+  query: qs.ParsedQs
 }
 
 const HistoryContext = createContext<HistoryContext | undefined>(undefined)
@@ -29,7 +29,7 @@ export const HistoryContextProvider: React.FC = ({ children }) => {
 export const useHistory = (): HistoryContext => {
   const context = useContext(HistoryContext)
   if (context === undefined) {
-    // eslint-disable-next-line functional/no-throw-statement
+    // eslint-disable-next-line functional/no-throw-statements
     throw Error('useHistory must be used within a HistoryContextProvider')
   }
   return context

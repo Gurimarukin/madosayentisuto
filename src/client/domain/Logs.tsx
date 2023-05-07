@@ -1,4 +1,4 @@
-/* eslint-disable functional/no-expression-statement */
+/* eslint-disable functional/no-expression-statements */
 import { pipe } from 'fp-ts/function'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 

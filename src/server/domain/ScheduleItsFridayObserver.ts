@@ -59,6 +59,6 @@ function randomTime(now: DayJs): io.IO<DayJs> {
   const todayRangeStart = pipe(now, DayJs.startOf('hour'), DayJs.hour.set(rangeStart))
   return pipe(
     random.randomRange(0, MsDuration.unwrap(MsDuration.hours(rangeEnd - rangeStart))),
-    io.map(n => pipe(todayRangeStart, DayJs.add(MsDuration.wrap(n)))),
+    io.map(n => pipe(todayRangeStart, DayJs.add(MsDuration.ms(n)))),
   )
 }

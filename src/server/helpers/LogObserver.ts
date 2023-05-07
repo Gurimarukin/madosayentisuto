@@ -15,8 +15,8 @@ import { MadEvent } from '../models/event/MadEvent'
 import type { LogService } from '../services/LogService'
 
 export type LogObserver = {
-  readonly logEventObserver: TObserver<LogEvent>
-  readonly madEventObserver: ObserverWithRefinement<MadEvent, MadEventCronJob>
+  logEventObserver: TObserver<LogEvent>
+  madEventObserver: ObserverWithRefinement<MadEvent, MadEventCronJob>
 }
 
 export const LogObserver = (

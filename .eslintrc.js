@@ -10,7 +10,7 @@ module.exports = {
   plugins: ['functional', 'fp-ts', 'tailwindcss'],
   extends: [
     'plugin:@typescript-eslint/recommended',
-    'plugin:functional/recommended',
+    'plugin:functional/strict',
     'plugin:fp-ts/all',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
@@ -92,8 +92,8 @@ module.exports = {
         enforceParameterCount: false,
       },
     ],
-    'functional/no-conditional-statement': 'off', // switch aren't bad :/
-    'functional/no-expression-statement': [
+    'functional/no-conditional-statements': 'off', // switch aren't bad :/
+    'functional/no-expression-statements': [
       'warn',
       {
         ignorePattern: [
@@ -107,8 +107,10 @@ module.exports = {
         ],
       },
     ],
-    'functional/no-mixed-type': 'off',
-    'functional/no-return-void': ['error', { ignoreImplicit: true }],
+    'functional/no-mixed-types': 'off',
+    'functional/no-return-void': ['error', { ignoreInferredTypes: true }],
+    'functional/prefer-immutable-types': 'off',
+    'functional/type-declaration-immutability': 'off',
     'max-len': [
       'warn',
       {
@@ -137,7 +139,6 @@ module.exports = {
     'object-shorthand': 'warn',
     'prettier/prettier': 'off',
     quotes: ['warn', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
-    'react/boolean-prop-naming': ['warn', { validateNested: true }],
     'react/button-has-type': 'warn',
     'react/display-name': 'off',
     'react/hook-use-state': 'warn',
@@ -168,5 +169,6 @@ module.exports = {
     ],
     'space-in-parens': ['warn', 'never'],
     strict: 'warn',
+    'tailwindcss/no-custom-classname': 'warn',
   },
 }

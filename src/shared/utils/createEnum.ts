@@ -1,19 +1,19 @@
-import * as C from 'io-ts/Codec'
 import type { Codec } from 'io-ts/Codec'
-import * as D from 'io-ts/Decoder'
+import * as C from 'io-ts/Codec'
 import type { Decoder } from 'io-ts/Decoder'
-import * as E from 'io-ts/Encoder'
+import * as D from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
+import * as E from 'io-ts/Encoder'
 import type { Literal } from 'io-ts/Schemable'
 
 import type { List } from './fp'
 
 type Res<A> = {
-  readonly values: List<A>
-  readonly decoder: Decoder<unknown, A>
-  readonly encoder: Encoder<A, A>
-  readonly codec: Codec<unknown, A, A>
-  readonly T: A
+  values: List<A>
+  decoder: Decoder<unknown, A>
+  encoder: Encoder<A, A>
+  codec: Codec<unknown, A, A>
+  T: A
 }
 
 export const createEnum = <A extends Literal>(a: A, ...as: List<A>): Res<A> => {

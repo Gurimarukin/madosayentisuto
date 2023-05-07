@@ -6,7 +6,7 @@ import { URLFromString } from '../../shared/utils/ioTsUtils'
 const seqS = ValidatedNea.getSeqS<string>()
 
 export type Config = {
-  readonly apiHost: URL
+  apiHost: URL
 }
 
 const parse = (rawConfig: Dict<string, string | undefined>): Try<Config> =>

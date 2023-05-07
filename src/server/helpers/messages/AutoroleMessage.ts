@@ -26,12 +26,12 @@ const Ids = {
 }
 
 type AutoroleMessage = {
-  readonly roleId: RoleId
-  readonly descriptionMessage: string
-  readonly addButton: string
-  readonly removeButton: string
-  readonly addButtonEmoji: Maybe<string>
-  readonly removeButtonEmoji: Maybe<string>
+  roleId: RoleId
+  descriptionMessage: string
+  addButton: string
+  removeButton: string
+  addButtonEmoji: Maybe<string>
+  removeButtonEmoji: Maybe<string>
 }
 
 const of = ({
@@ -92,9 +92,9 @@ const emojiDecoder: Decoder<APIMessageComponentEmoji, string> = pipe(
 )
 
 type RawButton = {
-  readonly customId: RoleId
-  readonly label: string
-  readonly emoji: Maybe<string>
+  customId: RoleId
+  label: string
+  emoji: Maybe<string>
 }
 
 const buttonFromComponentDecoder = (

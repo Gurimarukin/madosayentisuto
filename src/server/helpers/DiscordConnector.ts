@@ -80,8 +80,8 @@ import { ChannelUtils } from '../utils/ChannelUtils'
 import { debugLeft } from '../utils/debugLeft'
 
 type MyPartial<A> = {
-  readonly partial: boolean
-  readonly fetch: () => Promise<A>
+  partial: boolean
+  fetch: () => Promise<A>
 }
 
 export type MyInteraction =
@@ -439,7 +439,7 @@ const restPutApplicationGuildCommands =
     )
 
 type PermissionsJSONBody = {
-  readonly permissions: NonEmptyArray<APIApplicationCommandPermission>
+  permissions: NonEmptyArray<APIApplicationCommandPermission>
 }
 
 const restPutApplicationCommandPermissions =
@@ -562,10 +562,10 @@ const fromConfig = (config: ClientConfig): Future<DiscordConnector> =>
             Partials.Reaction,
           ],
         })
-        /* eslint-disable functional/no-expression-statement */
+        /* eslint-disable functional/no-expression-statements */
         client.once('ready', () => resolve(of(client)))
         client.login(BotToken.unwrap(config.token))
-        /* eslint-enable functional/no-expression-statement */
+        /* eslint-enable functional/no-expression-statements */
       }),
   )
 

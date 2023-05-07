@@ -28,8 +28,8 @@ import { DiscordConnector } from './DiscordConnector'
 import { TheQuestMessage } from './messages/TheQuestMessage'
 
 type ProgressionsAndNotifications = {
-  readonly progressions: List<TheQuestProgressionApi>
-  readonly notifications: List<TheQuestNotification>
+  progressions: List<TheQuestProgressionApi>
+  notifications: List<TheQuestNotification>
 }
 
 type TheQuestHelper = ReturnType<typeof TheQuestHelper>
@@ -176,9 +176,9 @@ const TheQuestHelper = (
   }
 
   type GetNotificationsArgs = {
-    readonly fromPersistence: List<TheQuestProgressionDb>
-    readonly toRemove: List<TheQuestProgressionDb>
-    readonly fromApi: List<TheQuestProgressionApi>
+    fromPersistence: List<TheQuestProgressionDb>
+    toRemove: List<TheQuestProgressionDb>
+    fromApi: List<TheQuestProgressionApi>
   }
 
   function getNotifications({

@@ -1,20 +1,14 @@
 import { parse as parseCookie } from 'cookie'
 import type * as express from 'express'
-import { json, string, task } from 'fp-ts'
+import { eitherT, json, string, task } from 'fp-ts'
 import type { Apply2 } from 'fp-ts/Apply'
 import type { FromIO2 } from 'fp-ts/FromIO'
 import type { Functor2 } from 'fp-ts/Functor'
+import type { Monad2 } from 'fp-ts/Monad'
 import { flow, identity, pipe } from 'fp-ts/function'
 import type * as http from 'http'
-import type {
-  Connection,
-  CookieOptions,
-  HeadersOpen,
-  ResponseEnded,
-  Status,
-  StatusOpen,
-} from 'hyper-ts'
-import { MediaType } from 'hyper-ts'
+import type { Connection, CookieOptions, HeadersOpen, ResponseEnded, StatusOpen } from 'hyper-ts'
+import { MediaType, Status } from 'hyper-ts'
 import * as M from 'hyper-ts/lib/Middleware'
 import { toRequestHandler as toRequestHandler_ } from 'hyper-ts/lib/express'
 import type { Decoder } from 'io-ts/Decoder'
@@ -22,12 +16,12 @@ import * as D from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
 
 import { MsDuration } from '../../../shared/models/MsDuration'
-import { Dict, Either, Future, List, Maybe, Try, Tuple } from '../../../shared/utils/fp'
+import { Dict, Either, Future, List, Maybe, NotUsed, Try, Tuple } from '../../../shared/utils/fp'
 import { decodeError } from '../../../shared/utils/ioTsUtils'
 
 import { unknownToError } from '../../utils/unknownToError'
 
-export type MyMiddleware<I, O, A> = (c: Connection<I>) => Future<Tuple<A, Connection<O>>>
+type MyMiddleware<I, O, A> = (c: Connection<I>) => Future<Tuple<A, Connection<O>>>
 
 const URI = 'MyMiddleware' as const
 type URI = typeof URI
@@ -35,7 +29,7 @@ type URI = typeof URI
 declare module 'fp-ts/HKT' {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface URItoKind2<E, A> {
-    readonly [URI]: MyMiddleware<E, E, A>
+    [URI]: MyMiddleware<E, E, A>
   }
 }
 
@@ -59,6 +53,15 @@ const ApplyPar: Apply2<URI> = {
   ) => MyMiddleware<I, I, B>,
 }
 
+const Monad: Monad2<URI> = {
+  ...ApplyPar,
+  of: M.of,
+  chain: M.Monad.chain as <R, A, B>(
+    fa: MyMiddleware<R, R, A>,
+    f: (a: A) => MyMiddleware<R, R, B>,
+  ) => MyMiddleware<R, R, B>,
+}
+
 const fromEither = M.fromEither as <I = StatusOpen, A = never>(fa: Try<A>) => MyMiddleware<I, I, A>
 const fromIO = M.fromIO as FromIO2<URI>['fromIO']
 
@@ -70,12 +73,17 @@ const ichain = M.ichain as <A, O, Z, B>(
   f: (a: A) => MyMiddleware<O, Z, B>,
 ) => <I>(ma: MyMiddleware<I, O, A>) => MyMiddleware<I, Z, B>
 
+const ichainTaskEitherK = <A, B>(
+  f: (a: A) => Future<B>,
+): (<I, O>(ma: MyMiddleware<I, O, A>) => MyMiddleware<I, O, B>) =>
+  ichain(flow(f, fb => M.fromTaskEither(fb)))
+
 const orElse = M.orElse as <I, O, A>(
   f: (e: Error) => MyMiddleware<I, O, A>,
 ) => (ma: MyMiddleware<I, O, A>) => MyMiddleware<I, O, A>
 
 type MyCookieOptions = Omit<CookieOptions, 'maxAge'> & {
-  readonly maxAge?: MsDuration
+  maxAge?: MsDuration
 }
 
 const cookie = (
@@ -110,8 +118,8 @@ const decodeBody = <I = StatusOpen, A = never>(
   pipe(
     M.decodeHeader<I, Error, void>('Content-Type', contentType =>
       contentType === MediaType.applicationJSON
-        ? Either.right(undefined)
-        : Either.left(Error(`Expected 'Content-Type' to be '${MediaType.applicationJSON}'`)),
+        ? Try.success(undefined)
+        : Try.failure(Error(expectedContentTypeToBeJSON)),
     ),
     ichain(() => getBodyString()),
     ichain(flow(json.parse, Either.mapLeft(unknownToError), e => fromEither<I, json.Json>(e))),
@@ -194,6 +202,9 @@ const sendWithStatus =
       ichain(() => M.send(message)),
     )
 
+const noContent = (headers: Dict<string, string> = {}): EndedMiddleware =>
+  sendWithStatus(Status.NoContent, headers)('')
+
 const jsonWithStatus =
   <O, A>(status: Status, encoder: Encoder<O, A>, headers: Dict<string, string> = {}) =>
   (data: A): EndedMiddleware =>
@@ -202,18 +213,24 @@ const jsonWithStatus =
       ichain(() => M.json(encoder.encode(data), unknownToError)),
     )
 
+const jsonOK = <O, A>(
+  encoder: Encoder<O, A>,
+  headers: Dict<string, string> = {},
+): ((data: A) => EndedMiddleware) => jsonWithStatus(Status.OK, encoder, headers)
+
 // Express
 
 const toRequestHandler = toRequestHandler_ as <I, O>(
   middleware: MyMiddleware<I, O, void>,
 ) => express.RequestHandler
 
-export const MyMiddleware = {
+const MyMiddleware = {
   ...M,
   ApplyPar,
   fromIO,
   map,
   ichain,
+  ichainTaskEitherK,
   orElse,
   cookie,
 
@@ -230,25 +247,64 @@ export const MyMiddleware = {
   getUrl,
   getBodyString,
   sendWithStatus,
+  noContent,
   jsonWithStatus,
+  json: jsonOK,
 
   toRequestHandler,
 }
 
-export type EndedMiddleware = MyMiddleware<StatusOpen, ResponseEnded, void>
+type EndedMiddleware = MyMiddleware<StatusOpen, ResponseEnded, void>
+
+const withBody =
+  <A = never>(decoder: Decoder<unknown, A>) =>
+  (f: (a: A) => EndedMiddleware): EndedMiddleware =>
+    pipe(
+      M.decodeHeader('Content-Type', contentType =>
+        Either.right(
+          contentType === MediaType.applicationJSON
+            ? Either.right(NotUsed)
+            : Either.left(expectedContentTypeToBeJSON),
+        ),
+      ),
+      eitherT.chain(Monad)(() =>
+        pipe(getBodyString(), map<string, Either<string, string>>(Either.right)),
+      ),
+      map(
+        flow(
+          Either.chain(
+            flow(
+              json.parse,
+              Either.mapLeft(() => 'Invalid json'),
+            ),
+          ),
+          Either.chain(
+            flow(
+              decoder.decode,
+              Either.mapLeft(e => `Invalid body\n${D.draw(e)}`),
+            ),
+          ),
+        ),
+      ),
+      ichain(Either.fold(sendWithStatus(Status.BadRequest), f)),
+    )
+
+const EndedMiddleware = { withBody }
+
+export { MyMiddleware, EndedMiddleware }
 
 const requestChunks = (req: http.IncomingMessage): Future<List<unknown>> =>
   Future.tryCatch(
     () =>
       new Promise<List<unknown>>((resolve, reject) => {
-        // eslint-disable-next-line functional/prefer-readonly-type
         const body: unknown[] = []
-        /* eslint-disable functional/no-expression-statement */
+
+        /* eslint-disable functional/no-expression-statements */
         // eslint-disable-next-line functional/immutable-data
         req.on('data', chunk => body.push(chunk))
         req.on('end', () => resolve(body))
         req.on('error', e => reject(e))
-        /* eslint-enable functional/no-expression-statement */
+        /* eslint-enable functional/no-expression-statements */
       }),
   )
 
@@ -270,3 +326,5 @@ const reduceHeaders = (
       ),
     ),
   )
+
+const expectedContentTypeToBeJSON = `Expected 'Content-Type' to be '${MediaType.applicationJSON}'`

@@ -12,28 +12,28 @@ import type { TObserver } from './TObserver'
 
 /* eslint-disable functional/no-return-void */
 type TNextObserver<A> = {
-  readonly closed?: boolean
-  readonly next: (value: A) => void
-  readonly error?: (err: unknown) => void
-  readonly complete?: () => void
+  closed?: boolean
+  next: (value: A) => void
+  error?: (err: unknown) => void
+  complete?: () => void
 }
 type TErrorObserver<A> = {
-  readonly closed?: boolean
-  readonly next?: (value: A) => void
-  readonly error: (err: unknown) => void
-  readonly complete?: () => void
+  closed?: boolean
+  next?: (value: A) => void
+  error: (err: unknown) => void
+  complete?: () => void
 }
 type TCompletionObserver<A> = {
-  readonly closed?: boolean
-  readonly next?: (value: A) => void
-  readonly error?: (err: unknown) => void
-  readonly complete: () => void
+  closed?: boolean
+  next?: (value: A) => void
+  error?: (err: unknown) => void
+  complete: () => void
 }
 /* eslint-enable functional/no-return-void */
 type TPartialObserver<T> = TNextObserver<T> | TErrorObserver<T> | TCompletionObserver<T>
 
 export type TObservable<A> = Omit<rxjs.Observable<A>, 'subscribe'> & {
-  readonly subscribe: (subscriber: TPartialObserver<A>) => rxjs.Subscription
+  subscribe: (subscriber: TPartialObserver<A>) => rxjs.Subscription
 }
 
 const fromReadonlyArray: <A>(fa: List<A>) => TObservable<A> = rxjs.from

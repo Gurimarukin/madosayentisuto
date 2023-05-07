@@ -9,8 +9,8 @@ import { ChannelUtils } from '../../utils/ChannelUtils'
 import { RoleUtils } from '../../utils/RoleUtils'
 
 type Calls = {
-  readonly channel: GuildSendableChannel
-  readonly role: Role
+  channel: GuildSendableChannel
+  role: Role
 }
 
 const toView = (c: Calls): CallsView => ({

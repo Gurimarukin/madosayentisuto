@@ -10,15 +10,15 @@ import { IO } from '../../shared/utils/fp'
 export type FileOrDir = MyFile | Dir
 
 export type MyFile = {
-  readonly _tag: 'File'
-  readonly path: string
-  readonly basename: string
-  readonly dirname: string
+  _tag: 'File'
+  path: string
+  basename: string
+  dirname: string
 }
 
 export type Dir = {
-  readonly _tag: 'Dir'
-  readonly path: string
+  _tag: 'Dir'
+  path: string
 }
 
 export const FileOrDir = {

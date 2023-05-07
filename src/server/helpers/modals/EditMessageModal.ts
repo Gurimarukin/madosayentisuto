@@ -26,12 +26,12 @@ type EditMessageModalAutorole = typeof u.Autorole.T
 type EditMessageModalDefault = typeof u.Default.T
 
 type AutoroleArgs = {
-  readonly messageId: MessageId
+  messageId: MessageId
 } & Omit<AutoroleMessage, 'roleId'>
 
 type DefaultArgs = {
-  readonly messageId: MessageId
-  readonly content: string
+  messageId: MessageId
+  content: string
 }
 
 const u = createUnion({
@@ -207,8 +207,8 @@ const EditMessageModalDefault = {
  */
 
 type FoldArgs<A, B = A> = {
-  readonly onAutorole: (autorole: EditMessageModalAutorole) => A
-  readonly onDefault: (default_: EditMessageModalDefault) => B
+  onAutorole: (autorole: EditMessageModalAutorole) => A
+  onDefault: (default_: EditMessageModalDefault) => B
 }
 
 const fold =

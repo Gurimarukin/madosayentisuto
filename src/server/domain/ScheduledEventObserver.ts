@@ -35,9 +35,9 @@ import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
 type ReminderWhoParsed = {
-  readonly role: Role
-  readonly author: GuildMember
-  readonly channel: PartialTextBasedChannelFields
+  role: Role
+  author: GuildMember
+  channel: PartialTextBasedChannelFields
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -192,12 +192,12 @@ export const ScheduledEventObserver = (
 }
 
 type ReminderMessage = {
-  readonly now: DayJs
-  readonly scheduledAt: DayJs
-  readonly what: string
-  readonly r: Maybe<{
-    readonly role: Role
-    readonly author: GuildMember
+  now: DayJs
+  scheduledAt: DayJs
+  what: string
+  r: Maybe<{
+    role: Role
+    author: GuildMember
   }>
 }
 

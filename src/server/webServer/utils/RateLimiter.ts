@@ -6,36 +6,30 @@ import { Status } from 'hyper-ts'
 
 import { DayJs } from '../../../shared/models/DayJs'
 import { MsDuration } from '../../../shared/models/MsDuration'
-import { Tuple } from '../../../shared/utils/fp'
-import { Maybe } from '../../../shared/utils/fp'
-import { List } from '../../../shared/utils/fp'
+import { List, Maybe, Tuple } from '../../../shared/utils/fp'
 
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
-import { MyMiddleware as M } from '../models/MyMiddleware'
 import type { EndedMiddleware } from '../models/MyMiddleware'
+import { MyMiddleware as M } from '../models/MyMiddleware'
 import type { WithIp } from './WithIp'
 
-export type RateLimiter = (
+type RateLimiter = (
   limit: number,
   window: MsDuration,
 ) => (middleware: EndedMiddleware) => EndedMiddleware
 
-export const RateLimiter = (
-  Logger: LoggerGetter,
-  withIp: WithIp,
-  lifeTime: MsDuration,
-): RateLimiter => {
+const RateLimiter = (Logger: LoggerGetter, withIp: WithIp, lifeTime: MsDuration): RateLimiter => {
   const logger = Logger('RateLimiter')
 
   // eslint-disable-next-line functional/no-let
   let requests: List<RequestsHistory> = []
 
-  /* eslint-disable functional/no-expression-statement */
+  /* eslint-disable functional/no-expression-statements */
   setTimeout(() => {
     requests = []
     setInterval(() => (requests = []), MsDuration.unwrap(lifeTime))
   }, MsDuration.unwrap(lifeTime))
-  /* eslint-enable functional/no-expression-statement */
+  /* eslint-enable functional/no-expression-statements */
 
   return (limit, window) => middleware =>
     withIp('route with rate limiting')(ip =>
@@ -62,12 +56,14 @@ export const RateLimiter = (
                 )
 
                 if (limit <= cleaned.length) {
-                  const res = pipe(
-                    logger.warn(`Too many request on route "${url}" with ip "${ip}"`),
-                    M.fromIOEither,
-                    M.ichain(() => M.sendWithStatus(Status.Unauthorized)('Too many requests')),
+                  return Tuple.of(
+                    requests,
+                    pipe(
+                      logger.warn(`Too many request on route "${url}" with ip "${ip}"`),
+                      M.fromIOEither,
+                      M.ichain(() => M.sendWithStatus(Status.Unauthorized)('Too many requests')),
+                    ),
                   )
-                  return Tuple.of(requests, res)
                 }
 
                 const newHistory = RequestsHistory.of(key, pipe(cleaned, List.append(now)))
@@ -76,7 +72,7 @@ export const RateLimiter = (
             ),
           )
 
-          // eslint-disable-next-line functional/no-expression-statement
+          // eslint-disable-next-line functional/no-expression-statements
           requests = newRequests
 
           return result
@@ -85,9 +81,11 @@ export const RateLimiter = (
     )
 }
 
+export { RateLimiter }
+
 type RequestsHistory = {
-  readonly key: Key
-  readonly history: List<DayJs>
+  key: Key
+  history: List<DayJs>
 }
 
 const RequestsHistory = {
@@ -95,8 +93,8 @@ const RequestsHistory = {
 }
 
 type Key = {
-  readonly url: string
-  readonly ip: string
+  url: string
+  ip: string
 }
 
 const keyEq: Eq<Key> = eq.struct({

@@ -1,4 +1,4 @@
-/* eslint-disable functional/no-expression-statement */
+/* eslint-disable functional/no-expression-statements */
 import { apply, json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import React, { createContext, useContext } from 'react'
@@ -26,8 +26,8 @@ import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
 import { getOnError } from '../utils/getOnError'
 
 type ServerClientWSContext = {
-  readonly clientToServerEventSubject: TSubject<ClientToServerEvent>
-  readonly serverToClientEventObservable: TObservable<ServerToClientEvent>
+  clientToServerEventSubject: TSubject<ClientToServerEvent>
+  serverToClientEventObservable: TObservable<ServerToClientEvent>
 }
 
 const ServerClientWSContext = createContext<ServerClientWSContext | undefined>(undefined)
@@ -47,7 +47,7 @@ export const ServerClientWSContextProvider: React.FC = ({ children }) =>
 export const useServerClientWS = (): ServerClientWSContext => {
   const context = useContext(ServerClientWSContext)
   if (context === undefined) {
-    // eslint-disable-next-line functional/no-throw-statement
+    // eslint-disable-next-line functional/no-throw-statements
     throw Error('useServerClientWS must be used within a ServerClientWSContextProvider')
   }
   return context
@@ -62,8 +62,8 @@ const reconnectingWebSocket = (path: string): IO<ReconnectingWebSocket> =>
   })
 
 type InitWSResult = {
-  readonly value: ServerClientWSContext
-  readonly closeWebSocket: IO<void>
+  value: ServerClientWSContext
+  closeWebSocket: IO<void>
 }
 
 const initWs = (url: string): IO<InitWSResult> =>
@@ -75,10 +75,10 @@ const initWs = (url: string): IO<InitWSResult> =>
         'addEventListener',
       )<{
         /* eslint-disable functional/no-return-void */
-        readonly open: (event: ReconnectingEvent) => void
-        readonly close: (event: ReconnectingCloseEvent) => void
-        readonly error: (event: ReconnectingErrorEvent) => void
-        readonly message: (event: MessageEvent<unknown>) => void
+        open: (event: ReconnectingEvent) => void
+        close: (event: ReconnectingCloseEvent) => void
+        error: (event: ReconnectingErrorEvent) => void
+        message: (event: MessageEvent<unknown>) => void
         /* eslint-enable functional/no-return-void */
       }>(ws)
 

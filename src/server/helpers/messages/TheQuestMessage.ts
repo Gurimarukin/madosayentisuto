@@ -44,10 +44,10 @@ const masteryEmoji: Dict<`${ChampionLevel}`, string> = {
  */
 
 type RankingArgs = {
-  readonly webappUrl: string
-  readonly guild: Guild
-  readonly progressions: List<TheQuestProgressionApi>
-  readonly updatedAt: DayJs
+  webappUrl: string
+  guild: Guild
+  progressions: List<TheQuestProgressionApi>
+  updatedAt: DayJs
 }
 
 const ranking = ({
@@ -137,20 +137,20 @@ const thumbnailHeight = 42
 const thumbnailGap = 8
 
 type MessageOptionsWithEmoji = {
-  readonly messageOptions: BaseMessageOptions
-  readonly emoji: Maybe<string | GuildEmoji>
+  messageOptions: BaseMessageOptions
+  emoji: Maybe<string | GuildEmoji>
 }
 
 type EmbedWithAttachmentAndEmoji = {
-  readonly embed: APIEmbed
-  readonly attachment: Maybe<AttachmentBuilder>
-  readonly emoji: Maybe<string | GuildEmoji>
+  embed: APIEmbed
+  attachment: Maybe<AttachmentBuilder>
+  emoji: Maybe<string | GuildEmoji>
 }
 
 type NotificationsArgs = {
-  readonly webappUrl: string
-  readonly staticData: StaticData
-  readonly guild: Guild
+  webappUrl: string
+  staticData: StaticData
+  guild: Guild
 }
 
 const notification = ({

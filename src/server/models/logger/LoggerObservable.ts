@@ -14,8 +14,8 @@ import { getOnError } from '../../utils/getOnError'
 import { utilFormat } from '../../utils/utilInspect'
 
 export type LoggerObservable = {
-  readonly Logger: LoggerGetter
-  readonly subscribe: SubscribeLogEvent
+  Logger: LoggerGetter
+  subscribe: SubscribeLogEvent
 }
 
 export type LoggerGetter = (name: string) => LoggerType

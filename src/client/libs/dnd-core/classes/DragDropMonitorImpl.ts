@@ -16,7 +16,7 @@ import { matchesType } from '../utils/matchesType'
 
 export class DragDropMonitorImpl implements DragDropMonitor {
   private store: Store<State>
-  public readonly registry: HandlerRegistry
+  public registry: HandlerRegistry
 
   public constructor(store: Store<State>, registry: HandlerRegistry) {
     this.store = store

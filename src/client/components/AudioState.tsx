@@ -12,8 +12,8 @@ import { cssClasses } from '../utils/cssClasses'
 import { ChannelViewComponent } from './ChannelViewComponent'
 
 type Props = {
-  readonly guild: GuildId
-  readonly state: AudioStateView
+  guild: GuildId
+  state: AudioStateView
 }
 
 export const AudioState = ({ guild, state }: Props): JSX.Element => (
@@ -32,8 +32,8 @@ export const AudioState = ({ guild, state }: Props): JSX.Element => (
 )
 
 type AudioStateValueProps = {
-  readonly guild: GuildId
-  readonly value: AudioStateValueView
+  guild: GuildId
+  value: AudioStateValueView
 }
 
 const AudioStateValue = ({ guild, value }: AudioStateValueProps): JSX.Element => {
@@ -114,8 +114,8 @@ const AudioStateValue = ({ guild, value }: AudioStateValueProps): JSX.Element =>
 }
 
 type LiProps = {
-  readonly label: string
-  readonly className?: string
+  label: string
+  className?: string
 }
 
 const Li: React.FC<LiProps> = ({ label, className, children }) => (
@@ -128,7 +128,7 @@ const Li: React.FC<LiProps> = ({ label, className, children }) => (
 )
 
 type TrackProps = {
-  readonly track: Track
+  track: Track
 }
 
 const TrackComp = ({ track }: TrackProps): JSX.Element => (

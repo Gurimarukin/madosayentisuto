@@ -22,15 +22,15 @@ import { LogUtils } from '../utils/LogUtils'
 type KickOrBanAction = AuditLogEvent.MemberKick | AuditLogEvent.MemberBanAdd
 
 type ValidEntry<A extends KickOrBanAction> = {
-  readonly action: A
-  readonly createdAt: Date
-  readonly target: User
-  readonly executor: User
-  readonly reason: Maybe<string>
+  action: A
+  createdAt: Date
+  target: User
+  executor: User
+  reason: Maybe<string>
 }
 
 type CreatedAt = {
-  readonly createdAt: Date
+  createdAt: Date
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -193,17 +193,17 @@ const logMessage = (
   }
 }
 
-type MessageGetter<A extends readonly [...args: List<unknown>]> = (...args: A) => string
+type MessageGetter<A extends [...args: List<unknown>]> = (...args: A) => string
 
 const randomMessage =
-  <A extends readonly [...args: List<unknown>]>(nea: NonEmptyArray<MessageGetter<A>>) =>
+  <A extends [...args: List<unknown>]>(nea: NonEmptyArray<MessageGetter<A>>) =>
   (...args: A): io.IO<string> =>
     pipe(
       random.randomElem(nea),
       io.map(msg => msg(...args)),
     )
 
-const leaveMessages: NonEmptyArray<MessageGetter<readonly [member: string]>> = [
+const leaveMessages: NonEmptyArray<MessageGetter<[member: string]>> = [
   m => `${m} se barre, parce qu'iel en avait marre (de vous).`,
   m => `Gibier de potence, ${m} quitte le navire...`,
   m => `La trahison de ${m} est comme le sel sur une plaie.`,
@@ -213,9 +213,7 @@ const leaveMessages: NonEmptyArray<MessageGetter<readonly [member: string]>> = [
   m => `Je vais emmener ${m} aux quais-abattoirs...`,
 ]
 
-type KickOrBanMessageGetters = NonEmptyArray<
-  MessageGetter<readonly [member: string, admin: string]>
->
+type KickOrBanMessageGetters = NonEmptyArray<MessageGetter<[member: string, admin: string]>>
 
 const kickOrBanMessages = (action: KickOrBanAction): KickOrBanMessageGetters => {
   switch (action) {

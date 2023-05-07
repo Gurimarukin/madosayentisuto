@@ -3,8 +3,8 @@ import React from 'react'
 import { cssClasses } from '../utils/cssClasses'
 
 type Props = {
-  readonly title: React.ReactNode
-  readonly className?: string
+  title: React.ReactNode
+  className?: string
 }
 
 export const Tooltip: React.FC<Props> = ({ title, className, children }) => (

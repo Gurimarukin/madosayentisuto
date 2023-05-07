@@ -20,13 +20,14 @@ import * as C_ from 'io-ts/Codec'
 import type { Decoder } from 'io-ts/Decoder'
 import * as D from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
+import * as E_ from 'io-ts/Encoder'
 import type { Newtype } from 'newtype-ts'
 import { iso } from 'newtype-ts'
 
 import { MsDuration } from '../models/MsDuration'
 
 export const todo = (...[]: List<unknown>): never => {
-  // eslint-disable-next-line functional/no-throw-statement
+  // eslint-disable-next-line functional/no-throw-statements
   throw Error('Missing implementation')
 }
 
@@ -38,6 +39,7 @@ export const inspect =
   }
 
 export type NotUsed = Newtype<{ readonly NotUsed: unique symbol }, void>
+
 export const NotUsed = iso<NotUsed>().wrap(undefined)
 
 // a Future is an IO
@@ -49,32 +51,33 @@ type NonIONonNotUsed<A> = A extends NotUsed ? never : NonIO<A>
 export const toNotUsed = <A>(_: NonIONonNotUsed<A>): NotUsed => NotUsed
 
 export type Dict<K extends string, A> = readonlyRecord.ReadonlyRecord<K, A>
-export const Dict = readonlyRecord
 
-export type Either<E, A> = either.Either<E, A>
-export const Either = {
-  ...either,
+export const Dict = {
+  ...readonlyRecord,
+  empty: <K extends string = string, A = never>(): Dict<K, A> => readonlyRecord.empty,
 }
 
+export type Either<E, A> = either.Either<E, A>
+
+export const Either = either
+
 export type Maybe<A> = option.Option<A>
-const maybeToArray: <A>(fa: Maybe<A>) => List<A> = option.fold(
-  () => [],
-  a => [a],
-)
+
 const maybeDecoder = <I, A>(decoder: Decoder<I, A>): Decoder<I | null | undefined, Maybe<A>> => ({
   decode: u =>
     u === null || u === undefined
       ? D.success(option.none)
       : pipe(decoder.decode(u), either.map(option.some)),
 })
+
 const maybeEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<O | null, Maybe<A>> => ({
   encode: flow(option.map(encoder.encode), option.toNullable),
 })
+
 export const Maybe = {
   ...option,
   every: <A>(predicate: Predicate<A>): ((fa: Maybe<A>) => boolean) =>
     option.fold(() => true, predicate),
-  toArray: maybeToArray,
   decoder: maybeDecoder,
   encoder: maybeEncoder,
   codec: <O, A>(codec: Codec<unknown, O, A>): Codec<unknown, O | null, Maybe<A>> =>
@@ -82,8 +85,10 @@ export const Maybe = {
 }
 
 export type NonEmptyArray<A> = readonlyNonEmptyArray.ReadonlyNonEmptyArray<A>
+
 const neaDecoder = <A>(decoder: Decoder<unknown, A>): Decoder<unknown, NonEmptyArray<A>> =>
   pipe(D.array(decoder), D.refine<List<A>, NonEmptyArray<A>>(List.isNonEmpty, 'NonEmptyArray'))
+
 const neaEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<NonEmptyArray<O>, NonEmptyArray<A>> => ({
   encode: NonEmptyArray.map(encoder.encode),
 })
@@ -98,6 +103,7 @@ export const NonEmptyArray = {
 }
 
 export type List<A> = ReadonlyArray<A>
+
 function mkString(sep: string): (list: List<string>) => string
 function mkString(start: string, sep: string, end: string): (list: List<string>) => string
 function mkString(startOrSep: string, sep?: string, end?: string): (list: List<string>) => string {
@@ -106,13 +112,16 @@ function mkString(startOrSep: string, sep?: string, end?: string): (list: List<s
       ? `${startOrSep}${list.join(sep)}${end}`
       : list.join(startOrSep)
 }
+
 const listDecoder: <A>(decoder: Decoder<unknown, A>) => Decoder<unknown, List<A>> = D.array
-const listEncoder = <O, A>(encoder: Encoder<O, A>): Encoder<List<O>, List<A>> => ({
-  encode: readonlyArray.map(encoder.encode),
-})
+
+const listEncoder: <O, A>(encoder: Encoder<O, A>) => Encoder<List<O>, List<A>> = flow(
+  E_.array,
+  E_.readonly,
+)
+
 export const List = {
   ...readonlyArray,
-  // eslint-disable-next-line functional/prefer-readonly-type
   asMutable: identity as <A>(fa: List<A>) => A[],
   mkString,
   decoder: listDecoder,
@@ -122,6 +131,7 @@ export const List = {
 }
 
 export type Tuple<A, B> = readonly [A, B]
+
 export const Tuple = {
   ...readonlyTuple,
   of: tuple,
@@ -147,7 +157,7 @@ export const Try = {
     pipe(
       t,
       Either.getOrElse<Error, A>(e => {
-        // eslint-disable-next-line functional/no-throw-statement
+        // eslint-disable-next-line functional/no-throw-statements
         throw e
       }),
     ),
@@ -193,13 +203,17 @@ export const Future = {
       pipe(future, task.delay(MsDuration.unwrap(ms))),
 }
 
+export type IO<A> = io.IO<Try<A>>
+
 const ioNotUsed: IO<NotUsed> = ioEither.right(NotUsed)
+
 const ioFromIO: <A>(fa: io.IO<A>) => IO<A> = ioEither.fromIO
+
 const ioRun =
   (onError: (e: Error) => io.IO<NotUsed>) =>
   (ioA: IO<NotUsed>): NotUsed =>
     pipe(ioA, io.chain(either.fold(onError, io.of)))()
-export type IO<A> = io.IO<Try<A>>
+
 export const IO = {
   ...ioEither,
   right: ioEither.right as <A>(a: A) => IO<A>,
@@ -210,7 +224,7 @@ export const IO = {
     (onError: (e: Error) => io.IO<NotUsed>) =>
     (f: Future<NotUsed>): io.IO<NotUsed> =>
     () => {
-      // eslint-disable-next-line functional/no-expression-statement
+      // eslint-disable-next-line functional/no-expression-statements
       pipe(f, Future.run(onError))
       return NotUsed
     },

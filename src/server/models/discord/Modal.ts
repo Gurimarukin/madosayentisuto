@@ -13,16 +13,16 @@ import { List } from '../../../shared/utils/fp'
 // _tag don't exist at runtime (see cast below)
 
 type Modal = APIModalInteractionResponseCallbackData & {
-  readonly _tag: 'Modal'
+  _tag: 'Modal'
 }
 
 type MyTextInput = APITextInputComponent & {
-  readonly _tag: 'MyTextInput'
+  _tag: 'MyTextInput'
 }
 
 type Of = {
-  readonly custom_id: string
-  readonly title: string
+  custom_id: string
+  title: string
 }
 
 const of =

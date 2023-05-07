@@ -47,7 +47,7 @@ export const Home = (): JSX.Element => (
 )
 
 type GuildsProps = {
-  readonly guilds: List<GuildViewShort>
+  guilds: List<GuildViewShort>
 }
 
 const Guilds = ({ guilds }: GuildsProps): JSX.Element => (
