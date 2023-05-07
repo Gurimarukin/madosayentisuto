@@ -17,11 +17,11 @@ import { AudioStateValue } from './AudioStateValue'
 declare module 'fp-ts/HKT' {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface URItoKind<A extends AudioStateValue> {
-    [AudioStateConnectingURI]: AudioStateConnecting<A>
+    readonly [AudioStateConnectingURI]: AudioStateConnecting<A>
   }
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface URItoKind<A extends AudioStateValue> {
-    [AudioStateConnectedURI]: AudioStateConnected<A>
+    readonly [AudioStateConnectedURI]: AudioStateConnected<A>
   }
 }
 
