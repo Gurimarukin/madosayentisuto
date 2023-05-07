@@ -4,14 +4,13 @@ import { flow, pipe } from 'fp-ts/function'
 import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 
 import type { MyFile } from '../models/FileOrDir'
-import { FileOrDir } from '../models/FileOrDir'
-import { Dir } from '../models/FileOrDir'
+import { Dir, FileOrDir } from '../models/FileOrDir'
 import { FsUtils } from '../utils/FsUtils'
 import { constants } from './constants'
 
 export type Resources = {
-  readonly music: {
-    readonly elevator: NonEmptyArray<MyFile>
+  music: {
+    elevator: NonEmptyArray<MyFile>
   }
 }
 

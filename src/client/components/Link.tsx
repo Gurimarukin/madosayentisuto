@@ -1,13 +1,13 @@
-/* eslint-disable functional/no-expression-statement */
+/* eslint-disable functional/no-expression-statements */
 import React, { useCallback } from 'react'
 
 import { useHistory } from '../contexts/HistoryContext'
 
 type Props = {
-  readonly to: string
-  readonly target?: string
-  readonly className?: string
-  readonly children?: React.ReactNode
+  to: string
+  target?: string
+  className?: string
+  children?: React.ReactNode
 }
 
 export const Link = ({ to, target, className, children }: Props): JSX.Element => {

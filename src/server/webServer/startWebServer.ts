@@ -7,6 +7,7 @@ import { flow, identity, pipe } from 'fp-ts/function'
 import type * as http from 'http'
 import { Status } from 'hyper-ts'
 import type { ExpressConnection } from 'hyper-ts/lib/express'
+import type { Duplex } from 'stream'
 
 import { Method } from '../../shared/models/Method'
 import type { NotUsed } from '../../shared/utils/fp'
@@ -34,12 +35,11 @@ import { UpgradeHandler } from './models/UpgradeHandler'
 
 const accessControl = {
   allowCredentials: true,
-  allowMethods: ['GET', 'POST', 'DELETE'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
   exposeHeaders: ['Set-Cookie'],
 }
 
-// eslint-disable-next-line functional/prefer-readonly-type
 type Header = string | string[] | undefined
 
 export const startWebServer = (
@@ -87,7 +87,7 @@ export const startWebServer = (
             Dict.lookup('origin'),
             u => filterOrigin(u),
             Maybe.fold(next, origin => {
-              /* eslint-disable functional/no-expression-statement */
+              /* eslint-disable functional/no-expression-statements */
               res.header({
                 'Access-Control-Allow-Origin': origin,
                 ...(accessControl.allowCredentials
@@ -105,7 +105,7 @@ export const startWebServer = (
               } else {
                 next()
               }
-              /* eslint-enable functional/no-expression-statement */
+              /* eslint-enable functional/no-expression-statements */
             }),
           ),
         ),
@@ -173,9 +173,9 @@ export const startWebServer = (
             )
             return handler(request, socket, head)
           }),
-          Future.orElse<Error, Either<SimpleHttpResponse, void>, Error>(handleErrorUpgrade),
-          Future.map(Either.getOrElse(res => socket.end(SimpleHttpResponse.toRawHttp(res)))),
-          Future.map<void, NotUsed>(toNotUsed),
+          Future.orElseIOEitherK<Either<SimpleHttpResponse, void>>(handleErrorUpgrade),
+          Future.map(Either.getOrElseW(res => socket.end(SimpleHttpResponse.toRawHttp(res)))),
+          Future.map<void | Duplex, NotUsed>(toNotUsed),
           Future.run(getOnError(logger)),
         ),
       ),
@@ -190,11 +190,10 @@ export const startWebServer = (
     )
   }
 
-  function handleErrorUpgrade(e: Error): Future<Either<SimpleHttpResponse, never>> {
+  function handleErrorUpgrade(e: Error): IO<Either<SimpleHttpResponse, never>> {
     return pipe(
       logger.error(e),
       IO.map(() => Either.left(SimpleHttpResponse.of(Status.InternalServerError, ''))),
-      Future.fromIOEither,
     )
   }
 
@@ -229,7 +228,7 @@ const getAltedMiddlewareRoutes = (
 ): Dict<Method, Parser<EndedMiddleware>> => {
   const init: Dict<Method, Parser<EndedMiddleware>> = pipe(
     Method.values,
-    List.reduce({} as Dict<Method, Parser<EndedMiddleware>>, (acc, method) => ({
+    List.reduce(Dict.empty<Method, Parser<EndedMiddleware>>(), (acc, method) => ({
       ...acc,
       [method]: zero<EndedMiddleware>(),
     })),
@@ -259,10 +258,10 @@ const getStatus = <A>(conn: ExpressConnection<A>): Maybe<Status> =>
 const errorHandler =
   (onError: (error: unknown) => IO<unknown>): ErrorRequestHandler =>
   (err, _req, res) => {
-    /* eslint-disable functional/no-expression-statement */
+    /* eslint-disable functional/no-expression-statements */
     onError(err)()
     res.status(500).end()
-    /* eslint-enable functional/no-expression-statement */
+    /* eslint-enable functional/no-expression-statements */
   }
 
 const headers = (values: List<string>): string => pipe(values, List.mkString(', '))

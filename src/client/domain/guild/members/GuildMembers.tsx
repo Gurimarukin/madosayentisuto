@@ -18,7 +18,7 @@ import { GuildLayout } from '../GuildLayout'
 import { BirthdateForm } from './BirthdateForm'
 
 type Props = {
-  readonly guildId: GuildId
+  guildId: GuildId
 }
 
 export const GuildMembers = ({ guildId }: Props): JSX.Element => (
@@ -28,8 +28,8 @@ export const GuildMembers = ({ guildId }: Props): JSX.Element => (
 )
 
 type MembersProps = {
-  readonly guild: GuildView
-  readonly response: GuildViewResponse
+  guild: GuildView
+  response: GuildViewResponse
 }
 
 const Members = ({ guild, response }: MembersProps): JSX.Element => {

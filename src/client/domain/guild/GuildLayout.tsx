@@ -16,10 +16,10 @@ import { basicAsyncRenderer } from '../../utils/basicAsyncRenderer'
 export type GuildViewResponse = Omit<SWRResponse<GuildView, unknown>, 'data'>
 
 type Props = {
-  readonly guildId: GuildId
-  readonly selected: 'emojis' | 'members' | undefined
-  readonly options?: SWRConfiguration<GuildView, unknown, BareFetcher<GuildView>>
-  readonly children?: (guild: GuildView, response: GuildViewResponse) => React.ReactNode
+  guildId: GuildId
+  selected: 'emojis' | 'members' | undefined
+  options?: SWRConfiguration<GuildView, unknown, BareFetcher<GuildView>>
+  children?: (guild: GuildView, response: GuildViewResponse) => React.ReactNode
 }
 
 export const GuildLayout = ({ guildId, selected, options, children }: Props): JSX.Element => {

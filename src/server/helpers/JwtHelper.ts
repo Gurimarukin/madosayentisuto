@@ -10,8 +10,8 @@ import { Dict, Either, Future, List, Maybe } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
 type MySignOptions = Omit<jwt.SignOptions, 'expiresIn' | 'notBefore'> & {
-  readonly expiresIn?: MsDuration
-  readonly notBefore?: MsDuration
+  expiresIn?: MsDuration
+  notBefore?: MsDuration
 }
 
 type MyVerifyOptions = Omit<jwt.VerifyOptions, 'complete'>

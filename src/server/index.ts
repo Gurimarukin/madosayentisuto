@@ -34,5 +34,5 @@ const main: Future<NotUsed> = pipe(
   Future.chainIOEitherK(({ discord, context }) => Application(discord, context)),
 )
 
-// eslint-disable-next-line functional/no-expression-statement
+// eslint-disable-next-line functional/no-expression-statements
 Future.runUnsafe(main)

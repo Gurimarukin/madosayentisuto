@@ -13,22 +13,22 @@ type TheQuestNotificationUserLeft = typeof u.UserLeft.T
 type TheQuestNotificationChampionLeveledUp = typeof u.ChampionLeveledUp.T
 
 type CommonArgs = {
-  readonly userId: DiscordUserId
+  userId: DiscordUserId
 }
 
 type UserJoinedArgs = CommonArgs & {
-  readonly summoner: SummonerShort
+  summoner: SummonerShort
 }
 
 type UserLeftArgs = CommonArgs & {
-  readonly summoner: PlatformWithName
+  summoner: PlatformWithName
 }
 
 type ChampionLeveledUpArgs = CommonArgs & {
-  readonly summoner: PlatformWithName
-  readonly champion: {
-    readonly id: ChampionKey
-    readonly level: ChampionLevel
+  summoner: PlatformWithName
+  champion: {
+    id: ChampionKey
+    level: ChampionLevel
   }
 }
 

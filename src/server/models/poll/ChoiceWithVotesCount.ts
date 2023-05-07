@@ -1,8 +1,8 @@
 import type { ChoiceWithResponses } from './ChoiceWithResponses'
 
 export type ChoiceWithVotesCount = {
-  readonly choice: string
-  readonly votesCount: number
+  choice: string
+  votesCount: number
 }
 
 const empty = (choice: string): ChoiceWithVotesCount => ({ choice, votesCount: 0 })

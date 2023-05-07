@@ -1,8 +1,8 @@
 import type { Platform } from './Platform'
 
 type PlatformWithName = {
-  readonly platform: Platform
-  readonly name: string
+  platform: Platform
+  name: string
 }
 
 export { PlatformWithName }

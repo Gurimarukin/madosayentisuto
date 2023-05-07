@@ -61,7 +61,7 @@ const connecting: io.IO<BaseMessageOptions> = pipe(
 )
 
 type IsPaused = {
-  readonly isPaused: boolean
+  isPaused: boolean
 }
 
 const playing = (

@@ -1,4 +1,4 @@
-/* eslint-disable functional/no-expression-statement */
+/* eslint-disable functional/no-expression-statements */
 import { flow, pipe } from 'fp-ts/function'
 import type { Decoder } from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
@@ -15,7 +15,7 @@ import { appRoutes } from '../router/AppRouter'
 import { useHistory } from './HistoryContext'
 
 export type HttpContext = {
-  readonly http: {
+  http: {
     <O, B>(methodWithUrl: Tuple<string, HttpMethod>, options?: HttpOptions<O, B>): Promise<unknown>
     <A, O, B>(
       methodWithUrl: Tuple<string, HttpMethod>,
@@ -26,8 +26,8 @@ export type HttpContext = {
 }
 
 export type HttpOptions<O, B> = Omit<Options, 'method' | 'json'> & {
-  readonly json?: Tuple<Encoder<O, B>, B>
-  readonly redirectToLoginOnUnauthorized?: boolean // default: true
+  json?: Tuple<Encoder<O, B>, B>
+  redirectToLoginOnUnauthorized?: boolean // default: true
 }
 
 const HttpContext = createContext<HttpContext | undefined>(undefined)
@@ -90,7 +90,7 @@ export const HttpContextProvider: React.FC = ({ children }) => {
 export const useHttp = (): HttpContext => {
   const context = useContext(HttpContext)
   if (context === undefined) {
-    // eslint-disable-next-line functional/no-throw-statement
+    // eslint-disable-next-line functional/no-throw-statements
     throw Error('useHttp must be used within a HttpContextProvider')
   }
   return context

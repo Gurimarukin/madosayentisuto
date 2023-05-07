@@ -2,10 +2,10 @@
                   @typescript-eslint/no-explicit-any,
                   @typescript-eslint/strict-boolean-expressions,
                   functional/immutable-data,
-                  functional/no-expression-statement */
+                  functional/no-expression-statements */
 
 /**
- * source: https://github.com/AlexGalays/spacelift/blob/be302c4807b23114de27dda6a90b315c3af56631/src/union.ts
+ * copypasta from: https://github.com/AlexGalays/spacelift/blob/be302c4807b23114de27dda6a90b315c3af56631/src/union.ts
  */
 import type { EnforceNonEmptyDict } from '../models/EnforceNonEmptyDict'
 import type { Dict, List } from './fp'
@@ -13,26 +13,26 @@ import type { Dict, List } from './fp'
 export type UnionDescription = Dict<string, (...args: List<any>) => any>
 
 export type UnionResult<T extends UnionDescription> = {
-  readonly T: Union<T>
-  readonly is: <NAME extends keyof T>(
+  T: Union<T>
+  is: <NAME extends keyof T>(
     name: NAME,
-  ) => <U extends Union<T>>(other: U) => other is ReturnType<T[NAME]> & { readonly type: NAME }
-  readonly match: <B>(m: Match<T, B>) => (u: Union<T>) => B
-} & { readonly [K in keyof T]: Factory<T[K], K> & { readonly T: ReturnType<Factory<T[K], K>> } }
+  ) => <U extends Union<T>>(other: U) => other is ReturnType<T[NAME]> & { type: NAME }
+  match: <B>(m: Match<T, B>) => (u: Union<T>) => B
+} & { [K in keyof T]: Factory<T[K], K> & { T: ReturnType<Factory<T[K], K>> } }
 
 type Match<T extends UnionDescription, B> = {
-  readonly [K in keyof T]: (a: Omit<ReturnType<Factory<T[K], K>>, 'type'>) => B
+  [K in keyof T]: (a: Omit<ReturnType<Factory<T[K], K>>, 'type'>) => B
 }
 
 type Factory<F extends (...args: List<any>) => any, TYPE> = (
   ...args: Parameters<F>
 ) => F extends (...args_: List<any>) => infer R
-  ? { readonly [K in keyof R | 'type']: K extends 'type' ? TYPE : R[K & keyof R] }
+  ? { [K in keyof R | 'type']: K extends 'type' ? TYPE : R[K & keyof R] }
   : (...args_: List<any>) => any
 
 type Union<T extends UnionDescription> = {
-  readonly [K in keyof T]: {
-    readonly [K2 in keyof ReturnType<T[K]> | 'type']: K2 extends 'type' ? K : ReturnType<T[K]>[K2]
+  [K in keyof T]: {
+    [K2 in keyof ReturnType<T[K]> | 'type']: K2 extends 'type' ? K : ReturnType<T[K]>[K2]
   }
 }[keyof T]
 

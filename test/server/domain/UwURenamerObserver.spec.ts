@@ -1,3 +1,4 @@
+/* eslint-disable functional/no-expression-statements */
 import type { List } from '../../../src/shared/utils/fp'
 import { Maybe } from '../../../src/shared/utils/fp'
 
@@ -6,9 +7,9 @@ import { isValidUwU, uwuRename } from '../../../src/server/domain/UwURenamerObse
 import { expectT } from '../../expectT'
 
 type Member = {
-  readonly user: string
-  readonly actual: string // actual nickname (current from the server), all of them should be valid
-  readonly expected?: string | null // expected nickname, if different from actual
+  user: string
+  actual: string // actual nickname (current from the server), all of them should be valid
+  expected?: string | null // expected nickname, if different from actual
 }
 
 const members: List<Member> = [
@@ -88,7 +89,6 @@ const members: List<Member> = [
 ]
 
 describe('isValidUwU', () => {
-  // eslint-disable-next-line functional/no-expression-statement
   members.forEach(({ user, actual }) => {
     it(`should ${JSON.stringify(user)} - ${JSON.stringify(actual)}`, () => {
       expectT(isValidUwU(actual)).toStrictEqual(true)
@@ -97,7 +97,6 @@ describe('isValidUwU', () => {
 })
 
 describe('renameUwU', () => {
-  // eslint-disable-next-line functional/no-expression-statement
   members.forEach(({ user, actual, expected }) => {
     it(`should ${JSON.stringify(user)} - ${JSON.stringify(actual)}`, () => {
       expectT(uwuRename(user)).toStrictEqual(

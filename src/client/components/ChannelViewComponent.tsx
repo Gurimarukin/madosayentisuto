@@ -7,9 +7,9 @@ import { DiscordUtils } from '../../shared/utils/DiscordUtils'
 type ChannelType = 'text' | 'audio'
 
 type Props = {
-  readonly guild: GuildId
-  readonly channel: ChannelView
-  readonly type?: ChannelType
+  guild: GuildId
+  channel: ChannelView
+  type?: ChannelType
 }
 
 export const ChannelViewComponent = ({ guild, channel, type = 'text' }: Props): JSX.Element => (

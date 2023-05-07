@@ -29,8 +29,8 @@ const getEmoji = (i: number): Maybe<string> => List.lookup(i, emojis)
 const splitWith = '  '
 
 type PollOptions = {
-  readonly isAnonymous: boolean
-  readonly isMultiple: boolean
+  isAnonymous: boolean
+  isMultiple: boolean
 }
 
 const poll = (

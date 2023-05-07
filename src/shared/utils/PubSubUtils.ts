@@ -9,16 +9,16 @@ import { IO, toNotUsed } from './fp'
 
 type TinyListenerSignature<L> = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  readonly [E in keyof L]: (...args: List<any>) => any
+  [E in keyof L]: (...args: List<any>) => any
 }
 
 type ListenerSignature<L> = {
-  readonly [E in keyof L]: readonly [...args: List<unknown>]
+  [E in keyof L]: [...args: List<unknown>]
 }
 
 export type ToTiny<L extends ListenerSignature<L>> = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  readonly [K in keyof L]: (...args: L[K]) => any
+  [K in keyof L]: (...args: L[K]) => any
 }
 
 type EventListenable<On extends string, L extends TinyListenerSignature<L>> = Dict<

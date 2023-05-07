@@ -23,9 +23,9 @@ import { ChannelUtils } from '../../utils/ChannelUtils'
 import { utilInspect } from '../../utils/utilInspect'
 
 type PlayCommand = {
-  readonly musicChannel: GuildAudioChannel
-  readonly stateChannel: GuildSendableChannel
-  readonly tracks: NonEmptyArray<Track>
+  musicChannel: GuildAudioChannel
+  stateChannel: GuildSendableChannel
+  tracks: NonEmptyArray<Track>
 }
 
 const playCommand = Command.chatInput({

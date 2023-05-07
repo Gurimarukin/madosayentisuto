@@ -14,8 +14,8 @@ import { SimpleHttpResponse } from '../models/SimpleHttpResponse'
 import type { UpgradeHandler } from '../models/UpgradeHandler'
 
 export type WithAuth = {
-  readonly middleware: (f: (user: TokenContent) => EndedMiddleware) => EndedMiddleware
-  readonly upgrade: (f: (user: TokenContent) => UpgradeHandler) => UpgradeHandler
+  middleware: (f: (user: TokenContent) => EndedMiddleware) => EndedMiddleware
+  upgrade: (f: (user: TokenContent) => UpgradeHandler) => UpgradeHandler
 }
 
 export const WithAuth = (userService: UserService): WithAuth => ({

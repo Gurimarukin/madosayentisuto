@@ -21,8 +21,8 @@ const logMongoCodec = C.struct({
 })
 
 type ListArgs = {
-  readonly skip?: number
-  readonly limit?: number
+  skip?: number
+  limit?: number
 }
 
 export type LogPersistence = ReturnType<typeof LogPersistence>

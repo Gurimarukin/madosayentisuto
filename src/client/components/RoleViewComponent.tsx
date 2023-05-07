@@ -3,7 +3,7 @@ import React from 'react'
 import type { RoleView } from '../../shared/models/guild/RoleView'
 
 type Props = {
-  readonly role: RoleView
+  role: RoleView
 }
 
 export const RoleViewComponent = ({ role }: Props): JSX.Element => (

@@ -1,5 +1,5 @@
-/* eslint-disable functional/no-expression-statement,
-                  functional/no-this-expression */
+/* eslint-disable functional/no-expression-statements,
+                  functional/no-this-expressions */
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import type { Method } from 'got'
@@ -12,7 +12,6 @@ import { List, NonEmptyArray } from '../../shared/utils/fp'
 export const utilInspect = (object: unknown, options?: InspectOptions): string =>
   util.inspect(customHandlers(object), options as InspectOptions)
 
-// eslint-disable-next-line functional/prefer-readonly-type
 export const utilFormat = (format?: unknown, ...param: unknown[]): string =>
   util.format(customHandlers(format), ...param.map(customHandlers))
 
@@ -23,9 +22,9 @@ const customHandlers = (object: unknown): unknown =>
     ? MyHttpError.fromHTTPError(object)
     : object
 
-// eslint-disable-next-line functional/no-class
+// eslint-disable-next-line functional/no-classes
 class MyHttpError extends Error {
-  readonly responseBody: string | undefined
+  responseBody: string | undefined
 
   private constructor(
     stack: string | undefined,

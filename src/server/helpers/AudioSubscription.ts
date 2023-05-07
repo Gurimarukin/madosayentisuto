@@ -48,39 +48,39 @@ const threadName = 'D-Jean Plank'
 
 /* eslint-disable functional/no-return-void */
 type VoiceConnectionEvents = {
-  readonly error: (error: Error) => void
+  error: (error: Error) => void
 } & {
-  readonly [S in VoiceConnectionStatus]: (
+  [S in VoiceConnectionStatus]: (
     oldState: VoiceConnectionState,
-    newState: VoiceConnectionState & { readonly status: S },
+    newState: VoiceConnectionState & { status: S },
   ) => void
 }
 
 type AudioPlayerEvents = {
-  readonly error: (error: Error) => void
+  error: (error: Error) => void
 } & {
-  readonly [S in AudioPlayerStatus]: (
+  [S in AudioPlayerStatus]: (
     oldState: AudioPlayerState,
     newState: AudioPlayerState & {
-      readonly status: S
+      status: S
     },
   ) => void
 }
 /* eslint-enable functional/no-return-void */
 
 export type AudioSubscription = {
-  readonly getAudioState: io.IO<AudioState>
-  readonly disconnect: Future<NotUsed>
-  readonly queueTracks: (
+  getAudioState: io.IO<AudioState>
+  disconnect: Future<NotUsed>
+  queueTracks: (
     author: User,
     audioChannel: GuildAudioChannel,
     messageChannel: GuildSendableChannel,
     tracks: NonEmptyArray<Track>,
   ) => IO<NotUsed>
-  readonly playNextTrack: (author: User) => IO<NotUsed>
-  readonly playPauseTrack: IO<NotUsed>
-  readonly startElevator: (audioChannel: GuildAudioChannel) => IO<NotUsed>
-  readonly stringify: () => string
+  playNextTrack: (author: User) => IO<NotUsed>
+  playPauseTrack: IO<NotUsed>
+  startElevator: (audioChannel: GuildAudioChannel) => IO<NotUsed>
+  stringify: () => string
 }
 
 const of = (
@@ -782,10 +782,10 @@ const isAlreadyDestroyedError = (e: Error): boolean =>
   e.message === 'Cannot destroy VoiceConnection - it has already been destroyed'
 
 type MusicMessageDeps = {
-  readonly type: AudioState['type']
-  readonly currentTrack: Maybe<Track>
-  readonly queue: List<Track>
-  readonly isPaused: boolean
+  type: AudioState['type']
+  currentTrack: Maybe<Track>
+  queue: List<Track>
+  isPaused: boolean
 }
 
 const MusicMessageDeps = {

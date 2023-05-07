@@ -40,7 +40,7 @@ const getValidation = <E = never>(): Applicative2C<'Either', NonEmptyArray<E>> =
   Either.getApplicativeValidation(NonEmptyArray.getSemigroup<E>())
 
 type ToValidatedDict<E, A extends Dict<string, unknown>> = {
-  readonly [K in keyof A]: ValidatedNea<E, A[K]>
+  [K in keyof A]: ValidatedNea<E, A[K]>
 }
 
 type SeqS<E> = <A extends Dict<string, unknown>>(a: ToValidatedDict<E, A>) => ValidatedNea<E, A>

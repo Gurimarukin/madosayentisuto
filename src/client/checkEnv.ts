@@ -13,5 +13,5 @@ const main: Future<NotUsed> = pipe(
   Future.map(toNotUsed),
 )
 
-// eslint-disable-next-line functional/no-expression-statement
+// eslint-disable-next-line functional/no-expression-statements
 Future.runUnsafe(main)

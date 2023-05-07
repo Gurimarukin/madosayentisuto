@@ -7,9 +7,9 @@ import vercelMs from 'ms'
 import type { Newtype } from 'newtype-ts'
 import { iso } from 'newtype-ts'
 
-export type MsDuration = Newtype<{ readonly MsDuration: unique symbol }, number>
+type MsDuration = Newtype<{ readonly MsDuration: unique symbol }, number>
 
-const { wrap, unwrap } = iso<MsDuration>()
+const { wrap: ms, unwrap } = iso<MsDuration>()
 
 const decoder = pipe(
   D.string,
@@ -25,23 +25,23 @@ const fromString = (str: string): Option<MsDuration> =>
   pipe(
     option.tryCatch(() => vercelMs(str as StringValue)),
     option.filter(predicate.not(isNaN)),
-    option.map(wrap),
+    option.map(ms),
   )
 
-const seconds = (n: number): MsDuration => wrap(1000 * n)
+const seconds = (n: number): MsDuration => ms(1000 * n)
 const minutes = (n: number): MsDuration => seconds(60 * n)
 const hours = (n: number): MsDuration => minutes(60 * n)
 const days = (n: number): MsDuration => hours(24 * n)
 
-const fromDate = (date: Date): MsDuration => wrap(date.getTime())
+const fromDate = (date: Date): MsDuration => ms(date.getTime())
 
 const add =
   (b: MsDuration) =>
   (a: MsDuration): MsDuration =>
-    wrap(unwrap(a) + unwrap(b))
+    ms(unwrap(a) + unwrap(b))
 
-export const MsDuration = {
-  wrap,
+const MsDuration = {
+  ms,
   unwrap,
   decoder,
   fromString,
@@ -56,3 +56,5 @@ export const MsDuration = {
   fromDate,
   add,
 }
+
+export { MsDuration }

@@ -2,8 +2,7 @@ import { pipe } from 'fp-ts/function'
 import type { Decoder } from 'io-ts/Decoder'
 import * as D from 'io-ts/Decoder'
 
-import { List, NonEmptyArray } from '../../../../shared/utils/fp'
-import { Maybe } from '../../../../shared/utils/fp'
+import { List, Maybe, NonEmptyArray } from '../../../../shared/utils/fp'
 
 type MetadataType = 'video' | 'playlist'
 
@@ -19,9 +18,9 @@ const videoMetadataDecoder = D.struct({
 })
 
 export type VideosMetadata = {
-  readonly _type: MetadataType
-  readonly extractor: string
-  readonly videos: NonEmptyArray<VideoMetadata>
+  _type: MetadataType
+  extractor: string
+  videos: NonEmptyArray<VideoMetadata>
 }
 
 const videoDecoder = pipe(

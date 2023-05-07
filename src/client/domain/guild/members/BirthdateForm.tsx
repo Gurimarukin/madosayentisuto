@@ -1,4 +1,5 @@
-/* eslint-disable functional/no-expression-statement, functional/no-return-void */
+/* eslint-disable functional/no-expression-statements,
+                  functional/no-return-void */
 import { pipe } from 'fp-ts/function'
 import React, { useCallback, useState } from 'react'
 
@@ -12,10 +13,10 @@ import { Cancel, Check, EditPencil, Prohibition } from '../../../components/svgs
 import { useHttp } from '../../../contexts/HttpContext'
 
 type Props = {
-  readonly userId: DiscordUserId
-  readonly initialBirthdate: Maybe<DayJs>
-  readonly onPostBirthdate: (birthdate: DayJs) => void
-  readonly onDeleteBirthdate: () => void
+  userId: DiscordUserId
+  initialBirthdate: Maybe<DayJs>
+  onPostBirthdate: (birthdate: DayJs) => void
+  onDeleteBirthdate: () => void
 }
 
 export const BirthdateForm = ({

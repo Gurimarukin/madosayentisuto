@@ -22,42 +22,42 @@ import { List, NonEmptyArray } from '../../../shared/utils/fp'
 import { constants } from '../../config/constants'
 
 type UrlHeightWidthProxy = {
-  readonly url?: string
-  readonly height?: number
-  readonly width?: number
-  readonly proxyURL?: string
+  url?: string
+  height?: number
+  width?: number
+  proxyURL?: string
 }
 
 // _tag don't exist at runtime (see cast below)
 
 type MyAuthor = EmbedAuthorData & {
-  readonly _tag: 'Author'
+  _tag: 'Author'
 }
 type MyThumbnail = APIEmbedThumbnail & {
-  readonly _tag: 'Thumbnail'
+  _tag: 'Thumbnail'
 }
 type MyImage = EmbedImageData & {
-  readonly _tag: 'Image'
+  _tag: 'Image'
 }
 type MyVideo = APIEmbedVideo & {
-  readonly _tag: 'Video'
+  _tag: 'Video'
 }
 type MyFooter = EmbedFooterData & {
-  readonly _tag: 'Footer'
+  _tag: 'Footer'
 }
 
 type MessageEmbedArgs = {
-  readonly title?: string
-  readonly description?: string
-  readonly url?: string
-  readonly color?: ColorResolvable
-  readonly fields?: List<EmbedField>
-  readonly author?: MyAuthor
-  readonly thumbnail?: MyThumbnail
-  readonly image?: MyImage
-  readonly video?: MyVideo
-  readonly timestamp?: Date
-  readonly footer?: MyFooter
+  title?: string
+  description?: string
+  url?: string
+  color?: ColorResolvable
+  fields?: List<EmbedField>
+  author?: MyAuthor
+  thumbnail?: MyThumbnail
+  image?: MyImage
+  video?: MyVideo
+  timestamp?: Date
+  footer?: MyFooter
 }
 
 const safeEmbed = ({
@@ -144,11 +144,11 @@ const row = (
 })
 
 export type ButtonWithCustomIdOptions = {
-  readonly custom_id: string
-  readonly style?: Exclude<ButtonStyle, ButtonStyle.Link>
-  readonly label?: string
-  readonly emoji?: APIMessageComponentEmoji | string
-  readonly disabled?: boolean
+  custom_id: string
+  style?: Exclude<ButtonStyle, ButtonStyle.Link>
+  label?: string
+  emoji?: APIMessageComponentEmoji | string
+  disabled?: boolean
 }
 
 const buttonWithCustomId = ({

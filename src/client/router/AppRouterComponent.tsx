@@ -1,10 +1,9 @@
-/* eslint-disable functional/no-expression-statement */
+/* eslint-disable functional/no-expression-statements */
 import { Route, parse, zero } from 'fp-ts-routing'
 import { pipe } from 'fp-ts/function'
 import React, { useEffect, useMemo } from 'react'
 
-import { Maybe } from '../../shared/utils/fp'
-import { Tuple } from '../../shared/utils/fp'
+import { Maybe, Tuple } from '../../shared/utils/fp'
 
 import { Link } from '../components/Link'
 import { useHistory } from '../contexts/HistoryContext'

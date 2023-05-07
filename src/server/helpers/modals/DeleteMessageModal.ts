@@ -10,7 +10,7 @@ import { Modal } from '../../models/discord/Modal'
 import { CustomId } from '../../utils/ioTsUtils'
 
 type DeleteMessageModal = {
-  readonly messageId: MessageId
+  messageId: MessageId
 }
 
 const id = pipe(CustomId.codec('deleteMessageModal'), C.compose(MessageId.codec))

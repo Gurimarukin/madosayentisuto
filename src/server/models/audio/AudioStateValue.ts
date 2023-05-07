@@ -20,16 +20,16 @@ type AudioStateValueMusic = typeof u.Music.T
 type AudioStateValueElevator = typeof u.Elevator.T
 
 type MusicArgs = {
-  readonly isPaused: boolean
-  readonly currentTrack: Maybe<Track>
-  readonly queue: List<Track>
-  readonly messageChannel: GuildSendableChannel
-  readonly message: Maybe<Message<true>>
-  readonly pendingEvents: List<string> // because when we call /play, message.thread doesn't exist yet, so keep it here until we created thread
+  isPaused: boolean
+  currentTrack: Maybe<Track>
+  queue: List<Track>
+  messageChannel: GuildSendableChannel
+  message: Maybe<Message<true>>
+  pendingEvents: List<string> // because when we call /play, message.thread doesn't exist yet, so keep it here until we created thread
 }
 
 type ElevatorArgs = {
-  readonly playlist: NonEmptyArray<MyFile>
+  playlist: NonEmptyArray<MyFile>
 }
 
 const u = createUnion({
@@ -38,8 +38,8 @@ const u = createUnion({
 })
 
 type FoldArgs<A, B> = {
-  readonly onMusic: (value: AudioStateValueMusic) => A
-  readonly onElevator: (value: AudioStateValueElevator) => B
+  onMusic: (value: AudioStateValueMusic) => A
+  onElevator: (value: AudioStateValueElevator) => B
 }
 
 const fold =

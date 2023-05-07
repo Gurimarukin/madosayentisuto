@@ -1,4 +1,5 @@
-/* eslint-disable functional/no-expression-statement, functional/no-return-void */
+/* eslint-disable functional/no-return-void,
+                  functional/no-expression-statements */
 import { pipe } from 'fp-ts/function'
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
@@ -15,9 +16,9 @@ import { useHttp } from './HttpContext'
 import { useServerClientWS } from './ServerClientWSContext'
 
 type LogContext = {
-  readonly logs: List<Log>
-  readonly count: number
-  readonly tryRefetchInitialLogs: () => void
+  logs: List<Log>
+  count: number
+  tryRefetchInitialLogs: () => void
 }
 
 const LogContext = createContext<LogContext | undefined>(undefined)
@@ -94,7 +95,7 @@ export const LogContextProvider: React.FC = ({ children }) => {
 export const useLog = (): LogContext => {
   const context = useContext(LogContext)
   if (context === undefined) {
-    // eslint-disable-next-line functional/no-throw-statement
+    // eslint-disable-next-line functional/no-throw-statements
     throw Error('useLog must be used within a LogContextProvider')
   }
   return context

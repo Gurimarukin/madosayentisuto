@@ -24,58 +24,58 @@ import {
 const seqS = ValidatedNea.getSeqS<string>()
 
 export type Config = {
-  readonly isDev: boolean
-  readonly logger: LoggerConfig
-  readonly client: ClientConfig
-  readonly http: HttpConfig
-  readonly db: DbConfig
-  readonly jwtSecret: string
-  readonly ytDlpPath: string
-  readonly admins: NonEmptyArray<DiscordUserId>
-  readonly uwuGuilds: List<GuildId>
-  readonly kohLantaVictims: List<DiscordUserId>
-  readonly captain: CaptainConfig
-  readonly elevatorDelay: MsDuration
-  readonly theQuest: TheQuestConfig
+  isDev: boolean
+  logger: LoggerConfig
+  client: ClientConfig
+  http: HttpConfig
+  db: DbConfig
+  jwtSecret: string
+  ytDlpPath: string
+  admins: NonEmptyArray<DiscordUserId>
+  uwuGuilds: List<GuildId>
+  kohLantaVictims: List<DiscordUserId>
+  captain: CaptainConfig
+  elevatorDelay: MsDuration
+  theQuest: TheQuestConfig
 }
 
 type LoggerConfig = {
-  readonly consoleLevel: LogLevelOrOff
-  readonly discordDM: LoggerDiscordDMConfig
+  consoleLevel: LogLevelOrOff
+  discordDM: LoggerDiscordDMConfig
 }
 
 export type ClientConfig = {
-  readonly id: DiscordUserId
-  readonly token: BotToken
+  id: DiscordUserId
+  token: BotToken
 }
 
 export type HttpConfig = {
-  readonly port: number
-  readonly allowedOrigins: Maybe<NonEmptyArray<URL>>
+  port: number
+  allowedOrigins: Maybe<NonEmptyArray<URL>>
 }
 
 type DbConfig = {
-  readonly host: string
-  readonly dbName: string
-  readonly user: string
-  readonly password: string
+  host: string
+  dbName: string
+  user: string
+  password: string
 }
 
 export type LoggerDiscordDMConfig = {
-  readonly level: LogLevelOrOff
-  readonly isCompact: boolean
+  level: LogLevelOrOff
+  isCompact: boolean
 }
 
 export type CaptainConfig = {
-  readonly mentions: List<string>
-  readonly thanks: List<string>
+  mentions: List<string>
+  thanks: List<string>
 }
 
 export type TheQuestConfig = {
-  readonly webappUrl: string
-  readonly apiUrl: string
-  readonly token: string
-  readonly refreshEveryMinutes: number
+  webappUrl: string
+  apiUrl: string
+  token: string
+  refreshEveryMinutes: number
 }
 
 const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>

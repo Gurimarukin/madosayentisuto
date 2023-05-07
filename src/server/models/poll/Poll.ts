@@ -11,13 +11,13 @@ import type { PollResponse } from './PollResponse'
 import type { ThreadWithMessage } from './ThreadWithMessage'
 
 export type Poll = {
-  readonly message: MessageId
-  readonly createdBy: DiscordUserId
-  readonly question: string
-  readonly choices: NonEmptyArray<ChoiceWithResponses>
-  readonly detail: Maybe<ThreadWithMessage>
-  readonly isAnonymous: boolean
-  readonly isMultiple: boolean
+  message: MessageId
+  createdBy: DiscordUserId
+  question: string
+  choices: NonEmptyArray<ChoiceWithResponses>
+  detail: Maybe<ThreadWithMessage>
+  isAnonymous: boolean
+  isMultiple: boolean
 }
 
 const fromQuestionAndResponses = (

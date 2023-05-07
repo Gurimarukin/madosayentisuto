@@ -12,11 +12,11 @@ import { iso } from 'newtype-ts'
 
 import { MsDuration } from './MsDuration'
 
-/* eslint-disable functional/no-expression-statement */
+/* eslint-disable functional/no-expression-statements */
 dayjs.extend(customParseFormatPlugin)
 dayjs.extend(utcPlugin)
 dayjs.locale('fr')
-/* eslint-enable functional/no-expression-statement */
+/* eslint-enable functional/no-expression-statements */
 
 export type DayJs = Newtype<{ readonly DayJs: unique symbol }, dayjs.Dayjs>
 
@@ -26,7 +26,7 @@ const modify = identity as (f: Endomorphism<dayjs.Dayjs>) => Endomorphism<DayJs>
 // constructors
 
 type OfOptions = {
-  readonly locale?: boolean
+  locale?: boolean
 }
 
 function of(date: number | Date): DayJs
@@ -63,7 +63,7 @@ const startOf = (unit: dayjs.OpUnitType): Endomorphism<DayJs> => modify(d => d.s
 // outputs
 
 type FormatOptions = {
-  readonly locale?: boolean
+  locale?: boolean
 }
 
 const format =
@@ -77,7 +77,7 @@ const format =
 const toDate = (date: DayJs): Date => unwrap(date).toDate()
 const toISOString = (date: DayJs): string => unwrap(date).toISOString()
 const unix = (date: DayJs): number => unwrap(date).unix()
-const unixMs = (date: DayJs): MsDuration => MsDuration.wrap(unwrap(date).valueOf())
+const unixMs = (date: DayJs): MsDuration => MsDuration.ms(unwrap(date).valueOf())
 
 function diff(b: DayJs): (a: DayJs) => MsDuration
 function diff(b: DayJs, unit: dayjs.QUnitType | dayjs.OpUnitType): (a: DayJs) => number
@@ -86,9 +86,7 @@ function diff(
   unit?: dayjs.QUnitType | dayjs.OpUnitType,
 ): (a: DayJs) => MsDuration | number {
   return a =>
-    unit === undefined
-      ? MsDuration.wrap(unwrap(a).diff(unwrap(b)))
-      : unwrap(a).diff(unwrap(b), unit)
+    unit === undefined ? MsDuration.ms(unwrap(a).diff(unwrap(b))) : unwrap(a).diff(unwrap(b), unit)
 }
 
 // Ord

@@ -33,7 +33,7 @@ describe('validateTracks', () => {
       pipe(
         LogLevel.values,
         List.map(level =>
-          Tuple.of<readonly [LogLevel, LoggerType[LogLevel]]>(level, (...u) =>
+          Tuple.of<[LogLevel, LoggerType[LogLevel]]>(level, (...u) =>
             pipe(
               DayJs.now,
               IO.fromIO,

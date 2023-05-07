@@ -1,4 +1,4 @@
-/* eslint-disable functional/no-expression-statement,
+/* eslint-disable functional/no-expression-statements,
                   functional/no-return-void */
 import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
@@ -7,15 +7,14 @@ import React, { useCallback, useRef, useState } from 'react'
 import { GuildEmojiId } from '../../../../shared/models/guild/GuildEmojiId'
 import type { GuildEmojiView } from '../../../../shared/models/guild/GuildEmojiView'
 import type { GuildId } from '../../../../shared/models/guild/GuildId'
-import { NonEmptyArray } from '../../../../shared/utils/fp'
-import { List, Maybe } from '../../../../shared/utils/fp'
+import { List, Maybe, NonEmptyArray } from '../../../../shared/utils/fp'
 
 import { Tooltip } from '../../../components/Tooltip'
 import { useDrag, useDrop } from '../../../libs/react-dnd'
 import { GuildLayout } from '../GuildLayout'
 
 type Props = {
-  readonly guildId: GuildId
+  guildId: GuildId
 }
 
 export const GuildEmojis = ({ guildId }: Props): JSX.Element => (
@@ -25,12 +24,12 @@ export const GuildEmojis = ({ guildId }: Props): JSX.Element => (
 )
 
 type TiersProps = {
-  readonly emojis: List<GuildEmojiView>
+  emojis: List<GuildEmojiView>
 }
 
 type Tier = {
-  readonly name: string // TODO: ensure unicity
-  readonly emojis: List<GuildEmojiView>
+  name: string // TODO: ensure unicity
+  emojis: List<GuildEmojiView>
 }
 
 const tierLensEmojis = pipe(lens.id<Tier>(), lens.prop('emojis'))
@@ -81,9 +80,9 @@ const Tiers = ({ emojis }: TiersProps): JSX.Element => {
 }
 
 type TierProps = {
-  readonly tier: Tier
-  readonly tierIndex: number
-  readonly moveEmojiTier: (item: DragItem, newTierIndex: number) => void
+  tier: Tier
+  tierIndex: number
+  moveEmojiTier: (item: DragItem, newTierIndex: number) => void
 }
 
 const TierComponent = ({ tier, tierIndex, moveEmojiTier }: TierProps): JSX.Element => {
@@ -114,13 +113,12 @@ const TierComponent = ({ tier, tierIndex, moveEmojiTier }: TierProps): JSX.Eleme
 }
 
 type GuildEmojiProps = {
-  readonly tierIndex: number
-  readonly emoji: GuildEmojiView
+  tierIndex: number
+  emoji: GuildEmojiView
 }
 
 type DragItem = {
-  readonly emojiId: GuildEmojiId
-  // eslint-disable-next-line functional/prefer-readonly-type
+  emojiId: GuildEmojiId
   tierIndex: number
 }
 

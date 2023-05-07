@@ -17,7 +17,7 @@ import { getOnError } from '../../utils/getOnError'
 import { GuildLayout } from './GuildLayout'
 
 type Props = {
-  readonly guildId: GuildId
+  guildId: GuildId
 }
 export const Guild = ({ guildId }: Props): JSX.Element => (
   <GuildLayout guildId={guildId} selected={undefined} options={{ revalidateOnFocus: false }}>
@@ -26,8 +26,8 @@ export const Guild = ({ guildId }: Props): JSX.Element => (
 )
 
 type GuildComponentProps = {
-  readonly guild: GuildView
-  readonly mutate: KeyedMutator<GuildView>
+  guild: GuildView
+  mutate: KeyedMutator<GuildView>
 }
 
 const GuildComponent = ({ guild, mutate }: GuildComponentProps): JSX.Element => {
@@ -102,9 +102,9 @@ const GuildComponent = ({ guild, mutate }: GuildComponentProps): JSX.Element => 
 }
 
 type LiProps = {
-  readonly label: string
-  readonly className?: string
-  readonly children: Maybe<React.ReactNode>
+  label: string
+  className?: string
+  children: Maybe<React.ReactNode>
 }
 
 const Li = ({ label, className, children }: LiProps): JSX.Element =>
@@ -121,8 +121,8 @@ const Li = ({ label, className, children }: LiProps): JSX.Element =>
   )
 
 type LiPreProps = {
-  readonly label: string
-  readonly className?: string
+  label: string
+  className?: string
 }
 
 const LiPre: React.FC<LiPreProps> = ({ label, className, children }) => (

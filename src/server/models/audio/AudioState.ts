@@ -31,30 +31,30 @@ type AudioState<A extends AudioStateValue = AudioStateValue> =
   | AudioStateConnected<A>
 
 type AudioStateDisconnected = {
-  readonly type: 'Disconnected'
+  type: 'Disconnected'
 }
 
 const AudioStateConnectingURI = 'AudioStateConnecting' as const
 type AudioStateConnectingURI = typeof AudioStateConnectingURI
 
 type AudioStateConnecting<A extends AudioStateValue> = {
-  readonly type: 'Connecting'
-  readonly channel: GuildAudioChannel
-  readonly value: A
-  readonly voiceConnection: VoiceConnection
-  readonly audioPlayer: AudioPlayer
+  type: 'Connecting'
+  channel: GuildAudioChannel
+  value: A
+  voiceConnection: VoiceConnection
+  audioPlayer: AudioPlayer
 }
 
 const AudioStateConnectedURI = 'AudioStateConnected' as const
 type AudioStateConnectedURI = typeof AudioStateConnectedURI
 
 type AudioStateConnected<A extends AudioStateValue> = {
-  readonly type: 'Connected'
-  readonly channel: GuildAudioChannel
-  readonly value: A
-  readonly voiceConnection: VoiceConnection
-  readonly audioPlayer: AudioPlayer
-  readonly subscription: Maybe<PlayerSubscription>
+  type: 'Connected'
+  channel: GuildAudioChannel
+  value: A
+  voiceConnection: VoiceConnection
+  audioPlayer: AudioPlayer
+  subscription: Maybe<PlayerSubscription>
 }
 
 type AudioStateConnectedURIS = AudioStateConnectingURI | AudioStateConnectedURI
@@ -116,9 +116,9 @@ const isMusicValue = pipe(
 )
 
 type FoldArgs<A, B, C> = {
-  readonly onDisconnected: () => A
-  readonly onConnecting: <S extends AudioStateValue>(s: AudioStateConnecting<S>) => B
-  readonly onConnected: <S extends AudioStateValue>(s: AudioStateConnected<S>) => C
+  onDisconnected: () => A
+  onConnecting: <S extends AudioStateValue>(s: AudioStateConnecting<S>) => B
+  onConnected: <S extends AudioStateValue>(s: AudioStateConnected<S>) => C
 }
 
 const fold =
@@ -196,8 +196,8 @@ const AudioState = {
 }
 
 type FoldValueArgs<F extends AudioStateConnectedURIS, A, B> = {
-  readonly onMusic: (state: Kind<F, AudioStateValueMusic>) => A
-  readonly onElevator: (state: Kind<F, AudioStateValueElevator>) => B
+  onMusic: (state: Kind<F, AudioStateValueMusic>) => A
+  onElevator: (state: Kind<F, AudioStateValueElevator>) => B
 }
 
 const foldValue =

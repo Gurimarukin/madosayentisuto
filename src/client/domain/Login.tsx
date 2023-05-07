@@ -1,4 +1,4 @@
-/* eslint-disable functional/no-expression-statement */
+/* eslint-disable functional/no-expression-statements */
 import React, { useCallback, useState } from 'react'
 
 import { apiRoutes } from '../../shared/ApiRouter'

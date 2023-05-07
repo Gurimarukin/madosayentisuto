@@ -1,9 +1,9 @@
 import type { io } from 'fp-ts'
 
 export type Store<A> = {
-  readonly get: io.IO<A>
-  readonly set: <B extends A>(newState: B) => io.IO<B>
-  readonly modify: <B extends A>(f: (oldState: A) => B) => io.IO<B>
+  get: io.IO<A>
+  set: <B extends A>(newState: B) => io.IO<B>
+  modify: <B extends A>(f: (oldState: A) => B) => io.IO<B>
 }
 
 export const Store = <A>(init: A): Store<A> => {

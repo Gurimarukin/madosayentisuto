@@ -1,4 +1,5 @@
-/* eslint-disable functional/no-return-void  */
+/* eslint-disable functional/no-expression-statements,
+                  functional/no-return-void  */
 import { io } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
@@ -14,14 +15,12 @@ describe('RandomUtils.randomPop', () => {
   it('should pop', () => {
     expectT(randomPop([1])()).toStrictEqual([1, []])
 
-    // eslint-disable-next-line functional/no-expression-statement
     pipe(
       randomPop([1, 2]),
       io.map(altExpect<Tuple<number, List<number>>>([1, [2]], [2, [1]])),
       nTimes(100),
     )
 
-    // eslint-disable-next-line functional/no-expression-statement
     pipe(
       randomPop([1, 2, 3]),
       io.map(

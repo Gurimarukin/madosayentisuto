@@ -10,8 +10,8 @@ import type { PollQuestionPersistence } from '../persistence/PollQuestionPersist
 import type { PollResponsePersistence } from '../persistence/PollResponsePersistence'
 
 type RemoveResult = {
-  readonly removedQuestions: number
-  readonly removedResponses: number
+  removedQuestions: number
+  removedResponses: number
 }
 
 export type PollService = ReturnType<typeof PollService>

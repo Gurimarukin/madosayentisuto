@@ -321,8 +321,8 @@ const messageDeleteCommand = Command.message({ name: Keys.deleteMessage })
 export const adminCommands = [adminCommand, messageEditCommand, messageDeleteCommand]
 
 type GroupWithSubcommand = {
-  readonly subcommandGroup: Maybe<string>
-  readonly subcommand: string
+  subcommandGroup: Maybe<string>
+  subcommand: string
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

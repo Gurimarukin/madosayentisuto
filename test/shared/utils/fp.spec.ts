@@ -52,7 +52,7 @@ describe('date.Ord', () => {
 
   const dateOrd = pipe(
     date.Ord,
-    ord.contramap((d: { readonly date: Date }) => d.date),
+    ord.contramap((d: { date: Date }) => d.date),
   )
 
   it('shoud NonEmptyArray.max', () => {

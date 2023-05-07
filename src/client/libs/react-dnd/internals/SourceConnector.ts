@@ -56,7 +56,7 @@ export class SourceConnector implements Connector {
   private lastConnectedDragPreview: any = null
   private lastConnectedDragPreviewOptions: any = null
 
-  private readonly backend: Backend
+  private backend: Backend
 
   public constructor(backend: Backend) {
     this.backend = backend

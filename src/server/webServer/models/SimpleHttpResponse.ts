@@ -1,14 +1,13 @@
 import { pipe } from 'fp-ts/function'
 import type { Status } from 'hyper-ts'
 
-import { List } from '../../../shared/utils/fp'
 import type { NonEmptyArray } from '../../../shared/utils/fp'
-import { Dict } from '../../../shared/utils/fp'
+import { Dict, List } from '../../../shared/utils/fp'
 
-export type SimpleHttpResponse = {
-  readonly status: Status
-  readonly body: string
-  readonly headers: Dict<string, NonEmptyArray<string>>
+type SimpleHttpResponse = {
+  status: Status
+  body: string
+  headers: Dict<string, NonEmptyArray<string>>
 }
 
 const of = (
@@ -32,4 +31,6 @@ const toRawHttp = ({ status, body, headers }: SimpleHttpResponse): string =>
     List.mkString('', '\r\n', '\r\n'),
   )
 
-export const SimpleHttpResponse = { of, toRawHttp }
+const SimpleHttpResponse = { of, toRawHttp }
+
+export { SimpleHttpResponse }

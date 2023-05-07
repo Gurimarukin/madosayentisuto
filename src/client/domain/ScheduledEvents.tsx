@@ -136,7 +136,7 @@ const formatScheduledAt = DayJs.format('DD/MM/YYYY, HH:mm', { locale: true })
 const Th: React.FC = ({ children }) => <th className="flex bg-gray2 py-3 px-5">{children}</th>
 
 type TdProps = {
-  readonly className?: string
+  className?: string
 }
 
 const Td: React.FC<TdProps> = ({ className, children }) => (

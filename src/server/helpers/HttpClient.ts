@@ -14,7 +14,7 @@ import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { unknownToError } from '../utils/unknownToError'
 
 export type HttpOptions<O, B> = Omit<OptionsOfJSONResponseBody, 'url' | 'method' | 'json'> & {
-  readonly json?: Tuple<Encoder<O, B>, B>
+  json?: Tuple<Encoder<O, B>, B>
 }
 
 type HttpClient = ReturnType<typeof HttpClient>

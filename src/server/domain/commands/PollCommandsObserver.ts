@@ -91,11 +91,11 @@ const messageDeleteCommand = Command.message({ name: Keys.deletePoll })
 export const pollCommands = [pollCommand, messageDeleteCommand]
 
 type IsMultiple = {
-  readonly isMultiple: boolean
+  isMultiple: boolean
 }
 
 type IsAnonymous = {
-  readonly isAnonymous: boolean
+  isAnonymous: boolean
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

@@ -1,18 +1,16 @@
+/* eslint-disable functional/no-expression-statements,
+                  functional/no-this-expressions */
 import { Future } from '../../shared/utils/fp'
 
-/* eslint-disable functional/no-expression-statement,
-                  functional/no-this-expression */
-// eslint-disable-next-line functional/no-class
+// eslint-disable-next-line functional/no-classes
 export class DebugError extends Error {
-  public override readonly stack = undefined
+  public override stack = undefined
 
-  constructor(functionName: string, public readonly originalError: Error) {
+  constructor(functionName: string, public originalError: Error) {
     super()
     this.name = `DebugError - ${functionName}`
   }
 }
-/* eslint-enable functional/no-expression-statement,
-                  functional/no-this-expression */
 
 export const debugLeft = <A>(functionName: string): ((f: Future<A>) => Future<A>) =>
   Future.mapLeft(e => new DebugError(functionName, e))

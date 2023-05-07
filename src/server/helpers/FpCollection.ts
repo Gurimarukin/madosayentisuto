@@ -48,7 +48,7 @@ export const FpCollection =
 
       ensureIndexes: (
         indexSpecs: NonEmptyArray<IndexDescription<A>>,
-        options: { readonly session?: ClientSession } = {},
+        options: { session?: ClientSession } = {},
       ): Future<NotUsed> =>
         pipe(
           logger.info('Ensuring indexes'),
@@ -164,7 +164,7 @@ type Path<S> = {
     K4 extends keyof S[K1][K2][K3],
     K5 extends keyof S[K1][K2][K3][K4],
   >(
-    path: readonly [K1, K2, K3, K4, K5],
+    path: [K1, K2, K3, K4, K5],
   ): string
   <
     K1 extends keyof S,
@@ -172,13 +172,13 @@ type Path<S> = {
     K3 extends keyof S[K1][K2],
     K4 extends keyof S[K1][K2][K3],
   >(
-    path: readonly [K1, K2, K3, K4],
+    path: [K1, K2, K3, K4],
   ): string
   <K1 extends keyof S, K2 extends keyof S[K1], K3 extends keyof S[K1][K2]>(
-    path: readonly [K1, K2, K3],
+    path: [K1, K2, K3],
   ): string
-  <K1 extends keyof S, K2 extends keyof S[K1]>(path: readonly [K1, K2]): string
-  <K1 extends keyof S>(path: readonly [K1]): string
+  <K1 extends keyof S, K2 extends keyof S[K1]>(path: [K1, K2]): string
+  <K1 extends keyof S>(path: [K1]): string
 }
 
 const getPath = <A>(): Path<A> => List.mkString('.')

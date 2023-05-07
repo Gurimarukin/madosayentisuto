@@ -14,8 +14,8 @@ import { GuildViewShort } from './GuildViewShort'
 import { MemberView } from './MemberView'
 
 type MemberIdWithBirthdate = {
-  readonly id: DiscordUserId
-  readonly birthdate: DayJs
+  id: DiscordUserId
+  birthdate: DayJs
 }
 
 const codec = pipe(

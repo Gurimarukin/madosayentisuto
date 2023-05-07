@@ -7,12 +7,12 @@ import type { TSubject } from './TSubject'
 
 type StrongSubject<A> = Omit<Subject<A>, 'next'> & {
   // eslint-disable-next-line functional/no-return-void
-  readonly next: (value: A) => void
+  next: (value: A) => void
 }
 
 export type PubSub<A> = {
-  readonly subject: TSubject<A>
-  readonly observable: TObservable<A>
+  subject: TSubject<A>
+  observable: TObservable<A>
 }
 
 export const PubSub = <A>(): PubSub<A> => {

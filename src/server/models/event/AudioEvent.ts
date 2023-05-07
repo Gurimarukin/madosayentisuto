@@ -8,10 +8,10 @@ import type {
 import { createUnion } from '../../../shared/utils/createUnion'
 
 type DetVoiceConnectionState<S extends VoiceConnectionState['status']> = VoiceConnectionState & {
-  readonly status: S
+  status: S
 }
 type DetAudioPlayerState<S extends AudioPlayerState['status']> = AudioPlayerState & {
-  readonly status: S
+  status: S
 }
 
 type AudioEvent = typeof AudioEvent.T
