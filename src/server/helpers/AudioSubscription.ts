@@ -20,6 +20,7 @@ import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefin
 import { PubSub } from '../../shared/models/rx/PubSub'
 import type { TSubject } from '../../shared/models/rx/TSubject'
 import { PubSubUtils } from '../../shared/utils/PubSubUtils'
+import { StringUtils } from '../../shared/utils/StringUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
@@ -96,17 +97,15 @@ const of = (
   guild: Guild,
 ): IO<AudioSubscription> => {
   const logger = Logger(`AudioSubscription-${guild.name}#${guild.id}`)
+  const onError = getOnError(logger)
 
   const audioEvents = PubSub<AudioEvent>()
-  const subAudioEvents = PubSubUtils.subscribeWithRefinement(
-    getOnError(logger),
-    audioEvents.observable,
-  )
+  const subAudioEvents = PubSubUtils.subscribeWithRefinement(onError, audioEvents.observable)
   const subscribeAudioEvents = apply.sequenceT(IO.ApplyPar)(subAudioEvents(lifecycleObserver()))
 
   const audioState = Store<AudioState>(AudioState.disconnected)
 
-  const stateReducers = AsyncQueue<NotUsed>(getOnError(logger))
+  const stateReducers = AsyncQueue<NotUsed>(onError)
 
   return pipe(
     subscribeAudioEvents,
@@ -546,7 +545,7 @@ const of = (
     return pipe(
       DiscordConnector.voiceConnectionJoin(channel),
       IO.chainFirst(voiceConnection => {
-        const connectionPub = PubSubUtils.publish(getOnError(logger))(audioEvents.subject.next)(
+        const connectionPub = PubSubUtils.publish(onError)(audioEvents.subject.next)(
           'on',
         )<VoiceConnectionEvents>(voiceConnection)
         return apply.sequenceT(IO.ApplyPar)(
@@ -565,7 +564,7 @@ const of = (
     return pipe(
       DiscordConnector.audioPlayerCreate,
       IO.chainFirst(audioPlayer => {
-        const playerPub = PubSubUtils.publish(getOnError(logger))(audioEvents.subject.next)(
+        const playerPub = PubSubUtils.publish(onError)(audioEvents.subject.next)(
           'on',
         )<AudioPlayerEvents>(audioPlayer)
         return apply.sequenceT(IO.ApplyPar)(
@@ -589,7 +588,19 @@ const of = (
         () => Future.successful(state),
         flow(NonEmptyArray.unprepend, ([head, tail]) =>
           pipe(
-            ytDlp.audioResource(head),
+            ytDlp.audioResource(head, (code, format, stderr) =>
+              onError(
+                Error(
+                  StringUtils.stripMargins(
+                    `yt-dlp exited with status ${code}
+                    |extractor: ${JSON.stringify(head.extractor)}, format: ${JSON.stringify(
+                      format,
+                    )}, url: ${JSON.stringify(head.url)} - stderr:
+                    |${stderr}`,
+                  ),
+                ),
+              ),
+            ),
             Future.chainIOEitherK(audioResource =>
               DiscordConnector.audioPlayerPlayAudioResource(state.audioPlayer, audioResource),
             ),
