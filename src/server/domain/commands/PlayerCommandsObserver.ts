@@ -11,7 +11,7 @@ import type { AudioSubscription } from '../../helpers/AudioSubscription'
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
 import type { YtDlp } from '../../helpers/YtDlp'
 import { YtDlpResult } from '../../helpers/YtDlp'
-import { MusicStateMessage } from '../../helpers/messages/MusicStateMessage'
+import { PlayerStateMessage } from '../../helpers/messages/PlayerStateMessage'
 import { AudioState } from '../../models/audio/AudioState'
 import { AudioStateValue } from '../../models/audio/AudioStateValue'
 import { Command } from '../../models/discord/Command'
@@ -22,32 +22,44 @@ import type { GuildAudioChannel, GuildSendableChannel } from '../../utils/Channe
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { utilInspect } from '../../utils/utilInspect'
 
-type PlayCommand = {
-  musicChannel: GuildAudioChannel
-  stateChannel: GuildSendableChannel
+type PlayCommand = ElevatorCommand & {
   tracks: NonEmptyArray<Track>
 }
 
+type ElevatorCommand = {
+  musicChannel: GuildAudioChannel
+  stateChannel: GuildSendableChannel
+}
+
+const Keys = {
+  elevator: 'ascenseur',
+}
+
 const playCommand = Command.chatInput({
-  name: MusicStateMessage.Keys.play,
+  name: PlayerStateMessage.Keys.play,
   description: 'Jean Plank joue un petit air',
 })(
   Command.option.string({
-    name: MusicStateMessage.Keys.track,
+    name: PlayerStateMessage.Keys.track,
     description: 'Lien ou recherche YouTube, lien Bandcamp, fichier, etc.',
     required: true,
   }),
 )
 
-export const musicCommands = [playCommand]
+const elevatorCommand = Command.chatInput({
+  name: Keys.elevator,
+  description: 'Jean Plank vient vous tenir companie avec sa liste de lecture spécial ascenseur',
+})()
+
+export const playerCommands = [playCommand, elevatorCommand]
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const MusicCommandsObserver = (
+export const PlayerCommandsObserver = (
   Logger: LoggerGetter,
   ytDlp: YtDlp,
   guildStateService: GuildStateService,
 ) => {
-  const logger = Logger('MusicCommandsObserver')
+  const logger = Logger('PlayerCommandsObserver')
 
   return {
     ...ObserverWithRefinement.fromNext(
@@ -64,8 +76,10 @@ export const MusicCommandsObserver = (
 
   function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     switch (interaction.commandName) {
-      case MusicStateMessage.Keys.play:
+      case PlayerStateMessage.Keys.play:
         return onPlayCommand(interaction)
+      case Keys.elevator:
+        return onElevatorCommand(interaction)
     }
     return Future.notUsed
   }
@@ -98,11 +112,41 @@ export const MusicCommandsObserver = (
     )
   }
 
+  function onElevatorCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    const guild = interaction.guild
+    if (guild === null) return Future.notUsed
+    return pipe(
+      Future.Do,
+      Future.chainFirst(() =>
+        DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
+      ),
+      Future.apS('subscription', guildStateService.getSubscription(guild)),
+      Future.bind('command', ({ subscription }) =>
+        validateElevatorCommand(interaction, subscription),
+      ),
+      Future.chainIOEitherK(({ subscription, command }) =>
+        pipe(
+          command,
+          Either.fold(IO.right, ({ musicChannel, stateChannel }) =>
+            pipe(
+              subscription.startElevator(interaction.user, musicChannel, stateChannel),
+              IO.map(() => elevatorStartedInteractionReply),
+            ),
+          ),
+        ),
+      ),
+      Future.chain(content =>
+        DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+      ),
+      Future.map(toNotUsed),
+    )
+  }
+
   function onButton(interaction: ButtonInteraction): Future<NotUsed> {
     switch (interaction.customId) {
-      case MusicStateMessage.ButtonId.playPause:
+      case PlayerStateMessage.ButtonId.playPause:
         return onPlayPauseButton(interaction)
-      case MusicStateMessage.ButtonId.next:
+      case PlayerStateMessage.ButtonId.next:
         return onNextButton(interaction)
     }
     return Future.notUsed
@@ -141,10 +185,11 @@ export const MusicCommandsObserver = (
     interaction: ChatInputCommandInteraction,
   ): Future<Either<string, NonEmptyArray<Track>>> {
     return pipe(
-      interaction.options.getString(MusicStateMessage.Keys.track),
+      interaction.options.getString(PlayerStateMessage.Keys.track),
       Maybe.fromNullable,
       Maybe.fold(
-        () => Future.successful(Either.left(`Argument manquant : ${MusicStateMessage.Keys.track}`)),
+        () =>
+          Future.successful(Either.left(`Argument manquant : ${PlayerStateMessage.Keys.track}`)),
         validateTracks,
       ),
     )
@@ -181,6 +226,21 @@ export const MusicCommandsObserver = (
           IO.map(() => Either.left<string, NonEmptyArray<Track>>('Erreur')),
           Future.fromIOEither,
         ),
+      ),
+    )
+  }
+
+  function validateElevatorCommand(
+    interaction: ChatInputCommandInteraction,
+    subscription: AudioSubscription,
+  ): Future<Either<string, ElevatorCommand>> {
+    return pipe(
+      subscription.getAudioState,
+      Future.fromIO,
+      Future.map(state =>
+        !AudioState.isDisconnected(state)
+          ? Either.left('Haha ! Tu ne peux pas faire ça maintenant !')
+          : validateAudioAndStateChannel(interaction, state),
       ),
     )
   }
@@ -231,7 +291,7 @@ export const MusicCommandsObserver = (
 const validateAudioAndStateChannel = (
   interaction: Interaction,
   state: AudioState,
-): Either<string, Pick<PlayCommand, 'musicChannel' | 'stateChannel'>> =>
+): Either<string, ElevatorCommand> =>
   pipe(
     validateAudioChannel(interaction, state),
     Either.chain(musicChannel =>
@@ -270,3 +330,5 @@ const tracksAddedInteractionReply = (tracks: NonEmptyArray<Track>): string =>
     NonEmptyArray.map(t => `"${t.title}"`),
     List.mkString('', ', ', ` ajouté${tracks.length === 1 ? '' : 's'} à la file d'attente.`),
   )
+
+const elevatorStartedInteractionReply = 'Ascenseur appelé.'

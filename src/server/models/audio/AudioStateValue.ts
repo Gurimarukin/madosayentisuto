@@ -19,18 +19,21 @@ type AudioStateValue = typeof u.T
 type AudioStateValueMusic = typeof u.Music.T
 type AudioStateValueElevator = typeof u.Elevator.T
 
-type MusicArgs = {
+type CommonArgs = {
   isPaused: boolean
-  currentTrack: Maybe<Track>
-  queue: List<Track>
   messageChannel: GuildSendableChannel
   message: Maybe<Message<true>>
   pendingEvents: List<string> // because when we call /play, message.thread doesn't exist yet, so keep it here until we created thread
 }
 
+type MusicArgs = {
+  currentTrack: Maybe<Track>
+  queue: List<Track>
+} & CommonArgs
+
 type ElevatorArgs = {
   playlist: NonEmptyArray<MyFile>
-}
+} & CommonArgs
 
 const u = createUnion({
   Music: (args: MusicArgs) => args,
@@ -96,31 +99,41 @@ const audioStateValueMusicEq = eq.struct<AudioStateValueMusic>({
 
 const audioStateValueElevatorEq = eq.struct<AudioStateValueElevator>({
   type: eqIgnore,
-  playlist: NonEmptyArray.getEq(MyFile.Eq),
+  playlist: NonEmptyArray.getEq(MyFile.Eq.byPath),
+  isPaused: boolean.Eq,
+  messageChannel: ChannelUtils.EqById,
+  message: Maybe.getEq(MessageUtils.EqById),
+  pendingEvents: List.getEq(string.Eq),
 })
 
-const AudioStateValue = { is: u.is, fold, toView, Eq }
+const isPausedLens = pipe(lens.id<AudioStateValue>(), lens.prop('isPaused'))
+const pendingEventsLens = pipe(lens.id<AudioStateValue>(), lens.prop('pendingEvents'))
+const messageLens = pipe(lens.id<AudioStateValue>(), lens.prop('message'))
 
-const musicIsPausedLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('isPaused'))
+const appendPendingEvent = (event: string): (<A extends AudioStateValue>(s: A) => A) =>
+  pipe(pendingEventsLens, lens.modify(List.append(event))) as <A extends AudioStateValue>(s: A) => A
+
+const AudioStateValue = {
+  music: u.Music,
+  elevator: u.Elevator,
+  is: u.is,
+  fold,
+  toView,
+
+  setIsPaused: isPausedLens.set as (isPaused: boolean) => <A extends AudioStateValue>(s: A) => A,
+  emptyPendingEvents: pendingEventsLens.set(List.empty) as <A extends AudioStateValue>(s: A) => A,
+  appendPendingEvent,
+  setMessage: messageLens.set as (
+    message: Maybe<Message<true>>,
+  ) => <A extends AudioStateValue>(s: A) => A,
+
+  Eq,
+}
+
 const musicCurrentTrackLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('currentTrack'))
 const musicQueueLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('queue'))
-const musicMessageLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('message'))
-const musicPendingEventsLens = pipe(lens.id<AudioStateValueMusic>(), lens.prop('pendingEvents'))
-
-const appendPendingEvent = (event: string): ((s: AudioStateValueMusic) => AudioStateValueMusic) =>
-  pipe(musicPendingEventsLens, lens.modify(List.append(event)))
 
 const AudioStateValueMusic = {
-  empty: (messageChannel: GuildSendableChannel): AudioStateValueMusic =>
-    u.Music({
-      isPaused: false,
-      currentTrack: Maybe.none,
-      queue: List.empty,
-      messageChannel,
-      message: Maybe.none,
-      pendingEvents: List.empty,
-    }),
-
   queueTracks: (
     tracks: NonEmptyArray<Track>,
     event: string,
@@ -130,19 +143,13 @@ const AudioStateValueMusic = {
       appendPendingEvent(event),
     ),
 
-  emptyPendingEvents: musicPendingEventsLens.set(List.empty),
-  appendPendingEvent,
-
-  setIsPaused: musicIsPausedLens.set,
   setCurrentTrack: musicCurrentTrackLens.set,
   setQueue: musicQueueLens.set,
-  setMessage: musicMessageLens.set,
 }
 
 const elevatorPlaylistLens = pipe(lens.id<AudioStateValueElevator>(), lens.prop('playlist'))
 
 const AudioStateValueElevator = {
-  of: (playlist: NonEmptyArray<MyFile>): AudioStateValueElevator => u.Elevator({ playlist }),
   rotatePlaylist: pipe(elevatorPlaylistLens, lens.modify(NonEmptyArray.rotate(-1))),
 }
 

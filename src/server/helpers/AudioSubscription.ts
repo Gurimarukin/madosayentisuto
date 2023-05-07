@@ -8,12 +8,12 @@ import { AudioPlayerStatus, VoiceConnectionStatus } from '@discordjs/voice'
 import type { BaseMessageOptions, Guild, Message, User } from 'discord.js'
 import { ThreadAutoArchiveDuration } from 'discord.js'
 import type { io } from 'fp-ts'
-import { apply, boolean, eq, string } from 'fp-ts'
+import { apply } from 'fp-ts'
 import { flow, identity, pipe } from 'fp-ts/function'
 
 import type { LoggerType } from '../../shared/models/LoggerType'
 import { Store } from '../../shared/models/Store'
-import { Track } from '../../shared/models/audio/music/Track'
+import type { Track } from '../../shared/models/audio/music/Track'
 import { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
 import { AsyncQueue } from '../../shared/models/rx/AsyncQueue'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
@@ -26,12 +26,13 @@ import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import type { OldAndNewState } from '../models/OldAndNewState'
 import type { AudioStateConnected, AudioStateConnecting } from '../models/audio/AudioState'
-import { AudioState, AudioStateConnect } from '../models/audio/AudioState'
+import { AudioState, AudioStateNotDisconnected } from '../models/audio/AudioState'
 import {
   AudioStateValue,
   AudioStateValueElevator,
   AudioStateValueMusic,
 } from '../models/audio/AudioStateValue'
+import { PlayerMessageDeps } from '../models/audio/PlayerMessageDeps'
 import { AudioEvent } from '../models/event/AudioEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildAudioChannel, GuildSendableChannel, NamedChannel } from '../utils/ChannelUtils'
@@ -40,8 +41,8 @@ import { getOnError } from '../utils/getOnError'
 import { DiscordConnector } from './DiscordConnector'
 import { ResourcesHelper } from './ResourcesHelper'
 import type { YtDlp } from './YtDlp'
-import { MusicEventMessage } from './messages/MusicEventMessage'
-import { MusicStateMessage } from './messages/MusicStateMessage'
+import { PlayerEventMessage } from './messages/PlayerEventMessage'
+import { PlayerStateMessage } from './messages/PlayerStateMessage'
 
 // TODO: constants
 const threadName = 'D-Jean Plank'
@@ -79,7 +80,11 @@ export type AudioSubscription = {
   ) => IO<NotUsed>
   playNextTrack: (author: User) => IO<NotUsed>
   playPauseTrack: IO<NotUsed>
-  startElevator: (audioChannel: GuildAudioChannel) => IO<NotUsed>
+  startElevator: (
+    author: User,
+    audioChannel: GuildAudioChannel,
+    messageChannel: GuildSendableChannel,
+  ) => IO<NotUsed>
   stringify: () => string
 }
 
@@ -134,15 +139,26 @@ const of = (
     messageChannel: GuildSendableChannel,
     tracks: NonEmptyArray<Track>,
   ): IO<NotUsed> {
-    const event = MusicEventMessage.tracksAdded(author, tracks)
-
-    const queueTracksValueMusic = AudioStateValueMusic.queueTracks(tracks, event)
+    const queueTracksValueMusic = AudioStateValueMusic.queueTracks(
+      tracks,
+      PlayerEventMessage.tracksAdded(author, tracks),
+    )
 
     return queueStateReducer(state => {
       if (AudioState.isDisconnected(state)) {
         return getConnecting(
           audioChannel,
-          pipe(AudioStateValueMusic.empty(messageChannel), queueTracksValueMusic),
+          pipe(
+            AudioStateValue.music({
+              currentTrack: Maybe.none,
+              queue: List.empty,
+              isPaused: false,
+              messageChannel,
+              message: Maybe.none,
+              pendingEvents: List.empty,
+            }),
+            queueTracksValueMusic,
+          ),
         )
       }
 
@@ -152,14 +168,21 @@ const of = (
           onMusic: flow(
             state.channel.id === audioChannel.id ? queueTracksValueMusic : identity,
             Future.successful,
-            Future.map(value => pipe(state, AudioStateConnect.setValue()(value))),
+            Future.map(value => pipe(state, AudioStateNotDisconnected.setValue()(value))),
           ),
 
-          onElevator: () => {
+          onElevator: ({ message, pendingEvents }) => {
             const futureValue = pipe(
-              AudioStateValueMusic.empty(messageChannel),
+              AudioStateValue.music({
+                currentTrack: Maybe.none,
+                queue: List.empty,
+                isPaused: false,
+                messageChannel,
+                message,
+                pendingEvents,
+              }),
               queueTracksValueMusic,
-              initMusicMessage,
+              Future.successful,
             )
 
             switch (state.type) {
@@ -216,7 +239,7 @@ const of = (
         case 'Connected':
           return pipe(
             state,
-            AudioStateConnect.foldValue<'AudioStateConnected'>()({
+            AudioStateNotDisconnected.foldValue<'AudioStateConnected'>()({
               onMusic: musicState =>
                 List.isEmpty(musicState.value.queue)
                   ? pipe(
@@ -225,14 +248,25 @@ const of = (
                     )
                   : pipe(
                       musicState,
-                      AudioStateConnect.modifyValue<'AudioStateConnected'>()(
-                        AudioStateValueMusic.appendPendingEvent(
-                          MusicEventMessage.trackSkipped(author, musicState.value),
+                      AudioStateNotDisconnected.modifyValue<'AudioStateConnected'>()(
+                        AudioStateValue.appendPendingEvent(
+                          PlayerEventMessage.trackSkipped(author, musicState.value),
                         ),
                       ),
                       playMusicFirstTrackFromQueue,
                     ),
-              onElevator: Future.successful,
+
+              onElevator: elevatorState =>
+                pipe(
+                  elevatorState,
+                  AudioStateNotDisconnected.modifyValue<'AudioStateConnected'>()(
+                    AudioStateValue.appendPendingEvent(
+                      PlayerEventMessage.elevatorSkipped(author, elevatorState.value),
+                    ),
+                  ),
+                  playElevatorFile,
+                  Future.fromIOEither,
+                ),
             }),
           )
       }
@@ -249,23 +283,20 @@ const of = (
         case 'Connected':
           return pipe(
             state,
-            AudioStateConnect.foldValue<'AudioStateConnected'>()({
-              onMusic: musicState =>
-                pipe(
-                  musicState,
-                  musicState.value.isPaused
-                    ? playPauseTrackCommon(DiscordConnector.audioPlayerUnpause, false)
-                    : playPauseTrackCommon(DiscordConnector.audioPlayerPause, true),
-                  Future.fromIOEither,
-                ),
-              onElevator: Future.successful,
-            }),
+            state.value.isPaused
+              ? playPauseTrackCommon(DiscordConnector.audioPlayerUnpause, false)
+              : playPauseTrackCommon(DiscordConnector.audioPlayerPause, true),
+            Future.fromIOEither,
           )
       }
     })
   }
 
-  function startElevator(audioChannel: GuildAudioChannel): IO<NotUsed> {
+  function startElevator(
+    author: User,
+    audioChannel: GuildAudioChannel,
+    messageChannel: GuildSendableChannel,
+  ): IO<NotUsed> {
     return queueStateReducer(state => {
       switch (state.type) {
         case 'Disconnected':
@@ -273,7 +304,16 @@ const of = (
             resourcesHelper.randomElevatorPlaylist,
             Future.fromIO,
             Future.chain(playlist =>
-              getConnecting(audioChannel, AudioStateValueElevator.of(playlist)),
+              getConnecting(
+                audioChannel,
+                AudioStateValue.elevator({
+                  playlist,
+                  isPaused: false,
+                  messageChannel,
+                  message: Maybe.none,
+                  pendingEvents: List.of(PlayerEventMessage.elevatorStarted(author)),
+                }),
+              ),
             ),
           )
 
@@ -335,7 +375,7 @@ const of = (
       case 'Connecting':
         return pipe(
           state,
-          AudioStateConnect.foldValue<'AudioStateConnecting'>()({
+          AudioStateNotDisconnected.foldValue<'AudioStateConnecting'>()({
             onMusic: musicState =>
               List.isEmpty(musicState.value.queue)
                 ? pipe(
@@ -343,6 +383,7 @@ const of = (
                     Future.map(() => musicState),
                   )
                 : onConnectionReadyConnecting(musicState, playMusicFirstTrackFromQueue),
+
             onElevator: elevatorState =>
               onConnectionReadyConnecting(
                 elevatorState,
@@ -386,14 +427,7 @@ const of = (
     const log = (chan?: NamedChannel): LoggerType => LogUtils.pretty(logger, guild, null, chan)
     const orElse = Future.orElseIOEitherK(e => logger.warn(e))
 
-    const maybeMessage = pipe(
-      state,
-      AudioStateConnect.foldValue()({
-        onMusic: musicState => musicState.value.message,
-        onElevator: () => Maybe.none,
-      }),
-      futureMaybe.fromOption,
-    )
+    const maybeMessage = futureMaybe.fromOption(state.value.message)
 
     const audioPlayerStop = pipe(
       DiscordConnector.audioPlayerStop(state.audioPlayer),
@@ -454,7 +488,7 @@ const of = (
       case 'Connected':
         return pipe(
           state,
-          AudioStateConnect.foldValue<'AudioStateConnected'>()({
+          AudioStateNotDisconnected.foldValue<'AudioStateConnected'>()({
             onMusic: musicState =>
               List.isEmpty(musicState.value.queue)
                 ? pipe(
@@ -502,15 +536,7 @@ const of = (
   ): Future<AudioStateConnecting<A>> {
     return connecting(
       channel,
-      ((): Future<A> => {
-        switch (value.type) {
-          case 'Music':
-            return initMusicMessage(value) as Future<A>
-
-          case 'Elevator':
-            return Future.successful(value)
-        }
-      })(),
+      initStateMessage(value),
       joinVoiceChannel(channel),
       createAudioPlayer(),
     )
@@ -571,9 +597,9 @@ const of = (
             Future.map(() =>
               pipe(
                 state,
-                AudioStateConnect.modifyValue<'AudioStateConnected'>()(
+                AudioStateNotDisconnected.modifyValue<'AudioStateConnected'>()(
                   flow(
-                    AudioStateValueMusic.setIsPaused(false),
+                    AudioStateValue.setIsPaused(false),
                     AudioStateValueMusic.setCurrentTrack(Maybe.some(head)),
                     AudioStateValueMusic.setQueue(tail),
                   ),
@@ -599,7 +625,7 @@ const of = (
       IO.map(() =>
         pipe(
           state,
-          AudioStateConnect.modifyValue<'AudioStateConnected'>()(
+          AudioStateNotDisconnected.modifyValue<'AudioStateConnected'>()(
             AudioStateValueElevator.rotatePlaylist,
           ),
         ),
@@ -610,17 +636,15 @@ const of = (
   function playPauseTrackCommon(
     updateAudioPlayer: (audioPlayer: AudioPlayer) => IO<unknown>,
     newIsPaused: boolean,
-  ): (
-    state: AudioStateConnected<AudioStateValueMusic>,
-  ) => IO<AudioStateConnected<AudioStateValueMusic>> {
+  ): <A extends AudioStateValue>(state: AudioStateConnected<A>) => IO<AudioStateConnected<A>> {
     return state =>
       pipe(
         updateAudioPlayer(state.audioPlayer),
         IO.map(() =>
           pipe(
             state,
-            AudioStateConnect.modifyValue<'AudioStateConnected'>()(
-              AudioStateValueMusic.setIsPaused(newIsPaused),
+            AudioStateNotDisconnected.modifyValue<'AudioStateConnected'>()(
+              AudioStateValue.setIsPaused(newIsPaused),
             ),
           ),
         ),
@@ -685,17 +709,18 @@ const connecting = <A extends AudioStateValue>(
     ),
   )
 
-const initMusicMessage = (value: AudioStateValueMusic): Future<AudioStateValueMusic> =>
+const initStateMessage = <A extends AudioStateValue>(value: A): Future<A> =>
   pipe(
-    sendMusicMessageAndStartThread(value.messageChannel),
-    Future.map(message => pipe(value, AudioStateValueMusic.setMessage(message))),
+    sendStateMessageAndStartThread(value.type, value.messageChannel),
+    Future.map(message => pipe(value, AudioStateValue.setMessage(message))),
   )
 
-const sendMusicMessageAndStartThread = (
+const sendStateMessageAndStartThread = (
+  type: AudioStateValue['type'],
   channel: GuildSendableChannel,
 ): Future<Maybe<Message<true>>> =>
   pipe(
-    MusicStateMessage.connecting,
+    PlayerStateMessage.connecting[type],
     Future.fromIO,
     Future.chain(options => DiscordConnector.sendMessage(channel, options)),
     futureMaybe.chainFirstTaskEitherK(message =>
@@ -711,7 +736,7 @@ const refreshMusicMessageAndSendPendingEvents = (
 ): Future<AudioState> => {
   const { oldState, newState } = oldAndNewState
 
-  if (!AudioState.isMusicValue(newState)) return Future.successful(newState)
+  if (!AudioState.isNotConnected(newState)) return Future.successful(newState)
 
   return pipe(
     newState.value.message,
@@ -727,37 +752,56 @@ const refreshMusicMessageAndSendPendingEvents = (
 }
 
 const refreshMusicMessage =
-  ({ oldState, newState }: OldAndNewState<AudioState, AudioStateConnect<AudioStateValueMusic>>) =>
+  ({
+    oldState,
+    newState,
+  }: OldAndNewState<AudioState, AudioStateNotDisconnected<AudioStateValue>>) =>
   (message: Message<true>): Future<NotUsed> => {
-    const newDeps = MusicMessageDeps.fromState(newState)
+    const newDeps = PlayerMessageDeps.fromState(newState)
 
     const shouldUpdate =
-      !AudioState.isMusicValue(oldState) ||
-      !MusicMessageDeps.Eq.equals(MusicMessageDeps.fromState(oldState), newDeps)
+      !AudioState.isNotConnected(oldState) ||
+      !PlayerMessageDeps.Eq.equals(PlayerMessageDeps.fromState(oldState), newDeps)
 
     if (!shouldUpdate) return Future.notUsed
 
     return pipe(
-      getMusicMessage(newDeps),
+      getPlayerMessage(newDeps),
       Future.fromIO,
       Future.chain(options => DiscordConnector.messageEdit(message, options)),
       Future.map(toNotUsed),
     )
   }
 
-const getMusicMessage = ({
-  type,
-  currentTrack,
-  queue,
-  isPaused,
-}: MusicMessageDeps): io.IO<BaseMessageOptions> =>
-  type === 'Connected'
-    ? MusicStateMessage.playing(currentTrack, queue, { isPaused })
-    : MusicStateMessage.connecting
+const getPlayerMessage = (deps: PlayerMessageDeps): io.IO<BaseMessageOptions> => {
+  if (deps.audioStateType !== 'Connected') {
+    switch (deps.type) {
+      case 'Music':
+        return PlayerStateMessage.connecting.Music
 
-const sendPendingEventsAndUpdateState = (
-  state: AudioStateConnect<AudioStateValueMusic>,
-): Future<AudioStateConnect<AudioStateValueMusic>> => {
+      case 'Elevator':
+        return PlayerStateMessage.connecting.Elevator
+    }
+  } else {
+    const { isPaused } = deps
+
+    switch (deps.type) {
+      case 'Music':
+        const { currentTrack, queue } = deps
+        return PlayerStateMessage.playing.music(currentTrack, queue, { isPaused })
+
+      case 'Elevator':
+        const { playlist } = deps
+        return PlayerStateMessage.playing.elevator(pipe(playlist, NonEmptyArray.rotate(1)), {
+          isPaused,
+        })
+    }
+  }
+}
+
+const sendPendingEventsAndUpdateState = <A extends AudioStateValue>(
+  state: AudioStateNotDisconnected<A>,
+): Future<AudioStateNotDisconnected<A>> => {
   const { pendingEvents } = state.value
 
   if (!List.isNonEmpty(pendingEvents)) return Future.successful(state)
@@ -774,7 +818,10 @@ const sendPendingEventsAndUpdateState = (
             DiscordConnector.sendPrettyMessage(thread, event),
           ),
           Future.map(() =>
-            pipe(state, AudioStateConnect.modifyValue()(AudioStateValueMusic.emptyPendingEvents)),
+            pipe(
+              state,
+              AudioStateNotDisconnected.modifyValue()(AudioStateValue.emptyPendingEvents),
+            ),
           ),
         ),
     ),
@@ -783,29 +830,6 @@ const sendPendingEventsAndUpdateState = (
 
 const isAlreadyDestroyedError = (e: Error): boolean =>
   e.message === 'Cannot destroy VoiceConnection - it has already been destroyed'
-
-type MusicMessageDeps = {
-  type: AudioState['type']
-  currentTrack: Maybe<Track>
-  queue: List<Track>
-  isPaused: boolean
-}
-
-const MusicMessageDeps = {
-  fromState: (state: AudioStateConnect<AudioStateValueMusic>): MusicMessageDeps => ({
-    type: state.type,
-    currentTrack: state.value.currentTrack,
-    queue: state.value.queue,
-    isPaused: state.value.isPaused,
-  }),
-
-  Eq: eq.struct<MusicMessageDeps>({
-    type: string.Eq,
-    currentTrack: Maybe.getEq(Track.Eq),
-    queue: List.getEq(Track.Eq),
-    isPaused: boolean.Eq,
-  }),
-}
 
 // const logState = (state: AudioState): unknown => {
 //   if (AudioState.isDisconnected(state)) return state
