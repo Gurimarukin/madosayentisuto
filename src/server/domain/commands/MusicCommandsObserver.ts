@@ -2,7 +2,7 @@ import type { ButtonInteraction, ChatInputCommandInteraction, Interaction } from
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
-import { Track } from '../../../shared/models/audio/music/Track'
+import type { Track } from '../../../shared/models/audio/music/Track'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import type { NotUsed } from '../../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
@@ -158,7 +158,14 @@ export const MusicCommandsObserver = (
           case 'Success':
             return pipe(
               res.value.videos,
-              NonEmptyArray.map(v => Track.of(v.title, v.webpage_url, v.thumbnail)),
+              NonEmptyArray.map(
+                (v): Track => ({
+                  extractor: res.value.extractor,
+                  title: v.title,
+                  url: v.webpage_url,
+                  thumbnail: v.thumbnail,
+                }),
+              ),
               Either.right,
               IO.right,
             )
