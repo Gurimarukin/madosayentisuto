@@ -4,7 +4,10 @@ import { pipe } from 'fp-ts/function'
 import type { Track } from '../../../shared/models/audio/music/Track'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
-import type { AudioStateValueMusic } from '../../models/audio/AudioStateValue'
+import type {
+  AudioStateValueElevator,
+  AudioStateValueMusic,
+} from '../../models/audio/AudioStateValue'
 
 const tracksAdded = (author: User, tracks: NonEmptyArray<Track>): string => {
   const tracksStr = ((): string => {
@@ -32,4 +35,9 @@ const trackSkipped = (author: User, value: AudioStateValueMusic): string => {
   return `**${author}** est passé au morceau suivant${additional}`
 }
 
-export const MusicEventMessage = { tracksAdded, trackSkipped }
+const elevatorStarted = (author: User): string => `**${author}** a appelé l’ascenseur`
+
+const elevatorSkipped = (author: User, { playlist: [head] }: AudioStateValueElevator): string =>
+  `**${author}** a interrompu \`${head.basename}\`.`
+
+export const PlayerEventMessage = { tracksAdded, trackSkipped, elevatorStarted, elevatorSkipped }

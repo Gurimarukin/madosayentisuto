@@ -1,3 +1,4 @@
+import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
 import { List, Maybe, NonEmptyArray } from '../../utils/fp'
@@ -10,20 +11,29 @@ type AudioStateValueView = C.TypeOf<typeof codec>
 type AudioStateValueViewMusic = C.TypeOf<typeof musicCodec>
 type AudioStateValueViewElevator = C.TypeOf<typeof elevatorCodec>
 
-const musicCodec = C.struct({
-  type: C.literal('Music'),
+const commonCodec = C.struct({
   isPaused: C.boolean,
-  currentTrack: Maybe.codec(Track.codec),
-  queue: List.codec(Track.codec),
   messageChannel: ChannelView.codec,
   message: Maybe.codec(MessageView.codec),
   // pendingEvents: List.codec(C.string),
 })
 
-const elevatorCodec = C.struct({
-  type: C.literal('Elevator'),
-  playlist: NonEmptyArray.codec(C.string), // basename
-})
+const musicCodec = pipe(
+  C.struct({
+    type: C.literal('Music'),
+    currentTrack: Maybe.codec(Track.codec),
+    queue: List.codec(Track.codec),
+  }),
+  C.intersect(commonCodec),
+)
+
+const elevatorCodec = pipe(
+  C.struct({
+    type: C.literal('Elevator'),
+    playlist: NonEmptyArray.codec(C.string), // basename
+  }),
+  C.intersect(commonCodec),
+)
 
 const codec = C.sum('type')({
   Music: musicCodec,
@@ -31,25 +41,35 @@ const codec = C.sum('type')({
 })
 
 const music = (
-  isPaused: boolean,
   currentTrack: Maybe<Track>,
   queue: List<Track>,
+  isPaused: boolean,
   messageChannel: ChannelView,
   message: Maybe<MessageView>,
   // pendingEvents: List<string>,
 ): AudioStateValueViewMusic => ({
   type: 'Music',
-  isPaused,
   currentTrack,
   queue,
+  isPaused,
   messageChannel,
   message,
   // pendingEvents,
 })
 
-const elevator = (playlist: NonEmptyArray<string>): AudioStateValueViewElevator => ({
+const elevator = (
+  playlist: NonEmptyArray<string>,
+  isPaused: boolean,
+  messageChannel: ChannelView,
+  message: Maybe<MessageView>,
+  // pendingEvents: List<string>,
+): AudioStateValueViewElevator => ({
   type: 'Elevator',
   playlist,
+  isPaused,
+  messageChannel,
+  message,
+  // pendingEvents,
 })
 
 const AudioStateValueView = { codec, music, elevator }

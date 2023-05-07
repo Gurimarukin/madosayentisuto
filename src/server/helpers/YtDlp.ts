@@ -1,13 +1,14 @@
 import type { AudioResource } from '@discordjs/voice'
 import { StreamType, createAudioResource, demuxProbe } from '@discordjs/voice'
+import type { io } from 'fp-ts'
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import type { DecodeError } from 'io-ts/Decoder'
 import type { Readable } from 'stream'
-import { Duplex } from 'stream'
 import { create as createYtDlp } from 'youtube-dl-exec'
 
 import { createUnion } from '../../shared/utils/createUnion'
+import type { NotUsed } from '../../shared/utils/fp'
 import { Either, Future, IO, List, NonEmptyArray } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
@@ -41,7 +42,7 @@ const YtDlp = (binaryPath: string) => {
   // 249 webm  audio only      2 │   475.72KiB   53k dash  │ audio only        opus        53k 48k low, webm_dash
   // 250 webm  audio only      2 │   627.80KiB   70k dash  │ audio only        opus        70k 48k low, webm_dash
   // 251 webm  audio only      2 │     1.19MiB  135k dash  │ audio only        opus       135k 48k medium, webm_dash
-  const youtubeResource = audioResource('250', input =>
+  const youtubeResource = audioResource('worstaudio[ext=webm][acodec=opus]', input =>
     Promise.resolve(createAudioResource(input, { inputType: StreamType.WebmOpus })),
   )
 
@@ -52,7 +53,7 @@ const YtDlp = (binaryPath: string) => {
   //   demuxProbe(input).then(probe => createAudioResource(probe.stream, { inputType: probe.type })),
   // )
 
-  const propeResource = audioResource('bestaudio', input =>
+  const propeResource = audioResource('worstaudio', input =>
     demuxProbe(input).then(probe => createAudioResource(probe.stream, { inputType: probe.type })),
   )
 
@@ -83,18 +84,24 @@ const YtDlp = (binaryPath: string) => {
         ),
       ),
 
-    audioResource: ({ extractor, url }: ExtractorWithUrl): Future<AudioResource> => {
-      if (extractor === 'youtube:search' || extractor === 'youtube') return youtubeResource(url)
+    audioResource: (
+      { extractor, url }: ExtractorWithUrl,
+      onProcessExitCodeError: (code: number, format: string, stderr: string) => io.IO<NotUsed>,
+    ): Future<AudioResource> => {
+      if (extractor.startsWith('youtube')) return youtubeResource(url, onProcessExitCodeError)
       // if (extractor === 'Bandcamp') return bandcampResource(url)
-      return propeResource(url)
+      return propeResource(url, onProcessExitCodeError)
     },
   }
 
   function audioResource(
     format: string,
     getAudioResource: (input: Readable) => Promise<AudioResource>,
-  ): (url: string) => Future<AudioResource> {
-    return url =>
+  ): (
+    url: string,
+    onProcessExitCodeError: (code: number, format_: string, stderr: string) => io.IO<NotUsed>,
+  ) => Future<AudioResource> {
+    return (url, onProcessExitCodeError) =>
       pipe(
         IO.tryCatch(() =>
           ytDlpExec.exec(
@@ -115,25 +122,12 @@ const YtDlp = (binaryPath: string) => {
 
           const stdout = process.stdout
           const stderr = process.stderr
+
           return Future.tryCatch(
             () =>
               new Promise<AudioResource>((resolve, reject) => {
-                /* eslint-disable functional/no-expression-statements, functional/no-this-expressions */
-                const result = new Duplex({
-                  write(chunk, encoding, next) {
-                    this.push(chunk, encoding)
-                    next()
-                  },
-                  // eslint-disable-next-line @typescript-eslint/no-empty-function
-                  read() {},
-                })
-                result.pause()
-                stdout.pipe(result)
-
-                stdout.once('data', () => {
-                  result.resume()
-                  getAudioResource(result).then(resolve).catch(onError)
-                })
+                /* eslint-disable functional/no-expression-statements */
+                process.once('spawn', () => getAudioResource(stdout).then(resolve).catch(onError))
 
                 process.catch(onError)
 
@@ -145,16 +139,12 @@ const YtDlp = (binaryPath: string) => {
                 })
 
                 process.once('exit', code => {
-                  if (code !== 0) {
-                    onError(
-                      Error(
-                        pipe(
-                          errLines,
-                          List.mkString(`yt-dlp exited with status ${code}\n`, '\n', ''),
-                          string.trimRight,
-                        ),
-                      ),
-                    )
+                  if (code !== null && code !== 0) {
+                    onProcessExitCodeError(
+                      code,
+                      format,
+                      pipe(errLines, List.mkString('\n'), string.trim),
+                    )()
                   }
                 })
 
@@ -166,7 +156,7 @@ const YtDlp = (binaryPath: string) => {
                   stdout.resume()
                   reject(error)
                 }
-                /* eslint-enable functional/no-expression-statements, functional/no-this-expressions */
+                /* eslint-enable functional/no-expression-statements */
               }),
           )
         }),

@@ -57,10 +57,10 @@ type AudioStateConnected<A extends AudioStateValue> = {
   subscription: Maybe<PlayerSubscription>
 }
 
-type AudioStateConnectedURIS = AudioStateConnectingURI | AudioStateConnectedURI
+type AudioStateNotDisconnectedURIS = AudioStateConnectingURI | AudioStateConnectedURI
 
-type AudioStateConnect<A extends AudioStateValue = AudioStateValue> = Kind<
-  AudioStateConnectedURIS,
+type AudioStateNotDisconnected<A extends AudioStateValue = AudioStateValue> = Kind<
+  AudioStateNotDisconnectedURIS,
   A
 >
 
@@ -106,14 +106,8 @@ const isConnected = <A extends AudioStateValue>(
   state: AudioState<A>,
 ): state is AudioStateConnected<A> => state.type === 'Connected'
 
-const isConnect: Refinement<AudioState, AudioStateConnect> = refinement.not(isDisconnected)
-
-const isMusicValue = pipe(
-  isConnect,
-  refinement.compose((s): s is AudioStateConnect<AudioStateValueMusic> =>
-    AudioStateValue.is('Music')(s.value),
-  ),
-)
+const isNotConnected: Refinement<AudioState, AudioStateNotDisconnected> =
+  refinement.not(isDisconnected)
 
 type FoldArgs<A, B, C> = {
   onDisconnected: () => A
@@ -186,8 +180,7 @@ const AudioState = {
   isConnecting,
   isConnected,
 
-  isConnect,
-  isMusicValue,
+  isNotConnected,
 
   fold,
 
@@ -195,13 +188,13 @@ const AudioState = {
   Eq,
 }
 
-type FoldValueArgs<F extends AudioStateConnectedURIS, A, B> = {
+type FoldValueArgs<F extends AudioStateNotDisconnectedURIS, A, B> = {
   onMusic: (state: Kind<F, AudioStateValueMusic>) => A
   onElevator: (state: Kind<F, AudioStateValueElevator>) => B
 }
 
 const foldValue =
-  <F extends AudioStateConnectedURIS = AudioStateConnectedURIS>() =>
+  <F extends AudioStateNotDisconnectedURIS = AudioStateNotDisconnectedURIS>() =>
   <A, B = A>({ onMusic, onElevator }: FoldValueArgs<F, A, B>) =>
   (state: Kind<F, AudioStateValue>) => {
     switch (state.value.type) {
@@ -213,7 +206,7 @@ const foldValue =
   }
 
 const modifyValue =
-  <F extends AudioStateConnectedURIS = AudioStateConnectedURIS>() =>
+  <F extends AudioStateNotDisconnectedURIS = AudioStateNotDisconnectedURIS>() =>
   <A extends AudioStateValue, B extends AudioStateValue>(
     f: (value: A) => B,
   ): ((state: Kind<F, A>) => Kind<F, B>) => {
@@ -225,13 +218,13 @@ const modifyValue =
   }
 
 const setValue =
-  <F extends AudioStateConnectedURIS = AudioStateConnectedURIS>() =>
+  <F extends AudioStateNotDisconnectedURIS = AudioStateNotDisconnectedURIS>() =>
   <B extends AudioStateValue>(value: B): (<A>(state: Kind<F, A>) => Kind<F, B>) => {
     const res: (s: Kind<F, B>) => Kind<F, B> = connectValueLens<F, B>().set(value)
     return res as <A>(state: Kind<F, A>) => Kind<F, B>
   }
 
-const AudioStateConnect = {
+const AudioStateNotDisconnected = {
   foldValue,
   modifyValue,
   setValue,
@@ -242,10 +235,10 @@ export {
   AudioStateDisconnected,
   AudioStateConnecting,
   AudioStateConnected,
-  AudioStateConnect,
+  AudioStateNotDisconnected,
 }
 
-const connectValueLens = <F extends AudioStateConnectedURIS, A extends AudioStateValue>(): Lens<
-  Kind<F, A>,
-  A
-> => pipe(lens.id<Kind<F, A>>(), lens.prop('value'))
+const connectValueLens = <
+  F extends AudioStateNotDisconnectedURIS,
+  A extends AudioStateValue,
+>(): Lens<Kind<F, A>, A> => pipe(lens.id<Kind<F, A>>(), lens.prop('value'))

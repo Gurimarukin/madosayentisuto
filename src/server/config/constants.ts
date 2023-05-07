@@ -12,6 +12,7 @@ export const constants = {
     play: '▶️', // :arrow_forward:
     pause: '⏸️', // :pause_button:
     next: '⏩', // :fast_forward:
+    stop: '⏹️', // :stop_button:
     birthday: '🎂', // :birthday:
     tada: '🎉', // :tada:
     cry: '😢', // :cry:

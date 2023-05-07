@@ -17,12 +17,12 @@ import { LogUtils } from '../utils/LogUtils'
 // We don't want any message (except bot) in the music logs thread
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const MusicThreadCleanObserver = (
+export const PlayerThreadCleanObserver = (
   Logger: LoggerGetter,
   clientId: DiscordUserId,
   guildStateService: GuildStateService,
 ) => {
-  const logger = Logger('MusicThreadCleanObserver')
+  const logger = Logger('PlayerThreadCleanObserver')
 
   return ObserverWithRefinement.fromNext(
     MadEvent,
@@ -38,7 +38,7 @@ export const MusicThreadCleanObserver = (
             ? Future.notUsed
             : Future.fromIOEither(
                 LogUtils.pretty(logger, message.guild, message.author, message.channel).info(
-                  "Couldn't delete message in music thread",
+                  "Couldn't delete message in player thread",
                 ),
               ),
         ),
@@ -54,7 +54,7 @@ export const MusicThreadCleanObserver = (
       guildStateService.getSubscription(guild),
       Future.chainIOK(subscription => subscription.getAudioState),
       futureMaybe.fromTaskEither,
-      futureMaybe.filter(AudioState.isMusicValue),
+      futureMaybe.filter(AudioState.isNotConnected),
       futureMaybe.chainOptionK(state => state.value.message),
       futureMaybe.chain(message => futureMaybe.fromNullable(message.thread)),
     )

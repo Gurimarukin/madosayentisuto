@@ -41,7 +41,7 @@ const myFileFromPath = (path: string): MyFile =>
     dirname: nodePath.dirname(path),
   })
 
-const myFileEq: Eq<MyFile> = pipe(
+const myFileEqByPath: Eq<MyFile> = pipe(
   string.Eq,
   eq.contramap(f => f.path),
 )
@@ -64,7 +64,7 @@ export const MyFile = {
   stringify: ({ path, basename, dirname }: MyFile): string =>
     `File(${path}, ${basename}, ${dirname})`,
 
-  Eq: myFileEq,
+  Eq: { byPath: myFileEqByPath },
 }
 
 const dirOf = (path: string): Dir => ({ _tag: 'Dir', path })

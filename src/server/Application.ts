@@ -19,11 +19,10 @@ import { UserController } from './controllers/UserController'
 import { ActivityStatusObserver } from './domain/ActivityStatusObserver'
 import { AutoroleObserver } from './domain/AutoroleObserver'
 import { DisconnectVocalObserver } from './domain/DisconnectVocalObserver'
-import { ElevatorObserver } from './domain/ElevatorObserver'
-import { MusicThreadCleanObserver } from './domain/MusicThreadCleanObserver'
 import { NotifyBirthdayObserver } from './domain/NotifyBirthdayObserver'
 import { NotifyGuildLeaveObserver } from './domain/NotifyGuildLeaveObserver'
 import { NotifyVoiceCallObserver } from './domain/NotifyVoiceCallObserver'
+import { PlayerThreadCleanObserver } from './domain/PlayerThreadCleanObserver'
 import { ScheduleItsFridayObserver } from './domain/ScheduleItsFridayObserver'
 import { ScheduledEventObserver } from './domain/ScheduledEventObserver'
 import { SendWelcomeDMObserver } from './domain/SendWelcomeDMObserver'
@@ -32,8 +31,8 @@ import { TextInteractionsObserver } from './domain/TextInteractionsObserver'
 import { TheQuestObserver } from './domain/TheQuestObserver'
 import { UwURenamerObserver } from './domain/UwURenamerObserver'
 import { AdminCommandsObserver } from './domain/commands/AdminCommandsObserver'
-import { MusicCommandsObserver } from './domain/commands/MusicCommandsObserver'
 import { OtherCommandsObserver } from './domain/commands/OtherCommandsObserver'
+import { PlayerCommandsObserver } from './domain/commands/PlayerCommandsObserver'
 import { PollCommandsObserver } from './domain/commands/PollCommandsObserver'
 import { RemindCommandsObserver } from './domain/commands/RemindCommandsObserver'
 import { DeployCommandsObserver } from './domain/startup/DeployCommandsObserver'
@@ -170,8 +169,8 @@ export const Application = (
           guildStateService,
         ),
       ),
-      sub(MusicCommandsObserver(Logger, ytDlp, guildStateService)),
       sub(OtherCommandsObserver(config)),
+      sub(PlayerCommandsObserver(Logger, ytDlp, guildStateService)),
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
       sub(RemindCommandsObserver(scheduledEventService)),
       // │  └ startup/
@@ -180,11 +179,10 @@ export const Application = (
       sub(ActivityStatusObserver(botStateService)),
       sub(AutoroleObserver(Logger)),
       sub(DisconnectVocalObserver(config.client.id, guildStateService)),
-      sub(ElevatorObserver(Logger, config.elevatorDelay, guildStateService)),
-      sub(MusicThreadCleanObserver(Logger, config.client.id, guildStateService)),
       sub(NotifyBirthdayObserver(discord, guildStateService, memberBirthdateService)),
       sub(NotifyGuildLeaveObserver(Logger)),
       sub(NotifyVoiceCallObserver(Logger, config.client.id, guildStateService)),
+      sub(PlayerThreadCleanObserver(Logger, config.client.id, guildStateService)),
       sub(ScheduledEventObserver(Logger, discord, scheduledEventService, guildStateService)),
       sub(ScheduleItsFridayObserver(Logger, scheduledEventService)),
       sub(SendWelcomeDMObserver(Logger)),
