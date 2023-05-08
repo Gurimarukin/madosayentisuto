@@ -81,7 +81,7 @@ const TheQuestHelper = (
               Maybe.fold(
                 () => sendRankingMessageAndUpdateState,
                 m =>
-                  List.isEmpty(notifications) && ChannelUtils.EqById.equals(m.channel, channel)
+                  List.isEmpty(notifications) && ChannelUtils.Eq.byId.equals(m.channel, channel)
                     ? futureMaybe.fromTaskEither(DiscordConnector.messageEdit(m, options))
                     : sendRankingMessageAndUpdateState,
               ),

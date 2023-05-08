@@ -19,8 +19,8 @@ const toView = (c: Calls): CallsView => ({
 })
 
 const Eq: eq.Eq<Calls> = eq.struct({
-  channel: ChannelUtils.EqById,
-  role: RoleUtils.EqById,
+  channel: ChannelUtils.Eq.byId,
+  role: RoleUtils.Eq.byId,
 })
 
 const Calls = { toView, Eq }

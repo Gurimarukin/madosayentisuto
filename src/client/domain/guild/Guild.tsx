@@ -11,6 +11,7 @@ import { Future, IO, Maybe, toNotUsed } from '../../../shared/utils/fp'
 
 import { AudioState } from '../../components/AudioState'
 import { ChannelViewComponent } from '../../components/ChannelViewComponent'
+import { MessageViewComponent } from '../../components/MessageViewComponent'
 import { RoleViewComponent } from '../../components/RoleViewComponent'
 import { useServerClientWS } from '../../contexts/ServerClientWSContext'
 import { cssClasses } from '../../utils/cssClasses'
@@ -89,6 +90,13 @@ const GuildComponent: React.FC<GuildComponentProps> = ({ guild, mutate }) => {
             guild.state.birthdayChannel,
             // eslint-disable-next-line react/jsx-key
             Maybe.map(channel => <ChannelViewComponent guild={guild.id} channel={channel} />),
+          )}
+        </Li>
+        <Li label="theQuestMessage" className="gap-4">
+          {pipe(
+            guild.state.theQuestMessage,
+            // eslint-disable-next-line react/jsx-key
+            Maybe.map(message => <MessageViewComponent message={message} />),
           )}
         </Li>
         <Li label="audioState" className="flex-col gap-2">

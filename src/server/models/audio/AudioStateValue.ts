@@ -3,7 +3,6 @@ import { boolean, eq, string } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
-import { MessageView } from '../../../shared/models/MessageView'
 import { AudioStateValueView } from '../../../shared/models/audio/AudioStateValueView'
 import { Track } from '../../../shared/models/audio/music/Track'
 import { createUnion } from '../../../shared/utils/createUnion'
@@ -62,7 +61,7 @@ const toView = fold<AudioStateValueView>({
       s.queue,
       s.isPaused,
       ChannelUtils.toView(s.messageChannel),
-      pipe(s.message, Maybe.map(MessageView.fromMessage)),
+      pipe(s.message, Maybe.map(MessageUtils.toView)),
     ),
   onElevator: s =>
     AudioStateValueView.elevator(
@@ -73,7 +72,7 @@ const toView = fold<AudioStateValueView>({
       ),
       s.isPaused,
       ChannelUtils.toView(s.messageChannel),
-      pipe(s.message, Maybe.map(MessageView.fromMessage)),
+      pipe(s.message, Maybe.map(MessageUtils.toView)),
     ),
 })
 
@@ -94,8 +93,8 @@ const audioStateValueMusicEq = eq.struct<AudioStateValueMusic>({
   isPaused: boolean.Eq,
   currentTrack: Maybe.getEq(Track.Eq),
   queue: List.getEq(Track.Eq),
-  messageChannel: ChannelUtils.EqById,
-  message: Maybe.getEq(MessageUtils.EqById),
+  messageChannel: ChannelUtils.Eq.byId,
+  message: Maybe.getEq(MessageUtils.Eq.byId),
   pendingEvents: List.getEq(string.Eq),
 })
 
@@ -103,8 +102,8 @@ const audioStateValueElevatorEq = eq.struct<AudioStateValueElevator>({
   type: eqIgnore,
   playlist: NonEmptyArray.getEq(MyFile.Eq.byPath),
   isPaused: boolean.Eq,
-  messageChannel: ChannelUtils.EqById,
-  message: Maybe.getEq(MessageUtils.EqById),
+  messageChannel: ChannelUtils.Eq.byId,
+  message: Maybe.getEq(MessageUtils.Eq.byId),
   pendingEvents: List.getEq(string.Eq),
 })
 

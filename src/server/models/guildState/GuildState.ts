@@ -43,22 +43,25 @@ const toView = (s: GuildState): io.IO<GuildStateView> =>
       () => io.of(Maybe.none),
       subscription => pipe(subscription.getAudioState, io.map(Maybe.some)),
     ),
-    io.map(audioState => ({
-      calls: pipe(s.calls, Maybe.map(Calls.toView)),
-      defaultRole: pipe(s.defaultRole, Maybe.map(RoleView.fromRole)),
-      itsFridayChannel: pipe(s.itsFridayChannel, Maybe.map(ChannelUtils.toView)),
-      birthdayChannel: pipe(s.birthdayChannel, Maybe.map(ChannelUtils.toView)),
-      audioState: pipe(audioState, Maybe.map(AudioState.toView)),
-    })),
+    io.map(
+      (audioState): GuildStateView => ({
+        calls: pipe(s.calls, Maybe.map(Calls.toView)),
+        defaultRole: pipe(s.defaultRole, Maybe.map(RoleView.fromRole)),
+        itsFridayChannel: pipe(s.itsFridayChannel, Maybe.map(ChannelUtils.toView)),
+        birthdayChannel: pipe(s.birthdayChannel, Maybe.map(ChannelUtils.toView)),
+        theQuestMessage: pipe(s.theQuestMessage, Maybe.map(MessageUtils.toView)),
+        audioState: pipe(audioState, Maybe.map(AudioState.toView)),
+      }),
+    ),
   )
 
 const Eq: eq.Eq<GuildState> = eq.struct({
   id: GuildId.Eq,
   calls: Maybe.getEq(Calls.Eq),
-  defaultRole: Maybe.getEq(pipe(RoleUtils.EqById)),
-  itsFridayChannel: Maybe.getEq(ChannelUtils.EqById),
-  birthdayChannel: Maybe.getEq(ChannelUtils.EqById),
-  theQuestMessage: Maybe.getEq(MessageUtils.EqById),
+  defaultRole: Maybe.getEq(pipe(RoleUtils.Eq.byId)),
+  itsFridayChannel: Maybe.getEq(ChannelUtils.Eq.byId),
+  birthdayChannel: Maybe.getEq(ChannelUtils.Eq.byId),
+  theQuestMessage: Maybe.getEq(MessageUtils.Eq.byId),
   subscription: Maybe.getEq(eq.eqStrict),
 })
 

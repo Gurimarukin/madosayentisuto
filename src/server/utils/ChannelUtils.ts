@@ -18,6 +18,7 @@ import { pipe } from 'fp-ts/function'
 
 import { ChannelId } from '../../shared/models/ChannelId'
 import type { ChannelView } from '../../shared/models/ChannelView'
+import { Maybe } from '../../shared/utils/fp'
 
 const isGuildText = (c: Channel): c is TextChannel => {
   // A text channel within a guild
@@ -173,12 +174,12 @@ const isPrivate = predicate.not(isPublic)
 
 // utils
 
-const toView = (c: NamedChannel): ChannelView => ({
+const toView = (c: Channel): ChannelView => ({
   id: ChannelId.fromChannel(c),
-  name: c.name,
+  name: isNamed(c) ? Maybe.some(c.name) : Maybe.none,
 })
 
-const EqById: eq.Eq<APIPartialChannel> = pipe(ChannelId.Eq, eq.contramap(ChannelId.fromChannel))
+const byId: eq.Eq<APIPartialChannel> = pipe(ChannelId.Eq, eq.contramap(ChannelId.fromChannel))
 
 // export
 
@@ -203,7 +204,7 @@ export const ChannelUtils = {
   isThread,
 
   toView,
-  EqById,
+  Eq: { byId },
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

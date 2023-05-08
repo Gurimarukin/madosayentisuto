@@ -156,7 +156,7 @@ const audioStateDisconnectedEq = eq.struct<AudioStateDisconnected>({
 
 const audioStateConnectingEq = eq.struct<AudioStateConnecting<AudioStateValue>>({
   type: eqIgnore,
-  channel: ChannelUtils.EqById,
+  channel: ChannelUtils.Eq.byId,
   value: AudioStateValue.Eq,
   voiceConnection: eqIgnore,
   audioPlayer: eqIgnore,
@@ -164,7 +164,7 @@ const audioStateConnectingEq = eq.struct<AudioStateConnecting<AudioStateValue>>(
 
 const audioStateConnectedEq = eq.struct<AudioStateConnected<AudioStateValue>>({
   type: eqIgnore,
-  channel: ChannelUtils.EqById,
+  channel: ChannelUtils.Eq.byId,
   value: AudioStateValue.Eq,
   voiceConnection: eqIgnore,
   audioPlayer: eqIgnore,
