@@ -1,11 +1,11 @@
 import { pipe } from 'fp-ts/function'
 
+import { MsDuration } from '../shared/models/MsDuration'
 import { StringUtils } from '../shared/utils/StringUtils'
 import { Future, NonEmptyArray } from '../shared/utils/fp'
 
 import type { Config } from './config/Config'
 import { Resources } from './config/Resources'
-import { constants } from './config/constants'
 import { HttpClient } from './helpers/HttpClient'
 import { JwtHelper } from './helpers/JwtHelper'
 import { ResourcesHelper } from './helpers/ResourcesHelper'
@@ -28,6 +28,8 @@ import { EmojidexService } from './services/EmojidexService'
 import { HealthCheckService } from './services/HealthCheckService'
 import { MigrationService } from './services/MigrationService'
 import { getOnError } from './utils/getOnError'
+
+const dbRetryDelay = MsDuration.seconds(10)
 
 export type Context = ReturnType<typeof of>
 
@@ -142,12 +144,12 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
         pipe(
           logger.info(
             `Couldn't connect to mongo, waiting ${StringUtils.prettyMs(
-              constants.dbRetryDelay,
+              dbRetryDelay,
             )} before next try`,
           ),
           Future.fromIOEither,
           Future.chain(() =>
-            pipe(waitDatabaseReady(healthCheckService), Future.delay(constants.dbRetryDelay)),
+            pipe(waitDatabaseReady(healthCheckService), Future.delay(dbRetryDelay)),
           ),
         ),
       ),

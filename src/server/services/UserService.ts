@@ -2,6 +2,7 @@ import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 import readline from 'readline'
 
+import { MsDuration } from '../../shared/models/MsDuration'
 import { ClearPassword } from '../../shared/models/webUser/ClearPassword'
 import type { Token } from '../../shared/models/webUser/Token'
 import { UserName } from '../../shared/models/webUser/UserName'
@@ -9,7 +10,6 @@ import type { Maybe, NotUsed } from '../../shared/utils/fp'
 import { Future, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import { constants } from '../config/constants'
 import type { JwtHelper } from '../helpers/JwtHelper'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { TokenContent } from '../models/webUser/TokenContent'
@@ -17,6 +17,8 @@ import { WebUser } from '../models/webUser/WebUser'
 import { WebUserId } from '../models/webUser/WebUserId'
 import type { UserPersistence } from '../persistence/UserPersistence'
 import { PasswordUtils } from '../utils/PasswordUtils'
+
+const accountTokenTtl = MsDuration.days(30)
 
 export type UserService = ReturnType<typeof UserService>
 
@@ -58,7 +60,7 @@ export function UserService(
   )
 
   const signToken = (content: TokenContent): Future<Token> =>
-    jwtHelper.sign(TokenContent.codec)(content, { expiresIn: constants.account.tokenTtl })
+    jwtHelper.sign(TokenContent.codec)(content, { expiresIn: accountTokenTtl })
 
   const verifyToken = (token: string): Future<TokenContent> =>
     jwtHelper.verify([TokenContent.codec, 'TokenContent'])(token)

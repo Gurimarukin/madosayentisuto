@@ -1,6 +1,7 @@
 import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
+import { MsDuration } from '../shared/models/MsDuration'
 import type { ServerToClientEvent } from '../shared/models/event/ServerToClientEvent'
 import { ObserverWithRefinement } from '../shared/models/rx/ObserverWithRefinement'
 import { PubSub } from '../shared/models/rx/PubSub'
@@ -9,7 +10,6 @@ import type { NotUsed } from '../shared/utils/fp'
 import { IO } from '../shared/utils/fp'
 
 import type { Context } from './Context'
-import { constants } from './config/constants'
 import { DiscordClientController } from './controllers/DiscordClientController'
 import { HealthCheckController } from './controllers/HealthCheckController'
 import { LogController } from './controllers/LogController'
@@ -59,6 +59,8 @@ import { startWebServer } from './webServer/startWebServer'
 import { RateLimiter } from './webServer/utils/RateLimiter'
 import { WithAuth } from './webServer/utils/WithAuth'
 import { WithIp } from './webServer/utils/WithIp'
+
+const rateLimiterLifeTime = MsDuration.days(1)
 
 export const Application = (
   discord: DiscordConnector,
@@ -132,7 +134,7 @@ export const Application = (
   const userController = UserController(userService)
 
   const withIp = WithIp(Logger, config)
-  const rateLimiter = RateLimiter(Logger, withIp, constants.rateLimiterLifeTime)
+  const rateLimiter = RateLimiter(Logger, withIp, rateLimiterLifeTime)
   const withAuth = WithAuth(userService)
 
   const routes = Routes(

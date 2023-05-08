@@ -13,6 +13,8 @@ import type { ChoiceWithResponses } from '../../models/poll/ChoiceWithResponses'
 import type { ChoiceWithVotesCount } from '../../models/poll/ChoiceWithVotesCount'
 import { PollButton } from '../../models/poll/PollButton'
 
+const pollGraphWidth = 20 // chars
+
 // emojis
 
 type EmojiKey = keyof typeof constants.emojis.characters
@@ -121,7 +123,7 @@ const detail = (answers: NonEmptyArray<ChoiceWithResponses>): BaseMessageOptions
 export const PollMessage = { poll, detail }
 
 // What one block represents
-const blockUnit = Math.round(100 / constants.pollGraphWidth)
+const blockUnit = Math.round(100 / pollGraphWidth)
 
 const graphBar = (votesCount: number, total: number): string => {
   const percents = total === 0 ? 0 : Math.round((votesCount / total) * 100)

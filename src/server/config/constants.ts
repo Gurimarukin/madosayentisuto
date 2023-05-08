@@ -1,8 +1,6 @@
 import { MsDuration } from '../../shared/models/MsDuration'
 import { Color } from '../../shared/utils/Color'
 
-import { Activity } from '../models/botState/Activity'
-
 export const constants = {
   emptyChar: '\u200B',
 
@@ -26,44 +24,8 @@ export const constants = {
 
   messagesColor: Color.darkred,
 
-  embedMaxLength: 10,
-
-  defaultActivity: Activity.of('PLAYING', 'hisser les voiles...'),
-
-  pollGraphWidth: 20, // chars
-
-  dbRetryDelay: MsDuration.seconds(10),
-
-  logsLimit: 5000,
-
-  elevator: {
-    musicExtension: /\.(ogg|webm)$/,
-  },
-
-  kickBans: {
-    fetchLogsLimit: 30,
-    networkTolerance: MsDuration.seconds(4),
-  },
-
-  itsFriday: {
-    day: 5,
-    hourRange: {
-      start: 14,
-      end: 17,
-    },
-
-    videoUrl:
-      'https://cdn.discordapp.com/attachments/636626556734930948/909046875804545064/cestvrai.mp4',
-    // PeerTube:  https://tube.fede.re/w/gAfpve8szQ5TtiPfRqkNEi
-    // thumbnail: https://cdn.discordapp.com/attachments/636626556734930948/909048276957945886/unknown.png
-    imageUrl:
-      'https://cdn.discordapp.com/attachments/849299103362973777/969617031487975454/unknown.png',
-  },
-
   // webapp
-  rateLimiterLifeTime: MsDuration.days(1),
   account: {
-    tokenTtl: MsDuration.days(30),
     cookie: {
       name: 'userAccount',
       ttl: MsDuration.days(30),

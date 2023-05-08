@@ -8,8 +8,9 @@ import { Sink } from '../../shared/models/rx/Sink'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, toNotUsed } from '../../shared/utils/fp'
 
-import { constants } from '../config/constants'
 import type { LogPersistence } from '../persistence/LogPersistence'
+
+const logsLimit = 5000
 
 export type LogService = ReturnType<typeof LogService>
 
@@ -24,8 +25,8 @@ export const LogService = (logPersistence: LogPersistence) => {
         Future.chain(nonDebug =>
           pipe(
             logPersistence.list({
-              skip: Math.max(0, nonDebug - constants.logsLimit),
-              limit: constants.logsLimit,
+              skip: Math.max(0, nonDebug - logsLimit),
+              limit: logsLimit,
             }),
             Sink.readonlyArray,
           ),

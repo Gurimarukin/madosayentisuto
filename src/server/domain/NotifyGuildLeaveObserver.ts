@@ -6,18 +6,21 @@ import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
+import { MsDuration } from '../../shared/models/MsDuration'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import { constants } from '../config/constants'
 import { DiscordConnector } from '../helpers/DiscordConnector'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildPositionableChannel, GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
+
+const fetchLogsLimit = 30
+const networkTolerance = MsDuration.seconds(4)
 
 type KickOrBanAction = AuditLogEvent.MemberKick | AuditLogEvent.MemberBanAdd
 
@@ -86,7 +89,7 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
 const getLastLog =
   (guild: Guild, userId: DiscordUserId) =>
   (now: DayJs): Future<Maybe<ValidEntry<KickOrBanAction>>> => {
-    const nowMinusNetworkTolerance = pipe(now, DayJs.subtract(constants.kickBans.networkTolerance))
+    const nowMinusNetworkTolerance = pipe(now, DayJs.subtract(networkTolerance))
     const fetchAuditLogsCurry = fetchAuditLogs(guild, userId, nowMinusNetworkTolerance)
     return pipe(
       apply.sequenceS(Future.ApplyPar)({
@@ -113,7 +116,7 @@ const fetchAuditLogs =
   (guild: Guild, userId: DiscordUserId, nowMinusNetworkTolerance: DayJs) =>
   <A extends KickOrBanAction>(type: A): Future<Maybe<ValidEntry<A>>> =>
     pipe(
-      DiscordConnector.fetchAuditLogs(guild, { type, limit: constants.kickBans.fetchLogsLimit }),
+      DiscordConnector.fetchAuditLogs(guild, { type, limit: fetchLogsLimit }),
       futureMaybe.chainOptionK(validateLogs(nowMinusNetworkTolerance, userId)),
     )
 

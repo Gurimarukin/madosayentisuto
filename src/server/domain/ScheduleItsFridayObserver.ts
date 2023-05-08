@@ -8,14 +8,14 @@ import { StringUtils } from '../../shared/utils/StringUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO } from '../../shared/utils/fp'
 
-import { constants } from '../config/constants'
 import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { ScheduledEvent } from '../models/scheduledEvent/ScheduledEvent'
 import type { ScheduledEventService } from '../services/ScheduledEventService'
 
-const rangeStart = constants.itsFriday.hourRange.start
-const rangeEnd = constants.itsFriday.hourRange.end
+const friday = 5
+const rangeStart = 14
+const rangeEnd = 17
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const ScheduleItsFridayObserver = (
@@ -28,7 +28,7 @@ export const ScheduleItsFridayObserver = (
     MadEvent,
     'CronJob',
   )(({ date }) => {
-    const isFriday = DayJs.day.get(date) === constants.itsFriday.day
+    const isFriday = DayJs.day.get(date) === friday
     return isFriday && pipe(date, DayJs.isHourSharp(8)) ? scheduleItsFriday(date) : Future.notUsed
   })
 

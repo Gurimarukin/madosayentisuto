@@ -1,4 +1,3 @@
-- clean constants (only multiple references)
 - /shi-fu-mi
 - maybe move sinks
 - edit autorole: role select?

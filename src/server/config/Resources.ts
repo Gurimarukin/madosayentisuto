@@ -6,9 +6,10 @@ import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 import type { MyFile } from '../models/FileOrDir'
 import { Dir, FileOrDir } from '../models/FileOrDir'
 import { FsUtils } from '../utils/FsUtils'
-import { constants } from './constants'
 
-export type Resources = {
+const musicExtension = /\.(ogg|webm)$/
+
+type Resources = {
   music: {
     elevator: NonEmptyArray<MyFile>
   }
@@ -29,7 +30,7 @@ const loadDir = (dir: Dir): Future<NonEmptyArray<MyFile>> =>
   )
 
 const isMusicFile = (f: FileOrDir): f is MyFile =>
-  FileOrDir.isFile(f) && constants.elevator.musicExtension.test(f.basename)
+  FileOrDir.isFile(f) && musicExtension.test(f.basename)
 
 const load: Future<Resources> = pipe(
   apply.sequenceS(Future.ApplicativePar)({
@@ -39,4 +40,6 @@ const load: Future<Resources> = pipe(
   }),
 )
 
-export const Resources = { load }
+const Resources = { load }
+
+export { Resources }
