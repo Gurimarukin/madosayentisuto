@@ -14,6 +14,7 @@ module.exports = {
     'plugin:fp-ts/all',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
+    'plugin:react/jsx-runtime',
     'plugin:tailwindcss/recommended',
     'prettier',
   ],

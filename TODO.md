@@ -14,7 +14,6 @@
 - cli: replace unset > with set empty option
 - GuildState: use AsyncQueue
 - remove disables
-- upgrade react
 - commands register: unsubscribe when done?
 - try to override declaration types to use GuildId, TSnowflake, ...
 - swr v2
