@@ -6,6 +6,7 @@ import { LogUtils } from '../../../src/server/utils/LogUtils'
 
 import { expectT } from '../../expectT'
 
+// eslint-disable-next-line deprecation/deprecation
 const { __testableFormat } = LogUtils
 const format = __testableFormat(refinement.id() as typeof ChannelUtils.isNamed)
 

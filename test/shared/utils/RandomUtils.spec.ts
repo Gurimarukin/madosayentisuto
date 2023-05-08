@@ -9,6 +9,7 @@ import { List, NonEmptyArray, Try } from '../../../src/shared/utils/fp'
 
 import { expectT } from '../../expectT'
 
+// eslint-disable-next-line deprecation/deprecation
 const { __testableRandomPop: randomPop } = RandomUtils
 
 describe('RandomUtils.randomPop', () => {

@@ -58,28 +58,28 @@ const isGuildCategory = (c: Channel): c is CategoryChannel => {
 const isGuildNews = (c: Channel): c is NewsChannel => {
   // A channel that users can follow and crosspost into their own guild
   // See https://support.discord.com/hc/en-us/articles/360032008192
-  if (c.type !== ChannelType.GuildNews) return false
+  if (c.type !== ChannelType.GuildAnnouncement) return false
   const {}: NewsChannel = c
   return true
 }
 
 const isGuildNewsThread = (c: Channel): c is PublicThreadChannel => {
   // A thread channel (public) within a Guild News channel
-  if (c.type !== ChannelType.GuildNewsThread) return false
+  if (c.type !== ChannelType.AnnouncementThread) return false
   const {}: PublicThreadChannel = c
   return true
 }
 
 const isGuildPublicThread = (c: Channel): c is PublicThreadChannel => {
   // A public thread channel within a Guild Text channel
-  if (c.type !== ChannelType.GuildPublicThread) return false
+  if (c.type !== ChannelType.PublicThread) return false
   const {}: PublicThreadChannel = c
   return true
 }
 
 const isGuildPrivateThread = (c: Channel): c is PrivateThreadChannel => {
   // A private thread channel within a Guild Text channel
-  if (c.type !== ChannelType.GuildPrivateThread) return false
+  if (c.type !== ChannelType.PrivateThread) return false
   const {}: PrivateThreadChannel = c
   return true
 }

@@ -31,7 +31,7 @@ export function UserService(
   const createUser: Future<NotUsed> = pipe(
     Future.fromIOEither(logger.info('Creating user')),
     Future.chain(() =>
-      apply.sequenceT(Future.taskEitherSeq)(
+      apply.sequenceT(Future.ApplySeq)(
         prompt('userName: '),
         prompt('password: '),
         prompt('confirm password: '),
