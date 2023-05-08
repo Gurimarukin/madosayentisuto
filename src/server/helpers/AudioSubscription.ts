@@ -5,7 +5,7 @@ import type {
   VoiceConnectionState,
 } from '@discordjs/voice'
 import { AudioPlayerStatus, VoiceConnectionStatus } from '@discordjs/voice'
-import type { BaseMessageOptions, Guild, Message, User } from 'discord.js'
+import type { BaseMessageOptions, Guild, Message, TextChannel, User } from 'discord.js'
 import { ThreadAutoArchiveDuration } from 'discord.js'
 import type { io } from 'fp-ts'
 import { apply } from 'fp-ts'
@@ -76,13 +76,13 @@ export type AudioSubscription = {
   queueTracks: (
     author: User,
     audioChannel: GuildAudioChannel,
-    messageChannel: GuildSendableChannel,
+    messageChannel: TextChannel,
     tracks: NonEmptyArray<Track>,
   ) => IO<NotUsed>
   startElevator: (
     author: User,
     audioChannel: GuildAudioChannel,
-    messageChannel: GuildSendableChannel,
+    messageChannel: TextChannel,
   ) => IO<NotUsed>
   playPauseTrack: IO<NotUsed>
   playNextTrack: (author: User) => IO<NotUsed>
@@ -137,7 +137,7 @@ const of = (
   function queueTracks(
     author: User,
     audioChannel: GuildAudioChannel,
-    messageChannel: GuildSendableChannel,
+    messageChannel: TextChannel,
     tracks: NonEmptyArray<Track>,
   ): IO<NotUsed> {
     const queueTracksValueMusic = AudioStateValueMusic.queueTracks(
@@ -233,7 +233,7 @@ const of = (
   function startElevator(
     author: User,
     audioChannel: GuildAudioChannel,
-    messageChannel: GuildSendableChannel,
+    messageChannel: TextChannel,
   ): IO<NotUsed> {
     return queueStateReducer(state => {
       switch (state.type) {

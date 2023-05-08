@@ -1,4 +1,4 @@
-import type { Message } from 'discord.js'
+import type { Message, TextChannel } from 'discord.js'
 import { boolean, eq, string } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
@@ -9,7 +9,6 @@ import { Track } from '../../../shared/models/audio/music/Track'
 import { createUnion } from '../../../shared/utils/createUnion'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
-import type { GuildSendableChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { MessageUtils } from '../../utils/MessageUtils'
 import { MyFile } from '../FileOrDir'
@@ -21,7 +20,7 @@ type AudioStateValueElevator = typeof u.Elevator.T
 
 type CommonArgs = {
   isPaused: boolean
-  messageChannel: GuildSendableChannel
+  messageChannel: TextChannel
   message: Maybe<Message<true>>
   pendingEvents: List<string> // because when we call /play, message.thread doesn't exist yet, so keep it here until we created thread
 }

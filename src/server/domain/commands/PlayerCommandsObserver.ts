@@ -1,4 +1,9 @@
-import type { ButtonInteraction, ChatInputCommandInteraction, Interaction } from 'discord.js'
+import type {
+  ButtonInteraction,
+  ChatInputCommandInteraction,
+  Interaction,
+  TextChannel,
+} from 'discord.js'
 import { GuildMember } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
@@ -17,7 +22,7 @@ import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { GuildStateService } from '../../services/GuildStateService'
-import type { GuildAudioChannel, GuildSendableChannel } from '../../utils/ChannelUtils'
+import type { GuildAudioChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { utilInspect } from '../../utils/utilInspect'
 
@@ -27,7 +32,7 @@ type PlayCommand = ElevatorCommand & {
 
 type ElevatorCommand = {
   musicChannel: GuildAudioChannel
-  stateChannel: GuildSendableChannel
+  stateChannel: TextChannel
 }
 
 const Keys = {
@@ -302,9 +307,12 @@ const validateAudioAndStateChannel = (
     Either.chain(musicChannel =>
       pipe(
         Maybe.fromNullable(interaction.channel),
-        Maybe.filter(ChannelUtils.isGuildSendable),
         Either.fromOption(
           () => "Alors ça, c'est chelou : comment peut-on faire une interaction sans salon ?",
+        ),
+        Either.filterOrElse(
+          ChannelUtils.isGuildText,
+          () => 'Haha ! Tu ne peux pas faire ça dans ce type de salon !',
         ),
         Either.map(stateChannel => ({ musicChannel, stateChannel })),
       ),
