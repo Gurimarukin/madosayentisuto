@@ -1,6 +1,6 @@
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
-import React from 'react'
+import type React from 'react'
 
 import { apiRoutes } from '../../shared/ApiRouter'
 import { GuildId } from '../../shared/models/guild/GuildId'
@@ -14,7 +14,7 @@ import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
 
 const guildsDecoder = List.decoder(GuildViewShort.codec)
 
-export const Home = (): JSX.Element => (
+export const Home: React.FC = () => (
   <div className="flex h-full flex-col overflow-auto">
     <div className="flex justify-center p-6">
       <h1 className="text-6xl">Bot Jean Plank</h1>
@@ -50,7 +50,7 @@ type GuildsProps = {
   guilds: List<GuildViewShort>
 }
 
-const Guilds = ({ guilds }: GuildsProps): JSX.Element => (
+const Guilds: React.FC<GuildsProps> = ({ guilds }) => (
   <div className="flex flex-col gap-3">
     <h2 className="text-3xl">Serveurs</h2>
     <ul className="flex flex-wrap items-center gap-5">

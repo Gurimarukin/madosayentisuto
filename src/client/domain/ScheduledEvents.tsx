@@ -1,5 +1,5 @@
 import { pipe } from 'fp-ts/function'
-import React from 'react'
+import type React from 'react'
 
 import { apiRoutes } from '../../shared/ApiRouter'
 import { DayJs } from '../../shared/models/DayJs'
@@ -12,10 +12,11 @@ import { Header } from '../components/Header'
 import { RoleViewComponent } from '../components/RoleViewComponent'
 import { Tooltip } from '../components/Tooltip'
 import { useMySWR } from '../hooks/useMySWR'
+import type { ChildrenFC } from '../model/ChildrenFC'
 import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
 import { cssClasses } from '../utils/cssClasses'
 
-export const ScheduledEvents = (): JSX.Element => (
+export const ScheduledEvents: React.FC = () => (
   <div className="flex h-full flex-col">
     <Header>
       <h1 className="text-3xl">Rappels</h1>
@@ -53,7 +54,7 @@ export const ScheduledEvents = (): JSX.Element => (
   </div>
 )
 
-const renderEvent = (event: ScheduledEventView): JSX.Element => {
+const renderEvent = (event: ScheduledEventView): React.JSX.Element => {
   switch (event.type) {
     case 'Reminder':
       return (
@@ -133,10 +134,11 @@ const renderEvent = (event: ScheduledEventView): JSX.Element => {
 
 const formatScheduledAt = DayJs.format('DD/MM/YYYY, HH:mm', { locale: true })
 
-const Th: React.FC = ({ children }) => <th className="flex bg-gray2 py-3 px-5">{children}</th>
+const Th: ChildrenFC = ({ children }) => <th className="flex bg-gray2 py-3 px-5">{children}</th>
 
 type TdProps = {
   className?: string
+  children?: React.ReactNode
 }
 
 const Td: React.FC<TdProps> = ({ className, children }) => (

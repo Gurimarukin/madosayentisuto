@@ -1,5 +1,6 @@
 /* eslint-disable functional/no-expression-statements */
-import React, { useCallback, useState } from 'react'
+import type React from 'react'
+import { useCallback, useState } from 'react'
 
 import { apiRoutes } from '../../shared/ApiRouter'
 import { ClearPassword } from '../../shared/models/webUser/ClearPassword'
@@ -10,7 +11,7 @@ import { useHistory } from '../contexts/HistoryContext'
 import { useHttp } from '../contexts/HttpContext'
 import { appRoutes } from '../router/AppRouter'
 
-export const Login = (): JSX.Element => {
+export const Login: React.FC = () => {
   const { navigate } = useHistory()
   const { http } = useHttp()
 

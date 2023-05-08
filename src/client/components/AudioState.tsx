@@ -1,5 +1,5 @@
 import { pipe } from 'fp-ts/function'
-import React from 'react'
+import type React from 'react'
 
 import { MessageId } from '../../shared/models/MessageId'
 import type { AudioStateValueView } from '../../shared/models/audio/AudioStateValueView'
@@ -16,7 +16,7 @@ type Props = {
   state: AudioStateView
 }
 
-export const AudioState = ({ guild, state }: Props): JSX.Element => (
+export const AudioState: React.FC<Props> = ({ guild, state }) => (
   <ul className="ml-8 flex list-disc flex-col gap-2">
     <Li label="state" className="items-center gap-3">
       <span>{state.type}</span>
@@ -63,7 +63,7 @@ type AudioStateValueProps = {
   value: AudioStateValueView
 }
 
-const AudioStateValue = ({ value }: AudioStateValueProps): JSX.Element => {
+const AudioStateValue: React.FC<AudioStateValueProps> = ({ value }) => {
   switch (value.type) {
     case 'Music':
       return (
@@ -113,6 +113,7 @@ const AudioStateValue = ({ value }: AudioStateValueProps): JSX.Element => {
 type LiProps = {
   label: string
   className?: string
+  children?: React.ReactNode
 }
 
 const Li: React.FC<LiProps> = ({ label, className, children }) => (
@@ -128,7 +129,7 @@ type TrackProps = {
   track: Track
 }
 
-const TrackComp = ({ track }: TrackProps): JSX.Element => (
+const TrackComp: React.FC<TrackProps> = ({ track }) => (
   <a
     href={track.url}
     target="_blank"

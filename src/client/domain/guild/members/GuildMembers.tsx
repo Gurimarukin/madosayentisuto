@@ -3,7 +3,8 @@ import type { Ord } from 'fp-ts/Ord'
 import type { Lazy } from 'fp-ts/function'
 import { pipe } from 'fp-ts/function'
 import { lens, optional } from 'monocle-ts'
-import React, { useMemo } from 'react'
+import type React from 'react'
+import { useMemo } from 'react'
 import type { KeyedMutator } from 'swr'
 
 import { DayJs } from '../../../../shared/models/DayJs'
@@ -21,7 +22,7 @@ type Props = {
   guildId: GuildId
 }
 
-export const GuildMembers = ({ guildId }: Props): JSX.Element => (
+export const GuildMembers: React.FC<Props> = ({ guildId }) => (
   <GuildLayout guildId={guildId} selected="members">
     {(guild, response) => <Members guild={guild} response={response} />}
   </GuildLayout>
@@ -32,7 +33,7 @@ type MembersProps = {
   response: GuildViewResponse
 }
 
-const Members = ({ guild, response }: MembersProps): JSX.Element => {
+const Members: React.FC<MembersProps> = ({ guild, response }) => {
   const members = useMemo(
     () =>
       pipe(

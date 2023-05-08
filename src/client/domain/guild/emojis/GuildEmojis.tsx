@@ -2,7 +2,8 @@
                   functional/no-return-void */
 import { pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
-import React, { useCallback, useRef, useState } from 'react'
+import type React from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 import { GuildEmojiId } from '../../../../shared/models/guild/GuildEmojiId'
 import type { GuildEmojiView } from '../../../../shared/models/guild/GuildEmojiView'
@@ -17,7 +18,7 @@ type Props = {
   guildId: GuildId
 }
 
-export const GuildEmojis = ({ guildId }: Props): JSX.Element => (
+export const GuildEmojis: React.FC<Props> = ({ guildId }) => (
   <GuildLayout guildId={guildId} selected="emojis">
     {guild => <Tiers emojis={guild.emojis} />}
   </GuildLayout>
@@ -38,7 +39,7 @@ const Tier = {
     pipe(tierLensEmojis, lens.modify(f)),
 }
 
-const Tiers = ({ emojis }: TiersProps): JSX.Element => {
+const Tiers: React.FC<TiersProps> = ({ emojis }) => {
   const [tiers, setTiers] = useState<NonEmptyArray<Tier>>([
     { name: 'S', emojis },
     { name: 'A', emojis: [] },
@@ -85,7 +86,7 @@ type TierProps = {
   moveEmojiTier: (item: DragItem, newTierIndex: number) => void
 }
 
-const TierComponent = ({ tier, tierIndex, moveEmojiTier }: TierProps): JSX.Element => {
+const TierComponent: React.FC<TierProps> = ({ tier, tierIndex, moveEmojiTier }) => {
   const [, drop] = useDrop<DragItem>(() => ({
     accept: emojiType,
     hover: (item: DragItem) => {
@@ -124,7 +125,7 @@ type DragItem = {
 
 const emojiType = 'emoji' as const
 
-const GuildEmoji = ({ tierIndex, emoji }: GuildEmojiProps): JSX.Element => {
+const GuildEmoji: React.FC<GuildEmojiProps> = ({ tierIndex, emoji }) => {
   const ref = useRef<HTMLDivElement>(null)
   const [, drop] = useDrop<DragItem>(() => ({
     accept: emojiType,

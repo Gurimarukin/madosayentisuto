@@ -1,7 +1,8 @@
 /* eslint-disable functional/no-expression-statements */
 import { Route, parse, zero } from 'fp-ts-routing'
 import { pipe } from 'fp-ts/function'
-import React, { useEffect, useMemo } from 'react'
+import type React from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { Maybe, Tuple } from '../../shared/utils/fp'
 
@@ -16,9 +17,9 @@ import { GuildEmojis } from '../domain/guild/emojis/GuildEmojis'
 import { GuildMembers } from '../domain/guild/members/GuildMembers'
 import { appParsers, appRoutes } from './AppRouter'
 
-type ElementWithTitle = Tuple<JSX.Element, Maybe<string>>
+type ElementWithTitle = Tuple<React.JSX.Element, Maybe<string>>
 
-const t = (element: JSX.Element, title?: string): ElementWithTitle =>
+const t = (element: React.JSX.Element, title?: string): ElementWithTitle =>
   Tuple.of(element, Maybe.fromNullable(title))
 
 const titleWithElementParser = zero<ElementWithTitle>()
@@ -38,7 +39,7 @@ const titleWithElementParser = zero<ElementWithTitle>()
   .alt(appParsers.scheduledEvents.map(() => t(<ScheduledEvents />, 'Évènements')))
   .alt(appParsers.console.map(() => t(<Logs />, 'Console')))
 
-export const AppRouterComponent = (): JSX.Element => {
+export const AppRouterComponent: React.FC = () => {
   const { location } = useHistory()
 
   const [node, title] = useMemo(() => {
@@ -66,7 +67,7 @@ export const AppRouterComponent = (): JSX.Element => {
 }
 
 // TODO: move to own file?
-const NotFound = (): JSX.Element => (
+const NotFound: React.FC = () => (
   <div className="flex flex-col items-center gap-4 p-6">
     <p className="text-xl">Cette page n'existe pas.</p>
     <Link to={appRoutes.index} className="underline">

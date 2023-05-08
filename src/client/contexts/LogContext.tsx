@@ -1,7 +1,7 @@
 /* eslint-disable functional/no-return-void,
                   functional/no-expression-statements */
 import { pipe } from 'fp-ts/function'
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 import { apiRoutes } from '../../shared/ApiRouter'
 import { DayJs } from '../../shared/models/DayJs'
@@ -11,6 +11,7 @@ import { LogsWithCount } from '../../shared/models/log/LogsWithCount'
 import { TObservable } from '../../shared/models/rx/TObservable'
 import { Future, IO, List, NotUsed } from '../../shared/utils/fp'
 
+import type { ChildrenFC } from '../model/ChildrenFC'
 import { getOnError } from '../utils/getOnError'
 import { useHttp } from './HttpContext'
 import { useServerClientWS } from './ServerClientWSContext'
@@ -23,7 +24,7 @@ type LogContext = {
 
 const LogContext = createContext<LogContext | undefined>(undefined)
 
-export const LogContextProvider: React.FC = ({ children }) => {
+export const LogContextProvider: ChildrenFC = ({ children }) => {
   const { http } = useHttp()
   const { serverToClientEventObservable } = useServerClientWS()
 

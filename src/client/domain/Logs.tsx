@@ -1,6 +1,7 @@
 /* eslint-disable functional/no-expression-statements */
 import { pipe } from 'fp-ts/function'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type React from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { LogEvent } from '../../shared/models/event/LogEvent'
@@ -11,7 +12,7 @@ import { List } from '../../shared/utils/fp'
 import { Header } from '../components/Header'
 import { useLog } from '../contexts/LogContext'
 
-export const Logs = (): JSX.Element => {
+export const Logs: React.FC = () => {
   const { logs, count, tryRefetchInitialLogs } = useLog()
 
   useEffect(() => {
@@ -108,4 +109,6 @@ export const Logs = (): JSX.Element => {
   )
 }
 
-const color = (str: string, col: Color): JSX.Element => <span style={{ color: col }}>{str}</span>
+const color = (str: string, col: Color): React.JSX.Element => (
+  <span style={{ color: col }}>{str}</span>
+)

@@ -1,5 +1,3 @@
-import type { ReactElement, Ref, RefObject } from 'react'
-
 import type { Backend, Identifier, Unsubscribe } from '../../dnd-core'
 import { shallowEqual } from '../../util-shallowequal'
 import type { DragPreviewOptions, DragSourceOptions } from '../types/index'
@@ -15,11 +13,14 @@ export interface Connector {
 
 export class SourceConnector implements Connector {
   public hooks = wrapConnectorHooks({
-    dragSource: (node: Element | ReactElement | Ref<any>, options?: DragSourceOptions) => {
+    dragSource: (
+      node: Element | React.ReactElement | React.Ref<any>,
+      options?: DragSourceOptions,
+    ) => {
       this.clearDragSource()
       this.dragSourceOptions = options || null
       if (isRef(node)) {
-        this.dragSourceRef = node as RefObject<any>
+        this.dragSourceRef = node as React.RefObject<any>
       } else {
         this.dragSourceNode = node
       }
@@ -39,13 +40,13 @@ export class SourceConnector implements Connector {
   private handlerId: Identifier | null = null
 
   // The drop target may either be attached via ref or connect function
-  private dragSourceRef: RefObject<any> | null = null
+  private dragSourceRef: React.RefObject<any> | null = null
   private dragSourceNode: any
   private dragSourceOptionsInternal: DragSourceOptions | null = null
   private dragSourceUnsubscribe: Unsubscribe | undefined
 
   // The drag preview may either be attached via ref or connect function
-  private dragPreviewRef: RefObject<any> | null = null
+  private dragPreviewRef: React.RefObject<any> | null = null
   private dragPreviewNode: any
   private dragPreviewOptionsInternal: DragPreviewOptions | null = null
   private dragPreviewUnsubscribe: Unsubscribe | undefined

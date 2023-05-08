@@ -1,4 +1,3 @@
-import type { FC, ReactNode } from 'react'
 import React, { memo, useEffect } from 'react'
 
 import type { BackendFactory, DragDropManager } from '../../dnd-core'
@@ -7,12 +6,12 @@ import { DndContext } from './DndContext'
 
 export type DndProviderProps<BackendContext, BackendOptions> =
   | {
-      children?: ReactNode
+      children?: React.ReactNode
       manager: DragDropManager
     }
   | {
       backend: BackendFactory
-      children?: ReactNode
+      children?: React.ReactNode
       context?: BackendContext
       options?: BackendOptions
       debugMode?: boolean
@@ -24,7 +23,7 @@ const INSTANCE_SYM = Symbol.for('__REACT_DND_CONTEXT_INSTANCE__')
 /**
  * A React component that provides the React-DnD context
  */
-export const DndProvider: FC<DndProviderProps<unknown, unknown>> = memo(function DndProvider({
+export const DndProvider: React.FC<DndProviderProps<unknown, unknown>> = memo(function DndProvider({
   children,
   ...props
 }) {

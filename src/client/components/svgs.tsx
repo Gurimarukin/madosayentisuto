@@ -1,8 +1,8 @@
-import React from 'react'
+import type React from 'react'
 
 import { cssClasses } from '../utils/cssClasses'
 
-type SVGComponent = (props: Props) => JSX.Element
+type SVGComponent = React.FC<Props>
 type Props = Omit<React.SVGProps<SVGSVGElement>, 'key' | 'children'>
 
 export const Cancel: SVGComponent = props => (
