@@ -546,7 +546,7 @@ const fromConfig = (config: ClientConfig): Future<DiscordConnector> =>
         const client = new Client({
           intents: [
             GatewayIntentBits.DirectMessages,
-            GatewayIntentBits.GuildBans,
+            GatewayIntentBits.GuildModeration,
             GatewayIntentBits.GuildMembers,
             GatewayIntentBits.GuildMessageReactions,
             GatewayIntentBits.GuildMessages,

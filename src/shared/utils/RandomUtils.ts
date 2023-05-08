@@ -32,5 +32,6 @@ export const RandomUtils = {
   /**
    * @deprecated
    */
+  // eslint-disable-next-line deprecation/deprecation
   __testableRandomPop,
 }

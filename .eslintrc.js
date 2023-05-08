@@ -7,13 +7,14 @@ module.exports = {
       jsx: true,
     },
   },
-  plugins: ['functional', 'fp-ts', 'tailwindcss'],
+  plugins: ['deprecation', 'functional', 'fp-ts', 'tailwindcss'],
   extends: [
     'plugin:@typescript-eslint/recommended',
     'plugin:functional/strict',
     'plugin:fp-ts/all',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
+    'plugin:react/jsx-runtime',
     'plugin:tailwindcss/recommended',
     'prettier',
   ],
@@ -83,6 +84,7 @@ module.exports = {
         functions: 'always-multiline',
       },
     ],
+    'deprecation/deprecation': 'warn',
     eqeqeq: ['error', 'always'],
     'fp-ts/no-module-imports': ['warn', { allowTypes: true }],
     'functional/functional-parameters': [

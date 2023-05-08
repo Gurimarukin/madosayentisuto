@@ -13,7 +13,6 @@ import type { YtDlp } from '../../helpers/YtDlp'
 import { YtDlpResult } from '../../helpers/YtDlp'
 import { PlayerStateMessage } from '../../helpers/messages/PlayerStateMessage'
 import { AudioState } from '../../models/audio/AudioState'
-import { AudioStateValue } from '../../models/audio/AudioStateValue'
 import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
@@ -322,10 +321,7 @@ const validateAudioChannel = (
       : Maybe.none,
     Either.fromOption(() => 'Haha ! Il faut être dans un salon vocal pour faire ça !'),
     Either.filterOrElse(
-      audioChannel =>
-        AudioState.isDisconnected(state) ||
-        !AudioStateValue.is('Music')(state.value) ||
-        state.channel.id === audioChannel.id,
+      audioChannel => AudioState.isDisconnected(state) || state.channel.id === audioChannel.id,
       () => 'Haha ! Il faut être dans mon salon pour faire ça !',
     ),
   )

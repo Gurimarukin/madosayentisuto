@@ -1,9 +1,8 @@
-import type { ReactElement } from 'react'
 import { cloneElement, isValidElement } from 'react'
 
 import { invariant } from '../../util-invariant'
 
-function throwIfCompositeComponentElement(element: ReactElement<any>) {
+function throwIfCompositeComponentElement(element: React.ReactElement<any>) {
   // Custom components can no longer be wrapped directly in React DnD 2.0
   // so that we don't need to depend on findDOMNode() from react-dom.
   if (typeof element.type === 'string') {
@@ -33,7 +32,7 @@ function wrapHookToRecognizeElement(hook: (node: any, options: any) => void) {
     // If passed a ReactElement, clone it and attach this function as a ref.
     // This helps us achieve a neat API where user doesn't even know that refs
     // are being used under the hood.
-    const element: ReactElement | null = elementOrNode
+    const element: React.ReactElement | null = elementOrNode
     throwIfCompositeComponentElement(element as any)
 
     // When no options are passed, use the hook directly
@@ -68,7 +67,7 @@ function setRef(ref: any, node: any) {
   }
 }
 
-function cloneWithRef(element: any, newRef: any): ReactElement<any> {
+function cloneWithRef(element: any, newRef: any): React.ReactElement<any> {
   const previousRef = element.ref
   invariant(
     typeof previousRef !== 'string',

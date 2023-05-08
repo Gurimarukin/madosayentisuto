@@ -33,5 +33,6 @@ export const LogUtils = {
   /**
    * @deprecated
    */
+  // eslint-disable-next-line deprecation/deprecation
   __testableFormat,
 }

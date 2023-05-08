@@ -36,7 +36,7 @@ export type TObservable<A> = Omit<rxjs.Observable<A>, 'subscribe'> & {
   subscribe: (subscriber: TPartialObserver<A>) => rxjs.Subscription
 }
 
-const fromReadonlyArray: <A>(fa: List<A>) => TObservable<A> = rxjs.from
+const fromReadonlyArray = <A>(fa: List<A>): TObservable<A> => rxjs.from(fa)
 
 const empty = <A = never>(): TObservable<A> => fromReadonlyArray([])
 

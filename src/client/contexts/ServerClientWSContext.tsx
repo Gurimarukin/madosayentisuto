@@ -1,7 +1,7 @@
 /* eslint-disable functional/no-expression-statements */
 import { apply, json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
-import React, { createContext, useContext } from 'react'
+import { createContext, useContext } from 'react'
 import type {
   CloseEvent as ReconnectingCloseEvent,
   ErrorEvent as ReconnectingErrorEvent,
@@ -21,6 +21,7 @@ import { PubSubUtils } from '../../shared/utils/PubSubUtils'
 import { Either, Future, IO, Maybe, toNotUsed } from '../../shared/utils/fp'
 
 import { config } from '../config/unsafe'
+import type { ChildrenFC } from '../model/ChildrenFC'
 import { WSClientEvent } from '../model/event/WSClientEvent'
 import { basicAsyncRenderer } from '../utils/basicAsyncRenderer'
 import { getOnError } from '../utils/getOnError'
@@ -32,7 +33,7 @@ type ServerClientWSContext = {
 
 const ServerClientWSContext = createContext<ServerClientWSContext | undefined>(undefined)
 
-export const ServerClientWSContextProvider: React.FC = ({ children }) =>
+export const ServerClientWSContextProvider: ChildrenFC = ({ children }) =>
   basicAsyncRenderer(
     useSWR(apiRoutes.ws, url => pipe(initWs(url), Future.fromIOEither, Future.runUnsafe), {
       revalidateOnFocus: false,

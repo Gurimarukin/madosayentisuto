@@ -1,7 +1,8 @@
 /* eslint-disable functional/no-expression-statements,
                   functional/no-return-void */
 import { pipe } from 'fp-ts/function'
-import React, { useCallback, useState } from 'react'
+import type React from 'react'
+import { useCallback, useState } from 'react'
 
 import { apiRoutes } from '../../../../shared/ApiRouter'
 import { DayJs } from '../../../../shared/models/DayJs'
@@ -19,12 +20,12 @@ type Props = {
   onDeleteBirthdate: () => void
 }
 
-export const BirthdateForm = ({
+export const BirthdateForm: React.FC<Props> = ({
   userId,
   initialBirthdate,
   onPostBirthdate,
   onDeleteBirthdate,
-}: Props): JSX.Element => {
+}) => {
   const { http } = useHttp()
 
   const postBirthdate = useCallback(

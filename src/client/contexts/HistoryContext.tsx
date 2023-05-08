@@ -1,7 +1,9 @@
 /* eslint-disable functional/no-return-void */
 import * as history from 'history'
 import qs from 'qs'
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+
+import type { ChildrenFC } from '../model/ChildrenFC'
 
 type HistoryContext = {
   location: history.Location
@@ -11,7 +13,7 @@ type HistoryContext = {
 
 const HistoryContext = createContext<HistoryContext | undefined>(undefined)
 
-export const HistoryContextProvider: React.FC = ({ children }) => {
+export const HistoryContextProvider: ChildrenFC = ({ children }) => {
   const h = useMemo(() => history.createBrowserHistory(), [])
 
   const [location, setLocation] = useState(h.location)

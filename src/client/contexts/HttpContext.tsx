@@ -4,13 +4,14 @@ import type { Decoder } from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
 import ky, { HTTPError } from 'ky'
 import type { HttpMethod, Options } from 'ky/distribution/types/options'
-import React, { createContext, useCallback, useContext } from 'react'
+import { createContext, useCallback, useContext } from 'react'
 
 import type { Tuple } from '../../shared/utils/fp'
 import { Either } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import { config } from '../config/unsafe'
+import type { ChildrenFC } from '../model/ChildrenFC'
 import { appRoutes } from '../router/AppRouter'
 import { useHistory } from './HistoryContext'
 
@@ -32,7 +33,7 @@ export type HttpOptions<O, B> = Omit<Options, 'method' | 'json'> & {
 
 const HttpContext = createContext<HttpContext | undefined>(undefined)
 
-export const HttpContextProvider: React.FC = ({ children }) => {
+export const HttpContextProvider: ChildrenFC = ({ children }) => {
   const { navigate } = useHistory()
 
   const http = useCallback(

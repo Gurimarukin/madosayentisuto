@@ -1,5 +1,5 @@
 import { pipe } from 'fp-ts/function'
-import React from 'react'
+import type React from 'react'
 import type { BareFetcher, SWRConfiguration, SWRResponse } from 'swr'
 
 import { apiRoutes } from '../../../shared/ApiRouter'
@@ -22,7 +22,7 @@ type Props = {
   children?: (guild: GuildView, response: GuildViewResponse) => React.ReactNode
 }
 
-export const GuildLayout = ({ guildId, selected, options, children }: Props): JSX.Element => {
+export const GuildLayout: React.FC<Props> = ({ guildId, selected, options, children }) => {
   const response = useMySWR(
     apiRoutes.guild.get(guildId),
     {},

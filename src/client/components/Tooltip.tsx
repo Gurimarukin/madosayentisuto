@@ -1,10 +1,11 @@
-import React from 'react'
+import type React from 'react'
 
 import { cssClasses } from '../utils/cssClasses'
 
 type Props = {
   title: React.ReactNode
   className?: string
+  children?: React.ReactNode
 }
 
 export const Tooltip: React.FC<Props> = ({ title, className, children }) => (

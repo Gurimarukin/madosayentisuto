@@ -1,5 +1,6 @@
 /* eslint-disable functional/no-expression-statements */
-import React, { useCallback } from 'react'
+import type React from 'react'
+import { useCallback } from 'react'
 
 import { useHistory } from '../contexts/HistoryContext'
 
@@ -10,7 +11,7 @@ type Props = {
   children?: React.ReactNode
 }
 
-export const Link = ({ to, target, className, children }: Props): JSX.Element => {
+export const Link: React.FC<Props> = ({ to, target, className, children }) => {
   const { navigate } = useHistory()
 
   const onClick = useCallback(

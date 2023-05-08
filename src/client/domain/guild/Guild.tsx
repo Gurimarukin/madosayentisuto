@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/function'
-import React, { useEffect } from 'react'
+import type React from 'react'
+import { useEffect } from 'react'
 import type { KeyedMutator } from 'swr'
 
 import { ServerToClientEvent } from '../../../shared/models/event/ServerToClientEvent'
@@ -19,7 +20,8 @@ import { GuildLayout } from './GuildLayout'
 type Props = {
   guildId: GuildId
 }
-export const Guild = ({ guildId }: Props): JSX.Element => (
+
+export const Guild: React.FC<Props> = ({ guildId }) => (
   <GuildLayout guildId={guildId} selected={undefined} options={{ revalidateOnFocus: false }}>
     {(guild, { mutate }) => <GuildComponent guild={guild} mutate={mutate} />}
   </GuildLayout>
@@ -30,7 +32,7 @@ type GuildComponentProps = {
   mutate: KeyedMutator<GuildView>
 }
 
-const GuildComponent = ({ guild, mutate }: GuildComponentProps): JSX.Element => {
+const GuildComponent: React.FC<GuildComponentProps> = ({ guild, mutate }) => {
   const { serverToClientEventObservable } = useServerClientWS()
 
   useEffect(() => {
@@ -107,7 +109,7 @@ type LiProps = {
   children: Maybe<React.ReactNode>
 }
 
-const Li = ({ label, className, children }: LiProps): JSX.Element =>
+const Li: React.FC<LiProps> = ({ label, className, children }) =>
   pipe(
     children,
     Maybe.fold(
@@ -123,6 +125,7 @@ const Li = ({ label, className, children }: LiProps): JSX.Element =>
 type LiPreProps = {
   label: string
   className?: string
+  children?: React.ReactNode
 }
 
 const LiPre: React.FC<LiPreProps> = ({ label, className, children }) => (

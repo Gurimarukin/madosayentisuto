@@ -1,4 +1,4 @@
-import React from 'react'
+import type React from 'react'
 
 import type { ChannelView } from '../../shared/models/ChannelView'
 import type { GuildId } from '../../shared/models/guild/GuildId'
@@ -12,7 +12,7 @@ type Props = {
   type?: ChannelType
 }
 
-export const ChannelViewComponent = ({ guild, channel, type = 'text' }: Props): JSX.Element => (
+export const ChannelViewComponent: React.FC<Props> = ({ guild, channel, type = 'text' }) => (
   <a
     href={DiscordUtils.urls.guildChannel(guild, channel.id)}
     target="_blank"
