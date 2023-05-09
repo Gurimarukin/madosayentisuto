@@ -87,7 +87,7 @@ const ranking = ({
                 const bullets = pipe(
                   [
                     `**${round1Fixed(u.percents)}%**`,
-                    `${formatSummoner(u.summoner)})}${formatUser(u.userId)}`,
+                    `${formatSummoner(u.summoner)}${formatUser(u.userId)}`,
                     masteriesWithEmoji(u.champions.mastery7.length, constants.emojis.mastery7),
                     masteriesWithEmoji(u.champions.mastery6.length, constants.emojis.mastery6),
                     masteriesWithEmoji(u.champions.mastery5.length, constants.emojis.mastery5),
