@@ -5,12 +5,12 @@ import type {
   TextChannel,
 } from 'discord.js'
 import { GuildMember } from 'discord.js'
-import { flow, pipe } from 'fp-ts/function'
+import { flow, identity, pipe } from 'fp-ts/function'
 
 import type { Track } from '../../../shared/models/audio/music/Track'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import type { NotUsed } from '../../../shared/utils/fp'
-import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
+import { Either, Future, IO, List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import type { AudioSubscription } from '../../helpers/AudioSubscription'
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
@@ -101,18 +101,20 @@ export const PlayerCommandsObserver = (
       Future.chainIOEitherK(({ subscription, command }) =>
         pipe(
           command,
-          Either.fold(IO.right, ({ musicChannel, stateChannel, tracks }) =>
+          Either.fold(flow(Either.left, IO.right), ({ musicChannel, stateChannel, tracks }) =>
             pipe(
               subscription.queueTracks(interaction.user, musicChannel, stateChannel, tracks),
-              IO.map(() => tracksAddedInteractionReply(tracks)),
+              IO.map(() => Either.right(tracksAddedInteractionReply(tracks))),
             ),
           ),
         ),
       ),
       Future.chain(content =>
-        DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+        DiscordConnector.interactionReply(interaction, {
+          content: pipe(content, Either.getOrElse(identity)),
+          ephemeral: Either.isLeft(content),
+        }),
       ),
-      Future.map(toNotUsed),
     )
   }
 
@@ -121,9 +123,6 @@ export const PlayerCommandsObserver = (
     if (guild === null) return Future.notUsed
     return pipe(
       Future.Do,
-      Future.chainFirst(() =>
-        DiscordConnector.interactionDeferReply(interaction, { ephemeral: true }),
-      ),
       Future.apS('subscription', guildStateService.getSubscription(guild)),
       Future.bind('command', ({ subscription }) =>
         validateElevatorCommand(interaction, subscription),
@@ -131,18 +130,20 @@ export const PlayerCommandsObserver = (
       Future.chainIOEitherK(({ subscription, command }) =>
         pipe(
           command,
-          Either.fold(IO.right, ({ musicChannel, stateChannel }) =>
+          Either.fold(flow(Either.left, IO.right), ({ musicChannel, stateChannel }) =>
             pipe(
               subscription.startElevator(interaction.user, musicChannel, stateChannel),
-              IO.map(() => elevatorStartedInteractionReply),
+              IO.map(() => Either.right(elevatorStartedInteractionReply)),
             ),
           ),
         ),
       ),
       Future.chain(content =>
-        DiscordConnector.interactionFollowUp(interaction, { content, ephemeral: true }),
+        DiscordConnector.interactionReply(interaction, {
+          content: pipe(content, Either.getOrElse(identity)),
+          ephemeral: Either.isLeft(content),
+        }),
       ),
-      Future.map(toNotUsed),
     )
   }
 
