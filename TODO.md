@@ -1,4 +1,3 @@
-- bug: elevator next
 - the quest links: puuid?
 - /shi-fu-mi
 - maybe move sinks

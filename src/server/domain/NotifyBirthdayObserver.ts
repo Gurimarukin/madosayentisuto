@@ -88,7 +88,7 @@ export const NotifyBirthdayObserver = (
       members,
       NonEmptyArray.traverse(Future.ApplicativeSeq)(member =>
         pipe(
-          DiscordConnector.sendPrettyMessage(channel, birthdayMessage(now, member)),
+          DiscordConnector.sendMessage(channel, { content: birthdayMessage(now, member) }),
           futureMaybe.chainFirstTaskEitherK(m =>
             DiscordConnector.messageReact(m, constants.emojis.birthday),
           ),
