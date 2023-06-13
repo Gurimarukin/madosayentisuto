@@ -368,7 +368,7 @@ const getFormatSummoner =
       search: Maybe.toUndefined(search),
     }
     const queryStr = qs.stringify(query)
-    const url = `${webappUrl}/${platform}/${name}?${queryStr}`
+    const url = `${webappUrl}/${platform.toLowerCase()}/${name}?${queryStr}`
     return `[${name}](${encodeURI(url)})`
   }
 
