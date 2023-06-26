@@ -10,7 +10,7 @@ import { flow, identity, pipe } from 'fp-ts/function'
 import type { Track } from '../../../shared/models/audio/music/Track'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
 import type { NotUsed } from '../../../shared/utils/fp'
-import { Either, Future, IO, List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
+import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
 
 import type { AudioSubscription } from '../../helpers/AudioSubscription'
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
@@ -110,11 +110,12 @@ export const PlayerCommandsObserver = (
         ),
       ),
       Future.chain(content =>
-        DiscordConnector.interactionReply(interaction, {
+        DiscordConnector.interactionFollowUp(interaction, {
           content: pipe(content, Either.getOrElse(identity)),
           ephemeral: Either.isLeft(content),
         }),
       ),
+      Future.map(toNotUsed),
     )
   }
 
