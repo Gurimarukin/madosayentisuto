@@ -196,7 +196,7 @@ const playing = {
 }
 
 const Keys = {
-  play: 'jouer',
+  play: ['jouer', 'musique', 'play'] as const,
   track: 'morceau',
 }
 

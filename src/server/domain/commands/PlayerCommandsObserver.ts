@@ -5,6 +5,7 @@ import type {
   TextChannel,
 } from 'discord.js'
 import { GuildMember } from 'discord.js'
+import { string } from 'fp-ts'
 import { flow, identity, pipe } from 'fp-ts/function'
 
 import type { Track } from '../../../shared/models/audio/music/Track'
@@ -39,15 +40,20 @@ const Keys = {
   elevator: 'ascenseur',
 }
 
-const playCommand = Command.chatInput({
-  name: PlayerStateMessage.Keys.play,
-  description: 'Jean Plank joue un petit air',
-})(
-  Command.option.string({
-    name: PlayerStateMessage.Keys.track,
-    description: 'Lien ou recherche YouTube, lien Bandcamp, fichier, etc.',
-    required: true,
-  }),
+const playCommands = pipe(
+  PlayerStateMessage.Keys.play,
+  List.map(name =>
+    Command.chatInput({
+      name,
+      description: 'Jean Plank joue un petit air',
+    })(
+      Command.option.string({
+        name: PlayerStateMessage.Keys.track,
+        description: 'Lien ou recherche YouTube, lien Bandcamp, fichier, etc.',
+        required: true,
+      }),
+    ),
+  ),
 )
 
 const elevatorCommand = Command.chatInput({
@@ -55,7 +61,7 @@ const elevatorCommand = Command.chatInput({
   description: 'Jean Plank vient vous tenir companie avec sa liste de lecture spécial ascenseur',
 })()
 
-export const playerCommands = [playCommand, elevatorCommand]
+export const playerCommands = [...playCommands, elevatorCommand]
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PlayerCommandsObserver = (
@@ -79,9 +85,10 @@ export const PlayerCommandsObserver = (
   }
 
   function onChatInputCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    if (List.elem(string.Eq)(interaction.commandName, PlayerStateMessage.Keys.play)) {
+      return onPlayCommand(interaction)
+    }
     switch (interaction.commandName) {
-      case PlayerStateMessage.Keys.play:
-        return onPlayCommand(interaction)
       case Keys.elevator:
         return onElevatorCommand(interaction)
     }
