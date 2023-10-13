@@ -16,6 +16,7 @@ jobs:
         node-version: [18.x]
 
     env:
+      TOTO: titi
 
     steps:
       - uses: actions/checkout@v3
