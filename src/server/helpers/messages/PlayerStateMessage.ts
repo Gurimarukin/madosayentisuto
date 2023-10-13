@@ -12,6 +12,8 @@ import type { MyFile } from '../../models/FileOrDir'
 import type { AudioStateValue } from '../../models/audio/AudioStateValue'
 import { MessageComponent } from '../../models/discord/MessageComponent'
 
+const { cdnBase } = constants
+
 type IsPaused = {
   isPaused: boolean
 }
@@ -19,14 +21,10 @@ type IsPaused = {
 const queueDisplay = 5
 
 const images = {
-  empty: 'https://cdn.discordapp.com/attachments/849299103362973777/914578024366747668/vide.png',
-  jpDjGifs: ['https://i.imgur.com/xwfsgKH.gif', 'https://i.imgur.com/QVhHr0g.gif'] as const,
-  jpElevators: [
-    'https://cdn.discordapp.com/attachments/849299103362973777/1104851806586163252/image.png',
-    'https://cdn.discordapp.com/attachments/849299103362973777/1104851909422108762/image.png',
-  ] as const,
-  jpPerdu:
-    'https://cdn.discordapp.com/attachments/849299103362973777/914484866098282506/jp_perdu.png',
+  empty: `${cdnBase}/player-empty.png`,
+  jpDjGifs: [`${cdnBase}/player-dj1.gif`, `${cdnBase}/player-dj2.gif`] as const,
+  jpElevators: [`${cdnBase}/player-elevator1.png`, `${cdnBase}/player-elevator2.png`] as const,
+  jpPerdu: `${cdnBase}/jp-perdu.png`,
 }
 
 const ButtonIds = {
@@ -200,6 +198,6 @@ const Keys = {
   track: 'morceau',
 }
 
-export const PlayerStateMessage = { ButtonId: ButtonIds, connecting, playing, Keys }
+export const PlayerStateMessage = { ButtonIds, connecting, playing, Keys }
 
 const maskedLink = (text: string, url: string): string => `[${text}](${url})`

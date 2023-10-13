@@ -24,6 +24,8 @@ export const constants = {
 
   messagesColor: Color.darkred,
 
+  cdnBase: 'https://dl.blbl.ch/cdn',
+
   // webapp
   account: {
     cookie: {

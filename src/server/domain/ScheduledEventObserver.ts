@@ -34,13 +34,12 @@ import type { GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
+const { cdnBase } = constants
+
 const itsFriday = {
-  videoUrl:
-    'https://cdn.discordapp.com/attachments/636626556734930948/909046875804545064/cestvrai.mp4',
+  videoUrl: `${cdnBase}/cestvrai.mp4`,
   // PeerTube:  https://tube.fede.re/w/gAfpve8szQ5TtiPfRqkNEi
-  // thumbnail: https://cdn.discordapp.com/attachments/636626556734930948/909048276957945886/unknown.png
-  imageUrl:
-    'https://cdn.discordapp.com/attachments/849299103362973777/969617031487975454/unknown.png',
+  // thumbnail: ${cdnBase}/cestvrai-thumbnail.png
 }
 
 type ReminderWhoParsed = {

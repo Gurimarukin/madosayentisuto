@@ -13,6 +13,8 @@ import { MadEvent } from '../models/event/MadEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import { LogUtils } from '../utils/LogUtils'
 
+const { cdnBase } = constants
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const SendWelcomeDMObserver = (Logger: LoggerGetter) => {
   const logger = Logger('SendWelcomeDMObserver')
@@ -48,13 +50,9 @@ const welcomeMessage = (member: GuildMember): BaseMessageOptions => ({
       color: constants.messagesColor,
       title: 'Jean Plank',
       url: 'https://jeanplank.blbl.ch',
-      thumbnail: MessageComponent.thumbnail(
-        'https://cdn.discordapp.com/attachments/636626556734930948/707502811600125962/thumbnail.jpg',
-      ),
+      thumbnail: MessageComponent.thumbnail(`${cdnBase}/welcome-thumbnail.jpg`),
       description: 'Tout le monde doit payer !',
-      image: MessageComponent.image(
-        'https://cdn.discordapp.com/attachments/636626556734930948/707499903450087464/aide.jpg',
-      ),
+      image: MessageComponent.image(`${cdnBase}/welcome-help.jpg`),
     }),
   ],
 })

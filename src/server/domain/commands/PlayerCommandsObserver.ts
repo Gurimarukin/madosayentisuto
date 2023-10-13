@@ -157,11 +157,11 @@ export const PlayerCommandsObserver = (
 
   function onButton(interaction: ButtonInteraction): Future<NotUsed> {
     switch (interaction.customId) {
-      case PlayerStateMessage.ButtonId.playPause:
+      case PlayerStateMessage.ButtonIds.playPause:
         return onPlayPauseButton(interaction)
-      case PlayerStateMessage.ButtonId.next:
+      case PlayerStateMessage.ButtonIds.next:
         return onNextButton(interaction)
-      case PlayerStateMessage.ButtonId.stop:
+      case PlayerStateMessage.ButtonIds.stop:
         return onStopButton(interaction)
     }
     return Future.notUsed
