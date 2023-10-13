@@ -1,10 +1,10 @@
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
 import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 
-import path from 'path'
-import { fileURLToPath } from 'url'
 import type { MyFile } from '../models/FileOrDir'
 import { Dir, FileOrDir } from '../models/FileOrDir'
 import { FsUtils } from '../utils/FsUtils'

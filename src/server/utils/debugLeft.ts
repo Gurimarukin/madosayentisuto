@@ -6,7 +6,10 @@ import { Future } from '../../shared/utils/fp'
 export class DebugError extends Error {
   public override stack = undefined
 
-  constructor(functionName: string, public originalError: Error) {
+  constructor(
+    functionName: string,
+    public originalError: Error,
+  ) {
     super()
     this.name = `DebugError - ${functionName}`
   }

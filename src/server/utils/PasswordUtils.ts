@@ -1,12 +1,11 @@
+import argon2 from '@phc/argon2'
 import { pipe } from 'fp-ts/function'
+import upash from 'upash'
 
 import { ClearPassword } from '../../shared/models/webUser/ClearPassword'
 import { Future } from '../../shared/utils/fp'
 
 import { HashedPassword } from '../models/webUser/HashedPassword'
-
-import argon2 from '@phc/argon2'
-import upash from 'upash'
 
 // eslint-disable-next-line functional/no-expression-statements
 upash.install('argon2', argon2)

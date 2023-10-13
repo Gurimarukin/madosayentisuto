@@ -118,17 +118,17 @@ const urlHeightWidthProxy =
       height,
       width,
       proxyURL,
-    } as A)
+    }) as A
 
 const author = (name: string, url?: string, iconURL?: string, proxyIconURL?: string): MyAuthor =>
-  ({ name, url, iconURL, proxyIconURL } as MyAuthor)
+  ({ name, url, iconURL, proxyIconURL }) as MyAuthor
 
 const thumbnail = urlHeightWidthProxy<MyThumbnail>()
 const image = urlHeightWidthProxy<MyImage>()
 const video = urlHeightWidthProxy<MyVideo>()
 
 const footer = (text: string, iconURL?: string, proxyIconURL?: string): MyFooter =>
-  ({ text, iconURL, proxyIconURL } as MyFooter)
+  ({ text, iconURL, proxyIconURL }) as MyFooter
 
 const singleSafeEmbed = (args: MessageEmbedArgs): BaseMessageOptions => ({
   embeds: [safeEmbed(args)],

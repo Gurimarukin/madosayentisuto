@@ -1,16 +1,16 @@
-import { number, task } from 'fp-ts';
-import { flow, pipe } from 'fp-ts/function';
-import type { Decoder } from 'io-ts/Decoder';
-import type { Encoder } from 'io-ts/Encoder';
-import type { Options } from 'ky';
-import ky, { HTTPError } from 'ky';
+import { number, task } from 'fp-ts'
+import { flow, pipe } from 'fp-ts/function'
+import type { Decoder } from 'io-ts/Decoder'
+import type { Encoder } from 'io-ts/Encoder'
+import type { Options } from 'ky'
+import ky, { HTTPError } from 'ky'
 
-import type { Method } from '../../shared/models/Method';
-import type { Dict, NonEmptyArray, Tuple } from '../../shared/utils/fp';
-import { Either, Future, IO, List, Maybe, Try } from '../../shared/utils/fp';
-import { decodeError } from '../../shared/utils/ioTsUtils';
+import type { Method } from '../../shared/models/Method'
+import type { Dict, NonEmptyArray, Tuple } from '../../shared/utils/fp'
+import { Either, Future, IO, List, Maybe, Try } from '../../shared/utils/fp'
+import { decodeError } from '../../shared/utils/ioTsUtils'
 
-import type { LoggerGetter } from '../models/logger/LoggerObservable';
+import type { LoggerGetter } from '../models/logger/LoggerObservable'
 
 export type HttpOptions<O, B> = Omit<Options, 'url' | 'method' | 'json'> & {
   json?: Tuple<Encoder<O, B>, B>
@@ -83,7 +83,7 @@ export const statusesToOption = (
     ),
   )
 
-export { HttpClient };
+export { HttpClient }
 
 const formatRequest =
   (method: Method, url: string) =>

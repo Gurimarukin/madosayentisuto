@@ -5,7 +5,10 @@ import type { Task, TaskFn } from './types'
 export class RawTask implements Task {
   public task: TaskFn | null = null
 
-  public constructor(private onError: (err: any) => void, private release: (t: RawTask) => void) {}
+  public constructor(
+    private onError: (err: any) => void,
+    private release: (t: RawTask) => void,
+  ) {}
 
   public call() {
     try {

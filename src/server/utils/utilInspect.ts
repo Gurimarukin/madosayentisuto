@@ -15,9 +15,7 @@ export const utilFormat = (format?: unknown, ...param: unknown[]): string =>
   util.format(customHandlers(format), ...param.map(customHandlers))
 
 const customHandlers = (object: unknown): unknown =>
- object instanceof HTTPError
-    ? MyHttpError.fromHTTPError(object)
-    : object
+  object instanceof HTTPError ? MyHttpError.fromHTTPError(object) : object
 
 // eslint-disable-next-line functional/no-classes
 class MyHttpError extends Error {
@@ -46,11 +44,6 @@ class MyHttpError extends Error {
   }
 
   static fromHTTPError(e: HTTPError): MyHttpError {
-    return new MyHttpError(
-      e.stack,
-      e.request.method,
-      e.request.url,
-      e.response.status,
-    )
+    return new MyHttpError(e.stack, e.request.method, e.request.url, e.response.status)
   }
 }
