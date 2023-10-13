@@ -70,14 +70,37 @@ jobs:
           THE_QUEST_REFRESH_EVERY_MINUTES = ${{ vars.THE_QUEST_REFRESH_EVERY_MINUTES }}
           " > .env
 
+      - name: Create Containerfile
+        run: |
+          echo "
+          FROM node:18
+
+          WORKDIR /usr/src/app
+          COPY package.json ./
+          COPY dist/ dist/
+
+          RUN wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
+
+          " > Containerfile
+          sed -e 's/^/ENV /' .env >> Containerfile
+          echo "
+          EXPOSE ${{ vars.HTTP_PORT }}
+
+          CMD yt-dlp --version && node dist/server/index.js
+          "
+
+      - name: Exit 1
+        run: |
+          cat .env
+          cat Containerfile
+          cat filenotexists
+          echo "this should be echoed"
+
       - name: Yarn install
         run: yarn install --frozen-lockfile
 
       - name: Yarn build
         run: yarn run build
 
-      - name: Create Containerfile
-        run: sed -e 's/^/ENV /' .env > Containerfile
-
       - name: Podman build
-        run: echo "TODO podman build" && cat .env && cat Containerfile
+        run: echo "TODO podman build"

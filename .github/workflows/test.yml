@@ -32,4 +32,6 @@ jobs:
         run: yarn run test
 
       - name: Yarn build
-        run: cp .env.example .env && yarn run build
+        run: |
+          cp .env.example .env
+          yarn run build
