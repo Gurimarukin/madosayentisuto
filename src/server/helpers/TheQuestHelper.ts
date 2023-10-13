@@ -34,12 +34,12 @@ type ProgressionsAndNotifications = {
 
 type TheQuestHelper = ReturnType<typeof TheQuestHelper>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const TheQuestHelper = (
   config: TheQuestConfig,
   discord: DiscordConnector,
   guildStateService: GuildStateService,
   theQuestService: TheQuestService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   return {
     sendNotificationsAndRefreshMessage:

@@ -48,12 +48,12 @@ type ReminderWhoParsed = {
   channel: PartialTextBasedChannelFields
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const ScheduledEventObserver = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
   scheduledEventService: ScheduledEventService,
   guildStateService: GuildStateService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('ScheduledEventObserver')
 

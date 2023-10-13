@@ -20,11 +20,11 @@ import { MyMiddleware as M } from '../webServer/models/MyMiddleware'
 
 export type ScheduledEventController = ReturnType<typeof ScheduledEventController>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const ScheduledEventController = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
   scheduledEventService: ScheduledEventService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('ScheduledEventController')
 

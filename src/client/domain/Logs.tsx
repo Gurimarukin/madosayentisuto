@@ -78,7 +78,7 @@ export const Logs: React.FC = () => {
           <button
             type="button"
             onClick={scrollDown}
-            className="cursor-pointer rounded-md border border-gray4 bg-gray1 py-1 px-2 text-sm"
+            className="cursor-pointer rounded-md border border-gray4 bg-gray1 px-2 py-1 text-sm"
           >
             Défiler en bas
           </button>
@@ -87,7 +87,7 @@ export const Logs: React.FC = () => {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="grow overflow-y-auto overflow-x-hidden bg-black pt-2 pr-4 pb-6 pl-3"
+        className="grow overflow-y-auto overflow-x-hidden bg-black pb-6 pl-3 pr-4 pt-2"
       >
         <pre className="grid w-full grid-cols-[min-content_min-content_1fr] gap-x-3 text-sm">
           {filteredLogs.map(({ date, name, level, message }, i) => (

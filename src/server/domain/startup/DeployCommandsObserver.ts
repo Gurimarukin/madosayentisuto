@@ -33,11 +33,11 @@ const { left: guildCommands, right: globalCommands } = pipe(
   List.partition(command => command.isGlobal),
 )
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const DeployCommandsObserver = (
   Logger: LoggerGetter,
   config: Config,
   discord: DiscordConnector,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('DeployCommandsObserver')
 

@@ -59,7 +59,7 @@ export const GuildLayout: React.FC<Props> = ({ guildId, selected, options, child
               to={appRoutes.guild.members(guildId)}
               className={`border-b text-xl ${
                 selected === 'members' ? 'border-gray4' : 'border-transparent'
-              } pt-2 pb-1`}
+              } pb-1 pt-2`}
             >
               Membres
             </Link>
@@ -68,7 +68,7 @@ export const GuildLayout: React.FC<Props> = ({ guildId, selected, options, child
               to={appRoutes.guild.emojis(guildId)}
               className={`border-b text-xl ${
                 selected === 'emojis' ? 'border-gray4' : 'border-transparent'
-              } pt-2 pb-1`}
+              } pb-1 pt-2`}
             >
               Émojis
             </Link>

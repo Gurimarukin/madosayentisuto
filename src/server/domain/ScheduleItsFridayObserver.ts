@@ -17,10 +17,10 @@ const friday = 5
 const rangeStart = 14
 const rangeEnd = 17
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const ScheduleItsFridayObserver = (
   Logger: LoggerGetter,
   scheduledEventService: ScheduledEventService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('ScheduleItsFridayObserver')
 

@@ -77,7 +77,7 @@ export const Login: React.FC = () => {
         </label>
         <button
           type="submit"
-          className="col-span-2 justify-self-center rounded-sm border border-gray1 bg-gray2 py-1 px-4"
+          className="col-span-2 justify-self-center rounded-sm border border-gray1 bg-gray2 px-4 py-1"
         >
           Connexion
         </button>

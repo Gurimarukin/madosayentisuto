@@ -104,7 +104,7 @@ const TierComponent: React.FC<TierProps> = ({ tier, tierIndex, moveEmojiTier }) 
       <span className="flex min-h-[calc(7rem_+_1px)] items-center border-x border-b border-gray1 bg-gray2 p-6 text-2xl">
         {tier.name}
       </span>
-      <ul className="flex flex-wrap border-r border-b border-gray1">
+      <ul className="flex flex-wrap border-b border-r border-gray1">
         {tier.emojis.map(emoji => (
           <GuildEmoji key={GuildEmojiId.unwrap(emoji.id)} tierIndex={tierIndex} emoji={emoji} />
         ))}

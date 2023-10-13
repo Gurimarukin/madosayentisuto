@@ -14,13 +14,13 @@ import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStateService } from '../services/GuildStateService'
 import { LogUtils } from '../utils/LogUtils'
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const TheQuestObserver = (
   Logger: LoggerGetter,
   config: Config,
   discord: DiscordConnector,
   guildStateService: GuildStateService,
   theQuestHelper: TheQuestHelper,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('TheQuestObserver')
 

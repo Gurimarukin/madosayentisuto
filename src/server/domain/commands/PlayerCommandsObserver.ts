@@ -63,11 +63,11 @@ const elevatorCommand = Command.chatInput({
 
 export const playerCommands = [...playCommands, elevatorCommand]
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PlayerCommandsObserver = (
   Logger: LoggerGetter,
   ytDlp: YtDlp,
   guildStateService: GuildStateService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('PlayerCommandsObserver')
 

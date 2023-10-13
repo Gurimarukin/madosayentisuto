@@ -35,7 +35,6 @@ type WithouId<A> = Exclude<A, 'id'>
 
 export type GuildStateService = ReturnType<typeof GuildStateService>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const GuildStateService = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
@@ -43,6 +42,7 @@ export const GuildStateService = (
   ytDlp: YtDlp,
   guildStatePersistence: GuildStatePersistence,
   serverToClientEventSubject: TSubject<ServerToClientEvent>,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('GuildStateService')
 

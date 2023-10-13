@@ -12,11 +12,11 @@ import type { BotStatePersistence } from '../persistence/BotStatePersistence'
 
 export type BotStateService = ReturnType<typeof BotStateService>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const BotStateService = (
   Logger: LoggerGetter,
   discord: DiscordConnector,
   botStatePersistence: BotStatePersistence,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('BotStateService')
 

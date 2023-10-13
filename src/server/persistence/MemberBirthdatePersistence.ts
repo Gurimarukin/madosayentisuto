@@ -14,10 +14,10 @@ import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 
 export type MemberBirthdatePersistence = ReturnType<typeof MemberBirthdatePersistence>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const MemberBirthdatePersistence = (
   Logger: LoggerGetter,
   mongoCollection: MongoCollectionGetter,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('MemberBirthdatePersistence')
   const collection = FpCollection(logger)([MemberBirthdate.codec, 'MemberBirthdate'])(

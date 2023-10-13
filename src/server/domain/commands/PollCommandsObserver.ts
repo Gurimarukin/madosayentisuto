@@ -98,12 +98,12 @@ type IsAnonymous = {
   isAnonymous: boolean
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollCommandsObserver = (
   Logger: LoggerGetter,
   config: Config,
   discord: DiscordConnector,
   pollService: PollService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('PollCommandsObserver')
 

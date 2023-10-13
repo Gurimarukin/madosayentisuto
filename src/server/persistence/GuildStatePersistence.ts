@@ -20,10 +20,10 @@ type Projection = Partial<Dict<keyof GuildStateDbOutput, 1>>
 
 export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const GuildStatePersistence = (
   Logger: LoggerGetter,
   mongoCollection: MongoCollectionGetter,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('GuildStatePersistence')
   const collection = FpCollection(logger)([GuildStateDb.codec, 'GuildStateDb'])(

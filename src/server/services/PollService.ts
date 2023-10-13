@@ -16,10 +16,10 @@ type RemoveResult = {
 
 export type PollService = ReturnType<typeof PollService>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollService = (
   pollQuestionPersistence: PollQuestionPersistence,
   pollResponsePersistence: PollResponsePersistence,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => ({
   createPoll: pollQuestionPersistence.insert,
 

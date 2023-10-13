@@ -134,7 +134,7 @@ const renderEvent = (event: ScheduledEventView): React.JSX.Element => {
 
 const formatScheduledAt = DayJs.format('DD/MM/YYYY, HH:mm', { locale: true })
 
-const Th: ChildrenFC = ({ children }) => <th className="flex bg-gray2 py-3 px-5">{children}</th>
+const Th: ChildrenFC = ({ children }) => <th className="flex bg-gray2 px-5 py-3">{children}</th>
 
 type TdProps = {
   className?: string

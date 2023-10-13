@@ -18,11 +18,11 @@ import type { GuildStateService } from '../services/GuildStateService'
 import type { MemberBirthdateService } from '../services/MemberBirthdateService'
 import type { GuildSendableChannel } from '../utils/ChannelUtils'
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const NotifyBirthdayObserver = (
   discord: DiscordConnector,
   guildStateService: GuildStateService,
   memberBirthdateService: MemberBirthdateService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   return ObserverWithRefinement.fromNext(
     MadEvent,

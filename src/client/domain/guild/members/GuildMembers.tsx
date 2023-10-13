@@ -48,8 +48,8 @@ const Members: React.FC<MembersProps> = ({ guild, response }) => {
       <table className="grid grid-cols-[auto_auto_1fr]">
         <thead className="contents">
           <tr className="contents text-lg font-bold">
-            <th className="flex bg-gray2 py-3 px-6">Pseudal</th>
-            <th className="flex bg-gray2 py-3 px-6">Date de naissance</th>
+            <th className="flex bg-gray2 px-6 py-3">Pseudal</th>
+            <th className="flex bg-gray2 px-6 py-3">Date de naissance</th>
             <th className="bg-gray2" />
           </tr>
         </thead>
@@ -58,7 +58,7 @@ const Members: React.FC<MembersProps> = ({ guild, response }) => {
             members,
             List.map(member => (
               <tr key={DiscordUserId.unwrap(member.id)} className="group contents">
-                <td className="flex items-center gap-4 py-3 px-6 group-even:bg-gray2">
+                <td className="flex items-center gap-4 px-6 py-3 group-even:bg-gray2">
                   {pipe(
                     member.avatar,
                     Maybe.fold(

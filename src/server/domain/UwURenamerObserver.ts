@@ -19,11 +19,11 @@ import { formatNickname } from '../utils/formatNickname'
 
 type UwURenamerObserver = ReturnType<typeof UwURenamerObserver>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const UwURenamerObserver = (
   Logger: LoggerGetter,
   clientId: DiscordUserId,
   uwuGuilds: List<GuildId>,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('UwURenamerObserver')
 
