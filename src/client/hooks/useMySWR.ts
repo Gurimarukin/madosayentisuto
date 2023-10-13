@@ -18,7 +18,7 @@ export const useMySWR = <A, O, B>(
   const { http } = useHttp()
   return useSWR<A, unknown, Tuple3<string, HttpMethod, HttpContext['http']>>(
     [...methodWithUrl, http],
-    (method, url, http_) => http_([method, url], { ...httpOptions }, decoderWithName),
+    ([method, url, http_]) => http_([method, url], { ...httpOptions }, decoderWithName),
     swrOptions,
   )
 }
