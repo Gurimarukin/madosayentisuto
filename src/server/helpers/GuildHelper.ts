@@ -1,6 +1,6 @@
 import type {
+  GuildAuditLogsEntry as DiscordGuildAuditLogsEntry,
   Guild,
-  GuildAuditLogsEntry,
   GuildAuditLogsFetchOptions,
   GuildAuditLogsResolvable,
   GuildEmoji,
@@ -38,6 +38,8 @@ const isPublicAudio = pipe(
   ChannelUtils.isGuildAudio,
   refinement.compose(refinementFromPredicate<GuildAudioChannel>(ChannelUtils.isPublic)),
 )
+
+type GuildAuditLogsEntry<A extends GuildAuditLogsResolvable> = DiscordGuildAuditLogsEntry<A>
 
 const fetchLastAuditLog = <A extends GuildAuditLogsResolvable = null>(
   guild: Guild,
@@ -105,4 +107,8 @@ const parseEmojiTagId: (raw: string) => Maybe<EmojiId> = StringUtils.matcher1(/^
 // :billy:
 const parseEmojiMarkup: (raw: string) => Maybe<EmojiName> = StringUtils.matcher1(/^:(\S+):$/)
 
-export const GuildHelper = { membersInPublicAudioChans, fetchLastAuditLog, getEmoji }
+export const GuildHelper = {
+  membersInPublicAudioChans,
+  fetchLastAuditLog,
+  getEmoji,
+}
