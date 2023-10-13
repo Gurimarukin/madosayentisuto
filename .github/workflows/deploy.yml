@@ -1,5 +1,6 @@
+# Build Dockerfile, push it to registry and call deploy webhook.
+
 name: Build and deploy
-description: Build Dockerfile, push it to registry and call deploy webhook.
 
 on:
   workflow_dispatch:

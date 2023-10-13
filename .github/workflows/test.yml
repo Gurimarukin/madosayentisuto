@@ -1,5 +1,6 @@
+# Test and dry build project on master push and PR.
+
 name: Test and dry build
-description: Test and dry build project on master push and PR.
 
 on:
   push:
