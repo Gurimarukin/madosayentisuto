@@ -13,10 +13,10 @@ import { PollResponse } from '../models/poll/PollResponse'
 
 export type PollResponsePersistence = ReturnType<typeof PollResponsePersistence>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollResponsePersistence = (
   Logger: LoggerGetter,
   mongoCollection: MongoCollectionGetter,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('PollResponsePersistence')
   const collection = FpCollection(logger)([PollResponse.codec, 'PollResponse'])(

@@ -16,11 +16,11 @@ import type { GuildAudioChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const NotifyVoiceCallObserver = (
   Logger: LoggerGetter,
   clientId: DiscordUserId,
   guildStateService: GuildStateService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('NotifyVoiceCallObserver')
 

@@ -10,10 +10,10 @@ import { MadEvent } from '../models/event/MadEvent'
 import type { GuildStateService } from '../services/GuildStateService'
 import type { GuildAudioChannel } from '../utils/ChannelUtils'
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const DisconnectVocalObserver = (
   clientId: DiscordUserId,
   guildStateService: GuildStateService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   return ObserverWithRefinement.fromNext(
     MadEvent,

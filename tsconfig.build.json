@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "incremental": false,
-    "skipLibCheck": true
+    "noEmit": false
   },
   "include": ["src"]
 }

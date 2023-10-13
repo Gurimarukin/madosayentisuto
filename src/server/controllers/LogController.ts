@@ -24,12 +24,12 @@ import type { UpgradeHandler } from '../webServer/models/UpgradeHandler'
 
 export type LogController = ReturnType<typeof LogController>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const LogController = (
   Logger: LoggerGetter,
   logService: LogService,
   serverToClientEventObservable: TObservable<ServerToClientEvent>,
   wsServerEventSubject: TSubject<WSServerEvent>,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('LogController')
 

@@ -33,13 +33,13 @@ const dbRetryDelay = MsDuration.seconds(10)
 
 export type Context = ReturnType<typeof of>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const of = (
   config: Config,
   resources: Resources,
   loggerObservable: LoggerObservable,
   withDb: WithDb,
   mongoCollection: MongoCollectionGetter,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const { Logger } = loggerObservable
 

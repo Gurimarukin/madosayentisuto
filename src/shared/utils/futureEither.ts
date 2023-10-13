@@ -61,15 +61,18 @@ const chainTaskEitherK = <A, B>(
   )
 
 type FilterOrElse = {
-  <A, B extends A, E>(refinement: Refinement<A, B>, onFalse: (a: A) => E): (
-    ma: Future<Either<E, A>>,
-  ) => Future<Either<E, B>>
-  <A_1, E_1>(predicate: Predicate<A_1>, onFalse: (a: A_1) => E_1): <B_1 extends A_1>(
-    mb: Future<Either<E_1, B_1>>,
-  ) => Future<Either<E_1, B_1>>
-  <A_2, E_2>(predicate: Predicate<A_2>, onFalse: (a: A_2) => E_2): (
-    ma: Future<Either<E_2, A_2>>,
-  ) => Future<Either<E_2, A_2>>
+  <A, B extends A, E>(
+    refinement: Refinement<A, B>,
+    onFalse: (a: A) => E,
+  ): (ma: Future<Either<E, A>>) => Future<Either<E, B>>
+  <A_1, E_1>(
+    predicate: Predicate<A_1>,
+    onFalse: (a: A_1) => E_1,
+  ): <B_1 extends A_1>(mb: Future<Either<E_1, B_1>>) => Future<Either<E_1, B_1>>
+  <A_2, E_2>(
+    predicate: Predicate<A_2>,
+    onFalse: (a: A_2) => E_2,
+  ): (ma: Future<Either<E_2, A_2>>) => Future<Either<E_2, A_2>>
 }
 
 const filterOrElse = flow(Either.filterOrElse, Future.map) as FilterOrElse

@@ -98,7 +98,7 @@ module.exports = {
     'functional/no-expression-statements': [
       'warn',
       {
-        ignorePattern: [
+        ignoreCodePattern: [
           '^afterEach\\(',
           '^beforeEach\\(',
           '^console\\.',

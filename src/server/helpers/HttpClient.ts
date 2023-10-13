@@ -1,9 +1,9 @@
-import { json as fpTsJson, number, task } from 'fp-ts'
+import { number, task } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
-import type { OptionsOfJSONResponseBody } from 'got'
-import got, { HTTPError } from 'got'
 import type { Decoder } from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
+import type { Options } from 'ky'
+import ky, { HTTPError } from 'ky'
 
 import type { Method } from '../../shared/models/Method'
 import type { Dict, NonEmptyArray, Tuple } from '../../shared/utils/fp'
@@ -11,9 +11,8 @@ import { Either, Future, IO, List, Maybe, Try } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
-import { unknownToError } from '../utils/unknownToError'
 
-export type HttpOptions<O, B> = Omit<OptionsOfJSONResponseBody, 'url' | 'method' | 'json'> & {
+export type HttpOptions<O, B> = Omit<Options, 'url' | 'method' | 'json'> & {
   json?: Tuple<Encoder<O, B>, B>
 }
 
@@ -45,7 +44,7 @@ const HttpClient = (Logger: LoggerGetter) => {
 
     return pipe(
       Future.tryCatch(() =>
-        got[method](url, {
+        ky[method](url, {
           ...options,
           method,
           json: json === undefined ? undefined : (json as Dict<string, unknown>),
@@ -54,15 +53,13 @@ const HttpClient = (Logger: LoggerGetter) => {
       task.chainFirstIOK(
         flow(
           Try.fold(
-            e => (e instanceof HTTPError ? Maybe.some(e.response.statusCode) : Maybe.none),
-            res => Maybe.some(res.statusCode),
+            e => (e instanceof HTTPError ? Maybe.some(e.response.status) : Maybe.none),
+            res => Maybe.some(res.status),
           ),
           Maybe.fold(() => IO.notUsed, flow(formatRequest(method, url), logger.trace)),
         ),
       ),
-      Future.chainEitherK(res =>
-        pipe(fpTsJson.parse(res.body as string), Either.mapLeft(unknownToError)),
-      ),
+      Future.chain(res => Future.tryCatch(() => res.json())),
       Future.chainEitherK(u => {
         if (decoderWithName === undefined) return Either.right(u as A)
         const [decoder, decoderName] = decoderWithName
@@ -80,7 +77,7 @@ export const statusesToOption = (
   flow(
     Future.map(Maybe.some),
     Future.orElseEitherK(e =>
-      e instanceof HTTPError && pipe(statuses, List.elem(number.Eq)(e.response.statusCode))
+      e instanceof HTTPError && pipe(statuses, List.elem(number.Eq)(e.response.status))
         ? Try.success(Maybe.none)
         : Try.failure(e),
     ),

@@ -21,9 +21,9 @@ import type {
   ClientPresence,
   Collection,
   CommandInteraction,
+  GuildAuditLogsEntry as DiscordGuildAuditLogsEntry,
   EmojiIdentifierResolvable,
   Guild,
-  GuildAuditLogsEntry,
   GuildAuditLogsFetchOptions,
   GuildAuditLogsResolvable,
   GuildMember,
@@ -150,6 +150,8 @@ const of = (client: Client<true>) => {
 /**
  * Read
  */
+
+type GuildAuditLogsEntry<A extends GuildAuditLogsResolvable> = DiscordGuildAuditLogsEntry<A>
 
 const fetchAuditLogs = <A extends GuildAuditLogsResolvable = null>(
   guild: Guild,

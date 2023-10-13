@@ -9,11 +9,11 @@ import type { TheQuestProgressionPersistence } from '../persistence/TheQuestProg
 
 type TheQuestService = ReturnType<typeof TheQuestService>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const TheQuestService = (
   config: TheQuestConfig,
   theQuestProgressionPersistence: TheQuestProgressionPersistence,
   httpClient: HttpClient,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const apiStaticData: Future<StaticData> = httpClient.http(
     [`${config.apiUrl}/madosayentisuto/staticData`, 'get'],

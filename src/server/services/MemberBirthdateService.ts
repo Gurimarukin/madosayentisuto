@@ -7,11 +7,10 @@ import type { MemberBirthdatePersistence } from '../persistence/MemberBirthdateP
 
 export type MemberBirthdateService = ReturnType<typeof MemberBirthdateService>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const MemberBirthdateService = ({
   listForMembers,
   remove,
-  ...memberBirthdatePersistence
+  ...memberBirthdatePersistence // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 }: MemberBirthdatePersistence) => ({
   listForDate: (date: DayJs): Future<List<MemberBirthdate>> =>
     memberBirthdatePersistence.listForDate(startOfDay(date)),

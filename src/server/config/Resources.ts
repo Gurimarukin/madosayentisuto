@@ -1,11 +1,15 @@
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
 import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 
 import type { MyFile } from '../models/FileOrDir'
 import { Dir, FileOrDir } from '../models/FileOrDir'
 import { FsUtils } from '../utils/FsUtils'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const musicExtension = /\.(ogg|webm)$/
 

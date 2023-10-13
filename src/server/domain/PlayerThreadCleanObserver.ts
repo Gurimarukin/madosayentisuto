@@ -16,11 +16,11 @@ import { LogUtils } from '../utils/LogUtils'
 
 // We don't want any message (except bot) in the music logs thread
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PlayerThreadCleanObserver = (
   Logger: LoggerGetter,
   clientId: DiscordUserId,
   guildStateService: GuildStateService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('PlayerThreadCleanObserver')
 

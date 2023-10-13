@@ -12,10 +12,10 @@ import { ThreadWithMessage } from '../models/poll/ThreadWithMessage'
 
 export type PollQuestionPersistence = ReturnType<typeof PollQuestionPersistence>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const PollQuestionPersistence = (
   Logger: LoggerGetter,
   mongoCollection: MongoCollectionGetter,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('PollQuestionPersistence')
   const collection = FpCollection(logger)([PollQuestion.codec, 'PollQuestion'])(

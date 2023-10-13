@@ -2,8 +2,7 @@
                   functional/no-this-expressions */
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
-import type { Method } from 'got'
-import { HTTPError, RequestError } from 'got'
+import { HTTPError } from 'ky'
 import type { InspectOptions } from 'util'
 import util from 'util'
 
@@ -16,11 +15,7 @@ export const utilFormat = (format?: unknown, ...param: unknown[]): string =>
   util.format(customHandlers(format), ...param.map(customHandlers))
 
 const customHandlers = (object: unknown): unknown =>
-  object instanceof RequestError
-    ? MyHttpError.fromRequestError(object)
-    : object instanceof HTTPError
-    ? MyHttpError.fromHTTPError(object)
-    : object
+  object instanceof HTTPError ? MyHttpError.fromHTTPError(object) : object
 
 // eslint-disable-next-line functional/no-classes
 class MyHttpError extends Error {
@@ -28,7 +23,7 @@ class MyHttpError extends Error {
 
   private constructor(
     stack: string | undefined,
-    method: Method,
+    method: string,
     url: string,
     statusCode: number | undefined,
     responseBody?: Buffer | string,
@@ -49,22 +44,6 @@ class MyHttpError extends Error {
   }
 
   static fromHTTPError(e: HTTPError): MyHttpError {
-    return new MyHttpError(
-      e.stack,
-      e.request.options.method,
-      e.request.requestUrl,
-      e.response.statusCode,
-    )
-  }
-
-  static fromRequestError(e: RequestError): MyHttpError | RequestError {
-    if (e.request === undefined) return e
-    return new MyHttpError(
-      e.stack,
-      e.request.options.method,
-      e.request.requestUrl,
-      e.response?.statusCode,
-      e.response?.rawBody,
-    )
+    return new MyHttpError(e.stack, e.request.method, e.request.url, e.response.status)
   }
 }

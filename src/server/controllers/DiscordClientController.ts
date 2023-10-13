@@ -17,11 +17,11 @@ import { MyMiddleware as M } from '../webServer/models/MyMiddleware'
 
 export type DiscordClientController = ReturnType<typeof DiscordClientController>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const DiscordClientController = (
   discord: DiscordConnector,
   guildStateService: GuildStateService,
   memberBirthdateService: MemberBirthdateService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => ({
   listGuilds: (/* user: User */): EndedMiddleware =>
     pipe(

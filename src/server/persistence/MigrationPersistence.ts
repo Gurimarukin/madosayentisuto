@@ -12,10 +12,10 @@ import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 
 export type MigrationPersistence = ReturnType<typeof MigrationPersistence>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const MigrationPersistence = (
   Logger: LoggerGetter,
   mongoCollection: MongoCollectionGetter,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('MigrationPersistence')
   const collection = FpCollection(logger)([MigrationDb.codec, 'MigrationDb'])(

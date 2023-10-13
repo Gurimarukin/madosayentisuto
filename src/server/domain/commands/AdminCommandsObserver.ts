@@ -325,7 +325,6 @@ type GroupWithSubcommand = {
   subcommand: string
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const AdminCommandsObserver = (
   Logger: LoggerGetter,
   config: Config,
@@ -334,6 +333,7 @@ export const AdminCommandsObserver = (
   emojidexService: EmojidexService,
   botStateService: BotStateService,
   guildStateService: GuildStateService,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   const logger = Logger('AdminCommandsObserver')
 
