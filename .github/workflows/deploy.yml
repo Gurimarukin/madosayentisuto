@@ -1,30 +1,32 @@
-name: Test and dry build
-description: Test and dry build project on master push and PR.
+name: Build and deploy
+description: Build Dockerfile, push it to registry and call deploy webhook.
 
 on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+  workflow_dispatch:
 
 jobs:
   build:
+    environment: prod
+
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
         node-version: [18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    env:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: prod
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
       - name: install
         run: yarn install --frozen-lockfile
-      - name: test
-        run: yarn run test
-      - name: build
-        run: cp .env.example .env && yarn run build
+      - name: yarn build
+        run: yarn run build
+      - name: podman build
+        run: echo "TODO podman build"
