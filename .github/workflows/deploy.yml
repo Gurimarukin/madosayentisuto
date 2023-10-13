@@ -15,18 +15,68 @@ jobs:
       matrix:
         node-version: [18.x]
 
-    env:
-      TOTO: titi
-
     steps:
       - uses: actions/checkout@v3
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - name: install
+
+      - name: Yarn install
         run: yarn install --frozen-lockfile
-      - name: yarn build
+
+      - name: Create .env
+        run: echo "|
+          \# client
+
+          API_HOST = ${{ vars.API_HOST }}
+
+          \#server
+
+          IS_DEV = false
+
+          LOGGER_CONSOLE_LEVEL         = ${{ vars.LOGGER_CONSOLE_LEVEL }}
+          LOGGER_DISCORD_DM_LEVEL      = ${{ vars.LOGGER_DISCORD_DM_LEVEL }}
+          LOGGER_DISCORD_DM_IS_COMPACT = ${{ vars.LOGGER_DISCORD_DM_IS_COMPACT }}
+
+          CLIENT_ID     = ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET = ${{ secrets.CLIENT_SECRET }}
+
+          HTTP_PORT            = ${{ vars.HTTP_PORT }}
+          HTTP_ALLOWED_ORIGINS = ${{ vars.HTTP_ALLOWED_ORIGINS }}
+
+          DB_HOST     = ${{ secrets.DB_HOST }}
+          DB_NAME     = ${{ secrets.DB_NAME }}
+          DB_USER     = ${{ secrets.DB_USER }}
+          DB_PASSWORD = ${{ secrets.DB_PASSWORD }}
+
+          JWT_SECRET = ${{ secrets.JWT_SECRET }}
+
+          YTDLP_PATH = /usr/src/app/yt-dlp
+
+          ADMINS = ${{ vars.ADMINS }}
+
+          UWU_GUILDS = ${{ vars.UWU_GUILDS }}
+
+          KOH_LANTA_VICTIMS = ${{ vars.KOH_LANTA_VICTIMS }}
+
+          CAPTAIN_MENTIONS = ${{ vars.CAPTAIN_MENTIONS }}
+          CAPTAIN_THANKS   = ${{ vars.CAPTAIN_THANKS }}
+
+          ELEVATOR_DELAY = ${{ vars.ELEVATOR_DELAY }}
+
+          THE_QUEST_WEBAPP_URL = ${{ vars.THE_QUEST_WEBAPP_URL }}
+          THE_QUEST_API_URL = ${{ vars.THE_QUEST_API_URL }}
+          THE_QUEST_TOKEN = ${{ secrets.THE_QUEST_TOKEN }}
+          THE_QUEST_REFRESH_EVERY_MINUTES = ${{ vars.THE_QUEST_REFRESH_EVERY_MINUTES }}"
+          > .env
+
+      - name: Yarn build
         run: yarn run build
-      - name: podman build
-        run: echo "TODO podman build"
+
+      - name: Create Containerfile
+        run: sed -e 's/^/ENV /' .env > Containerfile
+
+      - name: Podman build
+        run: echo "TODO podman build" && cat .env && cat Containerfile

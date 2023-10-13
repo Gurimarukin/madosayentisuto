@@ -19,13 +19,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - name: install
+
+      - name: Yarn install
         run: yarn install --frozen-lockfile
-      - name: test
+
+      - name: Yarn test
         run: yarn run test
-      - name: build
+
+      - name: Yarn build
         run: cp .env.example .env && yarn run build
