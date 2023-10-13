@@ -23,11 +23,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Yarn install
-        run: yarn install --frozen-lockfile
-
       - name: Create .env
-        run: echo "|
+        run: |
+          echo "
           \# client
 
           API_HOST = ${{ vars.API_HOST }}
@@ -69,8 +67,11 @@ jobs:
           THE_QUEST_WEBAPP_URL = ${{ vars.THE_QUEST_WEBAPP_URL }}
           THE_QUEST_API_URL = ${{ vars.THE_QUEST_API_URL }}
           THE_QUEST_TOKEN = ${{ secrets.THE_QUEST_TOKEN }}
-          THE_QUEST_REFRESH_EVERY_MINUTES = ${{ vars.THE_QUEST_REFRESH_EVERY_MINUTES }}"
-          > .env
+          THE_QUEST_REFRESH_EVERY_MINUTES = ${{ vars.THE_QUEST_REFRESH_EVERY_MINUTES }}
+          " > .env
+
+      - name: Yarn install
+        run: yarn install --frozen-lockfile
 
       - name: Yarn build
         run: yarn run build
