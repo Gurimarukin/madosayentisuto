@@ -18,11 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-
       - name: Create .env
         run: |
           echo "
@@ -44,8 +39,8 @@ jobs:
           HTTP_PORT            = ${{ vars.HTTP_PORT }}
           HTTP_ALLOWED_ORIGINS = ${{ vars.HTTP_ALLOWED_ORIGINS }}
 
-          DB_HOST     = ${{ secrets.DB_HOST }}
-          DB_NAME     = ${{ secrets.DB_NAME }}
+          DB_HOST     = ${{ vars.DB_HOST }}
+          DB_NAME     = ${{ vars.DB_NAME }}
           DB_USER     = ${{ secrets.DB_USER }}
           DB_PASSWORD = ${{ secrets.DB_PASSWORD }}
 
@@ -71,23 +66,35 @@ jobs:
           " > .env
 
       - name: Create Containerfile
+        # sed '/^[^#$]/s/^/ENV /g' .env >> Containerfile
         run: |
           echo "
           FROM node:18
 
-          WORKDIR /usr/src/app
-          COPY package.json ./
-          COPY dist/ dist/
+          WORKDIR /app
+
+          COPY resources/ resources/
+          COPY src/ src/
+          COPY \
+            .env \
+            package.json \
+            tsconfig.build.json \
+            tsconfig.json \
+            yarn.lock \
+            .
+
+          RUN yarn install
+          RUN ls -al
+          RUN yarn run build
 
           RUN wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
+          RUN chmod +x yt-dlp
+          RUN ./yt-dlp --version
 
-          " > Containerfile
-          sed -e 's/^/ENV /' .env >> Containerfile
-          echo "
           EXPOSE ${{ vars.HTTP_PORT }}
 
-          CMD yt-dlp --version && node dist/server/index.js
-          "
+          CMD node --experimental-specifier-resolution=node dist/server/index.js
+          " > Containerfile
 
       - name: Exit 1
         run: |
@@ -96,11 +103,24 @@ jobs:
           cat filenotexists
           echo "this should be echoed"
 
-      - name: Yarn install
-        run: yarn install --frozen-lockfile
+      - name: Build image
+        id: build-image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: madosayentisuto
+          containerfiles: ./Containerfile
 
-      - name: Yarn build
-        run: yarn run build
+      - name: Push image
+        id: push-to-quay
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-image.outputs.image }}
+          registry: ${{ vars.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - name: Podman build
-        run: echo "TODO podman build"
+      - name: Print image url
+        run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
+
+      - name: Call deploy webhook
+        run: echo "TODO call deploy webhook"
