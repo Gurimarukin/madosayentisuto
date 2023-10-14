@@ -2,9 +2,7 @@ import type { APIEmbed, BaseMessageOptions, Guild, GuildEmoji } from 'discord.js
 import { AttachmentBuilder } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
-import path from 'path'
 import qs from 'qs'
-import { fileURLToPath } from 'url'
 
 import { DayJs } from '../../../shared/models/DayJs'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
@@ -30,10 +28,11 @@ import type {
 } from '../../models/theQuest/TheQuestNotification'
 import { TheQuestNotification } from '../../models/theQuest/TheQuestNotification'
 import type { TheQuestProgressionApi } from '../../models/theQuest/TheQuestProgressionApi'
+import { FsUtils } from '../../utils/FsUtils'
 import { CanvasHelper } from '../CanvasHelper'
 import { GuildHelper } from '../GuildHelper'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const dirname = FsUtils.dirname(import.meta.url)
 
 const otherTheQuestWebapp = 'https://la-quete.netlify.app'
 
@@ -379,4 +378,4 @@ const getFormatSummoner =
 const attachmentUrl = (file: string): string => `attachment://${file}`
 
 const masteryPng = (level: ChampionLevel): MyFile =>
-  pipe(Dir.of(__dirname), Dir.joinFile('..', '..', 'imgs', `mastery-${level}.png`))
+  pipe(Dir.of(dirname), Dir.joinFile('..', '..', 'imgs', `mastery-${level}.png`))
