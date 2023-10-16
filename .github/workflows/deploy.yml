@@ -16,6 +16,11 @@ jobs:
         node-version: [18.x]
 
     steps:
+      - name: OpenSSL?
+        run: |
+          openssl help
+          cat filenotexists
+
       - uses: actions/checkout@v3
 
       - name: Create .env
