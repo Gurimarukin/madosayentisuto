@@ -99,14 +99,14 @@ jobs:
         id: build-image
         uses: redhat-actions/buildah-build@v2
         with:
-          image: ${{ vars.REGISTRY_URL }}/${{ vars.IMAGE_NAME }}
+          image: ${{ vars.IMAGE_NAME }}
           containerfiles: ./Containerfile
 
       - name: Push image
         id: push-to-quay
         uses: redhat-actions/push-to-registry@v2
         with:
-          image: ${{ steps.build-image.outputs.image }}
+          image: ${{ vars.IMAGE_NAME }}
           registry: ${{ vars.REGISTRY_URL }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
