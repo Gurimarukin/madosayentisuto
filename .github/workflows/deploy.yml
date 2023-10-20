@@ -13,14 +13,9 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [20.x]
 
     steps:
-      - name: OpenSSL?
-        run: |
-          openssl help
-          cat filenotexists
-
       - uses: actions/checkout@v3
 
       - name: Create .env
@@ -71,10 +66,9 @@ jobs:
           " > .env
 
       - name: Create Containerfile
-        # sed '/^[^#$]/s/^/ENV /g' .env >> Containerfile
         run: |
           echo "
-          FROM node:18
+          FROM node:20
 
           WORKDIR /app
 
@@ -101,18 +95,11 @@ jobs:
           CMD node --experimental-specifier-resolution=node dist/server/index.js
           " > Containerfile
 
-      - name: Exit 1
-        run: |
-          cat .env
-          cat Containerfile
-          cat filenotexists
-          echo "this should be echoed"
-
       - name: Build image
         id: build-image
         uses: redhat-actions/buildah-build@v2
         with:
-          image: madosayentisuto
+          image: ${{ vars.REGISTRY_URL }}/${{ vars.IMAGE_NAME }}
           containerfiles: ./Containerfile
 
       - name: Push image
@@ -124,8 +111,10 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - name: Print image url
-        run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
-
       - name: Call deploy webhook
-        run: echo "TODO call deploy webhook"
+        run: |
+          payload='{ "image": { "name": "${{ vars.IMAGE_NAME }}" } }'
+          signature=$(echo -n "$payload" | openssl dgst -sha512 -hmac "${{ secrets.WEBHOOK_SECRET }}" | cut -c18-)
+          curl -i -X POST "${{ vars.WEBHOOK_URL }}" \
+            -H "X-Signature: $signature" \
+            -d "$payload"
