@@ -1,3 +1,4 @@
+- fix its friday range
 - the quest links: puuid?
 - /shi-fu-mi
 - maybe move sinks
@@ -15,7 +16,6 @@
 - remove disables
 - commands register: unsubscribe when done?
 - try to override declaration types to use GuildId, TSnowflake, ...
-- swr v2
 
 ---
 

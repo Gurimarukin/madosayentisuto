@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [18.x]
 
     steps:
       - uses: actions/checkout@v3
@@ -68,7 +68,7 @@ jobs:
       - name: Create Containerfile
         run: |
           echo "
-          FROM node:20
+          FROM node:18
 
           WORKDIR /app
 
