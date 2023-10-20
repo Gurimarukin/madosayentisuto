@@ -25,7 +25,7 @@
     "_tscServer": "tsc --project tsconfig.server.json ",
     "clean": "rm -fr .parcel-cache dist tsbuild",
     "prebuild": "yarn run clean",
-    "build": "tsc -p tsconfig.build.json && yarn run _node tsbuild/server/checkEnv.js && yarn run _node tsbuild/client/checkEnv.js && META_URL_PREFIX='../..' parcel build",
+    "build": "tsc -p tsconfig.build.json && yarn run _node tsbuild/server/checkEnv.js && yarn run _node tsbuild/client/checkEnv.js && parcel build",
     "createUser": "yarn run _tscServer && yarn run _node tsbuild/server/createUser.js",
     "server": "yarn run _tscServer && yarn run _node tsbuild/server/index.js",
     "~server": "nodemon -e ts,tsx,js,json,env --ignore dist/ --ignore tsbuild/ --ignore src/client/ -x \"yarn run server\"",

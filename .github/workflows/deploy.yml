@@ -67,8 +67,7 @@ jobs:
 
       - name: Create Containerfile
         run: |
-          echo "
-          FROM node:18
+          echo "FROM node:18
 
           WORKDIR /app
 
@@ -91,6 +90,8 @@ jobs:
           RUN ./yt-dlp --version
 
           EXPOSE ${{ vars.HTTP_PORT }}
+
+          ENV META_URL_PREFIX=/app
 
           CMD node --experimental-specifier-resolution=node dist/server/index.js
           " > Containerfile

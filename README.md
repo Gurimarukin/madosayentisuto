@@ -11,7 +11,7 @@ Node 18+
 
     yarn install
     yarn run build
-    node dist/src/server/index.js
+    META_URL_PREFIX=$(pwd) node --experimental-specifier-resolution=node dist/server/index.js
 
 ## Dev
 
