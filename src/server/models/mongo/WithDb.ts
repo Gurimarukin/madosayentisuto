@@ -59,6 +59,7 @@ const of = (
             return obs.subscribe({
               next: u => subscriber.next(u),
               error: e => close(() => subscriber.error(e)),
+              complete: () => close(() => subscriber.complete()),
             })
 
             // eslint-disable-next-line functional/no-return-void

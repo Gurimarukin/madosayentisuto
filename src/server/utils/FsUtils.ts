@@ -43,11 +43,7 @@ const cwd = (): IO<Dir> =>
  *
  * @example dirname(import.meta.url)
  */
-const dirname = (metaUrl: string): string => {
-  const res = metaUrlPrefix + path_.dirname(fileURLToPath(metaUrl))
-  console.log('import.meta.url:', metaUrl, ', __dirname:', res)
-  return res
-}
+const dirname = (metaUrl: string): string => metaUrlPrefix + path_.dirname(fileURLToPath(metaUrl))
 
 const exists = (f: FileOrDir): Future<boolean> => pipe(stat(f), Future.map(Maybe.isSome))
 

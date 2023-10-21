@@ -27,8 +27,19 @@ export const MigrationService = (
     Migration202204011827(mongoCollection),
   ]
 
+  const getUnappliedMigrations: Future<List<Migration>> = pipe(
+    migrationPersistence.alreadyApplied,
+    Future.map(applied =>
+      pipe(
+        migrations,
+        List.filter(m => !pipe(applied, List.elem(DayJs.Eq)(m.createdAt))),
+        List.sort(Migration.OrdCreatedAt),
+      ),
+    ),
+  )
+
   const applyMigrations: Future<NotUsed> = pipe(
-    getUnappliedMigrations(),
+    getUnappliedMigrations,
     Future.map(NonEmptyArray.fromReadonlyArray),
     futureMaybe.chainFirstIOEitherK(m =>
       logger.info(`${m.length} migration${m.length === 1 ? '' : 's'} to apply`),
@@ -52,17 +63,4 @@ export const MigrationService = (
   )
 
   return { applyMigrations }
-
-  function getUnappliedMigrations(): Future<List<Migration>> {
-    return pipe(
-      migrationPersistence.alreadyApplied,
-      Future.map(applied =>
-        pipe(
-          migrations,
-          List.filter(m => !pipe(applied, List.elem(DayJs.Eq)(m.createdAt))),
-          List.sort(Migration.OrdCreatedAt),
-        ),
-      ),
-    )
-  }
 }

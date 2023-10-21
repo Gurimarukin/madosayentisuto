@@ -118,9 +118,10 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
     const migrationService = MigrationService(Logger, mongoCollection, migrationPersistence)
 
     return pipe(
-      logger.info('Ensuring indexes'),
+      logger.debug('Pinging database'),
       Future.fromIOEither,
       Future.chain(() => waitDatabaseReady(healthCheckService)),
+      Future.chainFirstIOEitherK(() => logger.info('Database ready, ensuring indexes')),
       Future.chain(() => migrationService.applyMigrations),
       Future.chain(() =>
         NonEmptyArray.sequence(Future.ApplicativeSeq)([
