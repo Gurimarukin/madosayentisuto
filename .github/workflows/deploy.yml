@@ -117,5 +117,4 @@ jobs:
           signature=$(echo -n "$payload" | openssl dgst -sha512 -hmac "${{ secrets.WEBHOOK_SECRET }}" | cut -c18-)
           curl -i -X POST "${{ vars.WEBHOOK_URL }}" \
             -H "X-Signature: $signature" \
-            -H "Content-Type: application/json" \
-            -d "$payload"
+            --json "$payload"
