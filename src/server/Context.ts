@@ -143,9 +143,9 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
       Future.orElse(() =>
         pipe(
           logger.info(
-            `Couldn't connect to mongo, waiting ${StringUtils.prettyMs(
-              dbRetryDelay,
-            )} before next try`,
+            `Couldn't connect to mongo "mongodb://${config.db.user}@${
+              config.db.host
+            }", waiting ${StringUtils.prettyMs(dbRetryDelay)} before next try`,
           ),
           Future.fromIOEither,
           Future.chain(() =>
