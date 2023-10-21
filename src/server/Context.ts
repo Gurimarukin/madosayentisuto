@@ -92,7 +92,9 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
 
   function loadContext(resources: Resources): Future<Context> {
     const withDb = WithDb.of(getOnError(logger), {
-      url: `mongodb://${config.db.user}:${config.db.password}@${config.db.host}`,
+      url: `mongodb://${config.db.host}`,
+      username: config.db.user,
+      password: config.db.password,
       dbName: config.db.dbName,
     })
 
