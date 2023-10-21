@@ -82,7 +82,6 @@ jobs:
             .
 
           RUN yarn install
-          RUN ls -al
           RUN yarn run build
 
           RUN wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
