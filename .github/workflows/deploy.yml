@@ -21,11 +21,11 @@ jobs:
       - name: Create .env
         run: |
           echo "
-          \# client
+          # client
 
           API_HOST = ${{ vars.API_HOST }}
 
-          \#server
+          #server
 
           IS_DEV = false
 
