@@ -6,7 +6,7 @@ import type { Options } from 'ky'
 import ky, { HTTPError } from 'ky'
 
 import type { Method } from '../../shared/models/Method'
-import type { Dict, NonEmptyArray, Tuple } from '../../shared/utils/fp'
+import type { NonEmptyArray, Tuple } from '../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, Try } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
@@ -33,12 +33,12 @@ const HttpClient = (Logger: LoggerGetter) => {
   ): Future<A>
   function http<A, O, B>(
     [url, method]: Tuple<string, Method>,
-    options: HttpOptions<O, B> = {},
+    { headers, json, ...options }: HttpOptions<O, B> = {},
     decoderWithName?: Tuple<Decoder<unknown, A>, string>,
   ): Future<A> {
-    const json = ((): O | undefined => {
-      if (options.json === undefined) return undefined
-      const [encoder, b] = options.json
+    const jsonEncoded = ((): O | undefined => {
+      if (json === undefined) return undefined
+      const [encoder, b] = json
       return encoder.encode(b)
     })()
 
@@ -47,7 +47,14 @@ const HttpClient = (Logger: LoggerGetter) => {
         ky[method](url, {
           ...options,
           method,
-          json: json === undefined ? undefined : (json as Dict<string, unknown>),
+          headers:
+            jsonEncoded === undefined
+              ? headers
+              : {
+                  'Content-Type': 'application/json',
+                  ...headers,
+                },
+          body: jsonEncoded === undefined ? undefined : JSON.stringify(jsonEncoded),
         }),
       ),
       task.chainFirstIOK(
