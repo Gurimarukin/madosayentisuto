@@ -25,4 +25,4 @@ EXPOSE 8675
 ENV APP_DATA_VOLUME=/app/data
 ENV META_URL_PREFIX=/app
 
-CMD entrypoint.sh
+CMD ./entrypoint.sh
