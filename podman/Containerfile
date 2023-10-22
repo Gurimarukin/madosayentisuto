@@ -1,0 +1,28 @@
+FROM node:18
+
+WORKDIR /app
+
+COPY ../resources/ resources/
+COPY ../src/ ../src/
+COPY \
+  ../.env \
+  ../package.json \
+  ../tsconfig.build.json \
+  ../tsconfig.json \
+  ../yarn.lock \
+  entrypoint.sh \
+  .
+
+RUN yarn install
+RUN yarn run build
+
+RUN wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
+RUN chmod +x yt-dlp
+RUN ./yt-dlp --version
+
+EXPOSE 8675
+
+ENV APP_DATA_VOLUME=/app/data
+ENV META_URL_PREFIX=/app
+
+CMD entrypoint.sh

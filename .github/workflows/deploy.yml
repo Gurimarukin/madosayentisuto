@@ -36,7 +36,7 @@ jobs:
           CLIENT_ID     = ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET = ${{ secrets.CLIENT_SECRET }}
 
-          HTTP_PORT            = ${{ vars.HTTP_PORT }}
+          HTTP_PORT            = 8675
           HTTP_ALLOWED_ORIGINS = ${{ vars.HTTP_ALLOWED_ORIGINS }}
 
           DB_HOST     = ${{ vars.DB_HOST }}
@@ -46,7 +46,7 @@ jobs:
 
           JWT_SECRET = ${{ secrets.JWT_SECRET }}
 
-          YTDLP_PATH = /usr/src/app/yt-dlp
+          YTDLP_PATH = /app/yt-dlp
 
           ADMINS = ${{ vars.ADMINS }}
 
@@ -65,43 +65,12 @@ jobs:
           THE_QUEST_REFRESH_EVERY_MINUTES = ${{ vars.THE_QUEST_REFRESH_EVERY_MINUTES }}
           " > .env
 
-      - name: Create Containerfile
-        run: |
-          echo "FROM node:18
-
-          WORKDIR /app
-
-          COPY resources/ resources/
-          COPY src/ src/
-          COPY \
-            .env \
-            package.json \
-            tsconfig.build.json \
-            tsconfig.json \
-            yarn.lock \
-            .
-
-          RUN yarn install
-          RUN yarn run build
-
-          RUN wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
-          RUN chmod +x yt-dlp
-          RUN ./yt-dlp --version
-
-          VOLUME /app/dist/client
-          EXPOSE ${{ vars.HTTP_PORT }}
-
-          ENV META_URL_PREFIX=/app
-
-          CMD node --experimental-specifier-resolution=node dist/server/index.js
-          " > Containerfile
-
       - name: Build image
         id: build-image
         uses: redhat-actions/buildah-build@v2
         with:
           image: ${{ vars.IMAGE_NAME }}
-          containerfiles: ./Containerfile
+          containerfiles: podman/Containerfile
 
       - name: Push image
         id: push-to-quay
