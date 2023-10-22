@@ -2,15 +2,15 @@ FROM node:18
 
 WORKDIR /app
 
-COPY ../resources/ resources/
-COPY ../src/ ../src/
+COPY resources/ resources/
+COPY src/ src/
 COPY \
-  ../.env \
-  ../package.json \
-  ../tsconfig.build.json \
-  ../tsconfig.json \
-  ../yarn.lock \
-  entrypoint.sh \
+  .env \
+  package.json \
+  tsconfig.build.json \
+  tsconfig.json \
+  yarn.lock \
+  podman/entrypoint.sh \
   .
 
 RUN yarn install
