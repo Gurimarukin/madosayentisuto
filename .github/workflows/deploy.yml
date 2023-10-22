@@ -88,15 +88,12 @@ jobs:
           RUN chmod +x yt-dlp
           RUN ./yt-dlp --version
 
+          VOLUME /app/dist/client
           EXPOSE ${{ vars.HTTP_PORT }}
 
-          ENV APP_DATA_VOLUME=/app/data
           ENV META_URL_PREFIX=/app
 
-          RUN mkdir "$APP_DATA_VOLUME"
-
-          CMD if [ -z "$(ls -A "$APP_DATA_VOLUME")" ]; then cp -r dist/client/* "$APP_DATA_VOLUME"; fi && \
-            node --experimental-specifier-resolution=node dist/server/index.js
+          CMD node --experimental-specifier-resolution=node dist/server/index.js
           " > Containerfile
 
       - name: Build image
