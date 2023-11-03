@@ -1,4 +1,3 @@
-- fix its friday range
 - the quest links: puuid?
 - /shi-fu-mi
 - maybe move sinks

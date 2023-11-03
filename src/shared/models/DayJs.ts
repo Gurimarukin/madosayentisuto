@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
 import customParseFormatPlugin from 'dayjs/plugin/customParseFormat'
+import timezonePlugin from 'dayjs/plugin/timezone'
 import utcPlugin from 'dayjs/plugin/utc'
 import type { eq } from 'fp-ts'
 import { io, ord } from 'fp-ts'
@@ -15,6 +16,7 @@ import { MsDuration } from './MsDuration'
 /* eslint-disable functional/no-expression-statements */
 dayjs.extend(customParseFormatPlugin)
 dayjs.extend(utcPlugin)
+dayjs.extend(timezonePlugin)
 dayjs.locale('fr')
 /* eslint-enable functional/no-expression-statements */
 
@@ -59,6 +61,10 @@ const subtract = (ms: MsDuration): Endomorphism<DayJs> =>
   modify(d => d.subtract(MsDuration.unwrap(ms), 'millisecond'))
 
 const startOf = (unit: dayjs.OpUnitType): Endomorphism<DayJs> => modify(d => d.startOf(unit))
+
+export type Timezone = 'Europe/Paris'
+
+const tz = (timezone: Timezone): Endomorphism<DayJs> => modify(d => d.tz(timezone))
 
 // outputs
 
@@ -157,6 +163,7 @@ export const DayJs = {
   add,
   subtract,
   startOf,
+  tz,
 
   format,
   toDate,

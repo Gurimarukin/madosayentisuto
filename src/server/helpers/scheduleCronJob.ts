@@ -64,7 +64,11 @@ export const scheduleCronJob = (
       DayJs.now,
       IO.fromIO,
       IO.chain(now =>
-        subject.next(MadEvent.CronJob(pipe(now, DayJs.second.set(0), DayJs.millisecond.set(0)))),
+        subject.next(
+          MadEvent.CronJob(
+            pipe(now, DayJs.tz('Europe/Paris'), DayJs.second.set(0), DayJs.millisecond.set(0)),
+          ),
+        ),
       ), // assuming interval is 1 minute
     )
   }
