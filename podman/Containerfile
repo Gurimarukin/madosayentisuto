@@ -2,11 +2,14 @@ FROM node:18
 
 WORKDIR /app
 
+COPY resources/ resources/
+COPY src/ src/
 COPY * .
 
 RUN apt update > /dev/null
 RUN apt install -y ffmpeg > /dev/null
 
+RUN yarn global add node-gyp
 RUN yarn install --frozen-lockfile
 
 RUN yarn run build
