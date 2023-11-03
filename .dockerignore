@@ -1,0 +1,9 @@
+/.docker-data
+/.eslintcache
+/.parcel-cache
+/dependencygraph.html
+/dependencygraph.svg
+/dist
+/node_modules
+/tsbuild
+/yarn-error.log

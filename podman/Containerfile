@@ -2,21 +2,16 @@ FROM node:18
 
 WORKDIR /app
 
-COPY resources/ resources/
-COPY src/ src/
-COPY \
-  .env \
-  package.json \
-  tsconfig.build.json \
-  tsconfig.json \
-  yarn.lock \
-  podman/entrypoint.sh \
-  .
+COPY * .
 
-RUN yarn install
+RUN apt update > /dev/null
+RUN apt install -y ffmpeg > /dev/null
+
+RUN yarn install --frozen-lockfile
+
 RUN yarn run build
 
-RUN wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
+RUN wget -nv https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
 RUN chmod +x yt-dlp
 RUN ./yt-dlp --version
 
