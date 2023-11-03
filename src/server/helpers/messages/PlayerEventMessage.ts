@@ -1,6 +1,7 @@
 import type { User } from 'discord.js'
 import { pipe } from 'fp-ts/function'
 
+import type { PlaylistType } from '../../../shared/models/audio/PlaylistType'
 import type { Track } from '../../../shared/models/audio/music/Track'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
@@ -8,7 +9,6 @@ import type {
   AudioStateValueMusic,
   AudioStateValuePlaylist,
 } from '../../models/audio/AudioStateValue'
-import type { PlaylistType } from '../../models/audio/PlaylistType'
 
 const tracksAdded = (author: User, tracks: NonEmptyArray<Track>): string => {
   const tracksStr = ((): string => {

@@ -13,6 +13,7 @@ import { flow, identity, pipe } from 'fp-ts/function'
 
 import type { LoggerType } from '../../shared/models/LoggerType'
 import { Store } from '../../shared/models/Store'
+import type { PlaylistType } from '../../shared/models/audio/PlaylistType'
 import type { Track } from '../../shared/models/audio/music/Track'
 import { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
 import { AsyncQueue } from '../../shared/models/rx/AsyncQueue'
@@ -35,7 +36,6 @@ import {
   AudioStateValuePlaylist,
 } from '../models/audio/AudioStateValue'
 import { PlayerMessageDeps } from '../models/audio/PlayerMessageDeps'
-import type { PlaylistType } from '../models/audio/PlaylistType'
 import { AudioEvent } from '../models/event/AudioEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildAudioChannel, GuildSendableChannel, NamedChannel } from '../utils/ChannelUtils'

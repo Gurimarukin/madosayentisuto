@@ -2,12 +2,12 @@ import type { AudioResource } from '@discordjs/voice'
 import { StreamType, createAudioResource } from '@discordjs/voice'
 import { io } from 'fp-ts'
 
+import type { PlaylistType } from '../../shared/models/audio/PlaylistType'
 import { RandomUtils } from '../../shared/utils/RandomUtils'
 import type { NonEmptyArray } from '../../shared/utils/fp'
 
 import type { Resources } from '../config/Resources'
 import type { MyFile } from '../models/FileOrDir'
-import type { PlaylistType } from '../models/audio/PlaylistType'
 
 export type ResourcesHelper = ReturnType<typeof of>
 

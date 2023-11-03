@@ -2,6 +2,7 @@ import type { APIButtonComponentWithCustomId, BaseMessageOptions } from 'discord
 import { io, random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
+import type { PlaylistType } from '../../../shared/models/audio/PlaylistType'
 import type { Track } from '../../../shared/models/audio/music/Track'
 import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { Dict } from '../../../shared/utils/fp'
@@ -9,7 +10,6 @@ import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import { constants } from '../../config/constants'
 import type { MyFile } from '../../models/FileOrDir'
-import type { PlaylistType } from '../../models/audio/PlaylistType'
 import { MessageComponent } from '../../models/discord/MessageComponent'
 
 const { cdnBase } = constants

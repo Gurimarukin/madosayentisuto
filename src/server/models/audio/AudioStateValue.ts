@@ -4,6 +4,7 @@ import { flow, pipe } from 'fp-ts/function'
 import { lens } from 'monocle-ts'
 
 import { AudioStateValueView } from '../../../shared/models/audio/AudioStateValueView'
+import type { PlaylistType } from '../../../shared/models/audio/PlaylistType'
 import { Track } from '../../../shared/models/audio/music/Track'
 import { createUnion } from '../../../shared/utils/createUnion'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
@@ -11,7 +12,6 @@ import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { MessageUtils } from '../../utils/MessageUtils'
 import { MyFile } from '../FileOrDir'
-import type { PlaylistType } from './PlaylistType'
 
 type AudioStateValue = typeof u.T
 

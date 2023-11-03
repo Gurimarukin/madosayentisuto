@@ -2,13 +2,13 @@ import { boolean, eq, string } from 'fp-ts'
 import type { Eq } from 'fp-ts/Eq'
 import { pipe } from 'fp-ts/function'
 
+import type { PlaylistType } from '../../../shared/models/audio/PlaylistType'
 import { Track } from '../../../shared/models/audio/music/Track'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import { MyFile } from '../FileOrDir'
 import type { AudioState, AudioStateNotDisconnected } from './AudioState'
 import { AudioStateValue } from './AudioStateValue'
-import type { PlaylistType } from './PlaylistType'
 
 type Common = {
   audioStateType: AudioState['type']

@@ -1,11 +1,10 @@
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
-import { PlaylistType } from '../../../server/models/audio/PlaylistType'
-
 import { List, Maybe, NonEmptyArray } from '../../utils/fp'
 import { ChannelView } from '../ChannelView'
 import { MessageView } from '../MessageView'
+import { PlaylistType } from './PlaylistType'
 import { Track } from './music/Track'
 
 type AudioStateValueView = C.TypeOf<typeof codec>
