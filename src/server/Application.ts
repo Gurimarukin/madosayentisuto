@@ -95,7 +95,6 @@ export const Application = (
   const guildStateService = GuildStateService(
     Logger,
     discord,
-    resourcesHelper,
     ytDlp,
     guildStatePersistence,
     serverToClientEventPubSub.subject,
@@ -172,7 +171,7 @@ export const Application = (
         ),
       ),
       sub(OtherCommandsObserver(config)),
-      sub(PlayerCommandsObserver(Logger, ytDlp, guildStateService)),
+      sub(PlayerCommandsObserver(Logger, resourcesHelper, ytDlp, guildStateService)),
       sub(PollCommandsObserver(Logger, config, discord, pollService)),
       sub(RemindCommandsObserver(scheduledEventService)),
       // │  └ startup/

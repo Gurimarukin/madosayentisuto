@@ -1,12 +1,13 @@
 import type { AudioResource } from '@discordjs/voice'
 import { StreamType, createAudioResource } from '@discordjs/voice'
-import type { io } from 'fp-ts'
+import { io } from 'fp-ts'
 
 import { RandomUtils } from '../../shared/utils/RandomUtils'
 import type { NonEmptyArray } from '../../shared/utils/fp'
 
 import type { Resources } from '../config/Resources'
 import type { MyFile } from '../models/FileOrDir'
+import type { PlaylistType } from '../models/audio/PlaylistType'
 
 export type ResourcesHelper = ReturnType<typeof of>
 
@@ -16,7 +17,16 @@ const of = (resources: Resources) => {
     resources.music.elevator,
   )
 
-  return { randomElevatorPlaylist }
+  return { playlistFiles }
+
+  function playlistFiles(type: PlaylistType): io.IO<NonEmptyArray<MyFile>> {
+    switch (type) {
+      case 'elevator':
+        return randomElevatorPlaylist
+      case 'heimerLoco':
+        return io.of(resources.music.heimerLoco)
+    }
+  }
 }
 
 const audioResourceFromOggFile = (file: MyFile): AudioResource =>

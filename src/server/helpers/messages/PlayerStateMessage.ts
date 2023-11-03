@@ -9,7 +9,7 @@ import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import { constants } from '../../config/constants'
 import type { MyFile } from '../../models/FileOrDir'
-import type { AudioStateValue } from '../../models/audio/AudioStateValue'
+import type { PlaylistType } from '../../models/audio/PlaylistType'
 import { MessageComponent } from '../../models/discord/MessageComponent'
 
 const { cdnBase } = constants
@@ -23,8 +23,11 @@ const queueDisplay = 5
 const images = {
   empty: `${cdnBase}/player-empty.png`,
   jpDjGifs: [`${cdnBase}/player-dj1.gif`, `${cdnBase}/player-dj2.gif`] as const,
-  jpElevators: [`${cdnBase}/player-elevator1.png`, `${cdnBase}/player-elevator2.png`] as const,
   jpPerdu: `${cdnBase}/jp-perdu.png`,
+  playlist: {
+    elevator: [`${cdnBase}/player-elevator1.png`, `${cdnBase}/player-elevator2.png`],
+    heimerLoco: [`${cdnBase}/heimer1.webp`],
+  } satisfies Dict<PlaylistType, NonEmptyArray<string>>,
 }
 
 const ButtonIds = {
@@ -84,9 +87,9 @@ const getConnecting = (images_: NonEmptyArray<string>): io.IO<BaseMessageOptions
     ),
   )
 
-const connecting: Dict<AudioStateValue['type'], io.IO<BaseMessageOptions>> = {
+const connecting = {
   Music: getConnecting(images.jpDjGifs),
-  Elevator: getConnecting(images.jpElevators),
+  Playlist: (playlist: PlaylistType) => getConnecting(images.playlist[playlist]),
 }
 
 const playing = {
@@ -161,9 +164,13 @@ const playing = {
       ),
     ),
 
-  elevator: (playlist: NonEmptyArray<MyFile>, { isPaused }: IsPaused): io.IO<BaseMessageOptions> =>
+  playlist: (
+    type: PlaylistType,
+    playlist: NonEmptyArray<MyFile>,
+    { isPaused }: IsPaused,
+  ): io.IO<BaseMessageOptions> =>
     pipe(
-      random.randomElem(images.jpElevators),
+      random.randomElem(images.playlist[type]),
       io.map(
         (image): BaseMessageOptions => ({
           embeds: [

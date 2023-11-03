@@ -1,6 +1,8 @@
 import { pipe } from 'fp-ts/function'
 import * as C from 'io-ts/Codec'
 
+import { PlaylistType } from '../../../server/models/audio/PlaylistType'
+
 import { List, Maybe, NonEmptyArray } from '../../utils/fp'
 import { ChannelView } from '../ChannelView'
 import { MessageView } from '../MessageView'
@@ -9,7 +11,7 @@ import { Track } from './music/Track'
 type AudioStateValueView = C.TypeOf<typeof codec>
 
 type AudioStateValueViewMusic = C.TypeOf<typeof musicCodec>
-type AudioStateValueViewElevator = C.TypeOf<typeof elevatorCodec>
+type AudioStateValueViewPlaylist = C.TypeOf<typeof playlistCodec>
 
 const commonCodec = C.struct({
   isPaused: C.boolean,
@@ -27,17 +29,18 @@ const musicCodec = pipe(
   C.intersect(commonCodec),
 )
 
-const elevatorCodec = pipe(
+const playlistCodec = pipe(
   C.struct({
-    type: C.literal('Elevator'),
-    playlist: NonEmptyArray.codec(C.string), // basename
+    type: C.literal('Playlist'),
+    playlistType: PlaylistType.codec,
+    files: NonEmptyArray.codec(C.string), // basename
   }),
   C.intersect(commonCodec),
 )
 
 const codec = C.sum('type')({
   Music: musicCodec,
-  Elevator: elevatorCodec,
+  Playlist: playlistCodec,
 })
 
 const music = (
@@ -57,21 +60,23 @@ const music = (
   // pendingEvents,
 })
 
-const elevator = (
-  playlist: NonEmptyArray<string>,
+const playlist = (
+  playlistType: PlaylistType,
+  files: NonEmptyArray<string>,
   isPaused: boolean,
   messageChannel: ChannelView,
   message: Maybe<MessageView>,
   // pendingEvents: List<string>,
-): AudioStateValueViewElevator => ({
-  type: 'Elevator',
-  playlist,
+): AudioStateValueViewPlaylist => ({
+  type: 'Playlist',
+  playlistType,
+  files,
   isPaused,
   messageChannel,
   message,
   // pendingEvents,
 })
 
-const AudioStateValueView = { codec, music, elevator }
+const AudioStateValueView = { codec, music, playlist }
 
 export { AudioStateValueView }

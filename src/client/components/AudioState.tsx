@@ -31,6 +31,9 @@ export const AudioState: React.FC<Props> = ({ guild, state }) => (
       <>
         <Li label="value" className="items-center gap-3">
           <span>{state.value.type}</span>
+          {state.value.type === 'Playlist' ? (
+            <span className="font-mono text-sm">{state.value.playlistType}</span>
+          ) : null}
           <span>-</span>
           <span>
             {pipe(
@@ -90,22 +93,20 @@ const AudioStateValue: React.FC<AudioStateValueProps> = ({ value }) => {
         </>
       )
 
-    case 'Elevator':
+    case 'Playlist':
       return (
-        <>
-          <Li label="playlist" className="flex-col gap-2">
-            <ul className="ml-8 list-disc">
-              {pipe(value.playlist, NonEmptyArray.unprepend, ([head, tail]) => (
-                <>
-                  <li className="underline">{head}</li>
-                  {tail.map(file => (
-                    <li key={file}>{file}</li>
-                  ))}
-                </>
-              ))}
-            </ul>
-          </Li>
-        </>
+        <Li label="playlist" className="flex-col gap-2">
+          <ul className="ml-8 list-disc">
+            {pipe(value.files, NonEmptyArray.unprepend, ([head, tail]) => (
+              <>
+                <li className="underline">{head}</li>
+                {tail.map(file => (
+                  <li key={file}>{file}</li>
+                ))}
+              </>
+            ))}
+          </ul>
+        </Li>
       )
   }
 }

@@ -11,7 +11,7 @@ import type { Maybe } from '../../../shared/utils/fp'
 
 import type { GuildAudioChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
-import type { AudioStateValueElevator, AudioStateValueMusic } from './AudioStateValue'
+import type { AudioStateValueMusic, AudioStateValuePlaylist } from './AudioStateValue'
 import { AudioStateValue } from './AudioStateValue'
 
 declare module 'fp-ts/HKT' {
@@ -190,18 +190,18 @@ const AudioState = {
 
 type FoldValueArgs<F extends AudioStateNotDisconnectedURIS, A, B> = {
   onMusic: (state: Kind<F, AudioStateValueMusic>) => A
-  onElevator: (state: Kind<F, AudioStateValueElevator>) => B
+  onPlaylist: (state: Kind<F, AudioStateValuePlaylist>) => B
 }
 
 const foldValue =
   <F extends AudioStateNotDisconnectedURIS = AudioStateNotDisconnectedURIS>() =>
-  <A, B = A>({ onMusic, onElevator }: FoldValueArgs<F, A, B>) =>
+  <A, B = A>({ onMusic, onPlaylist }: FoldValueArgs<F, A, B>) =>
   (state: Kind<F, AudioStateValue>) => {
     switch (state.value.type) {
       case 'Music':
         return onMusic(state as Kind<F, AudioStateValueMusic>)
-      case 'Elevator':
-        return onElevator(state as Kind<F, AudioStateValueElevator>)
+      case 'Playlist':
+        return onPlaylist(state as Kind<F, AudioStateValuePlaylist>)
     }
   }
 
@@ -232,9 +232,9 @@ const AudioStateNotDisconnected = {
 
 export {
   AudioState,
-  AudioStateDisconnected,
-  AudioStateConnecting,
   AudioStateConnected,
+  AudioStateConnecting,
+  AudioStateDisconnected,
   AudioStateNotDisconnected,
 }
 

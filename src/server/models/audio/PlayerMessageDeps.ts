@@ -8,6 +8,7 @@ import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 import { MyFile } from '../FileOrDir'
 import type { AudioState, AudioStateNotDisconnected } from './AudioState'
 import { AudioStateValue } from './AudioStateValue'
+import type { PlaylistType } from './PlaylistType'
 
 type Common = {
   audioStateType: AudioState['type']
@@ -20,12 +21,13 @@ type Music = Common & {
   queue: List<Track>
 }
 
-type Elevator = Common & {
-  type: 'Elevator'
-  playlist: NonEmptyArray<MyFile>
+type Playlist = Common & {
+  type: 'Playlist'
+  playlistType: PlaylistType
+  files: NonEmptyArray<MyFile>
 }
 
-type PlayerMessageDeps = Music | Elevator
+type PlayerMessageDeps = Music | Playlist
 
 const musicEq: Eq<Music> = eq.struct<Omit<Music, 'type'>>({
   audioStateType: string.Eq,
@@ -34,10 +36,11 @@ const musicEq: Eq<Music> = eq.struct<Omit<Music, 'type'>>({
   queue: List.getEq(Track.Eq),
 })
 
-const elevatorEq: Eq<Elevator> = eq.struct<Omit<Elevator, 'type'>>({
+const playlistEq: Eq<Playlist> = eq.struct<Omit<Playlist, 'type'>>({
   audioStateType: string.Eq,
   isPaused: boolean.Eq,
-  playlist: NonEmptyArray.getEq(MyFile.Eq.byPath),
+  playlistType: string.Eq,
+  files: NonEmptyArray.getEq(MyFile.Eq.byPath),
 })
 
 const depsEq: Eq<PlayerMessageDeps> = eq.fromEquals((x, y) => {
@@ -47,8 +50,8 @@ const depsEq: Eq<PlayerMessageDeps> = eq.fromEquals((x, y) => {
     case 'Music':
       return musicEq.equals(x, y as Music)
 
-    case 'Elevator':
-      return elevatorEq.equals(x, y as Elevator)
+    case 'Playlist':
+      return playlistEq.equals(x, y as Playlist)
   }
 })
 
@@ -65,11 +68,12 @@ const PlayerMessageDeps = {
           queue,
         }),
 
-        onElevator: ({ playlist, isPaused }) => ({
+        onPlaylist: ({ files, playlistType, isPaused }) => ({
           audioStateType: state.type,
           isPaused,
-          type: 'Elevator',
-          playlist,
+          type: 'Playlist',
+          playlistType,
+          files,
         }),
       }),
     ),

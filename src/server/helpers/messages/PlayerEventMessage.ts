@@ -5,9 +5,10 @@ import type { Track } from '../../../shared/models/audio/music/Track'
 import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 
 import type {
-  AudioStateValueElevator,
   AudioStateValueMusic,
+  AudioStateValuePlaylist,
 } from '../../models/audio/AudioStateValue'
+import type { PlaylistType } from '../../models/audio/PlaylistType'
 
 const tracksAdded = (author: User, tracks: NonEmptyArray<Track>): string => {
   const tracksStr = ((): string => {
@@ -35,9 +36,31 @@ const trackSkipped = (author: User, value: AudioStateValueMusic): string => {
   return `**${author}** est passé au morceau suivant${additional}`
 }
 
-const elevatorStarted = (author: User): string => `**${author}** a appelé l’ascenseur`
+const playlistStarted = (type: PlaylistType, author: User): string => {
+  switch (type) {
+    case 'elevator':
+      return `**${author}** a appelé l’ascenseur`
+    case 'heimerLoco':
+      return `**${author}** JUGANDO HEIMERDONGER`
+  }
+}
 
-const elevatorSkipped = (author: User, { playlist: [head] }: AudioStateValueElevator): string =>
-  `**${author}** a interrompu \`${head.basename}\`.`
+const playlistSkipped = (
+  type: PlaylistType,
+  author: User,
+  { files: [head] }: AudioStateValuePlaylist,
+): string => {
+  switch (type) {
+    case 'elevator':
+      return `**${author}** a interrompu \`${head.basename}\``
+    case 'heimerLoco':
+      return `**${author}** STOPIDA \`${head.basename}\``
+  }
+}
 
-export const PlayerEventMessage = { tracksAdded, trackSkipped, elevatorStarted, elevatorSkipped }
+export const PlayerEventMessage = {
+  tracksAdded,
+  trackSkipped,
+  playlistStarted,
+  playlistSkipped,
+}

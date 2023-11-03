@@ -14,10 +14,11 @@ const musicExtension = /\.(ogg|webm)$/
 type Resources = {
   music: {
     elevator: NonEmptyArray<MyFile>
+    heimerLoco: NonEmptyArray<MyFile>
   }
 }
 
-const resourcesDir = pipe(Dir.of(dirname), Dir.joinDir('..', '..', '..', 'resources'))
+const musicDir = pipe(Dir.of(dirname), Dir.joinDir('..', '..', '..', 'resources', 'music'))
 
 const loadDir = (dir: Dir): Future<NonEmptyArray<MyFile>> =>
   pipe(
@@ -37,7 +38,8 @@ const isMusicFile = (f: FileOrDir): f is MyFile =>
 const load: Future<Resources> = pipe(
   apply.sequenceS(Future.ApplicativePar)({
     music: apply.sequenceS(Future.ApplicativePar)({
-      elevator: loadDir(pipe(resourcesDir, Dir.joinDir('music', 'elevator'))),
+      elevator: loadDir(pipe(musicDir, Dir.joinDir('elevator'))),
+      heimerLoco: loadDir(pipe(musicDir, Dir.joinDir('heimerLoco'))),
     }),
   }),
 )

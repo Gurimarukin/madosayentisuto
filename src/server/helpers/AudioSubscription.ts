@@ -25,15 +25,17 @@ import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
+import type { MyFile } from '../models/FileOrDir'
 import type { OldAndNewState } from '../models/OldAndNewState'
 import type { AudioStateConnected, AudioStateConnecting } from '../models/audio/AudioState'
 import { AudioState, AudioStateNotDisconnected } from '../models/audio/AudioState'
 import {
   AudioStateValue,
-  AudioStateValueElevator,
   AudioStateValueMusic,
+  AudioStateValuePlaylist,
 } from '../models/audio/AudioStateValue'
 import { PlayerMessageDeps } from '../models/audio/PlayerMessageDeps'
+import type { PlaylistType } from '../models/audio/PlaylistType'
 import { AudioEvent } from '../models/event/AudioEvent'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildAudioChannel, GuildSendableChannel, NamedChannel } from '../utils/ChannelUtils'
@@ -79,10 +81,12 @@ export type AudioSubscription = {
     messageChannel: TextChannel,
     tracks: NonEmptyArray<Track>,
   ) => IO<NotUsed>
-  startElevator: (
+  startPlaylist: (
     author: User,
     audioChannel: GuildAudioChannel,
     messageChannel: TextChannel,
+    playlistType: PlaylistType,
+    files: NonEmptyArray<MyFile>,
   ) => IO<NotUsed>
   playPauseTrack: IO<NotUsed>
   playNextTrack: (author: User) => IO<NotUsed>
@@ -92,7 +96,6 @@ export type AudioSubscription = {
 
 const of = (
   Logger: LoggerGetter,
-  resourcesHelper: ResourcesHelper,
   ytDlp: YtDlp,
   serverToClientEventSubject: TSubject<ServerToClientEvent>,
   guild: Guild,
@@ -124,7 +127,7 @@ const of = (
         ),
 
         queueTracks,
-        startElevator,
+        startPlaylist,
         playPauseTrack: getPlayPauseTrack(),
         playNextTrack,
         stop: getStop(),
@@ -172,7 +175,7 @@ const of = (
             Future.map(value => pipe(state, AudioStateNotDisconnected.setValue()(value))),
           ),
 
-          onElevator: ({ message, pendingEvents }) => {
+          onPlaylist: ({ message, pendingEvents }) => {
             const futureValue = pipe(
               AudioStateValue.music({
                 currentTrack: Maybe.none,
@@ -230,29 +233,26 @@ const of = (
     })
   }
 
-  function startElevator(
+  function startPlaylist(
     author: User,
     audioChannel: GuildAudioChannel,
     messageChannel: TextChannel,
+    playlistType: PlaylistType,
+    files: NonEmptyArray<MyFile>,
   ): IO<NotUsed> {
     return queueStateReducer(state => {
       switch (state.type) {
         case 'Disconnected':
-          return pipe(
-            resourcesHelper.randomElevatorPlaylist,
-            Future.fromIO,
-            Future.chain(playlist =>
-              getConnecting(
-                audioChannel,
-                AudioStateValue.elevator({
-                  playlist,
-                  isPaused: false,
-                  messageChannel,
-                  message: Maybe.none,
-                  pendingEvents: List.of(PlayerEventMessage.elevatorStarted(author)),
-                }),
-              ),
-            ),
+          return getConnecting(
+            audioChannel,
+            AudioStateValue.playlist({
+              playlistType,
+              files,
+              isPaused: false,
+              messageChannel,
+              message: Maybe.none,
+              pendingEvents: List.of(PlayerEventMessage.playlistStarted(playlistType, author)),
+            }),
           )
 
         case 'Connecting':
@@ -308,15 +308,19 @@ const of = (
                       playMusicFirstTrackFromQueue,
                     ),
 
-              onElevator: elevatorState =>
+              onPlaylist: elevatorState =>
                 pipe(
                   elevatorState,
                   AudioStateNotDisconnected.modifyValue<'AudioStateConnected'>()(
                     AudioStateValue.appendPendingEvent(
-                      PlayerEventMessage.elevatorSkipped(author, elevatorState.value),
+                      PlayerEventMessage.playlistSkipped(
+                        elevatorState.value.playlistType,
+                        author,
+                        elevatorState.value,
+                      ),
                     ),
                   ),
-                  playElevatorFile,
+                  playPlaylistFile,
                   Future.fromIOEither,
                 ),
             }),
@@ -401,10 +405,10 @@ const of = (
                   )
                 : onConnectionReadyConnecting(musicState, playMusicFirstTrackFromQueue),
 
-            onElevator: elevatorState =>
+            onPlaylist: elevatorState =>
               onConnectionReadyConnecting(
                 elevatorState,
-                flow(playElevatorFile, Future.fromIOEither),
+                flow(playPlaylistFile, Future.fromIOEither),
               ),
           }),
         )
@@ -513,7 +517,7 @@ const of = (
                     Future.map(() => musicState),
                   )
                 : playMusicFirstTrackFromQueue(musicState),
-            onElevator: flow(playElevatorFile, Future.fromIOEither),
+            onPlaylist: flow(playPlaylistFile, Future.fromIOEither),
           }),
         )
     }
@@ -641,11 +645,11 @@ const of = (
     )
   }
 
-  function playElevatorFile(
-    state: AudioStateConnected<AudioStateValueElevator>,
-  ): IO<AudioStateConnected<AudioStateValueElevator>> {
+  function playPlaylistFile(
+    state: AudioStateConnected<AudioStateValuePlaylist>,
+  ): IO<AudioStateConnected<AudioStateValuePlaylist>> {
     const audioResource = pipe(
-      state.value.playlist,
+      state.value.files,
       NonEmptyArray.head,
       ResourcesHelper.audioResourceFromOggFile,
     )
@@ -655,7 +659,7 @@ const of = (
         pipe(
           state,
           AudioStateNotDisconnected.modifyValue<'AudioStateConnected'>()(
-            AudioStateValueElevator.rotatePlaylist,
+            AudioStateValuePlaylist.rotatePlaylist,
           ),
         ),
       ),
@@ -740,18 +744,27 @@ const connecting = <A extends AudioStateValue>(
 
 const initStateMessage = <A extends AudioStateValue>(value: A): Future<A> =>
   pipe(
-    sendStateMessageAndStartThread(value.type, value.messageChannel),
+    stateMessageConnecting(value),
+    Future.fromIO,
+    Future.chain(options => sendStateMessageAndStartThread(value.messageChannel, options)),
     Future.map(message => pipe(value, AudioStateValue.setMessage(message))),
   )
 
+const stateMessageConnecting = (value: AudioStateValue): io.IO<BaseMessageOptions> => {
+  switch (value.type) {
+    case 'Music':
+      return PlayerStateMessage.connecting.Music
+    case 'Playlist':
+      return PlayerStateMessage.connecting.Playlist(value.playlistType)
+  }
+}
+
 const sendStateMessageAndStartThread = (
-  type: AudioStateValue['type'],
   channel: GuildSendableChannel,
+  options: BaseMessageOptions,
 ): Future<Maybe<Message<true>>> =>
   pipe(
-    PlayerStateMessage.connecting[type],
-    Future.fromIO,
-    Future.chain(options => DiscordConnector.sendMessage(channel, options)),
+    DiscordConnector.sendMessage(channel, options),
     futureMaybe.chainFirstTaskEitherK(message =>
       DiscordConnector.messageStartThread(message, {
         name: threadName,
@@ -808,8 +821,8 @@ const getPlayerMessage = (deps: PlayerMessageDeps): io.IO<BaseMessageOptions> =>
       case 'Music':
         return PlayerStateMessage.connecting.Music
 
-      case 'Elevator':
-        return PlayerStateMessage.connecting.Elevator
+      case 'Playlist':
+        return PlayerStateMessage.connecting.Playlist(deps.playlistType)
     }
   } else {
     const { isPaused } = deps
@@ -819,11 +832,13 @@ const getPlayerMessage = (deps: PlayerMessageDeps): io.IO<BaseMessageOptions> =>
         const { currentTrack, queue } = deps
         return PlayerStateMessage.playing.music(currentTrack, queue, { isPaused })
 
-      case 'Elevator':
-        const { playlist } = deps
-        return PlayerStateMessage.playing.elevator(pipe(playlist, NonEmptyArray.rotate(1)), {
-          isPaused,
-        })
+      case 'Playlist':
+        const { playlistType, files } = deps
+        return PlayerStateMessage.playing.playlist(
+          playlistType,
+          pipe(files, NonEmptyArray.rotate(1)),
+          { isPaused },
+        )
     }
   }
 }

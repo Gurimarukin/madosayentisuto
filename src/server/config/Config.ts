@@ -3,7 +3,6 @@ import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
-import { MsDuration } from '../../shared/models/MsDuration'
 import { ValidatedNea } from '../../shared/models/ValidatedNea'
 import { GuildId } from '../../shared/models/guild/GuildId'
 import { LogLevelOrOff } from '../../shared/models/log/LogLevel'
@@ -35,7 +34,6 @@ export type Config = {
   uwuGuilds: List<GuildId>
   kohLantaVictims: List<DiscordUserId>
   captain: CaptainConfig
-  elevatorDelay: MsDuration
   theQuest: TheQuestConfig
 }
 
@@ -117,7 +115,6 @@ const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
         mentions: r(ArrayFromString.decoder(D.string))('CAPTAIN_MENTIONS'),
         thanks: r(ArrayFromString.decoder(D.string))('CAPTAIN_THANKS'),
       }),
-      elevatorDelay: r(MsDuration.decoder)('ELEVATOR_DELAY'),
       theQuest: seqS<TheQuestConfig>({
         webappUrl: r(D.string)('THE_QUEST_WEBAPP_URL'),
         apiUrl: r(D.string)('THE_QUEST_API_URL'),

@@ -11,11 +11,12 @@ import { List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { MessageUtils } from '../../utils/MessageUtils'
 import { MyFile } from '../FileOrDir'
+import type { PlaylistType } from './PlaylistType'
 
 type AudioStateValue = typeof u.T
 
 type AudioStateValueMusic = typeof u.Music.T
-type AudioStateValueElevator = typeof u.Elevator.T
+type AudioStateValuePlaylist = typeof u.Playlist.T
 
 type CommonArgs = {
   isPaused: boolean
@@ -29,28 +30,29 @@ type MusicArgs = {
   queue: List<Track>
 } & CommonArgs
 
-type ElevatorArgs = {
-  playlist: NonEmptyArray<MyFile>
+type PlaylistArgs = {
+  playlistType: PlaylistType
+  files: NonEmptyArray<MyFile>
 } & CommonArgs
 
 const u = createUnion({
   Music: (args: MusicArgs) => args,
-  Elevator: (args: ElevatorArgs) => args,
+  Playlist: (args: PlaylistArgs) => args,
 })
 
 type FoldArgs<A, B> = {
   onMusic: (value: AudioStateValueMusic) => A
-  onElevator: (value: AudioStateValueElevator) => B
+  onPlaylist: (value: AudioStateValuePlaylist) => B
 }
 
 const fold =
-  <A, B = A>({ onMusic, onElevator }: FoldArgs<A, B>) =>
+  <A, B = A>({ onMusic, onPlaylist }: FoldArgs<A, B>) =>
   (value: AudioStateValue): A | B => {
     switch (value.type) {
       case 'Music':
         return onMusic(value)
-      case 'Elevator':
-        return onElevator(value)
+      case 'Playlist':
+        return onPlaylist(value)
     }
   }
 
@@ -63,10 +65,11 @@ const toView = fold<AudioStateValueView>({
       ChannelUtils.toView(s.messageChannel),
       pipe(s.message, Maybe.map(MessageUtils.toView)),
     ),
-  onElevator: s =>
-    AudioStateValueView.elevator(
+  onPlaylist: s =>
+    AudioStateValueView.playlist(
+      s.playlistType,
       pipe(
-        s.playlist,
+        s.files,
         NonEmptyArray.map(f => f.basename),
         NonEmptyArray.rotate(1),
       ),
@@ -81,8 +84,8 @@ const Eq: eq.Eq<AudioStateValue> = eq.fromEquals((x, y) => {
   switch (x.type) {
     case 'Music':
       return audioStateValueMusicEq.equals(x, y as AudioStateValueMusic)
-    case 'Elevator':
-      return audioStateValueElevatorEq.equals(x, y as AudioStateValueElevator)
+    case 'Playlist':
+      return audioStateValuePlaylistEq.equals(x, y as AudioStateValuePlaylist)
   }
 })
 
@@ -98,9 +101,10 @@ const audioStateValueMusicEq = eq.struct<AudioStateValueMusic>({
   pendingEvents: List.getEq(string.Eq),
 })
 
-const audioStateValueElevatorEq = eq.struct<AudioStateValueElevator>({
+const audioStateValuePlaylistEq = eq.struct<AudioStateValuePlaylist>({
   type: eqIgnore,
-  playlist: NonEmptyArray.getEq(MyFile.Eq.byPath),
+  playlistType: string.Eq,
+  files: NonEmptyArray.getEq(MyFile.Eq.byPath),
   isPaused: boolean.Eq,
   messageChannel: ChannelUtils.Eq.byId,
   message: Maybe.getEq(MessageUtils.Eq.byId),
@@ -116,7 +120,7 @@ const appendPendingEvent = (event: string): (<A extends AudioStateValue>(s: A) =
 
 const AudioStateValue = {
   music: u.Music,
-  elevator: u.Elevator,
+  playlist: u.Playlist,
   is: u.is,
   fold,
   toView,
@@ -148,10 +152,10 @@ const AudioStateValueMusic = {
   setQueue: musicQueueLens.set,
 }
 
-const elevatorPlaylistLens = pipe(lens.id<AudioStateValueElevator>(), lens.prop('playlist'))
+const playlistFilesLens = pipe(lens.id<AudioStateValuePlaylist>(), lens.prop('files'))
 
-const AudioStateValueElevator = {
-  rotatePlaylist: pipe(elevatorPlaylistLens, lens.modify(NonEmptyArray.rotate(-1))),
+const AudioStateValuePlaylist = {
+  rotatePlaylist: pipe(playlistFilesLens, lens.modify(NonEmptyArray.rotate(-1))),
 }
 
-export { AudioStateValue, AudioStateValueMusic, AudioStateValueElevator }
+export { AudioStateValue, AudioStateValueMusic, AudioStateValuePlaylist }

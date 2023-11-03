@@ -15,10 +15,12 @@ import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../..
 
 import type { AudioSubscription } from '../../helpers/AudioSubscription'
 import { DiscordConnector, isUnknownMessageError } from '../../helpers/DiscordConnector'
+import type { ResourcesHelper } from '../../helpers/ResourcesHelper'
 import type { YtDlp } from '../../helpers/YtDlp'
 import { YtDlpResult } from '../../helpers/YtDlp'
 import { PlayerStateMessage } from '../../helpers/messages/PlayerStateMessage'
 import { AudioState } from '../../models/audio/AudioState'
+import type { PlaylistType } from '../../models/audio/PlaylistType'
 import { Command } from '../../models/discord/Command'
 import { MadEvent } from '../../models/event/MadEvent'
 import type { LoggerGetter } from '../../models/logger/LoggerObservable'
@@ -27,17 +29,20 @@ import type { GuildAudioChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { utilInspect } from '../../utils/utilInspect'
 
-type PlayCommand = ElevatorCommand & {
+type PlayCommand = CommandCommon & {
   tracks: NonEmptyArray<Track>
 }
 
-type ElevatorCommand = {
+type PlaylistCommand = CommandCommon
+
+type CommandCommon = {
   musicChannel: GuildAudioChannel
   stateChannel: TextChannel
 }
 
 const Keys = {
   elevator: 'ascenseur',
+  heimerLoco: 'heimer-loco',
 }
 
 const playCommands = pipe(
@@ -58,13 +63,19 @@ const playCommands = pipe(
 
 const elevatorCommand = Command.chatInput({
   name: Keys.elevator,
-  description: 'Jean Plank vient vous tenir companie avec sa liste de lecture spécial ascenseur',
+  description: 'Jean Plank vient vous tenir compagnie avec sa liste de lecture spécial ascenseur',
 })()
 
-export const playerCommands = [...playCommands, elevatorCommand]
+const heimerLocoCommand = Command.chatInput({
+  name: Keys.heimerLoco,
+  description: 'JUAN PLANKES ARRIVAS PARA ACCOMPAGNAR TÙ EN ESTA PARTIDO DE HEIMERDONGER',
+})()
+
+export const playerCommands = [...playCommands, elevatorCommand, heimerLocoCommand]
 
 export const PlayerCommandsObserver = (
   Logger: LoggerGetter,
+  resourcesHelper: ResourcesHelper,
   ytDlp: YtDlp,
   guildStateService: GuildStateService,
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -90,7 +101,9 @@ export const PlayerCommandsObserver = (
     }
     switch (interaction.commandName) {
       case Keys.elevator:
-        return onElevatorCommand(interaction)
+        return onPlaylistCommand('elevator', interaction)
+      case Keys.heimerLoco:
+        return onPlaylistCommand('heimerLoco', interaction)
     }
     return Future.notUsed
   }
@@ -126,7 +139,10 @@ export const PlayerCommandsObserver = (
     )
   }
 
-  function onElevatorCommand(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+  function onPlaylistCommand(
+    playlist: PlaylistType,
+    interaction: ChatInputCommandInteraction,
+  ): Future<NotUsed> {
     const guild = interaction.guild
     if (guild === null) return Future.notUsed
     return pipe(
@@ -140,8 +156,20 @@ export const PlayerCommandsObserver = (
           command,
           Either.fold(flow(Either.left, IO.right), ({ musicChannel, stateChannel }) =>
             pipe(
-              subscription.startElevator(interaction.user, musicChannel, stateChannel),
-              IO.map(() => Either.right(elevatorStartedInteractionReply)),
+              resourcesHelper.playlistFiles(playlist),
+              IO.fromIO,
+              IO.chain(files =>
+                pipe(
+                  subscription.startPlaylist(
+                    interaction.user,
+                    musicChannel,
+                    stateChannel,
+                    playlist,
+                    files,
+                  ),
+                  IO.map(() => Either.right(playlistStartedInteractionReply[playlist])),
+                ),
+              ),
             ),
           ),
         ),
@@ -252,7 +280,7 @@ export const PlayerCommandsObserver = (
   function validateElevatorCommand(
     interaction: ChatInputCommandInteraction,
     subscription: AudioSubscription,
-  ): Future<Either<string, ElevatorCommand>> {
+  ): Future<Either<string, PlaylistCommand>> {
     return pipe(
       subscription.getAudioState,
       Future.fromIO,
@@ -310,7 +338,7 @@ export const PlayerCommandsObserver = (
 const validateAudioAndStateChannel = (
   interaction: Interaction,
   state: AudioState,
-): Either<string, ElevatorCommand> =>
+): Either<string, PlaylistCommand> =>
   pipe(
     validateAudioChannel(interaction, state),
     Either.chain(musicChannel =>
@@ -350,4 +378,7 @@ const tracksAddedInteractionReply = (tracks: NonEmptyArray<Track>): string =>
     List.mkString('', ', ', ` ajouté${tracks.length === 1 ? '' : 's'} à la file d'attente.`),
   )
 
-const elevatorStartedInteractionReply = 'Ascenseur appelé.'
+const playlistStartedInteractionReply: Record<PlaylistType, string> = {
+  elevator: 'Ascenseur appelé.',
+  heimerLoco: 'JUGANDO HEIMERDONGER.',
+}
