@@ -1,4 +1,6 @@
+import { apply } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
+import { MongoClient } from 'mongodb'
 
 import { MsDuration } from '../shared/models/MsDuration'
 import { StringUtils } from '../shared/utils/StringUtils'
@@ -27,7 +29,6 @@ import { UserPersistence } from './persistence/UserPersistence'
 import { EmojidexService } from './services/EmojidexService'
 import { HealthCheckService } from './services/HealthCheckService'
 import { MigrationService } from './services/MigrationService'
-import { getOnError } from './utils/getOnError'
 
 const dbRetryDelay = MsDuration.seconds(10)
 
@@ -88,15 +89,19 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
   const { Logger } = loggerObservable
   const logger = Logger('Context')
 
-  return pipe(Resources.load, Future.chain(loadContext))
+  const loadClient: Future<MongoClient> = Future.tryCatch(() =>
+    MongoClient.connect(`mongodb://${config.db.host}`, {
+      auth: { username: config.db.user, password: config.db.password },
+    }),
+  )
 
-  function loadContext(resources: Resources): Future<Context> {
-    const withDb = WithDb.of(getOnError(logger), {
-      url: `mongodb://${config.db.host}`,
-      username: config.db.user,
-      password: config.db.password,
-      dbName: config.db.dbName,
-    })
+  return pipe(
+    apply.sequenceT(Future.ApplyPar)(Resources.load, loadClient),
+    Future.chain(loadContext),
+  )
+
+  function loadContext([resources, client]: [Resources, MongoClient]): Future<Context> {
+    const withDb = WithDb.of(client, config.db.dbName)
 
     const mongoCollection: MongoCollectionGetter = MongoCollectionGetter.fromWithDb(withDb)
 
