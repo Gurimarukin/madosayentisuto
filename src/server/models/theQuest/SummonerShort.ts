@@ -1,6 +1,6 @@
-import type { PlatformWithName } from './PlatformWithName'
+import type { PlatformWithRiotId } from './PlatformWithRiotId'
 
-type SummonerShort = PlatformWithName & {
+type SummonerShort = PlatformWithRiotId & {
   profileIcondId: number
 }
 

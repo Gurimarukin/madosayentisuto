@@ -5,6 +5,7 @@ import { List } from '../../../shared/utils/fp'
 
 import { ChampionKey } from './ChampionKey'
 import { Platform } from './Platform'
+import { RiotId } from './RiotId'
 
 type TheQuestProgressionDb = C.TypeOf<typeof codec>
 
@@ -12,7 +13,7 @@ const codec = C.struct({
   userId: DiscordUserId.codec,
   summoner: C.struct({
     platform: Platform.codec,
-    name: C.string,
+    riotId: RiotId.fromStringCodec,
   }),
   champions: C.struct({
     mastery7: List.codec(ChampionKey.codec),

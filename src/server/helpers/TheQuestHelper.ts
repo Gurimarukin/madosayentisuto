@@ -4,7 +4,6 @@ import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
-import type { LoggerType } from '../../shared/models/LoggerType'
 import { Sink } from '../../shared/models/rx/Sink'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, Maybe, toNotUsed } from '../../shared/utils/fp'
@@ -14,7 +13,7 @@ import type { TheQuestConfig } from '../config/Config'
 import type { Resources } from '../config/Resources'
 import { ChampionKey } from '../models/theQuest/ChampionKey'
 import type { ChampionLevel } from '../models/theQuest/ChampionLevel'
-import type { PlatformWithName } from '../models/theQuest/PlatformWithName'
+import type { PlatformWithRiotId } from '../models/theQuest/PlatformWithRiotId'
 import type { StaticData } from '../models/theQuest/StaticData'
 import type { TheQuestNotificationChampionLeveledUp } from '../models/theQuest/TheQuestNotification'
 import { TheQuestNotification } from '../models/theQuest/TheQuestNotification'
@@ -41,58 +40,56 @@ const TheQuestHelper = (
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
   return {
-    sendNotificationsAndRefreshMessage:
-      (logger: LoggerType) =>
-      (guild: Guild, channel: GuildTextBasedChannel): Future<Maybe<Message<true>>> =>
-        pipe(
-          fetchProgressionsAndNotifications(logger, guild),
-          Future.apS('staticData', theQuestService.api.staticData),
-          Future.apS('oldMessage', guildStateService.getTheQuestMessage(guild)),
-          Future.chainFirst(({ staticData, notifications }) =>
-            sendNotifications(staticData, channel, notifications),
-          ),
-          Future.bind('now', () => Future.fromIO(DayJs.now)),
-          Future.chain(({ progressions, notifications, oldMessage, now }) => {
-            const options = TheQuestMessage.ranking({
-              webappUrl: config.webappUrl,
-              guild,
-              progressions,
-              updatedAt: now,
-            })
-
-            const sendRankingMessageAndUpdateState: Future<Maybe<Message<true>>> = pipe(
-              DiscordConnector.sendMessage(channel, options),
-              futureMaybe.chainFirstTaskEitherK(m =>
-                // we want the `(edited)` label on message so we won't have a layout shift
-                DiscordConnector.messageEdit(m, options),
-              ),
-              Future.chainFirst(newMessage =>
-                pipe(
-                  oldMessage,
-                  Maybe.fold(() => Future.successful(true), DiscordConnector.messageDelete),
-                  Future.chain(() => guildStateService.setTheQuestMessage(guild, newMessage)),
-                ),
-              ),
-            )
-
-            return pipe(
-              oldMessage,
-              Maybe.fold(
-                () => sendRankingMessageAndUpdateState,
-                m =>
-                  List.isEmpty(notifications) && ChannelUtils.Eq.byId.equals(m.channel, channel)
-                    ? futureMaybe.fromTaskEither(DiscordConnector.messageEdit(m, options))
-                    : sendRankingMessageAndUpdateState,
-              ),
-            )
-          }),
+    sendNotificationsAndRefreshMessage: (
+      guild: Guild,
+      channel: GuildTextBasedChannel,
+    ): Future<Maybe<Message<true>>> =>
+      pipe(
+        fetchProgressionsAndNotifications(guild),
+        Future.apS('staticData', theQuestService.api.staticData),
+        Future.apS('oldMessage', guildStateService.getTheQuestMessage(guild)),
+        Future.chainFirst(({ staticData, notifications }) =>
+          sendNotifications(staticData, channel, notifications),
         ),
+        Future.bind('now', () => Future.fromIO(DayJs.now)),
+        Future.chain(({ progressions, notifications, oldMessage, now }) => {
+          const options = TheQuestMessage.ranking({
+            webappUrl: config.webappUrl,
+            guild,
+            progressions,
+            updatedAt: now,
+          })
+
+          const sendRankingMessageAndUpdateState: Future<Maybe<Message<true>>> = pipe(
+            DiscordConnector.sendMessage(channel, options),
+            futureMaybe.chainFirstTaskEitherK(m =>
+              // we want the `(edited)` label on message so we won't have a layout shift
+              DiscordConnector.messageEdit(m, options),
+            ),
+            Future.chainFirst(newMessage =>
+              pipe(
+                oldMessage,
+                Maybe.fold(() => Future.successful(true), DiscordConnector.messageDelete),
+                Future.chain(() => guildStateService.setTheQuestMessage(guild, newMessage)),
+              ),
+            ),
+          )
+
+          return pipe(
+            oldMessage,
+            Maybe.fold(
+              () => sendRankingMessageAndUpdateState,
+              m =>
+                List.isEmpty(notifications) && ChannelUtils.Eq.byId.equals(m.channel, channel)
+                  ? futureMaybe.fromTaskEither(DiscordConnector.messageEdit(m, options))
+                  : sendRankingMessageAndUpdateState,
+            ),
+          )
+        }),
+      ),
   }
 
-  function fetchProgressionsAndNotifications(
-    logger: LoggerType,
-    guild: Guild,
-  ): Future<ProgressionsAndNotifications> {
+  function fetchProgressionsAndNotifications(guild: Guild): Future<ProgressionsAndNotifications> {
     return pipe(
       DiscordConnector.fetchMembers(guild),
       Future.map(members =>
@@ -162,7 +159,7 @@ const TheQuestHelper = (
       List.map(p =>
         TheQuestNotification.UserLeft({
           userId: p.userId,
-          summoner: { platform: p.summoner.platform, name: p.summoner.name },
+          summoner: { platform: p.summoner.platform, riotId: p.summoner.riotId },
         }),
       ),
     )
@@ -179,7 +176,7 @@ const TheQuestHelper = (
                   userId: fromApi_.userId,
                   summoner: {
                     platform: fromApi_.summoner.platform,
-                    name: fromApi_.summoner.name,
+                    riotId: fromApi_.summoner.riotId,
                     profileIcondId: fromApi_.summoner.profileIconId,
                   },
                 }),
@@ -198,7 +195,7 @@ const TheQuestHelper = (
     return fromPersistence => {
       const masteryDiff = masteryDifference(fromApi.userId, {
         platform: fromApi.summoner.platform,
-        name: fromApi.summoner.name,
+        riotId: fromApi.summoner.riotId,
       })
       return pipe(
         masteryDiff(fromApi.champions.mastery5, fromPersistence.champions.mastery5, 5),
@@ -254,7 +251,7 @@ const TheQuestHelper = (
 export { TheQuestHelper }
 
 const masteryDifference =
-  (userId: DiscordUserId, summoner: PlatformWithName) =>
+  (userId: DiscordUserId, summoner: PlatformWithRiotId) =>
   (
     xs: List<ChampionKey>,
     ys: List<ChampionKey>,

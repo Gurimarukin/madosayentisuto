@@ -7,6 +7,7 @@ import { List } from '../../../shared/utils/fp'
 
 import { ChampionKey } from './ChampionKey'
 import { Platform } from './Platform'
+import { RiotId } from './RiotId'
 import { SummonerId } from './SummonerId'
 
 type TheQuestProgressionApi = D.TypeOf<typeof decoder>
@@ -16,7 +17,7 @@ const decoder = D.struct({
   summoner: D.struct({
     id: SummonerId.codec,
     platform: Platform.codec,
-    name: D.string,
+    riotId: RiotId.fromStringCodec,
     profileIconId: D.number,
   }),
   percents: D.number,

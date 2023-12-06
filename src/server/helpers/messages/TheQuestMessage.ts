@@ -18,7 +18,8 @@ import { ChampionId } from '../../models/theQuest/ChampionId'
 import { ChampionKey } from '../../models/theQuest/ChampionKey'
 import type { ChampionLevel } from '../../models/theQuest/ChampionLevel'
 import { DDragonVersion } from '../../models/theQuest/DDragonVersion'
-import type { PlatformWithName } from '../../models/theQuest/PlatformWithName'
+import type { PlatformWithRiotId } from '../../models/theQuest/PlatformWithRiotId'
+import { RiotId } from '../../models/theQuest/RiotId'
 import type { StaticData } from '../../models/theQuest/StaticData'
 import type {
   TheQuestNotificationChampionLeveledUp,
@@ -363,14 +364,16 @@ const formatUser = (id: DiscordUserId): string => `<@${DiscordUserId.unwrap(id)}
 
 const getFormatSummoner =
   (webappUrl: string) =>
-  ({ platform, name }: PlatformWithName, search: Maybe<string> = Maybe.none): string => {
+  ({ platform, riotId }: PlatformWithRiotId, search: Maybe<string> = Maybe.none): string => {
     const query = {
       level: 'all',
       search: Maybe.toUndefined(search),
     }
     const queryStr = qs.stringify(query)
-    const url = `${webappUrl}/${platform.toLowerCase()}/${name}?${queryStr}`
-    return `[${name}](${encodeURI(url)})`
+    const url = `${webappUrl}/${platform.toLowerCase()}/${RiotId.stringify('-')(
+      riotId,
+    )}?${queryStr}`
+    return `[${RiotId.stringify('#')(riotId)}](${encodeURI(url)})`
   }
 
 const attachmentUrl = (file: string): string => `attachment://${file}`
