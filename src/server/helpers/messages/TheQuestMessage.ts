@@ -86,16 +86,17 @@ const ranking = ({
               NonEmptyArray.mapWithIndex((i, u) => {
                 const bullets = pipe(
                   [
-                    `**${round1Fixed(u.percents)}%**`,
-                    `${formatSummoner(u.summoner)}${formatUser(u.userId)}`,
-                    masteriesWithEmoji(u.champions.mastery7.length, constants.emojis.mastery7),
+                    `**${round1Fixed(u.percents)}%** ${formatUser(u.userId)} ${masteriesWithEmoji(
+                      u.champions.mastery7.length,
+                      constants.emojis.mastery7,
+                    )}`,
                     masteriesWithEmoji(u.champions.mastery6.length, constants.emojis.mastery6),
                     masteriesWithEmoji(u.champions.mastery5.length, constants.emojis.mastery5),
                     `**${u.totalMasteryLevel}**`,
                   ],
                   List.mkString(' • '),
                 )
-                return `${i + 1}. ${bullets}`
+                return `${i + 1}. ${bullets}\n    ${formatSummoner(u.summoner)}`
               }),
               List.mkString('\n'),
             ),
