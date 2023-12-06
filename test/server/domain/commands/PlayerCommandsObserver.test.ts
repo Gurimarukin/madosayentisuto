@@ -1,3 +1,4 @@
+import { io } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../../../src/shared/models/DayJs'
@@ -19,6 +20,7 @@ import {
 import { Config } from '../../../../src/server/config/Config'
 import { PlayerCommandsObserver } from '../../../../src/server/domain/commands/PlayerCommandsObserver'
 import { YtDlp } from '../../../../src/server/helpers/YtDlp'
+import { MyFile } from '../../../../src/server/models/FileOrDir'
 import { consoleLogFormat } from '../../../../src/server/models/logger/observers/ConsoleLogObserver'
 import type { GuildStateService } from '../../../../src/server/services/GuildStateService'
 import { utilFormat } from '../../../../src/server/utils/utilInspect'
@@ -43,6 +45,7 @@ describe('validateTracks', () => {
         ),
         Dict.fromEntries,
       ),
+    { playlistFiles: () => io.of(NonEmptyArray.of(MyFile.fromPath(''))) },
     YtDlp(ytDlpPath),
     {} as GuildStateService,
   )

@@ -818,7 +818,7 @@ export const AdminCommandsObserver = (
           channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
         }),
         futureMaybe.chain(({ guild, channel }) =>
-          theQuestHelper.sendNotificationsAndRefreshMessage(logger)(guild, channel),
+          theQuestHelper.sendNotificationsAndRefreshMessage(guild, channel),
         ),
         futureMaybe.match(
           () => 'Erreur',

@@ -3,7 +3,7 @@ import { createUnion } from '../../../shared/utils/createUnion'
 
 import type { ChampionKey } from './ChampionKey'
 import type { ChampionLevel } from './ChampionLevel'
-import type { PlatformWithName } from './PlatformWithName'
+import type { PlatformWithRiotId } from './PlatformWithRiotId'
 import type { SummonerShort } from './SummonerShort'
 
 type TheQuestNotification = typeof u.T
@@ -21,11 +21,11 @@ type UserJoinedArgs = CommonArgs & {
 }
 
 type UserLeftArgs = CommonArgs & {
-  summoner: PlatformWithName
+  summoner: PlatformWithRiotId
 }
 
 type ChampionLeveledUpArgs = CommonArgs & {
-  summoner: PlatformWithName
+  summoner: PlatformWithRiotId
   champion: {
     id: ChampionKey
     level: ChampionLevel
@@ -42,7 +42,7 @@ const TheQuestNotification = { ...u }
 
 export {
   TheQuestNotification,
+  TheQuestNotificationChampionLeveledUp,
   TheQuestNotificationUserJoined,
   TheQuestNotificationUserLeft,
-  TheQuestNotificationChampionLeveledUp,
 }

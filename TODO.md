@@ -1,3 +1,10 @@
+- broken polls?
+- broken is Friday
+  ```
+  Missed "It's friday", now: 2023-11-24T15:12:00.000Z, scheduledAt: 2023-11-24T15:11:46.025Z
+  ```
+- /faction
+
 - the quest links: puuid?
 - /shi-fu-mi
 - maybe move sinks

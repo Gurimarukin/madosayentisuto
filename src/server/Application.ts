@@ -66,6 +66,7 @@ export const Application = (
   discord: DiscordConnector,
   {
     config,
+    resources,
     loggerObservable,
     botStatePersistence,
     logPersistence,
@@ -111,7 +112,7 @@ export const Application = (
 
   const theQuestHelper = TheQuestHelper(
     config.theQuest,
-    discord,
+    resources,
     guildStateService,
     theQuestService,
   )
