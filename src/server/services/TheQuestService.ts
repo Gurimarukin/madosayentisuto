@@ -4,7 +4,7 @@ import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 import type { TheQuestConfig } from '../config/Config'
 import type { HttpClient } from '../helpers/HttpClient'
 import { StaticData } from '../models/theQuest/StaticData'
-import { TheQuestProgressionResult } from '../models/theQuest/TheQuestProgressionResult'
+import { TheQuestProgressionApi } from '../models/theQuest/TheQuestProgressionApi'
 import type { TheQuestProgressionPersistence } from '../persistence/TheQuestProgressionPersistence'
 
 type TheQuestService = ReturnType<typeof TheQuestService>
@@ -25,7 +25,7 @@ const TheQuestService = (
     api: {
       staticData: apiStaticData,
 
-      usersGetProgression: (users: List<DiscordUserId>): Future<List<TheQuestProgressionResult>> =>
+      usersGetProgression: (users: List<DiscordUserId>): Future<List<TheQuestProgressionApi>> =>
         !List.isNonEmpty(users)
           ? Future.successful([])
           : httpClient.http(
@@ -34,7 +34,7 @@ const TheQuestService = (
                 headers: { Authorization: config.token },
                 json: [NonEmptyArray.encoder(DiscordUserId.codec), users],
               },
-              [List.decoder(TheQuestProgressionResult.decoder), 'List<TheQuestProgressionResult>'],
+              [List.decoder(TheQuestProgressionApi.decoder), 'List<TheQuestProgressionApi>'],
             ),
     },
 

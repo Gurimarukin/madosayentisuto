@@ -66,6 +66,7 @@ const of = (
 
   return {
     config,
+    resources,
     loggerObservable,
     botStatePersistence,
     logPersistence,

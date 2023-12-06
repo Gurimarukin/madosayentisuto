@@ -11,9 +11,8 @@ import type { Dict } from '../../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
 
+import type { Resources } from '../../config/Resources'
 import { constants } from '../../config/constants'
-import type { MyFile } from '../../models/FileOrDir'
-import { Dir } from '../../models/FileOrDir'
 import { MessageComponent } from '../../models/discord/MessageComponent'
 import { ChampionId } from '../../models/theQuest/ChampionId'
 import { ChampionKey } from '../../models/theQuest/ChampionKey'
@@ -28,11 +27,8 @@ import type {
 } from '../../models/theQuest/TheQuestNotification'
 import { TheQuestNotification } from '../../models/theQuest/TheQuestNotification'
 import type { TheQuestProgressionApi } from '../../models/theQuest/TheQuestProgressionApi'
-import { FsUtils } from '../../utils/FsUtils'
 import { CanvasHelper } from '../CanvasHelper'
 import { GuildHelper } from '../GuildHelper'
-
-const dirname = FsUtils.dirname(import.meta.url)
 
 const otherTheQuestWebapp = 'https://la-quete.netlify.app'
 
@@ -152,12 +148,14 @@ type EmbedWithAttachmentAndEmoji = {
 
 type NotificationsArgs = {
   webappUrl: string
+  resources: Resources
   staticData: StaticData
   guild: Guild
 }
 
 const notification = ({
   webappUrl,
+  resources,
   staticData,
   guild,
 }: NotificationsArgs): ((notif: TheQuestNotification) => Future<MessageOptionsWithEmoji>) => {
@@ -302,7 +300,7 @@ const notification = ({
       return pipe(
         apply.sequenceS(Future.ApplyPar)({
           championImg: CanvasHelper.loadImage(ddragonUrls.champion(championId)),
-          masteryImg: CanvasHelper.loadImage(masteryPng(championLevel).path),
+          masteryImg: CanvasHelper.loadImage(resources.mastery[championLevel].path),
         }),
         Future.chainIOEitherK(({ championImg, masteryImg }) =>
           pipe(
@@ -376,6 +374,3 @@ const getFormatSummoner =
   }
 
 const attachmentUrl = (file: string): string => `attachment://${file}`
-
-const masteryPng = (level: ChampionLevel): MyFile =>
-  pipe(Dir.of(dirname), Dir.joinFile('..', '..', 'imgs', `mastery-${level}.png`))

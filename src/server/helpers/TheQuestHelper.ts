@@ -1,16 +1,17 @@
 import type { Guild, GuildTextBasedChannel, Message, MessageReaction } from 'discord.js'
 import { apply, ord } from 'fp-ts'
-import { flow, pipe } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import type { LoggerType } from '../../shared/models/LoggerType'
 import { Sink } from '../../shared/models/rx/Sink'
 import type { NotUsed } from '../../shared/utils/fp'
-import { Future, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
+import { Future, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
 import type { TheQuestConfig } from '../config/Config'
+import type { Resources } from '../config/Resources'
 import { ChampionKey } from '../models/theQuest/ChampionKey'
 import type { ChampionLevel } from '../models/theQuest/ChampionLevel'
 import type { PlatformWithName } from '../models/theQuest/PlatformWithName'
@@ -19,11 +20,9 @@ import type { TheQuestNotificationChampionLeveledUp } from '../models/theQuest/T
 import { TheQuestNotification } from '../models/theQuest/TheQuestNotification'
 import { TheQuestProgressionApi } from '../models/theQuest/TheQuestProgressionApi'
 import type { TheQuestProgressionDb } from '../models/theQuest/TheQuestProgressionDb'
-import { TheQuestProgressionResult } from '../models/theQuest/TheQuestProgressionResult'
 import type { GuildStateService } from '../services/GuildStateService'
 import type { TheQuestService } from '../services/TheQuestService'
 import { ChannelUtils } from '../utils/ChannelUtils'
-import { LogUtils } from '../utils/LogUtils'
 import { DiscordConnector } from './DiscordConnector'
 import { TheQuestMessage } from './messages/TheQuestMessage'
 
@@ -36,7 +35,7 @@ type TheQuestHelper = ReturnType<typeof TheQuestHelper>
 
 const TheQuestHelper = (
   config: TheQuestConfig,
-  discord: DiscordConnector,
+  resources: Resources,
   guildStateService: GuildStateService,
   theQuestService: TheQuestService,
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -109,15 +108,10 @@ const TheQuestHelper = (
             theQuestService.persistence.listAllForIds(memberIds),
             Sink.readonlyArray,
           ),
-          fromApiResults: theQuestService.api.usersGetProgression(memberIds),
+          fromApi: theQuestService.api.usersGetProgression(memberIds),
         }),
       ),
-      Future.chain(({ progressions: { fromPersistence, fromApiResults } }) => {
-        const { left: toWarn, right: fromApi } = pipe(
-          fromApiResults,
-          List.partitionMap(TheQuestProgressionResult.toEither),
-        )
-
+      Future.chain(({ progressions: { fromPersistence, fromApi } }) => {
         // remove those returned by persistence, but not by api
         const toRemove = pipe(
           fromPersistence,
@@ -131,29 +125,6 @@ const TheQuestHelper = (
         )
         return pipe(
           apply.sequenceT(Future.ApplyPar)(
-            !List.isNonEmpty(toWarn)
-              ? Future.notUsed
-              : pipe(
-                  toWarn,
-                  NonEmptyArray.traverse(Future.ApplicativePar)(e => discord.fetchUser(e.user)),
-                  Future.chainIOEitherK(
-                    flow(
-                      List.zip(toWarn),
-                      List.map(
-                        ([user, e]) =>
-                          `- ${pipe(
-                            user,
-                            Maybe.fold(
-                              () => DiscordUserId.unwrap(e.user),
-                              u => u.tag,
-                            ),
-                          )}: ${e.connectionName}`,
-                      ),
-                      List.mkString('Summoner connection not found for users:\n', '\n', ''),
-                      LogUtils.pretty(logger, guild).warn,
-                    ),
-                  ),
-                ),
             pipe(
               toRemove,
               List.map(p => p.userId),
@@ -248,6 +219,7 @@ const TheQuestHelper = (
       List.traverse(Future.ApplicativePar)(
         TheQuestMessage.notification({
           webappUrl: config.webappUrl,
+          resources,
           staticData,
           guild: channel.guild,
         }),
