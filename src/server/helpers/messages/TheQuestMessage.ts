@@ -86,17 +86,15 @@ const ranking = ({
               NonEmptyArray.mapWithIndex((i, u) => {
                 const bullets = pipe(
                   [
-                    `**${round1Fixed(u.percents)}%** ${formatUser(u.userId)} ${masteriesWithEmoji(
-                      u.champions.mastery7.length,
-                      constants.emojis.mastery7,
-                    )}`,
-                    masteriesWithEmoji(u.champions.mastery6.length, constants.emojis.mastery6),
-                    masteriesWithEmoji(u.champions.mastery5.length, constants.emojis.mastery5),
-                    `**${u.totalMasteryLevel}**`,
+                    masteriesWithEmoji(constants.emojis.mastery7, u.champions.mastery7.length),
+                    masteriesWithEmoji(constants.emojis.mastery6, u.champions.mastery6.length),
+                    masteriesWithEmoji(constants.emojis.mastery5, u.champions.mastery5.length),
                   ],
                   List.mkString(' • '),
                 )
-                return `${i + 1}. ${bullets}\n    ${formatSummoner(u.summoner)}`
+                return `${i + 1}. **${round1Fixed(u.percents)}%** ${formatSummoner(
+                  u.summoner,
+                )} ${formatUser(u.userId)}\n    ${bullets} — **${u.totalMasteryLevel}**`
               }),
               List.mkString('\n'),
             ),
@@ -120,13 +118,13 @@ const ranking = ({
     ],
   }
 
-  function masteriesWithEmoji(n: number, rawEmoji: string): string {
+  function masteriesWithEmoji(rawEmoji: string, n: number): string {
     const emoji = pipe(
       rawEmoji,
       GuildHelper.getEmoji(guild),
       Maybe.fold(() => rawEmoji, String),
     )
-    return `${n} ${emoji}`
+    return `${emoji} ${n}`
   }
 }
 
