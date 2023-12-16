@@ -56,7 +56,6 @@ const ranking = ({
   progressions,
   updatedAt,
 }: RankingArgs): BaseMessageOptions => {
-  const webappUrlRegister = `${webappUrl}/register`
   const formatSummoner = getFormatSummoner(webappUrl)
   const theQuest = 'La Quête'
 
@@ -102,9 +101,9 @@ const ranking = ({
         ),
         fields: [
           MessageComponent.field(
-            '—',
+            ' ',
             StringUtils.stripMargins(
-              `Pour apparaître dans ce classement, il suffit de [s’inscrire](${webappUrlRegister}).
+              `Pour apparaître dans ce classement, n’hésitez pas à demander aux admins.
               |
               |${constants.emojis.link}  [site de La Quête](${webappUrl})
               |${constants.emojis.link}  [l’autre site de La Quête](${otherTheQuestWebapp})`,
