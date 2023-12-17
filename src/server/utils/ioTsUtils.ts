@@ -47,8 +47,8 @@ const booleanFromStringDecoder: Decoder<unknown, boolean> = pipe(
     s === 'true'
       ? D.success(true)
       : s === 'false'
-      ? D.success(false)
-      : D.failure(s, 'BooleanFromString'),
+        ? D.success(false)
+        : D.failure(s, 'BooleanFromString'),
   ),
 )
 

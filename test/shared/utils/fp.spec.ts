@@ -21,10 +21,10 @@ describe('Future.orElse', () => {
         e instanceof EvalError
           ? Future.successful('eval error')
           : e instanceof SyntaxError
-          ? Future.successful('syntax error')
-          : e.message === 'this is an error'
-          ? Future.successful('error message')
-          : Future.failed(e),
+            ? Future.successful('syntax error')
+            : e.message === 'this is an error'
+              ? Future.successful('error message')
+              : Future.failed(e),
       ),
     )()
     return res.then(r => expectT(r).toStrictEqual(Either.right('syntax error')))
@@ -37,8 +37,8 @@ describe('Future.orElse', () => {
         e instanceof EvalError
           ? Future.successful('eval error')
           : e.message === 'another message'
-          ? Future.successful('error message')
-          : Future.failed(e),
+            ? Future.successful('error message')
+            : Future.failed(e),
       ),
     )()
     return res.then(r => expectT(r).toStrictEqual(Either.left(SyntaxError('this is an error'))))
