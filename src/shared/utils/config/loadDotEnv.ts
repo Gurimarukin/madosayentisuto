@@ -10,7 +10,7 @@ export const loadDotEnv: IO<Dict<string, string>> = pipe(
     result.parsed !== undefined
       ? IO.right(result.parsed)
       : result.error !== undefined
-      ? IO.left(result.error)
-      : IO.left(Error('result.error was undefined')),
+        ? IO.left(result.error)
+        : IO.left(Error('result.error was undefined')),
   ),
 )

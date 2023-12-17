@@ -544,7 +544,7 @@ const voiceStateDisconnect = (voiceState: VoiceState, reason?: string): Future<G
 const fromConfig = (config: ClientConfig): Future<DiscordConnector> =>
   Future.tryCatch(
     () =>
-      new Promise<DiscordConnector>(resolve => {
+      new Promise<DiscordConnector>((resolve, reject) => {
         const client = new Client({
           intents: [
             GatewayIntentBits.DirectMessages,
@@ -565,7 +565,9 @@ const fromConfig = (config: ClientConfig): Future<DiscordConnector> =>
           ],
         })
         /* eslint-disable functional/no-expression-statements */
-        client.once('ready', () => resolve(of(client)))
+        client.once('ready', () =>
+          client.isReady() ? resolve(of(client)) : reject(Error('client was not ready')),
+        )
         client.login(BotToken.unwrap(config.token))
         /* eslint-enable functional/no-expression-statements */
       }),

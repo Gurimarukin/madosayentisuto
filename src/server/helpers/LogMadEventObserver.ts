@@ -28,8 +28,8 @@ export const LogMadEventObserver = (logger: LoggerType): TObserver<MadEvent> => 
             event.interaction.isChatInputCommand()
               ? event.interaction
               : event.interaction.isButton()
-              ? `Button("${event.interaction.customId}")`
-              : utilInspect({ type: event.interaction.type }, { breakLength: Infinity })
+                ? `Button("${event.interaction.customId}")`
+                : utilInspect({ type: event.interaction.type }, { breakLength: Infinity })
           }`
 
         case 'GuildMemberAdd':

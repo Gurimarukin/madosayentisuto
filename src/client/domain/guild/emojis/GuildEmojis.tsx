@@ -58,8 +58,8 @@ const Tiers: React.FC<TiersProps> = ({ emojis }) => {
               i === item.tierIndex
                 ? pipe(tier, Tier.modifyEmojis(List.filter(e => e.id !== emoji.id)))
                 : i === newTierIndex
-                ? pipe(tier, Tier.modifyEmojis(List.append(emoji)))
-                : tier,
+                  ? pipe(tier, Tier.modifyEmojis(List.append(emoji)))
+                  : tier,
             ),
           ),
         ),
