@@ -180,9 +180,5 @@ const resolveEmoji = (
 ): APIMessageComponentEmoji | undefined => {
   if (typeof emoji !== 'string') return emoji
 
-  const parsed = resolvePartialEmoji(emoji)
-  if (parsed === null) return undefined
-
-  const { id, name, animated } = parsed
-  return { id: id ?? undefined, name: name ?? undefined, animated }
+  return resolvePartialEmoji(emoji)
 }

@@ -13,7 +13,7 @@ const codec = C.struct({
 const fromGuildEmoji = (e: GuildEmoji): GuildEmojiView => ({
   id: GuildEmojiId.fromGuildEmoji(e),
   name: Maybe.fromNullable(e.name),
-  url: e.url,
+  url: e.imageURL(),
 })
 
 export type GuildEmojiView = C.TypeOf<typeof codec>
