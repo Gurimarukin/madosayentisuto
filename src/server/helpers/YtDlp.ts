@@ -129,7 +129,7 @@ const YtDlp = (binaryPath: string) => {
                 /* eslint-disable functional/no-expression-statements */
                 process.once('spawn', () => getAudioResource(stdout).then(resolve).catch(onError))
 
-                process.catch(onError)
+                process.once('error', onError)
 
                 const errLines: string[] = []
 
@@ -147,8 +147,6 @@ const YtDlp = (binaryPath: string) => {
                     )()
                   }
                 })
-
-                process.catch(onError)
 
                 // eslint-disable-next-line functional/no-return-void
                 function onError(error: Error): void {
