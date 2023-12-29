@@ -13,6 +13,7 @@ import type { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
 import { Sink } from '../../shared/models/rx/Sink'
 import { TObservable } from '../../shared/models/rx/TObservable'
+import { StringUtils } from '../../shared/utils/StringUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
@@ -154,7 +155,8 @@ export const ScheduledEventObserver = (
   function onItsFriday(now: DayJs, event: ScheduledEventItsFriday): Future<NotUsed> {
     const nowStartOfDay = pipe(now, DayJs.startOf('day'))
     const scheduledAtStartOfDay = pipe(event.scheduledAt, DayJs.startOf('day'))
-    return DayJs.Eq.equals(nowStartOfDay, scheduledAtStartOfDay)
+
+    return DayJs.Eq.equals(now, event.scheduledAt)
       ? pipe(
           guildStateService.listAllItsFridayChannels,
           Future.chainFirstIOEitherK(
@@ -169,9 +171,13 @@ export const ScheduledEventObserver = (
         )
       : Future.fromIOEither(
           logger.warn(
-            `Missed "It's friday", now: ${DayJs.toISOString(now)}, scheduledAt: ${DayJs.toISOString(
-              event.scheduledAt,
-            )}`,
+            StringUtils.stripMargins(
+              `Missed "It's friday":
+              |- now: ${DayJs.toISOString(now)}
+              |- event.scheduledAt: ${DayJs.toISOString(event.scheduledAt)}
+              |- nowStartOfDay: ${DayJs.toISOString(nowStartOfDay)}
+              |- scheduledAtStartOfDay: ${DayJs.toISOString(scheduledAtStartOfDay)}`,
+            ),
           ),
         )
   }
