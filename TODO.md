@@ -1,3 +1,5 @@
+- smaller Podman image size
+- prune images
 - broken polls?
 - broken is Friday
   ```
