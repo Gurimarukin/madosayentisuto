@@ -57,9 +57,10 @@ export const TheQuestObserver = (
     switch (event.type) {
       case 'AppStarted':
         return config.isDev ? sendNotificationsAndRefreshMessage : Future.notUsed
+
       case 'CronJob':
         return !config.isDev &&
-          pipe(event.date, DayJs.minute.get) % config.theQuest.refreshEveryMinutes === 0
+          (DayJs.minute.get(event.date) + 5) % config.theQuest.refreshEveryMinutes === 0
           ? sendNotificationsAndRefreshMessage
           : Future.notUsed
     }
