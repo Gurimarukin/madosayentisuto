@@ -11,4 +11,4 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
     cp -r dist/client/* "$APP_DATA_VOLUME"
 fi
 
-YTDLP_PATH=/app/yt-dlp node --experimental-specifier-resolution=node dist/server/index.js
+node --experimental-specifier-resolution=node dist/server/index.js

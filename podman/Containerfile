@@ -20,7 +20,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN ls -la node_modules/.bin
+ENV YTDLP_PATH /app/yt-dlp
 
 RUN yarn build
 
