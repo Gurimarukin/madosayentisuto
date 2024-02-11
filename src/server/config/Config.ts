@@ -1,4 +1,3 @@
-import type * as dotenv from 'dotenv'
 import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
@@ -8,7 +7,7 @@ import { GuildId } from '../../shared/models/guild/GuildId'
 import { LogLevelOrOff } from '../../shared/models/log/LogLevel'
 import { loadDotEnv } from '../../shared/utils/config/loadDotEnv'
 import { parseConfig } from '../../shared/utils/config/parseConfig'
-import type { List, NonEmptyArray, Try } from '../../shared/utils/fp'
+import type { Dict, List, NonEmptyArray, Try } from '../../shared/utils/fp'
 import { Either, IO, Maybe } from '../../shared/utils/fp'
 import { URLFromString } from '../../shared/utils/ioTsUtils'
 
@@ -76,7 +75,7 @@ export type TheQuestConfig = {
   refreshEveryMinutes: number
 }
 
-const parse = (dict: dotenv.DotenvParseOutput): Try<Config> =>
+const parse = (dict: Dict<string, string | undefined>): Try<Config> =>
   parseConfig(dict)(r =>
     seqS<Config>({
       isDev: pipe(
