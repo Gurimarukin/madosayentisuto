@@ -7,6 +7,7 @@
   ```
 - /faction
 
+- dcGraph is broken
 - the quest links: puuid?
 - /shi-fu-mi
 - maybe move sinks
