@@ -11,6 +11,7 @@ import { flow, identity, pipe } from 'fp-ts/function'
 import type { PlaylistType } from '../../../shared/models/audio/PlaylistType'
 import type { Track } from '../../../shared/models/audio/music/Track'
 import { ObserverWithRefinement } from '../../../shared/models/rx/ObserverWithRefinement'
+import { StringUtils } from '../../../shared/utils/StringUtils'
 import type { NotUsed } from '../../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../../shared/utils/fp'
 
@@ -374,8 +375,9 @@ const validateAudioChannel = (
 const tracksAddedInteractionReply = (tracks: NonEmptyArray<Track>): string =>
   pipe(
     tracks,
-    NonEmptyArray.map(t => `"${t.title}"`),
+    NonEmptyArray.map(t => `${t.title}`),
     List.mkString('', ', ', ` ajouté${tracks.length === 1 ? '' : 's'} à la file d'attente.`),
+    StringUtils.ellipse(2000),
   )
 
 const playlistStartedInteractionReply: Record<PlaylistType, string> = {

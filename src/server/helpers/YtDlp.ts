@@ -66,7 +66,7 @@ const YtDlp = (binaryPath: string) => {
             {
               dumpSingleJson: true,
               defaultSearch: 'ytsearch',
-              abortOnError: true,
+              ignoreErrors: true,
             },
             { stdio: ['ignore', 'pipe', 'pipe'] },
           ),
