@@ -64,9 +64,9 @@ jobs:
           " > .env
 
       - name: Download PocketBase
+        run: wget -nv https://github.com/yt-dlp/yt-dlp/releases/download/$YTDLP_VERSION/yt-dlp
         env:
           YTDLP_VERSION: 2023.12.30
-        run: wget -nv https://github.com/yt-dlp/yt-dlp/releases/download/{{ env.YTDLP_VERSION }}/yt-dlp
 
       - name: Build image
         id: build-image
