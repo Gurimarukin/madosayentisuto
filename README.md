@@ -10,8 +10,8 @@ Node 20+
 ## Deploy
 
     yarn install
-    yarn run build
-    META_URL_PREFIX=$(pwd) node --experimental-specifier-resolution=node dist/server/index.js
+    yarn build
+    yarn _node tsbuild/src/server/index.js
 
 ## Dev
 
@@ -20,5 +20,5 @@ Node 20+
     mongo -u user -p password --authenticationDatabase admin madosayentisuto
 
     yarn install
-    yarn run ~server
-    yarn run ~client # in other shell
+    yarn ~server
+    yarn ~client # in other shell

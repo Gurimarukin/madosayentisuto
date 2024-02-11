@@ -1,15 +1,11 @@
 import { pipe } from 'fp-ts/function'
 import fs from 'fs'
-import path_ from 'path'
-import { fileURLToPath } from 'url'
 
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 
 import type { MyFile } from '../models/FileOrDir'
 import { Dir, FileOrDir } from '../models/FileOrDir'
-
-const metaUrlPrefix = process.env['META_URL_PREFIX'] ?? ''
 
 const stat = (f: FileOrDir): Future<Maybe<fs.Stats>> =>
   pipe(
@@ -35,15 +31,6 @@ const cwd = (): IO<Dir> =>
     IO.tryCatch(() => process.cwd()),
     IO.map(Dir.of),
   )
-
-/**
- * `__dirname` for ESM.
- *
- * `parcel build` need a `META_URL_PREFIX` env var, because `import.meta.url` is relative to project root.
- *
- * @example dirname(import.meta.url)
- */
-const dirname = (metaUrl: string): string => metaUrlPrefix + path_.dirname(fileURLToPath(metaUrl))
 
 const exists = (f: FileOrDir): Future<boolean> => pipe(stat(f), Future.map(Maybe.isSome))
 
@@ -84,7 +71,6 @@ export const FsUtils = {
   chdir,
   copyFile,
   cwd,
-  dirname,
   exists,
   mkdir,
   readdir,

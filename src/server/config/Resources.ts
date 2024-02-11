@@ -9,8 +9,6 @@ import { Dir, FileOrDir } from '../models/FileOrDir'
 import type { ChampionLevel } from '../models/theQuest/ChampionLevel'
 import { FsUtils } from '../utils/FsUtils'
 
-const dirname = FsUtils.dirname(import.meta.url)
-
 const musicExtension = /\.(ogg|webm)$/
 
 type Resources = {
@@ -21,7 +19,7 @@ type Resources = {
   }
 }
 
-const resourcesDir = pipe(Dir.of(dirname), Dir.joinDir('..', '..', '..', 'resources'))
+const resourcesDir = pipe(Dir.of(process.cwd()), Dir.joinDir('resources'))
 const imgsDir = pipe(resourcesDir, Dir.joinDir('imgs'))
 const musicDir = pipe(resourcesDir, Dir.joinDir('music'))
 

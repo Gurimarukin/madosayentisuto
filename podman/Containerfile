@@ -38,7 +38,6 @@ COPY --from=builder /app/podman/entrypoint.sh ./
 ENV NODE_ENV production
 
 ENV APP_DATA_VOLUME /app/data
-ENV META_URL_PREFIX /app
 ENV YTDLP_PATH /app/yt-dlp
 
 RUN chmod +x /app/yt-dlp
