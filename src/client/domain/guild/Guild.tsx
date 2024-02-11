@@ -53,7 +53,7 @@ const GuildComponent: React.FC<GuildComponentProps> = ({ guild, mutate }) => {
   }, [mutate, serverToClientEventObservable])
 
   return (
-    <div className="h-full w-full overflow-auto px-8 pb-12 pt-4">
+    <div className="size-full overflow-auto px-8 pb-12 pt-4">
       <ul className="flex list-disc flex-col gap-6">
         <Li label="calls" className="flex-col gap-0">
           {pipe(

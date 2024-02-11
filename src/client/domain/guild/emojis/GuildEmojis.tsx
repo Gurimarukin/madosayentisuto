@@ -167,7 +167,7 @@ const GuildEmoji: React.FC<GuildEmojiProps> = ({ tierIndex, emoji }) => {
               n => `Emoji ${n}`,
             ),
           )}
-          className="h-28 w-28 object-contain"
+          className="size-28 object-contain"
         />
       </Tooltip>
     </div>

@@ -64,7 +64,7 @@ const Members: React.FC<MembersProps> = ({ guild, response }) => {
                     Maybe.fold(
                       () => null,
                       avatar => (
-                        <div className="h-12 w-12 overflow-hidden rounded-full">
+                        <div className="size-12 overflow-hidden rounded-full">
                           <img src={avatar} alt={`Avatar de ${member.name}`} />
                         </div>
                       ),

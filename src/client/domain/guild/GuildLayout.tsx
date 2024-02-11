@@ -33,7 +33,7 @@ export const GuildLayout: React.FC<Props> = ({ guildId, selected, options, child
   const { data: guild, ...rest } = response
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex size-full flex-col">
       <Header>
         {guild !== undefined ? (
           <>
@@ -44,7 +44,7 @@ export const GuildLayout: React.FC<Props> = ({ guildId, selected, options, child
                 icon => (
                   <Link
                     to={appRoutes.guild.index(guildId)}
-                    className="h-12 w-12 overflow-hidden rounded-lg"
+                    className="size-12 overflow-hidden rounded-lg"
                   >
                     <img src={icon} alt={`Icône du serveur ${guild.name}`} />
                   </Link>

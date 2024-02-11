@@ -66,7 +66,7 @@ const renderEvent = (event: ScheduledEventView): React.JSX.Element => {
               Maybe.fold(
                 () => null,
                 avatar => (
-                  <div className="h-7 w-7 overflow-hidden rounded-full">
+                  <div className="size-7 overflow-hidden rounded-full">
                     <img src={avatar} alt={`Avatar de ${event.createdBy.tag}`} />
                   </div>
                 ),
@@ -95,11 +95,11 @@ const renderEvent = (event: ScheduledEventView): React.JSX.Element => {
                             <Tooltip
                               title={<span className="whitespace-nowrap">{guild.name}</span>}
                             >
-                              <div className="h-8 w-8 overflow-hidden rounded-md">
+                              <div className="size-8 overflow-hidden rounded-md">
                                 <img
                                   src={icon}
                                   alt={`Icone du serveur ${guild.name}`}
-                                  className="h-full w-full object-cover"
+                                  className="size-full object-cover"
                                 />
                               </div>
                             </Tooltip>
