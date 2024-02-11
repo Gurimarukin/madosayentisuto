@@ -33,6 +33,7 @@ RUN apk add --no-cache ffmpeg python3 bash
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/resources ./resources
 COPY --from=builder /app/tsbuild ./tsbuild
+COPY --from=builder /app/package.json ./
 COPY --from=builder /app/yt-dlp ./
 COPY --from=builder /app/podman/entrypoint.sh ./
 
