@@ -44,4 +44,4 @@ RUN /app/yt-dlp --version
 
 EXPOSE 8675
 
-CMD ./entrypoint.sh
+CMD pwd && ls -la && ./entrypoint.sh
