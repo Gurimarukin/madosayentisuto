@@ -217,8 +217,9 @@ const parseDayJs = (str: string): Maybe<DayJs> =>
     Maybe.alt(() => parseFormat(dateTimeFormat, str)),
   )
 
-const parseFormat = (format: string, str: string): Maybe<DayJs> =>
-  pipe(DayJs.of(str, format, { locale: true }), Maybe.fromPredicate(DayJs.isValid))
+function parseFormat(format: string, str: string): Maybe<DayJs> {
+  return pipe(DayJs.of(str, format, { locale: true }), Maybe.fromPredicate(DayJs.isValid))
+}
 
 const parseMs = (now: DayJs, str: string): Maybe<DayJs> =>
   pipe(

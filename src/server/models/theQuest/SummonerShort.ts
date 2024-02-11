@@ -4,4 +4,4 @@ type SummonerShort = PlatformWithRiotId & {
   profileIcondId: number
 }
 
-export { SummonerShort }
+export { type SummonerShort }

@@ -42,7 +42,7 @@ const TheQuestNotification = { ...u }
 
 export {
   TheQuestNotification,
-  TheQuestNotificationChampionLeveledUp,
-  TheQuestNotificationUserJoined,
-  TheQuestNotificationUserLeft,
+  type TheQuestNotificationChampionLeveledUp,
+  type TheQuestNotificationUserJoined,
+  type TheQuestNotificationUserLeft,
 }

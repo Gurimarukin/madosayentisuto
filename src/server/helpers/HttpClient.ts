@@ -5,7 +5,7 @@ import type { Encoder } from 'io-ts/Encoder'
 import type { Options } from 'ky'
 import ky, { HTTPError } from 'ky'
 
-import type { Method } from '../../shared/models/Method'
+import type { HttpMethod } from '../../shared/models/HttpMethod'
 import type { NonEmptyArray, Tuple } from '../../shared/utils/fp'
 import { Either, Future, IO, List, Maybe, Try } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
@@ -23,16 +23,16 @@ const HttpClient = (Logger: LoggerGetter) => {
   const logger = Logger('HttpClient')
 
   function http<O, B>(
-    methodWithUrl: Tuple<string, Method>,
+    methodWithUrl: Tuple<string, HttpMethod>,
     options?: HttpOptions<O, B>,
   ): Future<unknown>
   function http<A, O, B>(
-    methodWithUrl: Tuple<string, Method>,
+    methodWithUrl: Tuple<string, HttpMethod>,
     options: HttpOptions<O, B>,
     decoderWithName: Tuple<Decoder<unknown, A>, string>,
   ): Future<A>
   function http<A, O, B>(
-    [url, method]: Tuple<string, Method>,
+    [url, method]: Tuple<string, HttpMethod>,
     { headers, json, ...options }: HttpOptions<O, B> = {},
     decoderWithName?: Tuple<Decoder<unknown, A>, string>,
   ): Future<A> {
@@ -93,6 +93,6 @@ export const statusesToOption = (
 export { HttpClient }
 
 const formatRequest =
-  (method: Method, url: string) =>
+  (method: HttpMethod, url: string) =>
   (statusCode: number): string =>
     `${method.toUpperCase()} ${url} - ${statusCode}`

@@ -1,26 +1,49 @@
-FROM node:20
+FROM node:20-alpine as base
+
+# Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat make gcc libc-dev libtool autoconf automake g++ python3
 
 WORKDIR /app
 
-COPY resources/ resources/
-COPY src/ src/
-COPY * .
+# Install dependencies based on the preferred package manager
+COPY package.json yarn.lock* ./
 
-RUN apt update > /dev/null
-RUN apt install -y ffmpeg > /dev/null
+ENV YOUTUBE_DL_SKIP_DOWNLOAD true
 
-RUN yarn global add node-gyp
-RUN yarn install --frozen-lockfile
+RUN yarn --frozen-lockfile
 
-RUN yarn run build
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-RUN wget -nv https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
-RUN chmod +x yt-dlp
-RUN ./yt-dlp --version
+RUN ls -la node_modules/.bin
+
+RUN yarn build
+
+# Production image, copy all the files and run app
+FROM base AS runner
+WORKDIR /app
+
+RUN apk add --no-cache ffmpeg python3
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/resources ./resources
+COPY --from=builder /app/yt-dlp ./
+COPY --from=builder /app/podman/entrypoint.sh ./
+
+ENV NODE_ENV production
+
+ENV APP_DATA_VOLUME /app/data
+ENV META_URL_PREFIX /app
+ENV YTDLP_PATH /app/yt-dlp
+
+RUN chmod +x /app/yt-dlp
+RUN /app/yt-dlp --version
 
 EXPOSE 8675
-
-ENV APP_DATA_VOLUME=/app/data
-ENV META_URL_PREFIX=/app
 
 CMD ./entrypoint.sh

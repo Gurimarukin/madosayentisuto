@@ -26,4 +26,4 @@ const TheQuestProgressionDb = { codec }
 
 type TheQuestProgressionDbOutput = C.OutputOf<typeof codec>
 
-export { TheQuestProgressionDb, TheQuestProgressionDbOutput }
+export { TheQuestProgressionDb, type TheQuestProgressionDbOutput }

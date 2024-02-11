@@ -6,4 +6,4 @@ type PlatformWithRiotId = {
   riotId: RiotId
 }
 
-export { PlatformWithRiotId }
+export { type PlatformWithRiotId }

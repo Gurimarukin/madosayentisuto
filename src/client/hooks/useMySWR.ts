@@ -1,8 +1,8 @@
 import type { Decoder } from 'io-ts/Decoder'
-import type { HttpMethod } from 'ky/distribution/types/options'
 import type { BareFetcher, SWRConfiguration, SWRResponse } from 'swr'
 import useSWR from 'swr'
 
+import type { HttpMethod } from '../../shared/models/HttpMethod'
 import type { Tuple, Tuple3 } from '../../shared/utils/fp'
 
 import type { HttpContext, HttpOptions } from '../contexts/HttpContext'

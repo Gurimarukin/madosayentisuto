@@ -232,10 +232,10 @@ const AudioStateNotDisconnected = {
 
 export {
   AudioState,
-  AudioStateConnected,
-  AudioStateConnecting,
-  AudioStateDisconnected,
   AudioStateNotDisconnected,
+  type AudioStateConnected,
+  type AudioStateConnecting,
+  type AudioStateDisconnected,
 }
 
 const connectValueLens = <

@@ -9,7 +9,7 @@ import { Status } from 'hyper-ts'
 import type { ExpressConnection } from 'hyper-ts/lib/express'
 import type { Duplex } from 'stream'
 
-import { Method } from '../../shared/models/Method'
+import { HttpMethod } from '../../shared/models/HttpMethod'
 import type { NotUsed } from '../../shared/utils/fp'
 import {
   Dict,
@@ -121,7 +121,7 @@ export const startWebServer = (
   const altedUpgradeRoutes = pipe(routes, List.filter(Route.is('Upgrade')), getAltedUpgradeRoutes)
 
   return pipe(
-    Method.values,
+    HttpMethod.values,
     List.reduce(withCors, bindMiddlewares),
     IO.chain(e => IO.tryCatch(() => e.use(errorHandler(onError)))),
     IO.chain(e =>
@@ -133,7 +133,7 @@ export const startWebServer = (
     IO.map(toNotUsed),
   )
 
-  function bindMiddlewares(ioApp: IO<express.Express>, method: Method): IO<express.Express> {
+  function bindMiddlewares(ioApp: IO<express.Express>, method: HttpMethod): IO<express.Express> {
     return pipe(
       ioApp,
       IO.chain(app =>
@@ -225,10 +225,10 @@ export const startWebServer = (
 
 const getAltedMiddlewareRoutes = (
   routes: List<RouteMiddleware>,
-): Dict<Method, Parser<EndedMiddleware>> => {
-  const init: Dict<Method, Parser<EndedMiddleware>> = pipe(
-    Method.values,
-    List.reduce(Dict.empty<Method, Parser<EndedMiddleware>>(), (acc, method) => ({
+): Dict<HttpMethod, Parser<EndedMiddleware>> => {
+  const init: Dict<HttpMethod, Parser<EndedMiddleware>> = pipe(
+    HttpMethod.values,
+    List.reduce(Dict.empty<HttpMethod, Parser<EndedMiddleware>>(), (acc, method) => ({
       ...acc,
       [method]: zero<EndedMiddleware>(),
     })),

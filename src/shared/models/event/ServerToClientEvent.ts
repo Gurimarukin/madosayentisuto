@@ -39,4 +39,4 @@ const ServerToClientEvent = {
   codec,
 }
 
-export { ServerToClientEvent, ServerToClientEventLog }
+export { ServerToClientEvent, type ServerToClientEventLog }

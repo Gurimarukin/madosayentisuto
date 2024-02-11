@@ -2,10 +2,11 @@
 import { flow, pipe } from 'fp-ts/function'
 import type { Decoder } from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
+import type { Options as KYOptions } from 'ky'
 import ky, { HTTPError } from 'ky'
-import type { HttpMethod, Options } from 'ky/distribution/types/options'
 import { createContext, useCallback, useContext } from 'react'
 
+import type { HttpMethod } from '../../shared/models/HttpMethod'
 import type { Tuple } from '../../shared/utils/fp'
 import { Either } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
@@ -26,7 +27,7 @@ export type HttpContext = {
   }
 }
 
-export type HttpOptions<O, B> = Omit<Options, 'method' | 'json'> & {
+export type HttpOptions<O, B> = Omit<KYOptions, 'method' | 'json'> & {
   json?: Tuple<Encoder<O, B>, B>
   redirectToLoginOnUnauthorized?: boolean // default: true
 }

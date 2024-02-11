@@ -1,6 +1,6 @@
 import type { Parser } from 'fp-ts-routing'
 
-import type { Method } from '../../../shared/models/Method'
+import type { HttpMethod } from '../../../shared/models/HttpMethod'
 import { createUnion } from '../../../shared/utils/createUnion'
 import type { Tuple } from '../../../shared/utils/fp'
 
@@ -8,7 +8,7 @@ import type { EndedMiddleware } from './MyMiddleware'
 import type { UpgradeHandler } from './UpgradeHandler'
 
 const u = createUnion({
-  Middleware: (middleware: Tuple<Method, Parser<EndedMiddleware>>) => ({ middleware }),
+  Middleware: (middleware: Tuple<HttpMethod, Parser<EndedMiddleware>>) => ({ middleware }),
   Upgrade: (upgrade: Parser<UpgradeHandler>) => ({ upgrade }),
 })
 

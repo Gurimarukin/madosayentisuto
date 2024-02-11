@@ -2,7 +2,7 @@ import type { Match, Parser } from 'fp-ts-routing'
 import { end, format, lit, str } from 'fp-ts-routing'
 
 import type { DiscordUserId } from './models/DiscordUserId'
-import type { Method } from './models/Method'
+import type { HttpMethod } from './models/HttpMethod'
 import type { GuildId } from './models/guild/GuildId'
 import { RouterUtils } from './utils/RouterUtils'
 import type { Dict, Tuple } from './utils/fp'
@@ -83,13 +83,16 @@ export const apiRoutes = {
  * Helpers
  */
 
-type WithMethod<A> = Tuple<A, Method>
+type WithMethod<A> = Tuple<A, HttpMethod>
 type MatchWithMethod<A> = WithMethod<Match<A>>
 export type ParserWithMethod<A> = WithMethod<Parser<A>>
 type RouteWithMethod = WithMethod<string>
 
 // Match with Method
-function m<A extends Dict<string, unknown>>(match: Match<A>, method: Method): MatchWithMethod<A> {
+function m<A extends Dict<string, unknown>>(
+  match: Match<A>,
+  method: HttpMethod,
+): MatchWithMethod<A> {
   return [match.then(end), method]
 }
 
