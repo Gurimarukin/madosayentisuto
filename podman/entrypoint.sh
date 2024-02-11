@@ -8,7 +8,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
     touch $CONTAINER_ALREADY_STARTED
 
     mkdir -p "$APP_DATA_VOLUME"
-    cp -r dist/client/* "$APP_DATA_VOLUME"  
+    cp -r dist/client/* "$APP_DATA_VOLUME"
 fi
 
-node --experimental-specifier-resolution=node dist/server/index.js
+YTDLP_PATH=/app/yt-dlp node --experimental-specifier-resolution=node dist/server/index.js
