@@ -11,4 +11,4 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
     cp -r dist/client/* "$APP_DATA_VOLUME"
 fi
 
-node --experimental-specifier-resolution=node dist/server/index.js
+npm run _node tsbuild/src/server/index.js

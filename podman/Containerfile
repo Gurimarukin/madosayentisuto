@@ -32,6 +32,7 @@ RUN apk add --no-cache ffmpeg python3 bash
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/resources ./resources
+COPY --from=builder /app/tsbuild ./tsbuild
 COPY --from=builder /app/yt-dlp ./
 COPY --from=builder /app/podman/entrypoint.sh ./
 
@@ -44,4 +45,4 @@ RUN /app/yt-dlp --version
 
 EXPOSE 8675
 
-CMD pwd && ls -la && ./entrypoint.sh
+CMD ./entrypoint.sh
