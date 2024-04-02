@@ -7,7 +7,7 @@ import { ServerClientWSContextProvider } from './contexts/ServerClientWSContext'
 import { AppRouterComponent } from './router/AppRouterComponent'
 
 export const App: React.FC = () => (
-  <div className="h-[100vh] w-[100vw] overflow-hidden bg-gray3 font-[baloopaaji2] text-gray4">
+  <div className="h-screen w-screen overflow-hidden bg-gray3 font-[baloopaaji2] text-gray4">
     <HistoryContextProvider>
       <HttpContextProvider>
         <ServerClientWSContextProvider>

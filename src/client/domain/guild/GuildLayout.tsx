@@ -44,7 +44,7 @@ export const GuildLayout: React.FC<Props> = ({ guildId, selected, options, child
                 icon => (
                   <Link
                     to={appRoutes.guild.index(guildId)}
-                    className="size-12 overflow-hidden rounded-lg mb-1"
+                    className="mb-1 size-12 overflow-hidden rounded-lg"
                   >
                     <img src={icon} alt={`Icône du serveur ${guild.name}`} />
                   </Link>
