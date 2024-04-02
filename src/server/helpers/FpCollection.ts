@@ -123,7 +123,12 @@ export const FpCollection =
           ),
         ),
 
-      findAll,
+      findAllArr,
+      /**
+       * @deprecated ⚠️ mongoCollection.observable with an empty stream sometimes never quits
+       */
+      // eslint-disable-next-line deprecation/deprecation
+      findAllObs,
 
       deleteOne: (filter: Filter<O>, options: DeleteOptions = {}): Future<DeleteResult> =>
         pipe(
@@ -144,15 +149,38 @@ export const FpCollection =
         ),
     }
 
-    function findAll(): (query: Filter<O>, options?: FindOptions<O>) => TObservable<A>
-    function findAll<B>([decoder, decoderName]: Tuple<Decoder<unknown, B>, string>): (
+    function findAllArr(): (query: Filter<O>, options?: FindOptions<O>) => Future<List<A>>
+    function findAllArr<B>([decoder, decoderName]: Tuple<Decoder<unknown, B>, string>): (
       query: Filter<O>,
       options?: FindOptions<O>,
-    ) => TObservable<B>
-    function findAll<B>(
+    ) => Future<List<B>>
+
+    function findAllArr<B>(
       [decoder, decoderName] = codecWithName as Tuple<Decoder<unknown, B>, string>,
-    ): (query: Filter<O>, options?: FindOptions<O>) => TObservable<B> {
-      return fpCollectionHelpersFindAll(logger, collection, [decoder, decoderName])
+    ): (query: Filter<O>, options?: FindOptions<O>) => Future<List<B>> {
+      return (filter, options) =>
+        pipe(
+          collection.future(c => c.find(filter, options).toArray()),
+          Future.chainFirstIOEitherK(as => logger.trace(`Found all ${as.length} documents`)),
+          Future.chainEitherK(as =>
+            pipe(
+              List.decoder(decoder).decode(as),
+              Either.mapLeft(decodeError(`List<${decoderName}>`)(as)),
+            ),
+          ),
+        )
+    }
+
+    function findAllObs(): (filter: Filter<O>, options?: FindOptions<O>) => TObservable<A>
+    function findAllObs<B>([decoder, decoderName]: Tuple<Decoder<unknown, B>, string>): (
+      filter: Filter<O>,
+      options?: FindOptions<O>,
+    ) => TObservable<B>
+
+    function findAllObs<B>(
+      [decoder, decoderName] = codecWithName as Tuple<Decoder<unknown, B>, string>,
+    ): (filter: Filter<O>, options?: FindOptions<O>) => TObservable<B> {
+      return fpCollectionHelpersFindAllObs(logger, collection, [decoder, decoderName])
     }
   }
 
@@ -183,7 +211,7 @@ type Path<S> = {
 
 const getPath = <A>(): Path<A> => List.mkString('.')
 
-const fpCollectionHelpersFindAll =
+const fpCollectionHelpersFindAllObs =
   <O extends MongoDocument, B>(
     logger: LoggerType,
     collection: MongoCollection<O>,
@@ -191,6 +219,7 @@ const fpCollectionHelpersFindAll =
   ) =>
   (query: Filter<O>, options?: FindOptions<O>): TObservable<B> => {
     const count = Store<number>(0)
+
     return pipe(
       collection.observable(coll => coll.find(query, options).stream()),
       TObservable.map(u => pipe(decoder.decode(u), Either.mapLeft(decodeError(decoderName)(u)))),
@@ -214,4 +243,11 @@ const fpCollectionHelpersFindAll =
     )
   }
 
-export const FpCollectionHelpers = { getPath, findAll: fpCollectionHelpersFindAll }
+export const FpCollectionHelpers = {
+  getPath,
+  /**
+   * @deprecated ⚠️ mongoCollection.observable with an empty stream sometimes never quits
+   */
+  // eslint-disable-next-line deprecation/deprecation
+  findAllObs: fpCollectionHelpersFindAllObs,
+}

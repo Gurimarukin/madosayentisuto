@@ -11,8 +11,6 @@ import { flow, pipe } from 'fp-ts/function'
 import { DayJs } from '../../shared/models/DayJs'
 import type { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { ObserverWithRefinement } from '../../shared/models/rx/ObserverWithRefinement'
-import { Sink } from '../../shared/models/rx/Sink'
-import { TObservable } from '../../shared/models/rx/TObservable'
 import { StringUtils } from '../../shared/utils/StringUtils'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, IO, List, Maybe, NonEmptyArray, toNotUsed } from '../../shared/utils/fp'
@@ -64,15 +62,23 @@ export const ScheduledEventObserver = (
   )(({ date }) =>
     pipe(
       scheduledEventService.listBeforeDate(date),
-      TObservable.chainTaskEitherK(event =>
-        pipe(
-          onScheduledEvent(date, event),
-          Future.map(() => event._id),
+      Future.chain(
+        flow(
+          List.chunksOf(50),
+          List.traverse(Future.ApplicativeSeq)(
+            flow(
+              List.traverse(Future.ApplicativePar)(event =>
+                pipe(
+                  onScheduledEvent(date, event),
+                  Future.map(() => event._id),
+                ),
+              ),
+              Future.chain(scheduledEventService.removeByIds),
+            ),
+          ),
         ),
       ),
-      TObservable.chunksOf(50),
-      TObservable.chainTaskEitherK(scheduledEventService.removeByIds),
-      Sink.reduce(0, (acc, n) => acc + n),
+      Future.map(List.reduce(0, (acc, n) => acc + n)),
       Future.chainIOEitherK(count =>
         count === 0 ? IO.notUsed : logger.info(`Sent ${count} scheduled events`),
       ),

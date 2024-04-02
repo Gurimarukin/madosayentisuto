@@ -2,7 +2,6 @@ import { pipe } from 'fp-ts/function'
 import type { AnyBulkWriteOperation } from 'mongodb'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
-import { TObservable } from '../../shared/models/rx/TObservable'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 
@@ -29,10 +28,10 @@ function TheQuestProgressionPersistence(
   return {
     ensureIndexes,
 
-    listAllForIds: (ids: List<DiscordUserId>): TObservable<TheQuestProgressionDb> =>
+    listAllForIds: (ids: List<DiscordUserId>): Future<List<TheQuestProgressionDb>> =>
       !List.isNonEmpty(ids)
-        ? TObservable.empty()
-        : collection.findAll()({
+        ? Future.successful([])
+        : collection.findAllArr()({
             userId: { $in: NonEmptyArray.encoder(DiscordUserId.codec).encode(ids) },
           }),
 

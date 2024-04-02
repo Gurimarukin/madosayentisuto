@@ -2,7 +2,6 @@ import { pipe } from 'fp-ts/function'
 
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { MessageId } from '../../shared/models/MessageId'
-import { Sink } from '../../shared/models/rx/Sink'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 
@@ -31,7 +30,7 @@ export const PollResponsePersistence = (
     ensureIndexes,
 
     listForMessage: (message: MessageId): Future<List<PollResponse>> =>
-      pipe(collection.findAll()({ message: MessageId.codec.encode(message) }), Sink.readonlyArray),
+      collection.findAllArr()({ message: MessageId.codec.encode(message) }),
 
     insert: (response: PollResponse): Future<boolean> =>
       pipe(
