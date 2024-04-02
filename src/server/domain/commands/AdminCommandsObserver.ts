@@ -490,7 +490,7 @@ export const AdminCommandsObserver = (
           () => 'Erreur',
           ({ channel, role }) =>
             // TODO: remove disable
-             
+
             `Nouveau paramètres d'appels : ${role} - ${channel}`,
         ),
       ),
@@ -869,7 +869,7 @@ export const AdminCommandsObserver = (
             () =>
               pipe(
                 // TODO: remove disable
-                 
+
                 logger.warn(`Couldn't say message in channel ${channel}`),
                 Future.fromIOEither,
                 Future.chain(() =>
@@ -1256,7 +1256,7 @@ const formatState = ({
 
 const formatCalls = ({ channel, role }: Calls): string =>
   // TODO: remove disable
-   
+
   `${role} - ${channel}`
 
 const formatActivity = ({ type, name }: Activity): string => `\`${type} ${name}\``
