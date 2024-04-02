@@ -53,17 +53,17 @@ export const Logs: React.FC = () => {
     <div className="flex h-full flex-col">
       <Header>
         <div className="flex items-center gap-8">
-          <h1 className="text-3xl">Console</h1>
-          <div className="flex gap-2">
+          <h1 className="text-2xl">Console</h1>
+          <div className="flex gap-2 mt-1">
             <span>Total logs :</span>
             <pre>{count}</pre>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-1">
             <span>Niveau de log :</span>
             <select
               value={selectedLevel}
               onChange={handleChange}
-              className="rounded-sm border-none bg-gray4 py-1 font-mono text-sm text-gray1"
+              className="rounded-sm mb-1 border-none bg-gray4 py-1 font-mono text-sm text-gray1"
             >
               {pipe(
                 LogLevelWithoutTrace.values,

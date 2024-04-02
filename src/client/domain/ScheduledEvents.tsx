@@ -19,7 +19,7 @@ import { cssClasses } from '../utils/cssClasses'
 export const ScheduledEvents: React.FC = () => (
   <div className="flex h-full flex-col">
     <Header>
-      <h1 className="text-3xl">Rappels</h1>
+      <h1 className="text-2xl">Rappels</h1>
     </Header>
     <div className="flex grow justify-center overflow-auto">
       {basicAsyncRenderer(
