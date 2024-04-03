@@ -3,8 +3,6 @@ import { pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 
 import { ScheduledEventView } from '../../shared/models/ScheduledEventView'
-import { Sink } from '../../shared/models/rx/Sink'
-import { TObservable } from '../../shared/models/rx/TObservable'
 import { Future, IO, List, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
@@ -32,9 +30,8 @@ export const ScheduledEventController = (
     listScheduledEvents: (/* user: User */): EndedMiddleware =>
       pipe(
         scheduledEventService.list,
-        TObservable.chainTaskEitherK(scheduledEventView),
-        TObservable.compact,
-        Sink.readonlyArray,
+        Future.chain(List.traverse(Future.ApplicativePar)(scheduledEventView)),
+        Future.map(List.compact),
         M.fromTaskEither,
         M.ichain(M.jsonWithStatus(Status.OK, List.encoder(ScheduledEventView.codec))),
       ),

@@ -1,7 +1,6 @@
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
-import { Sink } from '../../shared/models/rx/Sink'
 import type { List } from '../../shared/utils/fp'
 import { Future } from '../../shared/utils/fp'
 
@@ -22,13 +21,10 @@ export const MigrationPersistence = (
     mongoCollection('migration'),
   )
 
-  const alreadyApplied: Future<List<DayJs>> = pipe(
-    collection.findAll([MigrationCreatedAt.decoder, 'MigrationCreatedAt'])(
-      {},
-      { projection: { createdAt: 1 } },
-    ),
-    Sink.readonlyArray,
-  )
+  const alreadyApplied: Future<List<DayJs>> = collection.findAllArr([
+    MigrationCreatedAt.decoder,
+    'MigrationCreatedAt',
+  ])({}, { projection: { createdAt: 1 } })
 
   return {
     create: (createdAt: DayJs): Future<boolean> =>

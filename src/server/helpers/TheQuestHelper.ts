@@ -4,7 +4,6 @@ import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
-import { Sink } from '../../shared/models/rx/Sink'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, Maybe, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
@@ -101,10 +100,7 @@ const TheQuestHelper = (
       Future.bindTo('memberIds'),
       Future.bind('progressions', ({ memberIds }) =>
         apply.sequenceS(Future.ApplyPar)({
-          fromPersistence: pipe(
-            theQuestService.persistence.listAllForIds(memberIds),
-            Sink.readonlyArray,
-          ),
+          fromPersistence: theQuestService.persistence.listAllForIds(memberIds),
           fromApi: theQuestService.api.usersGetProgression(memberIds),
         }),
       ),

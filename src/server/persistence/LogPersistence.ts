@@ -4,7 +4,6 @@ import * as C from 'io-ts/Codec'
 import type { DayJs } from '../../shared/models/DayJs'
 import type { Log } from '../../shared/models/log/Log'
 import { LogLevelWithoutTrace } from '../../shared/models/log/LogLevel'
-import type { TObservable } from '../../shared/models/rx/TObservable'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List } from '../../shared/utils/fp'
 
@@ -41,8 +40,8 @@ export function LogPersistence(Logger: LoggerGetter, mongoCollection: MongoColle
 
     count,
 
-    list: ({ skip, limit }: ListArgs = {}): TObservable<Log> =>
-      collection.findAll()({}, { sort: [[collection.path(['date']), 1]], skip, limit }),
+    list: ({ skip, limit }: ListArgs = {}): Future<List<Log>> =>
+      collection.findAllArr()({}, { sort: [[collection.path(['date']), 1]], skip, limit }),
 
     insertMany: (logs: List<Log>): Future<number> =>
       !List.isNonEmpty(logs)

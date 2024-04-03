@@ -1,7 +1,6 @@
 import { pipe } from 'fp-ts/function'
 
 import type { DayJs } from '../../shared/models/DayJs'
-import type { TObservable } from '../../shared/models/rx/TObservable'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 
@@ -27,7 +26,7 @@ export function ScheduledEventPersistence(
 
   const ensureIndexes: Future<NotUsed> = collection.ensureIndexes([{ key: { scheduledAt: -1 } }])
 
-  const list: TObservable<ScheduledEventWithId> = collection.findAll([
+  const list: Future<List<ScheduledEventWithId>> = collection.findAllArr([
     ScheduledEventWithId.decoder,
     'ScheduledEventWithId',
   ])({}, { sort: [[collection.path(['scheduledAt']), 1]] })
@@ -35,8 +34,8 @@ export function ScheduledEventPersistence(
   return {
     ensureIndexes,
 
-    listBeforeDate: (date: DayJs): TObservable<ScheduledEventWithId> =>
-      collection.findAll([ScheduledEventWithId.decoder, 'ScheduledEventWithId'])({
+    listBeforeDate: (date: DayJs): Future<List<ScheduledEventWithId>> =>
+      collection.findAllArr([ScheduledEventWithId.decoder, 'ScheduledEventWithId'])({
         scheduledAt: { $lte: DayJsFromDate.encoder.encode(date) },
       }),
 

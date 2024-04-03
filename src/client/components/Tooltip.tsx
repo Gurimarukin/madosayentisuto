@@ -12,7 +12,7 @@ export const Tooltip: React.FC<Props> = ({ title, className, children }) => (
   <div className={cssClasses('relative group', className)}>
     {children}
     <div className="invisible absolute left-1/2 top-[calc(100%_+_2px)] z-50 opacity-0 blur duration-300 group-hover:visible group-hover:opacity-100 group-hover:blur-0">
-      <div className="relative left-[-50%] flex rounded bg-gray1 px-3 py-2">{title}</div>
+      <div className="relative -left-1/2 flex rounded bg-gray1 px-3 py-2">{title}</div>
     </div>
   </div>
 )

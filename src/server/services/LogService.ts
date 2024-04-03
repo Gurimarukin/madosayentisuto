@@ -4,7 +4,6 @@ import { pipe } from 'fp-ts/function'
 import { Store } from '../../shared/models/Store'
 import type { Log } from '../../shared/models/log/Log'
 import type { LogsWithCount } from '../../shared/models/log/LogsWithCount'
-import { Sink } from '../../shared/models/rx/Sink'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, toNotUsed } from '../../shared/utils/fp'
 
@@ -23,13 +22,10 @@ export const LogService = (logPersistence: LogPersistence) => {
       logs: pipe(
         logPersistence.count,
         Future.chain(nonDebug =>
-          pipe(
-            logPersistence.list({
-              skip: Math.max(0, nonDebug - logsLimit),
-              limit: logsLimit,
-            }),
-            Sink.readonlyArray,
-          ),
+          logPersistence.list({
+            skip: Math.max(0, nonDebug - logsLimit),
+            limit: logsLimit,
+          }),
         ),
       ),
       count: logPersistence.count,

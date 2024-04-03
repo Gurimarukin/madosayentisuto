@@ -2,10 +2,8 @@ import { pipe } from 'fp-ts/function'
 
 import type { ChannelId } from '../../shared/models/ChannelId'
 import { GuildId } from '../../shared/models/guild/GuildId'
-import { Sink } from '../../shared/models/rx/Sink'
-import { TObservable } from '../../shared/models/rx/TObservable'
-import type { Dict, List, Maybe, NotUsed } from '../../shared/utils/fp'
-import { Future } from '../../shared/utils/fp'
+import type { Dict, Maybe, NotUsed } from '../../shared/utils/fp'
+import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
 import type { GuildStateDbOutput } from '../models/guildState/db/GuildStateDb'
@@ -42,16 +40,16 @@ export const GuildStatePersistence = (
 
     listAllItsFridayChannels: (): Future<List<ChannelId>> => {
       const projection: Projection = { itsFridayChannel: 1 }
+
       return pipe(
-        collection.findAll([
+        collection.findAllArr([
           GuildStateDbOnlyItsFridayChannel.codec,
           'GuildStateDbOnlyItsFridayChannel',
         ])(
           { $and: [{ itsFridayChannel: { $exists: true } }, { itsFridayChannel: { $ne: null } }] },
           { projection },
         ),
-        TObservable.map(({ itsFridayChannel }) => itsFridayChannel),
-        Sink.readonlyArray,
+        Future.map(List.map(({ itsFridayChannel }) => itsFridayChannel)),
       )
     },
 

@@ -2,7 +2,6 @@ import { pipe } from 'fp-ts/function'
 
 import type { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
-import { Sink } from '../../shared/models/rx/Sink'
 import type { NotUsed } from '../../shared/utils/fp'
 import { Future, List, NonEmptyArray } from '../../shared/utils/fp'
 
@@ -38,21 +37,16 @@ export const MemberBirthdatePersistence = (
 
     listForDate: (d: DayJs): Future<List<MemberBirthdate>> => {
       const { month, date } = Birthdate.fromDate(d)
-      return pipe(
-        collection.findAll()({ [Keys.month]: month, [Keys.date]: date }),
-        Sink.readonlyArray,
-      )
+
+      return collection.findAllArr()({ [Keys.month]: month, [Keys.date]: date })
     },
 
     listForMembers: (ids: List<DiscordUserId>): Future<List<MemberBirthdate>> =>
       !List.isNonEmpty(ids)
         ? Future.successful([])
-        : pipe(
-            collection.findAll()({
-              id: { $in: NonEmptyArray.encoder(DiscordUserId.codec).encode(ids) },
-            }),
-            Sink.readonlyArray,
-          ),
+        : collection.findAllArr()({
+            id: { $in: NonEmptyArray.encoder(DiscordUserId.codec).encode(ids) },
+          }),
 
     upsert: (state: MemberBirthdate): Future<boolean> =>
       pipe(

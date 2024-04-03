@@ -135,7 +135,7 @@ const TrackComp: React.FC<TrackProps> = ({ track }) => (
     href={track.url}
     target="_blank"
     rel="noreferrer"
-    className="ml-[-4rem] flex w-[calc(100%_+_6rem)] items-center gap-4 py-3 pl-16 hover:bg-gray2"
+    className="-ml-16 flex w-[calc(100%_+_6rem)] items-center gap-4 py-3 pl-16 hover:bg-gray2"
   >
     {pipe(
       track.thumbnail,
