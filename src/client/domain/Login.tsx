@@ -57,27 +57,27 @@ export const Login: React.FC = () => {
         className="grid grid-cols-[auto_auto] items-center justify-center gap-3"
       >
         <label className="contents">
-          <span>Nom d'utilisateur :</span>
+          <span className="col-start-1 row-start-1">Nom d'utilisateur :</span>
           <input
             type="text"
             value={userName}
             onChange={handleUserNameChange}
             autoFocus={true}
-            className="rounded-sm border-none bg-gray1 text-center text-inherit"
+            className="col-start-2 row-start-1 rounded-sm border-none bg-gray1 text-center text-inherit"
           />
         </label>
         <label className="contents">
-          <span>Mot de passe :</span>
+          <span className="col-start-1 row-start-2">Mot de passe :</span>
           <input
             type="password"
             value={password}
             onChange={handlePasswordChange}
-            className="rounded-sm border-none bg-gray1 text-center text-inherit"
+            className="col-start-2 row-start-2 rounded-sm border-none bg-gray1 text-center text-inherit"
           />
         </label>
         <button
           type="submit"
-          className="col-span-2 justify-self-center rounded-sm border border-gray1 bg-gray2 px-4 py-1"
+          className="col-span-2 row-start-3 justify-self-center rounded-sm border border-gray1 bg-gray2 px-4 py-1"
         >
           Connexion
         </button>
