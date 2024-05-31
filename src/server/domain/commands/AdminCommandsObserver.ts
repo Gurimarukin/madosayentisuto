@@ -830,12 +830,12 @@ export const AdminCommandsObserver = (
 
   function onTheQuestUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
     const guild = interaction.guild
+
     if (guild === null) return Future.notUsed
+
     return withFollowUpIsAdmin(interaction)(
       pipe(
-        guildStateService.getTheQuestMessage(guild),
-        futureMaybe.chainTaskEitherK(DiscordConnector.messageDelete),
-        Future.chain(() => guildStateService.setTheQuestMessage(guild, Maybe.none)),
+        guildStateService.setTheQuestMessage(guild, Maybe.none),
         Future.map(() => 'Nouveau salon pour La Quête : `null`'),
       ),
     )
