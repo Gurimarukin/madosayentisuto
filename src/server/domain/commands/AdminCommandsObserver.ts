@@ -309,7 +309,7 @@ const adminCommand = Command.chatInput({
     ),
     Command.option.subcommand({
       name: Keys.unset,
-      description: 'Plus de mises à joru pour La Quête',
+      description: 'Plus de notifications ni de classement pour La Quête',
     })(),
   ),
 )

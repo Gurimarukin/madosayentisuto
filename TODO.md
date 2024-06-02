@@ -1,7 +1,9 @@
 - prune images
 - broken polls?
-- /faction
+- convert yt shorts
+- dl ig reels
 
+- /faction
 - dcGraph is broken
 - the quest links: puuid?
 - /shi-fu-mi
