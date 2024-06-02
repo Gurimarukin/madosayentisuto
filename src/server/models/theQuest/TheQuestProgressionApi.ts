@@ -3,8 +3,9 @@ import { pipe } from 'fp-ts/function'
 import * as D from 'io-ts/Decoder'
 
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
-import { List } from '../../../shared/utils/fp'
+import { NonEmptyArray } from '../../../shared/utils/fp'
 
+import { NumberRecord } from '../../utils/ioTsUtils'
 import { ChampionKey } from './ChampionKey'
 import { Platform } from './Platform'
 import { RiotId } from './RiotId'
@@ -22,16 +23,13 @@ const decoder = D.struct({
   }),
   percents: D.number,
   totalMasteryLevel: D.number,
-  champions: D.struct({
-    mastery7: List.decoder(ChampionKey.codec),
-    mastery6: List.decoder(ChampionKey.codec),
-    mastery5: List.decoder(ChampionKey.codec),
-  }),
+  // champion level as keys
+  champions: NumberRecord.decoder(NonEmptyArray.decoder(ChampionKey.codec)),
 })
 
 const byPercentsOrd: ord.Ord<TheQuestProgressionApi> = pipe(
   number.Ord,
-  ord.contramap(p => p.percents),
+  ord.contramap((p: TheQuestProgressionApi) => p.percents),
 )
 
 const TheQuestProgressionApi = { decoder, byPercentsOrd }

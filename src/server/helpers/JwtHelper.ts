@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken'
 
 import { MsDuration } from '../../shared/models/MsDuration'
 import { Token } from '../../shared/models/webUser/Token'
-import type { Tuple } from '../../shared/utils/fp'
+import type { PartialDict, Tuple } from '../../shared/utils/fp'
 import { Dict, Either, Future, List, Maybe } from '../../shared/utils/fp'
 import { decodeError } from '../../shared/utils/ioTsUtils'
 
@@ -66,7 +66,7 @@ export const JwtHelper = (secret: string) => ({
 
 const msDurationOptions = <K extends string>(
   obj: Dict<K, MsDuration | undefined>,
-): Partial<Dict<K, string>> =>
+): PartialDict<K, string> =>
   pipe(
     obj,
     Dict.toReadonlyArray,

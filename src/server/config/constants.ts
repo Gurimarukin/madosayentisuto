@@ -1,5 +1,8 @@
 import { MsDuration } from '../../shared/models/MsDuration'
 import { Color } from '../../shared/utils/Color'
+import type { Dict } from '../../shared/utils/fp'
+
+import type { ChampionLevel_ } from '../models/theQuest/ChampionLevel'
 
 export const constants = {
   emptyChar: '\u200B',
@@ -15,11 +18,16 @@ export const constants = {
     tada: '🎉', // :tada:
     cry: '😢', // :cry:
 
-    characters: emojiCharacters(),
+    characters: characters(),
 
-    mastery7: ':maitrise7:',
-    mastery6: ':maitrise6:',
-    mastery5: ':maitrise5:',
+    masteries: {
+      5: ':maitrise5:',
+      6: ':maitrise6:',
+      7: ':maitrise7:',
+      8: ':maitrise8:',
+      9: ':maitrise9:',
+      10: ':maitrise10:',
+    } satisfies Dict<`${ChampionLevel_}`, string>,
   } as const,
 
   messagesColor: Color.darkred,
@@ -36,7 +44,7 @@ export const constants = {
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function emojiCharacters() {
+function characters() {
   return {
     a: '🇦',
     b: '🇧',

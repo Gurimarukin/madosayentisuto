@@ -5,9 +5,10 @@ import * as C from 'io-ts/Codec'
 import type { Decoder } from 'io-ts/Decoder'
 import * as D from 'io-ts/Decoder'
 import type { Encoder } from 'io-ts/Encoder'
+import * as E from 'io-ts/Encoder'
 
 import { DayJs } from '../../shared/models/DayJs'
-import { Either, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
+import { Dict, Either, List, Maybe, NonEmptyArray } from '../../shared/utils/fp'
 
 /**
  * DayJsFromDate
@@ -62,6 +63,7 @@ const numberFromStringDecoder: Decoder<unknown, number> = pipe(
   D.string,
   D.parse(s => {
     const n = Number(s)
+
     return isNaN(n) ? D.failure(s, 'NumberFromString') : D.success(n)
   }),
 )
@@ -175,3 +177,42 @@ const tupleFromArrayStrictDecoder = <A extends ReadonlyArray<Decoder<any, any>>>
   )
 
 export const TupleFromArrayStrict = { decoder: tupleFromArrayStrictDecoder }
+
+/**
+ * NumberRecord
+ */
+
+function numberRecordDecoder<A>(
+  codomain: Decoder<unknown, A>,
+): Decoder<unknown, Record<number, A>> {
+  return pipe(
+    D.record(codomain),
+    D.parse(fa =>
+      pipe(
+        Dict.keys(fa),
+        List.filter(k => isNaN(Number(k))),
+        NonEmptyArray.fromReadonlyArray,
+        Maybe.fold(
+          () => D.success(fa),
+          () => D.failure(fa, 'NumberRecord'),
+        ),
+      ),
+    ),
+  )
+}
+
+const numberRecordEncoder: <O, A>(
+  codomain: E.Encoder<O, A>,
+) => E.Encoder<Record<number, O>, Record<number, A>> = E.record
+
+function numberRecordCodec<O, A>(
+  codomain: Codec<unknown, O, A>,
+): Codec<unknown, Record<number, O>, Record<number, A>> {
+  return C.make(numberRecordDecoder(codomain), numberRecordEncoder(codomain))
+}
+
+export const NumberRecord = {
+  decoder: numberRecordDecoder,
+  encoder: numberRecordEncoder,
+  codec: numberRecordCodec,
+}
