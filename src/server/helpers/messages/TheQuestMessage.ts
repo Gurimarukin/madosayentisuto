@@ -67,7 +67,7 @@ const ranking = ({
       MessageComponent.safeEmbed({
         color: constants.messagesColor,
         title: pipe(
-          constants.emojis.masteries[10],
+          constants.emojis.masteries[7],
           GuildHelper.getEmoji(guild),
           Maybe.fold(
             () => theQuest,
