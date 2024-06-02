@@ -57,6 +57,19 @@ export const Dict = {
   empty: <K extends string = string, A = never>(): Dict<K, A> => readonlyRecord.empty,
 }
 
+export type PartialDict<K extends string, A> = Partial<Dict<K, A>>
+
+const partialDictMap = readonlyRecord.map as <A, B>(
+  f: (a: A | undefined) => B | undefined,
+) => <K extends string>(fa: PartialDict<K, A>) => PartialDict<K, B>
+
+export const PartialDict = {
+  map: <A, B>(
+    f: (a: A) => B | undefined,
+  ): (<K extends string>(fa: PartialDict<K, A>) => PartialDict<K, B>) =>
+    partialDictMap(a => (a !== undefined ? f(a) : undefined)),
+}
+
 export type Either<E, A> = either.Either<E, A>
 
 export const Either = either
@@ -122,6 +135,9 @@ const listEncoder: <O, A>(encoder: Encoder<O, A>) => Encoder<List<O>, List<A>> =
 
 export const List = {
   ...readonlyArray,
+  groupBy: readonlyNonEmptyArray.groupBy as <A, K extends string>(
+    f: (a: A) => K,
+  ) => (as: List<A>) => Partial<Dict<K, NonEmptyArray<A>>>,
   asMutable: identity as <A>(fa: List<A>) => A[],
   mkString,
   decoder: listDecoder,

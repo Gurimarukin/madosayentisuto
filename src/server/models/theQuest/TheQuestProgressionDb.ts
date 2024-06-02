@@ -1,8 +1,9 @@
 import * as C from 'io-ts/Codec'
 
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
-import { List } from '../../../shared/utils/fp'
+import { NonEmptyArray } from '../../../shared/utils/fp'
 
+import { NumberRecord } from '../../utils/ioTsUtils'
 import { ChampionKey } from './ChampionKey'
 import { Platform } from './Platform'
 import { RiotId } from './RiotId'
@@ -15,11 +16,8 @@ const codec = C.struct({
     platform: Platform.codec,
     riotId: RiotId.fromStringCodec,
   }),
-  champions: C.struct({
-    mastery7: List.codec(ChampionKey.codec),
-    mastery6: List.codec(ChampionKey.codec),
-    mastery5: List.codec(ChampionKey.codec),
-  }),
+  // champion level as keys
+  champions: NumberRecord.codec(NonEmptyArray.codec(ChampionKey.codec)),
 })
 
 const TheQuestProgressionDb = { codec }

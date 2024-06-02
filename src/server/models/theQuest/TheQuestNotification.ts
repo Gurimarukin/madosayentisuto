@@ -2,7 +2,6 @@ import type { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { createUnion } from '../../../shared/utils/createUnion'
 
 import type { ChampionKey } from './ChampionKey'
-import type { ChampionLevel } from './ChampionLevel'
 import type { PlatformWithRiotId } from './PlatformWithRiotId'
 import type { SummonerShort } from './SummonerShort'
 
@@ -28,7 +27,7 @@ type ChampionLeveledUpArgs = CommonArgs & {
   summoner: PlatformWithRiotId
   champion: {
     id: ChampionKey
-    level: ChampionLevel
+    level: number
   }
 }
 

@@ -1,20 +1,19 @@
 import type { Guild, GuildTextBasedChannel, Message, MessageReaction } from 'discord.js'
-import { apply, ord } from 'fp-ts'
+import { apply, number, ord } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
-import type { NotUsed } from '../../shared/utils/fp'
-import { Future, List, Maybe, toNotUsed } from '../../shared/utils/fp'
+import { objectEntries } from '../../shared/utils/dictUtils'
+import type { NonEmptyArray, NotUsed } from '../../shared/utils/fp'
+import { Future, List, Maybe, Tuple, toNotUsed } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
+import { safeNumber } from '../../shared/utils/numberUtils'
 
 import type { TheQuestConfig } from '../config/Config'
 import type { Resources } from '../config/Resources'
 import { ChampionKey } from '../models/theQuest/ChampionKey'
-import type { ChampionLevel } from '../models/theQuest/ChampionLevel'
-import type { PlatformWithRiotId } from '../models/theQuest/PlatformWithRiotId'
 import type { StaticData } from '../models/theQuest/StaticData'
-import type { TheQuestNotificationChampionLeveledUp } from '../models/theQuest/TheQuestNotification'
 import { TheQuestNotification } from '../models/theQuest/TheQuestNotification'
 import { TheQuestProgressionApi } from '../models/theQuest/TheQuestProgressionApi'
 import type { TheQuestProgressionDb } from '../models/theQuest/TheQuestProgressionDb'
@@ -185,22 +184,6 @@ const TheQuestHelper = (
     return pipe(removedNotifications, List.concat(otherNotifications))
   }
 
-  function apiPersistenceDifference(
-    fromApi: TheQuestProgressionApi,
-  ): (fromPersistence: TheQuestProgressionDb) => List<TheQuestNotification> {
-    return fromPersistence => {
-      const masteryDiff = masteryDifference(fromApi.userId, {
-        platform: fromApi.summoner.platform,
-        riotId: fromApi.summoner.riotId,
-      })
-      return pipe(
-        masteryDiff(fromApi.champions.mastery5, fromPersistence.champions.mastery5, 5),
-        List.concat(masteryDiff(fromApi.champions.mastery6, fromPersistence.champions.mastery6, 6)),
-        List.concat(masteryDiff(fromApi.champions.mastery7, fromPersistence.champions.mastery7, 7)),
-      )
-    }
-  }
-
   function sendNotifications(
     staticData: StaticData,
     channel: GuildTextBasedChannel,
@@ -246,20 +229,39 @@ const TheQuestHelper = (
 
 export { TheQuestHelper }
 
-const masteryDifference =
-  (userId: DiscordUserId, summoner: PlatformWithRiotId) =>
-  (
-    xs: List<ChampionKey>,
-    ys: List<ChampionKey>,
-    championLevel: ChampionLevel,
-  ): List<TheQuestNotificationChampionLeveledUp> =>
-    pipe(
-      List.difference(ChampionKey.Eq)(xs, ys),
-      List.map(id =>
-        TheQuestNotification.ChampionLeveledUp({
-          userId,
-          summoner,
-          champion: { id, level: championLevel },
-        }),
-      ),
+function levelOrd<A>(): ord.Ord<Tuple<number, A>> {
+  return pipe(
+    number.Ord,
+    ord.contramap(([lvl]: Tuple<number, A>) => lvl),
+  )
+}
+
+function apiPersistenceDifference(
+  fromApi: TheQuestProgressionApi,
+): (fromPersistence: TheQuestProgressionDb) => List<TheQuestNotification> {
+  return fromPersistence => {
+    const { userId, summoner } = fromApi
+
+    return pipe(
+      objectEntries(fromApi.champions),
+      List.map(Tuple.mapFst(safeNumber)),
+      List.sort(levelOrd<NonEmptyArray<ChampionKey>>()),
+      List.chain(([level, fromApiChampions]) => {
+        const fromPersistenceChampions = fromPersistence.champions[level]
+
+        return pipe(
+          fromPersistenceChampions === undefined
+            ? fromApiChampions
+            : List.difference(ChampionKey.Eq)(fromApiChampions, fromPersistenceChampions),
+          List.map(id =>
+            TheQuestNotification.ChampionLeveledUp({
+              userId,
+              summoner,
+              champion: { id, level },
+            }),
+          ),
+        )
+      }),
     )
+  }
+}

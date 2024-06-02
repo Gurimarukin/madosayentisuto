@@ -7,16 +7,25 @@ import qs from 'qs'
 import { DayJs } from '../../../shared/models/DayJs'
 import { DiscordUserId } from '../../../shared/models/DiscordUserId'
 import { StringUtils } from '../../../shared/utils/StringUtils'
-import type { Dict } from '../../../shared/utils/fp'
-import { Future, IO, List, Maybe, NonEmptyArray } from '../../../shared/utils/fp'
+import { objectEntries } from '../../../shared/utils/dictUtils'
+import {
+  Future,
+  IO,
+  List,
+  Maybe,
+  NonEmptyArray,
+  PartialDict,
+  Tuple,
+} from '../../../shared/utils/fp'
 import { futureMaybe } from '../../../shared/utils/futureMaybe'
+import { safeNumber } from '../../../shared/utils/numberUtils'
 
 import type { Resources } from '../../config/Resources'
 import { constants } from '../../config/constants'
 import { MessageComponent } from '../../models/discord/MessageComponent'
 import { ChampionId } from '../../models/theQuest/ChampionId'
 import { ChampionKey } from '../../models/theQuest/ChampionKey'
-import type { ChampionLevel } from '../../models/theQuest/ChampionLevel'
+import { ChampionLevel_ } from '../../models/theQuest/ChampionLevel'
 import { DDragonVersion } from '../../models/theQuest/DDragonVersion'
 import type { PlatformWithRiotId } from '../../models/theQuest/PlatformWithRiotId'
 import { RiotId } from '../../models/theQuest/RiotId'
@@ -32,12 +41,6 @@ import { CanvasHelper } from '../CanvasHelper'
 import { GuildHelper } from '../GuildHelper'
 
 const otherTheQuestWebapp = 'https://la-quete.netlify.app'
-
-const masteryEmoji: Dict<`${ChampionLevel}`, string> = {
-  7: constants.emojis.mastery7,
-  6: constants.emojis.mastery6,
-  5: constants.emojis.mastery5,
-}
 
 /**
  * ranking
@@ -64,7 +67,7 @@ const ranking = ({
       MessageComponent.safeEmbed({
         color: constants.messagesColor,
         title: pipe(
-          constants.emojis.mastery7,
+          constants.emojis.masteries[10],
           GuildHelper.getEmoji(guild),
           Maybe.fold(
             () => theQuest,
@@ -83,14 +86,33 @@ const ranking = ({
               ),
             flow(
               NonEmptyArray.mapWithIndex((i, u) => {
+                const grouped = pipe(
+                  objectEntries(u.champions),
+                  List.filterMap(([level, champions]) =>
+                    pipe(
+                      ChampionLevel_.fromNumber(safeNumber(level)),
+                      Maybe.map(championLevel => Tuple.of(championLevel, champions)),
+                    ),
+                  ),
+                  List.groupBy(([championLevel]) => `${championLevel}`),
+                  PartialDict.map(champions =>
+                    pipe(
+                      champions,
+                      NonEmptyArray.chain(([, cs]) => cs),
+                      List.size,
+                    ),
+                  ),
+                )
+
                 const bullets = pipe(
-                  [
-                    masteriesWithEmoji(constants.emojis.mastery7, u.champions.mastery7.length),
-                    masteriesWithEmoji(constants.emojis.mastery6, u.champions.mastery6.length),
-                    masteriesWithEmoji(constants.emojis.mastery5, u.champions.mastery5.length),
-                  ],
+                  ChampionLevel_.values,
+                  List.reverse,
+                  List.map(level =>
+                    masteriesWithEmoji(constants.emojis.masteries[level], grouped[level] ?? 0),
+                  ),
                   List.mkString(' • '),
                 )
+
                 return `${i + 1}. **${round1Fixed(u.percents)}%** ${formatSummoner(
                   u.summoner,
                 )} ${formatUser(u.userId)}\n    ${bullets} — **${u.totalMasteryLevel}**`
@@ -285,7 +307,10 @@ const notification = ({
               option,
               Maybe.map(o => o.attachment.attachment),
             ),
-            emoji: GuildHelper.getEmoji(guild)(masteryEmoji[n.champion.level]),
+            emoji: pipe(
+              ChampionLevel_.fromNumber(n.champion.level),
+              Maybe.chain(level => GuildHelper.getEmoji(guild)(constants.emojis.masteries[level])),
+            ),
           }),
         ),
       )
@@ -293,21 +318,36 @@ const notification = ({
 
     function championMasteryAttachment(
       championId: ChampionId,
-      championLevel: ChampionLevel,
+      championLevel: number,
       attachmentName: string,
     ): Future<AttachmentBuilder> {
       return pipe(
         apply.sequenceS(Future.ApplyPar)({
           championImg: CanvasHelper.loadImage(ddragonUrls.champion(championId)),
-          masteryImg: CanvasHelper.loadImage(resources.mastery[championLevel].path),
+          masteryImg: pipe(
+            ChampionLevel_.fromNumber(championLevel),
+            Maybe.fold(
+              () => Future.successful(Maybe.none),
+              level =>
+                pipe(CanvasHelper.loadImage(resources.mastery[level].path), Future.map(Maybe.some)),
+            ),
+          ),
         }),
         Future.chainIOEitherK(({ championImg, masteryImg }) =>
           pipe(
-            // mastery image is 48x42
+            // mastery image height is 42
             // champion image will be resized to 42x42
             // (we assume champion is always square, mastery isn't, but its height is already thumbnailHeight)
             CanvasHelper.createCanvas(
-              thumbnailHeight + thumbnailGap + masteryImg.width,
+              thumbnailHeight +
+                thumbnailGap +
+                pipe(
+                  masteryImg,
+                  Maybe.fold(
+                    () => 0,
+                    img => img.width,
+                  ),
+                ),
               thumbnailHeight,
             ),
             IO.chain(
@@ -321,7 +361,14 @@ const notification = ({
                     thumbnailHeight,
                   ),
                   IO.chain(
-                    CanvasHelper.contextDrawImage(masteryImg, thumbnailHeight + thumbnailGap, 0),
+                    pipe(
+                      masteryImg,
+                      Maybe.fold(
+                        () => context => IO.right(context),
+                        img =>
+                          CanvasHelper.contextDrawImage(img, thumbnailHeight + thumbnailGap, 0),
+                      ),
+                    ),
                   ),
                 ),
               ),

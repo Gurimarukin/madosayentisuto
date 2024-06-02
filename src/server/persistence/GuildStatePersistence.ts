@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/function'
 
 import type { ChannelId } from '../../shared/models/ChannelId'
 import { GuildId } from '../../shared/models/guild/GuildId'
-import type { Dict, Maybe, NotUsed } from '../../shared/utils/fp'
+import type { Maybe, NotUsed, PartialDict } from '../../shared/utils/fp'
 import { Future, List } from '../../shared/utils/fp'
 
 import { FpCollection } from '../helpers/FpCollection'
@@ -14,7 +14,7 @@ import {
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { MongoCollectionGetter } from '../models/mongo/MongoCollection'
 
-type Projection = Partial<Dict<keyof GuildStateDbOutput, 1>>
+type Projection = PartialDict<keyof GuildStateDbOutput, 1>
 
 export type GuildStatePersistence = ReturnType<typeof GuildStatePersistence>
 
