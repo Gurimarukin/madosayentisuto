@@ -15,7 +15,7 @@ Node 20+
 
 ## Dev
 
-    dev/docker.sh start
+    podman compose up
 
     mongo -u user -p password --authenticationDatabase admin madosayentisuto
 
