@@ -1,4 +1,4 @@
-import type { ModalSubmitInteraction } from 'discord.js'
+import { ComponentType, type ModalSubmitInteraction } from 'discord.js'
 import { flow, pipe } from 'fp-ts/function'
 
 import { List, Maybe } from '../../shared/utils/fp'
@@ -11,7 +11,9 @@ const validateModal = (interaction: ModalSubmitInteraction) => {
     pipe(
       fields,
       List.findFirstMap(c => {
-        if (c.customId !== customId) return Maybe.none
+        if (c.customId !== customId || c.type !== ComponentType.TextInput) {
+          return Maybe.none
+        }
 
         const trimed = c.value.trim()
         return Maybe.some(trimed === '' ? Maybe.none : Maybe.some(trimed))

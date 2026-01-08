@@ -1,10 +1,10 @@
 import type {
   APIActionRowComponent,
   APIButtonComponentWithCustomId,
+  APIComponentInActionRow,
   APIEmbed,
   APIEmbedThumbnail,
   APIEmbedVideo,
-  APIMessageActionRowComponent,
   APIMessageComponentEmoji,
   BaseMessageOptions,
   ColorResolvable,
@@ -137,15 +137,15 @@ const singleSafeEmbed = (args: MessageEmbedArgs): BaseMessageOptions => ({
 //
 
 const row = (
-  components: NonEmptyArray<APIMessageActionRowComponent>,
-): APIActionRowComponent<APIMessageActionRowComponent> => ({
+  components: NonEmptyArray<APIComponentInActionRow>,
+): APIActionRowComponent<APIComponentInActionRow> => ({
   type: ComponentType.ActionRow,
   components: NonEmptyArray.asMutable(components),
 })
 
 export type ButtonWithCustomIdOptions = {
   custom_id: string
-  style?: Exclude<ButtonStyle, ButtonStyle.Link>
+  style?: Exclude<ButtonStyle, ButtonStyle.Link | ButtonStyle.Premium>
   label?: string
   emoji?: APIMessageComponentEmoji | string
   disabled?: boolean

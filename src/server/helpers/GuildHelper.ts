@@ -1,8 +1,8 @@
 import type {
-  GuildAuditLogsEntry as DiscordGuildAuditLogsEntry,
+  AuditLogEvent,
   Guild,
+  GuildAuditLogsEntry,
   GuildAuditLogsFetchOptions,
-  GuildAuditLogsResolvable,
   GuildEmoji,
   GuildMember,
 } from 'discord.js'
@@ -39,9 +39,7 @@ const isPublicAudio = pipe(
   refinement.compose(refinementFromPredicate<GuildAudioChannel>(ChannelUtils.isPublic)),
 )
 
-type GuildAuditLogsEntry<A extends GuildAuditLogsResolvable> = DiscordGuildAuditLogsEntry<A>
-
-const fetchLastAuditLog = <A extends GuildAuditLogsResolvable = null>(
+const fetchLastAuditLog = <A extends AuditLogEvent = AuditLogEvent>(
   guild: Guild,
   options?: Omit<GuildAuditLogsFetchOptions<A>, 'limit'>,
 ): Future<Maybe<GuildAuditLogsEntry<A>>> =>
@@ -63,7 +61,7 @@ const getEmoji = (guild: Guild): ((emojiRaw: string) => Maybe<GuildEmoji>) => {
   const findByName = (name: string): Maybe<GuildEmoji> =>
     pipe(
       emojis,
-      List.findFirst(e => e.name !== null && string.Eq.equals(e.name.toLowerCase(), name)),
+      List.findFirst(e => string.Eq.equals(e.name.toLowerCase(), name)),
     )
 
   const alts: List<(raw: string) => Maybe<Maybe<GuildEmoji>>> = [

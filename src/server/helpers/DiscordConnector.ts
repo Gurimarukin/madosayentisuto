@@ -16,18 +16,19 @@ import type {
   APIApplicationCommandPermission,
   APIMessage,
   ApplicationCommand,
+  AuditLogEvent,
   ButtonInteraction,
   Channel,
   ClientPresence,
   Collection,
   CommandInteraction,
-  GuildAuditLogsEntry as DiscordGuildAuditLogsEntry,
   EmojiIdentifierResolvable,
   Guild,
+  GuildAuditLogsEntry,
   GuildAuditLogsFetchOptions,
-  GuildAuditLogsResolvable,
   GuildMember,
   InteractionDeferReplyOptions,
+  InteractionEditReplyOptions,
   InteractionReplyOptions,
   InteractionUpdateOptions,
   Message,
@@ -151,15 +152,13 @@ const of = (client: Client<true>) => {
  * Read
  */
 
-type GuildAuditLogsEntry<A extends GuildAuditLogsResolvable> = DiscordGuildAuditLogsEntry<A>
-
-const fetchAuditLogs = <A extends GuildAuditLogsResolvable = null>(
+const fetchAuditLogs = <A extends AuditLogEvent = AuditLogEvent>(
   guild: Guild,
   options?: GuildAuditLogsFetchOptions<A>,
 ): Future<Maybe<Collection<string, GuildAuditLogsEntry<A>>>> =>
   pipe(
     Future.tryCatch(() => guild.fetchAuditLogs<A>(options)),
-    Future.map(logs => Maybe.some(logs.entries)),
+    Future.map(logs => Maybe.some(logs.entries as Collection<string, GuildAuditLogsEntry<A>>)),
     Future.orElse(e => (isMissingPermissionsError(e) ? futureMaybe.none : Future.failed(e))),
     debugLeft('fetchAuditLogs'),
   )
@@ -273,7 +272,7 @@ const interactionDeleteReply = (interaction: MyInteraction): Future<NotUsed> =>
 
 const interactionEditReply = (
   interaction: MyInteraction,
-  options: string | MessagePayload | InteractionReplyOptions,
+  options: string | MessagePayload | InteractionEditReplyOptions,
 ): Future<APIMessage | Message> =>
   pipe(
     Future.tryCatch(() => interaction.editReply(options)),

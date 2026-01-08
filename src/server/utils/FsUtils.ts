@@ -60,9 +60,9 @@ function rename(oldF: FileOrDir, newF: FileOrDir): Future<NotUsed> {
   )
 }
 
-const rmdir = (dir: Dir, options?: fs.RmDirOptions): Future<NotUsed> =>
+const rmdir = (dir: Dir): Future<NotUsed> =>
   pipe(
-    Future.tryCatch(() => fs.promises.rmdir(dir.path, options)),
+    Future.tryCatch(() => fs.promises.rmdir(dir.path)),
     Future.map(toNotUsed),
   )
 

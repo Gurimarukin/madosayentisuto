@@ -1,8 +1,8 @@
-import type {
-  Message,
-  MessageCreateOptions,
-  MessagePayload,
-  PartialTextBasedChannelFields,
+import {
+  type Message,
+  type MessageCreateOptions,
+  type MessagePayload,
+  type PartialTextBasedChannelFields,
 } from 'discord.js'
 import { string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
@@ -29,7 +29,7 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
   )(event => {
     const message = event.message
 
-    if (message.author.id === discord.client.user.id) return Future.notUsed
+    if (!message.inGuild() || message.author.id === discord.client.user.id) return Future.notUsed
 
     const cleanedWords = cleanMessage(message.content)
 
@@ -60,7 +60,7 @@ export const TextInteractionsObserver = (config: CaptainConfig, discord: Discord
     )
   }
 
-  function reactToMention(message: Message, cleanedWords: List<string>): Future<NotUsed> {
+  function reactToMention(message: Message<true>, cleanedWords: List<string>): Future<NotUsed> {
     if (containsThanks(cleanedWords)) return sendNoNeedToThankMe(message.channel)
 
     return Future.notUsed

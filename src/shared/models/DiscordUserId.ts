@@ -1,4 +1,4 @@
-import type { APIUser, User } from 'discord.js'
+import type { APIUser, PartialUser, User } from 'discord.js'
 import type { eq } from 'fp-ts'
 import { ord, string } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
@@ -12,7 +12,7 @@ export type DiscordUserId = Newtype<{ readonly DiscordUserId: unique symbol }, s
 
 const { wrap, unwrap } = iso<DiscordUserId>()
 
-const fromUser = (user: APIUser | User): DiscordUserId => wrap(user.id)
+const fromUser = (user: APIUser | PartialUser | User): DiscordUserId => wrap(user.id)
 
 const codec = fromNewtype<DiscordUserId>(C.string)
 

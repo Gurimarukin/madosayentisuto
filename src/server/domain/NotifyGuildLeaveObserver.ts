@@ -1,4 +1,4 @@
-import type { Collection, Guild, GuildAuditLogsEntry, User } from 'discord.js'
+import type { Collection, Guild, GuildAuditLogsEntry, PartialUser, User } from 'discord.js'
 import { AuditLogEvent } from 'discord.js'
 import { apply, date, io, number, ord, random, semigroup } from 'fp-ts'
 import type { Ord } from 'fp-ts/Ord'
@@ -27,8 +27,8 @@ type KickOrBanAction = AuditLogEvent.MemberKick | AuditLogEvent.MemberBanAdd
 type ValidEntry<A extends KickOrBanAction> = {
   action: A
   createdAt: Date
-  target: User
-  executor: User
+  target: PartialUser | User
+  executor: PartialUser | User
   reason: Maybe<string>
 }
 
@@ -48,6 +48,7 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
     const user = event.member.user
     const log = LogUtils.pretty(logger, guild)
     const boldMember = `**${user.tag}**`
+
     return pipe(
       DayJs.now,
       Future.fromIO,
@@ -55,12 +56,12 @@ export const NotifyGuildLeaveObserver = (Logger: LoggerGetter) => {
       futureMaybe.match(
         () =>
           pipe(
-            log.info(`${user.tag} left the guild`),
+            log.info(`${user.tag satisfies string} left the guild`),
             IO.chainIOK(() => randomMessage(leaveMessages)(boldMember)),
           ),
         ({ action, executor, reason }) =>
           pipe(
-            log.info(logMessage(user.tag, executor.tag, action, reason)),
+            log.info(logMessage(user.tag, executor.tag ?? executor.id, action, reason)),
             IO.chainIOK(() =>
               randomMessage(kickOrBanMessages(action))(boldMember, `<@${executor.id}>`),
             ),

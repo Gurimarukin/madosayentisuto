@@ -1,6 +1,5 @@
 import type {
   APIActionRowComponent,
-  APIModalActionRowComponent,
   APIModalInteractionResponseCallbackData,
   APITextInputComponent,
 } from 'discord.js'
@@ -10,7 +9,7 @@ import { pipe } from 'fp-ts/function'
 import type { NonEmptyArray } from '../../../shared/utils/fp'
 import { List } from '../../../shared/utils/fp'
 
-// _tag don't exist at runtime (see cast below)
+// _tag doesn't exist at runtime (see cast below)
 
 type Modal = APIModalInteractionResponseCallbackData & {
   _tag: 'Modal'
@@ -36,9 +35,7 @@ const of =
     return res as Modal
   }
 
-const rowComponent = (
-  textInput: MyTextInput,
-): APIActionRowComponent<APIModalActionRowComponent> => ({
+const rowComponent = (textInput: MyTextInput): APIActionRowComponent<MyTextInput> => ({
   type: ComponentType.ActionRow,
   components: [textInput],
 })

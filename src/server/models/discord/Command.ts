@@ -51,7 +51,9 @@ type Choice<A extends ChoiceType> = {
 }
 
 type OptionChannel = OptionCommon & {
-  channel_types?: List<Exclude<ChannelType, ChannelType.DM | ChannelType.GroupDM>>
+  channel_types?: List<
+    Exclude<ChannelType, ChannelType.DM | ChannelType.GroupDM | ChannelType.GuildDirectory>
+  >
 }
 
 const of = <A extends RESTPostAPIApplicationCommandsJSONBody>(

@@ -1,10 +1,10 @@
 import type {
   APIMessageComponentEmoji,
-  ActionRow,
   BaseMessageOptions,
   ButtonComponent,
   Message,
   MessageActionRowComponent,
+  TopLevelComponent,
 } from 'discord.js'
 import { ButtonStyle, ComponentType } from 'discord.js'
 import { pipe } from 'fp-ts/function'
@@ -125,27 +125,32 @@ const buttonsDecoder = pipe(
   ),
 )
 
+const topLevelComponentDecoder: Decoder<TopLevelComponent, D.TypeOf<typeof buttonsDecoder>> = pipe(
+  D.id<TopLevelComponent>(),
+  D.parse(c =>
+    c.type === ComponentType.ActionRow
+      ? D.success(c.components)
+      : D.failure(c, 'ActionRowComponent'),
+  ),
+  D.compose(buttonsDecoder),
+)
+
 const messageDecoder: Decoder<Message, AutoroleMessage> = pipe(
   D.id<Message>(),
   D.compose(
     D.fromStruct({
       content: D.id<string>(),
-      components: TupleFromArrayStrict.decoder(
-        pipe(
-          D.id<ActionRow<MessageActionRowComponent>>(),
-          D.compose(D.fromStruct({ components: buttonsDecoder })),
-        ),
-      ),
+      components: TupleFromArrayStrict.decoder(topLevelComponentDecoder),
     }),
   ),
   D.map(
     (a): AutoroleMessage => ({
-      roleId: a.components[0].components[0].customId,
+      roleId: a.components[0][0].customId,
       descriptionMessage: a.content,
-      addButton: a.components[0].components[0].label,
-      removeButton: a.components[0].components[1].label,
-      addButtonEmoji: a.components[0].components[0].emoji,
-      removeButtonEmoji: a.components[0].components[1].emoji,
+      addButton: a.components[0][0].label,
+      removeButton: a.components[0][1].label,
+      addButtonEmoji: a.components[0][0].emoji,
+      removeButtonEmoji: a.components[0][1].emoji,
     }),
   ),
 )

@@ -2,7 +2,7 @@ import { json } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import { Status } from 'hyper-ts'
 import type { Subscription } from 'rxjs'
-import wsLib from 'ws'
+import WebSocket_, { type Server } from 'ws'
 
 import { ServerToClientEvent } from '../../shared/models/event/ServerToClientEvent'
 import { LogsWithCount } from '../../shared/models/log/LogsWithCount'
@@ -22,7 +22,9 @@ import type { EndedMiddleware } from '../webServer/models/MyMiddleware'
 import { MyMiddleware as M } from '../webServer/models/MyMiddleware'
 import type { UpgradeHandler } from '../webServer/models/UpgradeHandler'
 
-const { WebSocketServer } = wsLib
+const WebSocketServer: typeof Server = (
+  WebSocket_ as typeof WebSocket_ & { WebSocketServer: typeof Server }
+).WebSocketServer
 
 export type LogController = ReturnType<typeof LogController>
 
