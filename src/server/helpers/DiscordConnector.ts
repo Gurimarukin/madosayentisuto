@@ -56,6 +56,7 @@ import type { Decoder } from 'io-ts/Decoder'
 import * as D from 'io-ts/Decoder'
 
 import { ChannelId } from '../../shared/models/ChannelId'
+import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
 import { MessageId } from '../../shared/models/MessageId'
 import { MsDuration } from '../../shared/models/MsDuration'
@@ -173,11 +174,25 @@ const fetchMember = (guild: Guild, userId: DiscordUserId): Future<Maybe<GuildMem
     debugLeft('fetchMember'),
   )
 
-const fetchMembers = (guild: Guild): Future<Collection<string, GuildMember>> =>
-  pipe(
-    Future.tryCatch(() => guild.members.fetch()),
-    debugLeft('fetchMembers'),
-  )
+// eslint-disable-next-line functional/no-let
+let lastFetchMembers: DayJs = DayJs.of(0)
+
+const fetchMembers = (guild: Guild): Future<Collection<string, GuildMember>> => {
+  const now = DayJs.now()
+  const tenMinutesAgo = pipe(now, DayJs.subtract(MsDuration.minutes(10)))
+
+  if (pipe(lastFetchMembers, DayJs.isBefore(tenMinutesAgo))) {
+    // eslint-disable-next-line functional/no-expression-statements
+    lastFetchMembers = now
+
+    return pipe(
+      Future.tryCatch(() => guild.members.fetch()),
+      debugLeft('fetchMembers'),
+    )
+  }
+
+  return Future.successful(guild.members.valueOf())
+}
 
 const fetchMessage = (guild: Guild, messageId: MessageId): Future<Maybe<Message<true>>> =>
   pipe(

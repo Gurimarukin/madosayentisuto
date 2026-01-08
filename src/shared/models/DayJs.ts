@@ -95,6 +95,11 @@ function diff(
     unit === undefined ? MsDuration.ms(unwrap(a).diff(unwrap(b))) : unwrap(a).diff(unwrap(b), unit)
 }
 
+const isBefore =
+  (y: DayJs) =>
+  (x: DayJs): boolean =>
+    unwrap(x).isBefore(unwrap(y))
+
 // Ord
 
 const Ord: ord.Ord<DayJs> = ord.fromCompare((first, second) => {
@@ -171,6 +176,7 @@ export const DayJs = {
   unix,
   unixMs,
   diff,
+  isBefore,
   unwrap,
 
   Eq,
