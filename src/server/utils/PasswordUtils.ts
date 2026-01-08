@@ -16,7 +16,7 @@ const hash = (clearPassword: ClearPassword): Future<HashedPassword> =>
 
 const check = (hashedPassword: HashedPassword, clearPassword: ClearPassword): Future<boolean> =>
   Future.tryCatch(() =>
-    bcrypt.compare(HashedPassword.unwrap(hashedPassword), ClearPassword.unwrap(clearPassword)),
+    bcrypt.compare(ClearPassword.unwrap(clearPassword), HashedPassword.unwrap(hashedPassword)),
   )
 
 export const PasswordUtils = { hash, check }
