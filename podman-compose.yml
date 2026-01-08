@@ -2,6 +2,8 @@ version: '3'
 
 services:
   mongo:
+    security_opt:
+      - label:disable
     image: mongo:6
     container_name: madosayentisuto-mongo
     environment:
@@ -9,7 +11,6 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=user
       - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
-      - .docker-data/mongo:/data/db
+      - .podman-data/mongo:/data/db
     ports:
-      - '27018:27017'
-    command: mongod
+      - 27018:27017

@@ -1,4 +1,4 @@
-/.docker-data
+/.podman-data
 /.env
 /.eslintcache
 /.parcel-cache
