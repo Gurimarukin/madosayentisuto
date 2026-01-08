@@ -1,4 +1,4 @@
-FROM node:20-alpine as base
+FROM node:24-alpine as base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -11,6 +11,8 @@ WORKDIR /app
 COPY package.json yarn.lock* ./
 
 ENV YOUTUBE_DL_SKIP_DOWNLOAD true
+
+RUN node -e "require('node:crypto').getCiphers().includes('aes-256-gcm')"
 
 RUN yarn --frozen-lockfile
 
