@@ -8,15 +8,15 @@ import { NonEmptyArray } from '../../../shared/utils/fp'
 import { NumberRecord } from '../../utils/ioTsUtils'
 import { ChampionKey } from './ChampionKey'
 import { Platform } from './Platform'
+import { Puuid } from './Puuid'
 import { RiotId } from './RiotId'
-import { SummonerId } from './SummonerId'
 
 type TheQuestProgressionApi = D.TypeOf<typeof decoder>
 
 const decoder = D.struct({
   userId: DiscordUserId.codec,
   summoner: D.struct({
-    id: SummonerId.codec,
+    puuid: Puuid.codec,
     platform: Platform.codec,
     riotId: RiotId.fromStringCodec,
     profileIconId: D.number,
