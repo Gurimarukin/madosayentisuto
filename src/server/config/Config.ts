@@ -56,6 +56,7 @@ type DbConfig = {
   dbName: string
   user: string
   password: string
+  authDb: Maybe<string>
 }
 
 export type LoggerDiscordDMConfig = {
@@ -104,6 +105,7 @@ const parse = (dict: Dict<string, string | undefined>): Try<Config> =>
         dbName: r(D.string)('DB_NAME'),
         user: r(D.string)('DB_USER'),
         password: r(D.string)('DB_PASSWORD'),
+        authDb: r(Maybe.decoder(D.string))('DB_AUTH_DB'),
       }),
       jwtSecret: r(D.string)('JWT_SECRET'),
       ytDlpPath: r(D.string)('YTDLP_PATH'),

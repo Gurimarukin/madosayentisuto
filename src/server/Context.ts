@@ -4,7 +4,7 @@ import { MongoClient } from 'mongodb'
 
 import { MsDuration } from '../shared/models/MsDuration'
 import { StringUtils } from '../shared/utils/StringUtils'
-import { Future, NonEmptyArray } from '../shared/utils/fp'
+import { Future, Maybe, NonEmptyArray } from '../shared/utils/fp'
 
 import type { Config } from './config/Config'
 import { Resources } from './config/Resources'
@@ -93,6 +93,7 @@ const load = (config: Config, loggerObservable: LoggerObservable): Future<Contex
   const loadClient: Future<MongoClient> = Future.tryCatch(() =>
     MongoClient.connect(`mongodb://${config.db.host}`, {
       auth: { username: config.db.user, password: config.db.password },
+      authSource: Maybe.toUndefined(config.db.authDb),
     }),
   )
 
