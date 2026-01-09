@@ -40,8 +40,6 @@ import type { TheQuestProgressionApi } from '../../models/theQuest/TheQuestProgr
 import { CanvasHelper } from '../CanvasHelper'
 import { GuildHelper } from '../GuildHelper'
 
-const otherTheQuestWebapp = 'https://la-quete.netlify.app'
-
 /**
  * ranking
  */
@@ -127,8 +125,7 @@ const ranking = ({
             StringUtils.stripMargins(
               `Pour apparaître dans ce classement, n’hésitez pas à demander aux admins.
               |
-              |${constants.emojis.link}  [site de La Quête](${webappUrl})
-              |${constants.emojis.link}  [l’autre site de La Quête](${otherTheQuestWebapp})`,
+              |${constants.emojis.link}  [site de La Quête](${webappUrl})`,
             ),
             false,
           ),
