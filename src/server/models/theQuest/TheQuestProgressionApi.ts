@@ -23,6 +23,7 @@ const decoder = D.struct({
   }),
   percents: D.number,
   totalMasteryLevel: D.number,
+  totalMasteryPoints: D.number,
   // champion level as keys
   champions: NumberRecord.decoder(NonEmptyArray.decoder(ChampionKey.codec)),
 })

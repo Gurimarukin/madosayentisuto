@@ -111,9 +111,9 @@ const ranking = ({
                   List.mkString(' • '),
                 )
 
-                return `${i + 1}. **${round1Fixed(u.percents)}%** ${formatSummoner(
+                return `${i + 1}. **${u.percents.toFixed(1)}%** ${formatSummoner(
                   u.summoner,
-                )} ${formatUser(u.userId)}\n    ${bullets} — **${u.totalMasteryLevel}**`
+                )} ${formatUser(u.userId)}\n    ${bullets} — **${u.totalMasteryLevel}** - **${numberUnit(u.totalMasteryPoints)}**`
               }),
               List.mkString('\n'),
             ),
@@ -400,7 +400,17 @@ const getDdragonUrls = (version: DDragonVersion) => ({
     )}/img/champion/${ChampionId.unwrap(id)}.png`,
 })
 
-const round1Fixed = (n: number): string => (Math.round(n * 10) / 10).toFixed(1)
+function numberUnit(pts: number): string {
+  if (1_000_000 <= pts) {
+    return `${(pts / 1_000_000).toFixed()}M`
+  }
+
+  if (1_000 <= pts) {
+    return `${(pts / 1_000).toFixed()}k`
+  }
+
+  return pts.toFixed()
+}
 
 const formatUser = (id: DiscordUserId): string => `<@${DiscordUserId.unwrap(id)}>`
 
