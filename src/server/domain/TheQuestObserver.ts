@@ -57,30 +57,7 @@ export const TheQuestObserver = (
     switch (event.type) {
       case 'AppStarted':
         return pipe(
-          Future.tryCatch(async () => {
-            console.log(
-              '>>> BEFORE =',
-              Object.fromEntries(
-                discord.client.application.emojis
-                  .valueOf()
-                  .toJSON()
-                  .map(e => [e.id, e.name]),
-              ),
-            )
-
-            // eslint-disable-next-line functional/no-expression-statements
-            await discord.client.application.emojis.fetch()
-
-            return console.log(
-              '>>> AFTER =',
-              Object.fromEntries(
-                discord.client.application.emojis
-                  .valueOf()
-                  .toJSON()
-                  .map(e => [e.id, e.name]),
-              ),
-            )
-          }),
+          Future.tryCatch(() => discord.client.application.emojis.fetch()),
           Future.chain(() => (config.isDev ? sendNotificationsAndRefreshMessage : Future.notUsed)),
         )
 
