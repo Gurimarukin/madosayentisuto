@@ -1,6 +1,6 @@
 # Build Dockerfile, push it to registry and call deploy webhook.
 
-name: Build and deploy
+name: deploy
 
 on:
   workflow_dispatch:
@@ -43,6 +43,7 @@ jobs:
           DB_NAME     = ${{ vars.DB_NAME }}
           DB_USER     = ${{ secrets.DB_USER }}
           DB_PASSWORD = ${{ secrets.DB_PASSWORD }}
+          DB_AUTH_DB  = ${{ secrets.DB_AUTH_DB }}
 
           JWT_SECRET = ${{ secrets.JWT_SECRET }}
 
