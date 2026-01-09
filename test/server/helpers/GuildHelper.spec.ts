@@ -13,7 +13,8 @@ describe('GuildHelper.getEmoji', () => {
 
     const getEmoji = GuildHelper.getEmoji({
       emojis: { valueOf: () => ({ toJSON: () => [billyEmoji] }) },
-    } as Guild)
+      client: { application: { emojis: { valueOf: () => ({ toJSON: () => [] }) } } },
+    } as unknown as Guild)
 
     expectT(getEmoji('<:billy:986925500595327036>')).toStrictEqual(Maybe.some(billyEmoji))
     expectT(getEmoji('<a:billy:986925500595327036>')).toStrictEqual(Maybe.some(billyEmoji))
