@@ -1,3 +1,5 @@
+import { expect } from 'vitest'
+
 // strongly typed expect
 
 export const expectT = expect as <A = never>(

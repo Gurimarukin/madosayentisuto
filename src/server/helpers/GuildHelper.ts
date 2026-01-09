@@ -1,5 +1,7 @@
 import type {
+  ApplicationEmoji,
   AuditLogEvent,
+  Collection,
   Guild,
   GuildAuditLogsEntry,
   GuildAuditLogsFetchOptions,
@@ -49,22 +51,33 @@ const fetchLastAuditLog = <A extends AuditLogEvent = AuditLogEvent>(
     futureMaybe.chainOptionK(List.head),
   )
 
-const getEmoji = (guild: Guild): ((emojiRaw: string) => Maybe<GuildEmoji>) => {
-  const emojis = guild.emojis.valueOf().toJSON()
+const getEmoji =
+  (guild: Guild) =>
+  (emojiRaw: string): Maybe<GuildEmoji | ApplicationEmoji> =>
+    pipe(
+      getEmojiBis(guild.emojis.valueOf(), emojiRaw),
+      Maybe.alt(() => getEmojiBis(guild.client.application.emojis.valueOf(), emojiRaw)),
+    )
 
-  const findById = (id: string): Maybe<GuildEmoji> =>
+function getEmojiBis(
+  emojis_: Collection<string, GuildEmoji | ApplicationEmoji>,
+  emojiRaw: string,
+): Maybe<GuildEmoji | ApplicationEmoji> {
+  const emojis = emojis_.toJSON()
+
+  const findById = (id: string): Maybe<GuildEmoji | ApplicationEmoji> =>
     pipe(
       emojis,
       List.findFirst(e => string.Eq.equals(e.id, id)),
     )
 
-  const findByName = (name: string): Maybe<GuildEmoji> =>
+  const findByName = (name: string): Maybe<GuildEmoji | ApplicationEmoji> =>
     pipe(
       emojis,
       List.findFirst(e => string.Eq.equals(e.name.toLowerCase(), name)),
     )
 
-  const alts: List<(raw: string) => Maybe<Maybe<GuildEmoji>>> = [
+  const alts: List<(raw: string) => Maybe<Maybe<GuildEmoji | ApplicationEmoji>>> = [
     flow(parseEmojiTagNameId, Maybe.map(findById)),
     flow(parseEmojiTagId, Maybe.map(findById)),
     flow(parseEmojiMarkup, Maybe.map(findByName)),
@@ -74,21 +87,19 @@ const getEmoji = (guild: Guild): ((emojiRaw: string) => Maybe<GuildEmoji>) => {
     flow(findByName, Maybe.map(Maybe.some)),
   ]
 
-  return emojiRaw => {
-    // toLowerCase because we do toLowerCase in findByName
-    const emoji = emojiRaw.trim().toLowerCase()
+  // toLowerCase because we do toLowerCase in findByName
+  const emoji = emojiRaw.trim().toLowerCase()
 
-    return pipe(
-      alts,
-      List.reduce(Maybe.none as Maybe<Maybe<GuildEmoji>>, (acc, f) =>
-        pipe(
-          acc,
-          Maybe.alt(() => f(emoji)),
-        ),
+  return pipe(
+    alts,
+    List.reduce(Maybe.none as Maybe<Maybe<GuildEmoji | ApplicationEmoji>>, (acc, f) =>
+      pipe(
+        acc,
+        Maybe.alt(() => f(emoji)),
       ),
-      Maybe.flatten,
-    )
-  }
+    ),
+    Maybe.flatten,
+  )
 }
 
 type EmojiId = string

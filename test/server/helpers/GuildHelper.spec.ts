@@ -1,4 +1,5 @@
 import type { Guild, GuildEmoji } from 'discord.js'
+import { describe, it } from 'vitest'
 
 import { Maybe } from '../../../src/shared/utils/fp'
 

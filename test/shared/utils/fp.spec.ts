@@ -1,5 +1,6 @@
 import { date, ord } from 'fp-ts'
 import { pipe } from 'fp-ts/function'
+import { describe, it } from 'vitest'
 
 import { Either, Future, NonEmptyArray } from '../../../src/shared/utils/fp'
 

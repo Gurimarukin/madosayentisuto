@@ -56,7 +56,10 @@ export const TheQuestObserver = (
   )(event => {
     switch (event.type) {
       case 'AppStarted':
-        return config.isDev ? sendNotificationsAndRefreshMessage : Future.notUsed
+        return pipe(
+          Future.tryCatch(() => discord.client.application.emojis.fetch()),
+          Future.chain(() => (config.isDev ? sendNotificationsAndRefreshMessage : Future.notUsed)),
+        )
 
       case 'CronJob':
         return !config.isDev &&

@@ -1,4 +1,4 @@
-import type { APIEmbed, BaseMessageOptions, Guild, GuildEmoji } from 'discord.js'
+import type { APIEmbed, ApplicationEmoji, BaseMessageOptions, Guild, GuildEmoji } from 'discord.js'
 import { AttachmentBuilder } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
@@ -158,13 +158,13 @@ const thumbnailGap = 8
 
 type MessageOptionsWithEmoji = {
   messageOptions: BaseMessageOptions
-  emoji: Maybe<string | GuildEmoji>
+  emoji: Maybe<string | GuildEmoji | ApplicationEmoji>
 }
 
 type EmbedWithAttachmentAndEmoji = {
   embed: APIEmbed
   attachment: Maybe<AttachmentBuilder>
-  emoji: Maybe<string | GuildEmoji>
+  emoji: Maybe<string | GuildEmoji | ApplicationEmoji>
 }
 
 type NotificationsArgs = {

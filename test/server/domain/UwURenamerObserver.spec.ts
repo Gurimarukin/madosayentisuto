@@ -1,4 +1,6 @@
 /* eslint-disable functional/no-expression-statements */
+import { describe, it } from 'vitest'
+
 import type { List } from '../../../src/shared/utils/fp'
 import { Maybe } from '../../../src/shared/utils/fp'
 

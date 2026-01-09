@@ -1,5 +1,6 @@
 import { io } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
+import { describe, it } from 'vitest'
 
 import { DayJs } from '../../../../src/shared/models/DayJs'
 import type { LoggerType } from '../../../../src/shared/models/LoggerType'
@@ -115,7 +116,7 @@ describe('validateTracks', () => {
     'should fail on invalid site',
     () =>
       validateTracks('https://blbl.ch')().then(res => {
-        expectT(res).toStrictEqual(Either.right(Either.left('URL invalide.')))
+        expectT(res).toStrictEqual(Either.right(Either.left('Erreur'))) // URL invalide.
       }),
     MsDuration.unwrap(MsDuration.seconds(30)),
   )

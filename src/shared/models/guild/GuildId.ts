@@ -17,4 +17,4 @@ const codec = fromNewtype<GuildId>(C.string)
 
 const Eq: eq.Eq<GuildId> = pipe(string.Eq, eq.contramap(unwrap))
 
-export const GuildId = { fromGuild, unwrap, codec, Eq }
+export const GuildId = { wrap, fromGuild, unwrap, codec, Eq }
