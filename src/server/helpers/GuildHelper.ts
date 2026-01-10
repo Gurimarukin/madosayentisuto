@@ -6,40 +6,16 @@ import type {
   GuildAuditLogsEntry,
   GuildAuditLogsFetchOptions,
   GuildEmoji,
-  GuildMember,
 } from 'discord.js'
-import { refinement, string } from 'fp-ts'
+import { string } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 
 import { StringUtils } from '../../shared/utils/StringUtils'
 import type { Future } from '../../shared/utils/fp'
-import { List, Maybe, NonEmptyArray, Tuple, refinementFromPredicate } from '../../shared/utils/fp'
+import { List, Maybe } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
-import type { GuildAudioChannel } from '../utils/ChannelUtils'
-import { ChannelUtils } from '../utils/ChannelUtils'
 import { DiscordConnector } from './DiscordConnector'
-
-const membersInPublicAudioChans = (
-  guild: Guild,
-): List<Tuple<GuildAudioChannel, NonEmptyArray<GuildMember>>> =>
-  pipe(
-    guild.channels.cache.toJSON(),
-    List.filter(isPublicAudio),
-    List.filterMap(channel =>
-      pipe(
-        channel.members.toJSON(),
-        NonEmptyArray.fromReadonlyArray,
-        Maybe.map(members => Tuple.of(channel, members)),
-      ),
-    ),
-    // List.filter(member => DiscordUserId.fromUser(member.user) !== clientId), // don't count bot
-  )
-
-const isPublicAudio = pipe(
-  ChannelUtils.isGuildAudio,
-  refinement.compose(refinementFromPredicate<GuildAudioChannel>(ChannelUtils.isPublic)),
-)
 
 const fetchLastAuditLog = <A extends AuditLogEvent = AuditLogEvent>(
   guild: Guild,
@@ -117,7 +93,6 @@ const parseEmojiTagId: (raw: string) => Maybe<EmojiId> = StringUtils.matcher1(/^
 const parseEmojiMarkup: (raw: string) => Maybe<EmojiName> = StringUtils.matcher1(/^:(\S+):$/)
 
 export const GuildHelper = {
-  membersInPublicAudioChans,
   fetchLastAuditLog,
   getEmoji,
 }

@@ -10,7 +10,16 @@ import type {
   MessageEditOptions,
   ModalSubmitInteraction,
 } from 'discord.js'
-import { ChannelType, DiscordAPIError, Role, TextChannel, User, codeBlock } from 'discord.js'
+import {
+  ChannelType,
+  DiscordAPIError,
+  Role,
+  StageChannel,
+  TextChannel,
+  User,
+  VoiceChannel,
+  codeBlock,
+} from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
 import type { Decoder } from 'io-ts/Decoder'
@@ -52,6 +61,7 @@ import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import type { BotStateService } from '../../services/BotStateService'
 import type { EmojidexService } from '../../services/EmojidexService'
 import type { GuildStateService } from '../../services/GuildStateService'
+import type { GuildAudioChannel } from '../../utils/ChannelUtils'
 import { ChannelUtils } from '../../utils/ChannelUtils'
 import { DebugError } from '../../utils/debugLeft'
 import { formatNickname } from '../../utils/formatNickname'
@@ -60,6 +70,8 @@ const Keys = {
   admin: 'admin',
   state: 'state',
   calls: 'calls',
+  callsWhitelist: 'calls-whitelist',
+  remove: 'remove',
   channel: 'channel',
   role: 'role',
   autorole: 'autorole',
@@ -104,14 +116,14 @@ const adminCommand = Command.chatInput({
   ),
 
   /**
-   * Jean Plank envoie un message dans le salon où la commande a été effectuée.
-   * Les membres d'équipage qui clique sur obtiennent le rôle <role> (ou le perdent).
-   * À la suite de quoi, lorsqu'un appel commence sur le serveur, ils seront notifiés dans le salon <channel> en étant mentionné par le rôle <role>.`
+   * Lorsqu'un appel commence sur un salon whitelisté (ou si la whitelist est vide) sur le serveur,
+   * Jean Plank notifie le rôle <role> dans le  salon <channel>.
    */
   Command.option.subcommandGroup({
     name: Keys.calls,
     description: "Jean Plank n'est pas votre secrétaire, mais il gère vos appels",
   })(
+    // /admin calls set <role>
     Command.option.subcommand({
       name: Keys.set,
       description: 'Pour définir la gestion des appels',
@@ -122,9 +134,42 @@ const adminCommand = Command.chatInput({
         required: true,
       }),
     ),
+    // /admin calls unset
     Command.option.subcommand({
       name: Keys.unset,
       description: "Plus de notifications d'appel",
+    })(),
+  ),
+  Command.option.subcommandGroup({
+    name: Keys.callsWhitelist,
+    description: 'Whitelist salon détectés pour les appels',
+  })(
+    // /admin calls-whitelist add <channel>
+    Command.option.subcommand({
+      name: Keys.add,
+      description: 'Ajoute le salon à la whitelist',
+    })(
+      Command.option.channel({
+        name: Keys.channel,
+        description: 'Le salon qui sera ajouté',
+        required: true,
+      }),
+    ),
+    // /admin calls-whitelist remove <channel>
+    Command.option.subcommand({
+      name: Keys.remove,
+      description: 'Enlève le salon de la whitelist',
+    })(
+      Command.option.channel({
+        name: Keys.channel,
+        description: 'Le salon qui sera enlevé',
+        required: true,
+      }),
+    ),
+    // /admin calls-whitelist unset
+    Command.option.subcommand({
+      name: Keys.unset,
+      description: 'Supprime la whitelist (tous les salons seront surveillés pour les appels)',
     })(),
   ),
 
@@ -403,6 +448,8 @@ export const AdminCommandsObserver = (
           return onState(interaction, subcommand)
         case Keys.calls:
           return onCalls(interaction, subcommand)
+        case Keys.callsWhitelist:
+          return onCallsWhitelist(interaction, subcommand)
         case Keys.autorole:
           return onAutorole(interaction, subcommand)
         case Keys.defaultRole:
@@ -484,7 +531,10 @@ export const AdminCommandsObserver = (
           role: fetchRole(interaction.guild, interaction.options.getRole(Keys.role)),
         }),
         futureMaybe.chainFirstTaskEitherK(({ channel, role }) =>
-          guildStateService.setCalls(channel.guild, Maybe.some({ channel, role })),
+          guildStateService.setCalls(
+            channel.guild,
+            Maybe.some({ channel, role, whitelistedChannels: Maybe.none }),
+          ),
         ),
         futureMaybe.match(
           () => 'Erreur',
@@ -503,6 +553,124 @@ export const AdminCommandsObserver = (
       pipe(
         guildStateService.setCalls(interaction.guild, Maybe.none),
         Future.map(() => "Nouveau paramètres d'appels : `null`"),
+      ),
+    )
+  }
+
+  function onCallsWhitelist(
+    interaction: ChatInputCommandInteraction,
+    subcommand: string,
+  ): Future<NotUsed> {
+    switch (subcommand) {
+      case Keys.add:
+        return onCallsWhitelistAdd(interaction)
+      case Keys.remove:
+        return onCallsWhitelistRemove(interaction)
+      case Keys.unset:
+        return onCallsWhitelistUnset(interaction)
+    }
+    return Future.notUsed
+  }
+
+  function onCallsWhitelistAdd(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    return withFollowUpIsAdmin(interaction)(
+      pipe(
+        futureMaybe.fromNullable(interaction.guild),
+        futureMaybe.bindTo('guild'),
+        futureMaybe.bind('channel', () =>
+          fetchAudioChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
+        ),
+        // do nothing if calls doesn't exist
+        futureMaybe.bind('calls', ({ guild }) => guildStateService.getCalls(guild)),
+        futureMaybe.bind('newWhitelistedChannels', ({ channel, calls }) =>
+          futureMaybe.some(
+            pipe(
+              calls.whitelistedChannels,
+              Maybe.fold(
+                () => [channel],
+                flow(List.append(channel), List.uniq(ChannelUtils.Eq.getById())),
+              ),
+            ),
+          ),
+        ),
+        futureMaybe.chainFirstTaskEitherK(({ guild, calls, newWhitelistedChannels }) =>
+          guildStateService.setCalls(
+            guild,
+            Maybe.some({
+              ...calls,
+              whitelistedChannels: Maybe.some(newWhitelistedChannels),
+            }),
+          ),
+        ),
+        futureMaybe.match(
+          () => 'Erreur',
+          ({ newWhitelistedChannels }) =>
+            `Nouvelle whitelist : ${formatMaybeChannels(Maybe.some(newWhitelistedChannels))}`,
+        ),
+      ),
+    )
+  }
+
+  function onCallsWhitelistRemove(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    return withFollowUpIsAdmin(interaction)(
+      pipe(
+        apply.sequenceS(futureMaybe.ApplyPar)({
+          guild: futureMaybe.fromNullable(interaction.guild),
+          channel: futureMaybe.fromNullable(interaction.options.getChannel(Keys.channel)),
+        }),
+        // do nothing if calls doesn't exist
+        futureMaybe.bind('calls', ({ guild }) => guildStateService.getCalls(guild)),
+        futureMaybe.bind('newWhitelistedChannels', ({ channel, calls }) =>
+          futureMaybe.some(
+            pipe(
+              calls.whitelistedChannels,
+              Maybe.map(
+                List.filter(
+                  c =>
+                    !ChannelId.Eq.equals(ChannelId.fromChannel(c), ChannelId.fromChannel(channel)),
+                ),
+              ),
+            ),
+          ),
+        ),
+        futureMaybe.chainFirstTaskEitherK(({ guild, calls, newWhitelistedChannels }) =>
+          guildStateService.setCalls(
+            guild,
+            Maybe.some({
+              ...calls,
+              whitelistedChannels: newWhitelistedChannels,
+            }),
+          ),
+        ),
+        futureMaybe.match(
+          () => 'Erreur',
+          ({ newWhitelistedChannels }) =>
+            `Nouvelle whitelist : ${formatMaybeChannels(newWhitelistedChannels)}`,
+        ),
+      ),
+    )
+  }
+
+  function onCallsWhitelistUnset(interaction: ChatInputCommandInteraction): Future<NotUsed> {
+    return withFollowUpIsAdmin(interaction)(
+      pipe(
+        futureMaybe.fromNullable(interaction.guild),
+        futureMaybe.bindTo('guild'),
+        // do nothing if calls doesn't exist
+        futureMaybe.bind('calls', ({ guild }) => guildStateService.getCalls(guild)),
+        futureMaybe.chainTaskEitherK(({ guild, calls }) =>
+          guildStateService.setCalls(
+            guild,
+            Maybe.some({
+              ...calls,
+              whitelistedChannels: Maybe.none,
+            }),
+          ),
+        ),
+        futureMaybe.match(
+          () => 'Erreur',
+          () => `Whitelist supprimée`,
+        ),
       ),
     )
   }
@@ -657,7 +825,9 @@ export const AdminCommandsObserver = (
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: futureMaybe.fromNullable(interaction.guild),
-          channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
+          channel: fetchTextChannel(
+            Maybe.fromNullable(interaction.options.getChannel(Keys.channel)),
+          ),
         }),
         futureMaybe.chainFirstTaskEitherK(({ guild, channel }) =>
           guildStateService.setItsFridayChannel(guild, Maybe.some(channel)),
@@ -702,7 +872,7 @@ export const AdminCommandsObserver = (
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: futureMaybe.fromNullable(interaction.guild),
-          birthdayChannel: fetchChannel(
+          birthdayChannel: fetchTextChannel(
             Maybe.fromNullable(interaction.options.getChannel(Keys.channel)),
           ),
         }),
@@ -815,7 +985,9 @@ export const AdminCommandsObserver = (
       pipe(
         apply.sequenceS(futureMaybe.ApplyPar)({
           guild: futureMaybe.fromNullable(interaction.guild),
-          channel: fetchChannel(Maybe.fromNullable(interaction.options.getChannel(Keys.channel))),
+          channel: fetchTextChannel(
+            Maybe.fromNullable(interaction.options.getChannel(Keys.channel)),
+          ),
         }),
         futureMaybe.chain(({ guild, channel }) =>
           theQuestHelper.sendNotificationsAndRefreshMessage(guild, channel),
@@ -1197,7 +1369,7 @@ export const AdminCommandsObserver = (
     )
   }
 
-  function fetchChannel(maybeChannel: Maybe<APIPartialChannel>): Future<Maybe<TextChannel>> {
+  function fetchTextChannel(maybeChannel: Maybe<APIPartialChannel>): Future<Maybe<TextChannel>> {
     return pipe(
       futureMaybe.fromOption(maybeChannel),
       futureMaybe.chain(channel =>
@@ -1206,6 +1378,22 @@ export const AdminCommandsObserver = (
           : pipe(
               discord.fetchChannel(ChannelId.fromChannel(channel)),
               Future.map(Maybe.filter(ChannelUtils.isGuildText)),
+            ),
+      ),
+    )
+  }
+
+  function fetchAudioChannel(
+    maybeChannel: Maybe<APIPartialChannel>,
+  ): Future<Maybe<GuildAudioChannel>> {
+    return pipe(
+      futureMaybe.fromOption(maybeChannel),
+      futureMaybe.chain(channel =>
+        channel instanceof StageChannel || channel instanceof VoiceChannel
+          ? futureMaybe.some(channel)
+          : pipe(
+              discord.fetchChannel(ChannelId.fromChannel(channel)),
+              Future.map(Maybe.filter(ChannelUtils.isGuildAudio)),
             ),
       ),
     )
@@ -1254,10 +1442,15 @@ const formatState = ({
     |- **subscription**: ${maybeStr(subscription, s => s.stringify())}`,
   )
 
-const formatCalls = ({ channel, role }: Calls): string =>
+const formatCalls = ({ channel, role, whitelistedChannels }: Calls): string =>
   // TODO: remove disable
 
-  `${role} - ${channel}`
+  `${role} - ${channel} - ${formatMaybeChannels(whitelistedChannels)}`
+
+const formatMaybeChannels: (channels: Maybe<List<GuildAudioChannel>>) => string = Maybe.fold(
+  () => '`null`',
+  cs => `[${cs.join(', ')}]`,
+)
 
 const formatActivity = ({ type, name }: Activity): string => `\`${type} ${name}\``
 

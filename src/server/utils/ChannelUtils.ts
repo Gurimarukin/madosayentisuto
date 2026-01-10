@@ -12,7 +12,7 @@ import type {
   VoiceChannel,
 } from 'discord.js'
 import { ChannelType } from 'discord.js'
-import { eq, predicate, refinement } from 'fp-ts'
+import { eq, refinement } from 'fp-ts'
 import type { Refinement } from 'fp-ts/Refinement'
 import { pipe } from 'fp-ts/function'
 
@@ -144,33 +144,26 @@ export type GuildAudioChannel = RefinementResult<typeof isGuildAudio>
 
 const isGuildAudio = pipe(isGuildVoice, refinement.or(isGuildStageVoice))
 
-type PermissionableChannel = RefinementResult<typeof isPermissionable>
+// type PermissionableChannel = RefinementResult<typeof isPermissionable>
 
-const isPermissionable = pipe(
-  isGuildText,
-  // refinement.or(isDM),
-  refinement.or(isGuildVoice),
-  // refinement.or(isGroupDM),
-  refinement.or(isGuildCategory),
-  refinement.or(isGuildNews),
-  // refinement.or(isGuildNewsThread),
-  // refinement.or(isGuildPublicThread),
-  // refinement.or(isGuildPrivateThread),
-  refinement.or(isGuildStageVoice),
-)
+// const isPermissionable = pipe(
+//   isGuildText,
+//   // refinement.or(isDM),
+//   refinement.or(isGuildVoice),
+//   // refinement.or(isGroupDM),
+//   refinement.or(isGuildCategory),
+//   refinement.or(isGuildNews),
+//   // refinement.or(isGuildNewsThread),
+//   // refinement.or(isGuildPublicThread),
+//   // refinement.or(isGuildPrivateThread),
+//   refinement.or(isGuildStageVoice),
+// )
 
 const isThread = pipe(
   isGuildNewsThread,
   refinement.or(isGuildPublicThread),
   refinement.or(isGuildPrivateThread),
 )
-
-const isPublic = (c: PermissionableChannel): boolean =>
-  c.permissionOverwrites
-    .valueOf()
-    .filter(p => !(p.deny.bitfield === BigInt(0) && p.allow.bitfield === BigInt(0))).size === 0
-
-const isPrivate = predicate.not(isPublic)
 
 // utils
 
@@ -180,6 +173,8 @@ const toView = (c: Channel): ChannelView => ({
 })
 
 const byId: eq.Eq<APIPartialChannel> = pipe(ChannelId.Eq, eq.contramap(ChannelId.fromChannel))
+
+const getById = <A extends APIPartialChannel>(): eq.Eq<A> => byId
 
 // export
 
@@ -199,12 +194,10 @@ export const ChannelUtils = {
   isGuildSendable,
   isGuildPositionable,
   isGuildAudio,
-  isPublic,
-  isPrivate,
   isThread,
 
   toView,
-  Eq: { byId },
+  Eq: { byId, getById },
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

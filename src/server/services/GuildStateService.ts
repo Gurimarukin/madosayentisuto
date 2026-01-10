@@ -22,7 +22,7 @@ import type { CallsDb } from '../models/guildState/db/CallsDb'
 import { GuildStateDb } from '../models/guildState/db/GuildStateDb'
 import type { LoggerGetter } from '../models/logger/LoggerObservable'
 import type { GuildStatePersistence } from '../persistence/GuildStatePersistence'
-import type { GuildSendableChannel } from '../utils/ChannelUtils'
+import type { GuildAudioChannel, GuildSendableChannel } from '../utils/ChannelUtils'
 import { ChannelUtils } from '../utils/ChannelUtils'
 import { LogUtils } from '../utils/LogUtils'
 import { getOnError } from '../utils/getOnError'
@@ -244,10 +244,18 @@ export const GuildStateService = (
   }
 
   function fetchCalls(guild: Guild): (calls: CallsDb) => Future<Maybe<Calls>> {
-    return ({ channel, role }) =>
+    return ({ channel, role, whitelistedChannels }) =>
       apply.sequenceS(futureMaybe.ApplyPar)({
         channel: fetchGuildSendableChannel(channel),
         role: DiscordConnector.fetchRole(guild, role),
+        whitelistedChannels: pipe(
+          whitelistedChannels,
+          Maybe.fold<List<ChannelId>, Future<Maybe<List<GuildAudioChannel>>>>(
+            () => Future.successful(Maybe.none),
+            flow(fetchGuildAudioChannels, Future.map(Maybe.some)),
+          ),
+          Future.map(Maybe.some),
+        ),
       })
   }
 
@@ -255,6 +263,17 @@ export const GuildStateService = (
     return pipe(
       discord.fetchChannel(channelId),
       Future.map(Maybe.filter(ChannelUtils.isGuildSendable)),
+    )
+  }
+
+  // ignore channels not found
+  function fetchGuildAudioChannels(channels: List<ChannelId>): Future<List<GuildAudioChannel>> {
+    return pipe(
+      channels,
+      List.traverse(Future.ApplicativePar)(
+        flow(discord.fetchChannel, Future.map(Maybe.filter(ChannelUtils.isGuildAudio))),
+      ),
+      Future.map(List.compact),
     )
   }
 

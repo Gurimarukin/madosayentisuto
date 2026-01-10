@@ -3,6 +3,7 @@ import type React from 'react'
 import { useEffect } from 'react'
 import type { KeyedMutator } from 'swr'
 
+import { ChannelId } from '../../../shared/models/ChannelId'
 import { ServerToClientEvent } from '../../../shared/models/event/ServerToClientEvent'
 import type { GuildId } from '../../../shared/models/guild/GuildId'
 import type { GuildView } from '../../../shared/models/guild/GuildView'
@@ -58,41 +59,58 @@ const GuildComponent: React.FC<GuildComponentProps> = ({ guild, mutate }) => {
         <Li label="calls" className="flex-col gap-0">
           {pipe(
             guild.state.calls,
-            Maybe.map(({ channel, role }) => (
+            Maybe.map(({ channel, role, whitelistedChannels }) => (
               // eslint-disable-next-line react/jsx-key
               <ul className="flex list-disc flex-col gap-1 py-2 pl-8">
-                <LiPre label="channel:">
+                <LiPre label="channel:" className="items-center gap-4">
                   <ChannelViewComponent guild={guild.id} channel={channel} />
                 </LiPre>
-                <LiPre label="role:">
+                <LiPre label="role:" className="items-center gap-4">
                   <RoleViewComponent role={role} />
+                </LiPre>
+                <LiPre label="whitelistedChannels:" className="items-center gap-4">
+                  {pipe(
+                    whitelistedChannels,
+                    Maybe.fold(
+                      () => <pre className="text-sm">null</pre>,
+                      channels => (
+                        <ul className="flex gap-2">
+                          {channels.map(c => (
+                            <li key={ChannelId.unwrap(c.id)}>
+                              <ChannelViewComponent guild={guild.id} channel={c} type="audio" />
+                            </li>
+                          ))}
+                        </ul>
+                      ),
+                    ),
+                  )}
                 </LiPre>
               </ul>
             )),
           )}
         </Li>
-        <Li label="defaultRole" className="gap-4">
+        <Li label="defaultRole" className="items-center gap-4">
           {pipe(
             guild.state.defaultRole,
             // eslint-disable-next-line react/jsx-key
             Maybe.map(role => <RoleViewComponent role={role} />),
           )}
         </Li>
-        <Li label="itsFridayChannel" className="gap-4">
+        <Li label="itsFridayChannel" className="items-center gap-4">
           {pipe(
             guild.state.itsFridayChannel,
             // eslint-disable-next-line react/jsx-key
             Maybe.map(channel => <ChannelViewComponent guild={guild.id} channel={channel} />),
           )}
         </Li>
-        <Li label="birthdayChannel" className="gap-4">
+        <Li label="birthdayChannel" className="items-center gap-4">
           {pipe(
             guild.state.birthdayChannel,
             // eslint-disable-next-line react/jsx-key
             Maybe.map(channel => <ChannelViewComponent guild={guild.id} channel={channel} />),
           )}
         </Li>
-        <Li label="theQuestMessage" className="gap-4">
+        <Li label="theQuestMessage" className="items-center gap-4">
           {pipe(
             guild.state.theQuestMessage,
             // eslint-disable-next-line react/jsx-key

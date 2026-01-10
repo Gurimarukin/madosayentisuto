@@ -14,7 +14,7 @@ type Props = {
   guild: GuildId
   channel: ChannelView
   /**
-   * @ðefault 'text'
+   * @default 'text'
    */
   type?: ChannelType
 }
