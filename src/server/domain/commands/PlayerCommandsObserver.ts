@@ -72,7 +72,8 @@ const heimerLocoCommand = Command.chatInput({
   description: 'JUAN PLANKES ARRIVAS PARA ACCOMPAGNAR TÙ EN ESTA PARTIDO DE HEIMERDONGER',
 })()
 
-export const playerCommands = [...playCommands, elevatorCommand, heimerLocoCommand]
+// memory leak
+export const playerCommands__doNotUse = [...playCommands, elevatorCommand, heimerLocoCommand]
 
 export const PlayerCommandsObserver = (
   Logger: LoggerGetter,

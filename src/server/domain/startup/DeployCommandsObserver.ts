@@ -16,17 +16,10 @@ import type { LoggerGetter } from '../../models/logger/LoggerObservable'
 import { utilInspect } from '../../utils/utilInspect'
 import { adminCommands } from '../commands/AdminCommandsObserver'
 import { otherCommands } from '../commands/OtherCommandsObserver'
-import { playerCommands } from '../commands/PlayerCommandsObserver'
 import { pollCommands } from '../commands/PollCommandsObserver'
 import { remindCommands } from '../commands/RemindCommandsObserver'
 
-const commands = List.flatten<Command>([
-  adminCommands,
-  otherCommands,
-  playerCommands,
-  pollCommands,
-  remindCommands,
-])
+const commands = List.flatten<Command>([adminCommands, otherCommands, pollCommands, remindCommands])
 
 const { left: guildCommands, right: globalCommands } = pipe(
   commands,
