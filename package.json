@@ -21,7 +21,7 @@
     }
   },
   "scripts": {
-    "_node": "node --loader=./node_modules/commonjs-extension-resolution-loader/loader.js",
+    "_node": "node --import \"data:text/javascript,import { register } from 'node:module'; import { pathToFileURL } from 'node:url'; register('./node_modules/commonjs-extension-resolution-loader/loader.js', pathToFileURL('./'));\"",
     "_swc": "swc src --out-dir tsbuild",
     "clean": "rm -fr .parcel-cache dist tsbuild",
     "prebuild": "yarn clean",
