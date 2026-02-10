@@ -579,7 +579,7 @@ const fromConfig = (config: ClientConfig): Future<DiscordConnector> =>
           ],
         })
         /* eslint-disable functional/no-expression-statements */
-        client.once('ready', () =>
+        client.once('clientReady', () =>
           client.isReady() ? resolve(of(client)) : reject(Error('client was not ready')),
         )
         client.login(BotToken.unwrap(config.token))
