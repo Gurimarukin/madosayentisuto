@@ -1,7 +1,8 @@
-/.podman-data
+/.DS_STORE
 /.env
 /.eslintcache
 /.parcel-cache
+/.podman-data
 /dependencygraph.html
 /dependencygraph.svg
 /dist
