@@ -15,6 +15,7 @@ import {
   NonEmptyArray,
   Tuple,
   refinementFromPredicate,
+  toNotUsed,
 } from '../../shared/utils/fp'
 import { futureMaybe } from '../../shared/utils/futureMaybe'
 
@@ -120,22 +121,29 @@ export const NotifyVoiceCallObserver = (
   ): Future<NotUsed> {
     const log = LogUtils.pretty(logger, member.guild)
 
+    const hasRole = DiscordConnector.hasRole(member, calls.role)
+
     return pipe(
       log.info(`Call started in 📢${channel.name} by ${member.user.tag}`),
       Future.fromIOEither,
       Future.chain(() =>
-        pipe(
-          DiscordConnector.sendMessage(
-            calls.channel,
-            `Haha ! **@${member.displayName}** appelle ${channel}... ${calls.role} doit payer !`,
-          ),
-          futureMaybe.match(
-            () => log.warn(`Couldn't send call started notification in #${calls.channel.name}`),
-            () => IO.notUsed,
-          ),
-          Future.chain(Future.fromIOEither),
+        hasRole ? DiscordConnector.roleRemove(member, calls.role) : Future.successful(false),
+      ),
+      Future.chain(() =>
+        DiscordConnector.sendMessage(
+          calls.channel,
+          `Haha ! **@${member.displayName}** appelle ${channel}... ${calls.role} doit payer !`,
         ),
       ),
+      futureMaybe.match(
+        () => log.warn(`Couldn't send call started notification in #${calls.channel.name}`),
+        () => IO.notUsed,
+      ),
+      Future.chain(Future.fromIOEither),
+      Future.chain(() =>
+        hasRole ? DiscordConnector.roleAdd(member, calls.role) : Future.successful(false),
+      ),
+      Future.map(toNotUsed),
     )
   }
 
