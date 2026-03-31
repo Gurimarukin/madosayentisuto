@@ -1,4 +1,4 @@
-import type { APIEmbed, ApplicationEmoji, BaseMessageOptions, Guild, GuildEmoji } from 'discord.js'
+import type { APIEmbed, BaseMessageOptions, Guild } from 'discord.js'
 import { AttachmentBuilder } from 'discord.js'
 import { apply } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/function'
@@ -153,15 +153,9 @@ const ranking = ({
 const thumbnailHeight = 42
 const thumbnailGap = 8
 
-type MessageOptionsWithEmoji = {
-  messageOptions: BaseMessageOptions
-  emoji: Maybe<string | GuildEmoji | ApplicationEmoji>
-}
-
-type EmbedWithAttachmentAndEmoji = {
+type EmbedWithAttachment = {
   embed: APIEmbed
   attachment: Maybe<AttachmentBuilder>
-  emoji: Maybe<string | GuildEmoji | ApplicationEmoji>
 }
 
 type NotificationsArgs = {
@@ -176,47 +170,42 @@ const notification = ({
   resources,
   staticData,
   guild,
-}: NotificationsArgs): ((notif: TheQuestNotification) => Future<MessageOptionsWithEmoji>) => {
+}: NotificationsArgs): ((notif: TheQuestNotification) => Future<BaseMessageOptions>) => {
   const ddragonUrls = getDdragonUrls(staticData.version)
   const formatSummoner = getFormatSummoner(webappUrl)
 
   return notif => {
     return pipe(
       notif,
-
       TheQuestNotification.match({
         UserJoined: notificationUserJoined,
         UserLeft: notificationUserLeft,
         ChampionLeveledUp: notificationChampionLeveledUp,
       }),
       Future.map(
-        ({ embed, attachment, emoji }): MessageOptionsWithEmoji => ({
-          messageOptions: {
-            embeds: [embed],
-            files: pipe(
-              attachment,
-              Maybe.fold(() => undefined, flow(List.of, List.asMutable)),
-            ),
-          },
-          emoji,
+        ({ embed, attachment }): BaseMessageOptions => ({
+          embeds: [embed],
+          files: pipe(
+            attachment,
+            Maybe.fold(() => undefined, flow(List.of, List.asMutable)),
+          ),
         }),
       ),
     )
 
     function notificationUserJoined(
       n: Omit<TheQuestNotificationUserJoined, 'type'>,
-    ): Future<EmbedWithAttachmentAndEmoji> {
+    ): Future<EmbedWithAttachment> {
       const attachmentName = `${n.summoner.profileIcondId}.png`
       return pipe(
         profileIconAttachment(n.summoner.profileIcondId, attachmentName),
         Future.map(
-          (attachment): EmbedWithAttachmentAndEmoji => ({
+          (attachment): EmbedWithAttachment => ({
             embed: MessageComponent.safeEmbed({
               description: `${summonerUser(n)} a rejoint le classement de La Quête !`,
               thumbnail: MessageComponent.thumbnail(attachmentUrl(attachmentName)),
             }),
             attachment: Maybe.some(attachment),
-            emoji: Maybe.some(constants.emojis.tada),
           }),
         ),
       )
@@ -251,19 +240,18 @@ const notification = ({
 
     function notificationUserLeft(
       n: Omit<TheQuestNotificationUserLeft, 'type'>,
-    ): Future<EmbedWithAttachmentAndEmoji> {
+    ): Future<EmbedWithAttachment> {
       return Future.successful({
         embed: MessageComponent.safeEmbed({
           description: `${summonerUser(n)} a abandonné La Quête...`,
         }),
         attachment: Maybe.none,
-        emoji: Maybe.some(constants.emojis.cry),
       })
     }
 
     function notificationChampionLeveledUp(
       n: Omit<TheQuestNotificationChampionLeveledUp, 'type'>,
-    ): Future<EmbedWithAttachmentAndEmoji> {
+    ): Future<EmbedWithAttachment> {
       return pipe(
         staticData.champions,
         List.findFirst(c => ChampionKey.Eq.equals(c.key, n.champion.id)),
@@ -271,6 +259,7 @@ const notification = ({
         futureMaybe.bindTo('champion'),
         futureMaybe.bind('attachment', ({ champion }) => {
           const attachmentName = `${ChampionId.unwrap(champion.id)}-mastery${n.champion.level}.png`
+
           return futureMaybe.fromTaskEither(
             apply.sequenceS(Future.ApplyPar)({
               attachment: championMasteryAttachment(champion.id, n.champion.level, attachmentName),
@@ -279,7 +268,7 @@ const notification = ({
           )
         }),
         Future.map(
-          (option): EmbedWithAttachmentAndEmoji => ({
+          (option): EmbedWithAttachment => ({
             embed: MessageComponent.safeEmbed({
               description: `${summonerUser(
                 n,
@@ -303,10 +292,6 @@ const notification = ({
             attachment: pipe(
               option,
               Maybe.map(o => o.attachment.attachment),
-            ),
-            emoji: pipe(
-              ChampionLevel_.fromNumber(n.champion.level),
-              Maybe.chain(level => GuildHelper.getEmoji(guild)(constants.emojis.masteries[level])),
             ),
           }),
         ),

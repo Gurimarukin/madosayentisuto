@@ -1,6 +1,6 @@
-import type { Guild, GuildTextBasedChannel, Message, MessageReaction } from 'discord.js'
+import type { Guild, GuildTextBasedChannel, Message } from 'discord.js'
 import { apply, number, ord } from 'fp-ts'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
@@ -200,29 +200,15 @@ const TheQuestHelper = (
           guild: channel.guild,
         }),
       ),
-      Future.chain(options =>
-        pipe(
-          options,
-          // send notification messages sequentially
-          List.traverse(Future.ApplicativeSeq)(({ messageOptions }) =>
-            DiscordConnector.sendMessage(channel, messageOptions),
-          ),
-          Future.map(List.zip(options)),
-        ),
-      ),
       Future.chain(
-        // emoji react to messages in parallel
-        List.traverse(Future.ApplicativePar)(([maybeMessage, { emoji: maybeEmoji }]) =>
-          pipe(
-            apply.sequenceS(Maybe.Apply)({ message: maybeMessage, emoji: maybeEmoji }),
-            futureMaybe.fromOption,
-            futureMaybe.chainTaskEitherK(({ message, emoji }) =>
-              DiscordConnector.messageReact(message, emoji),
-            ),
+        flow(
+          // send notification messages sequentially
+          List.traverse(Future.ApplicativeSeq)(options =>
+            DiscordConnector.sendMessage(channel, options),
           ),
         ),
       ),
-      Future.map<List<Maybe<MessageReaction>>, NotUsed>(toNotUsed),
+      Future.map<List<Maybe<Message<true>>>, NotUsed>(toNotUsed),
     )
   }
 }
