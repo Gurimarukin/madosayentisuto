@@ -162,14 +162,12 @@ type NotificationsArgs = {
   webappUrl: string
   resources: Resources
   staticData: StaticData
-  guild: Guild
 }
 
 const notification = ({
   webappUrl,
   resources,
   staticData,
-  guild,
 }: NotificationsArgs): ((notif: TheQuestNotification) => Future<BaseMessageOptions>) => {
   const ddragonUrls = getDdragonUrls(staticData.version)
   const formatSummoner = getFormatSummoner(webappUrl)

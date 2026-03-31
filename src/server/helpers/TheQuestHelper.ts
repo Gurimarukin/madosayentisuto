@@ -1,6 +1,6 @@
 import type { Guild, GuildTextBasedChannel, Message } from 'discord.js'
 import { apply, number, ord } from 'fp-ts'
-import { flow, pipe } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 
 import { DayJs } from '../../shared/models/DayJs'
 import { DiscordUserId } from '../../shared/models/DiscordUserId'
@@ -197,15 +197,12 @@ const TheQuestHelper = (
           webappUrl: config.webappUrl,
           resources,
           staticData,
-          guild: channel.guild,
         }),
       ),
       Future.chain(
-        flow(
-          // send notification messages sequentially
-          List.traverse(Future.ApplicativeSeq)(options =>
-            DiscordConnector.sendMessage(channel, options),
-          ),
+        // send notification messages sequentially
+        List.traverse(Future.ApplicativeSeq)(options =>
+          DiscordConnector.sendMessage(channel, options),
         ),
       ),
       Future.map<List<Maybe<Message<true>>>, NotUsed>(toNotUsed),
